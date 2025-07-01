@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOA Management Landing Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow p-6">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-blue-700">Neopolitan Sitio Seville</h1>
+            <nav class="space-x-4">
+                <a href="#amenities" class="text-gray-600 hover:text-blue-600">Amenities</a>
+                <a href="#inquire" class="text-gray-600 hover:text-blue-600">Avail Now</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="text-center py-20 bg-blue-100">
+        <h2 class="text-4xl font-bold mb-4">Welcome to Our Community</h2>
+        <p class="text-lg max-w-xl mx-auto mb-6">Explore our amenities and services available to visitors and residents.
+            Book your visit online today!</p>
+    </section>
+
+    <!-- Amenities Section -->
+    <section id="amenities" class="py-16 bg-white">
+        <div class="max-w-6xl mx-auto px-4">
+            <h3 class="text-3xl font-bold text-center mb-10">Available Amenities & Rates (2025)</h3>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Clubhouse -->
+                <div class="bg-blue-50 p-4 rounded-xl shadow">
+                    <img src="images/clubhouse.png" alt="Clubhouse" class="w-full h-32 object-cover rounded mb-2">
+                    <h4 class="text-lg font-semibold">Clubhouse</h4>
+                    <p class="text-sm">🏠 Homeowner: ₱12,000</p>
+                    <p class="text-sm">👥 Guest/Non-res: ₱15,000</p>
+                </div>
+
+                <!-- Swimming Pool -->
+                <div class="bg-blue-50 p-4 rounded-xl shadow">
+                    <img src="images/pool.png" alt="Swimming Pool" class="w-full h-32 object-cover rounded mb-2">
+                    <h4 class="text-lg font-semibold">Swimming Pool</h4>
+                    <p class="text-sm">🕘 9AM–5PM</p>
+                    <p class="text-sm">🏠 Homeowner: ₱100</p>
+                    <p class="text-sm">👥 Guest: ₱200</p>
+                    <p class="text-sm">🌙 5PM–10PM</p>
+                    <p class="text-sm">🏠 Homeowner: ₱200</p>
+                    <p class="text-sm">👥 Guest: ₱300</p>
+                </div>
+
+                <!-- Gazebo -->
+                <div class="bg-blue-50 p-4 rounded-xl shadow">
+                    <img src="images/gazebo.png" alt="Gazebo" class="w-full h-32 object-cover rounded mb-2">
+                    <h4 class="text-lg font-semibold">Gazebo</h4>
+                    <p class="text-sm">🕘 9AM–5PM</p>
+                    <p class="text-sm">🏠 Homeowner: ₱1,000</p>
+                    <p class="text-sm">👥 Guest: ₱2,000</p>
+                    <p class="text-sm">🌙 5PM–10PM</p>
+                    <p class="text-sm">🏠 Homeowner: ₱1,500</p>
+                    <p class="text-sm">👥 Guest: ₱3,000</p>
+                </div>
+
+                <!-- Basketball Court -->
+                <div class="bg-blue-50 p-4 rounded-xl shadow">
+                    <img src="images/basketball.png" alt="Basketball Court"
+                        class="w-full h-32 object-cover rounded mb-2">
+                    <h4 class="text-lg font-semibold">Basketball Court</h4>
+                    <p class="text-sm">🕘 9AM–5PM</p>
+                    <p class="text-sm">🏠 Homeowner: ₱200/hr</p>
+                    <p class="text-sm">👥 Guest: ₱300/hr</p>
+                    <p class="text-sm">🌙 5PM–10PM</p>
+                    <p class="text-sm">🏠 Homeowner: ₱300/hr</p>
+                    <p class="text-sm">👥 Guest: ₱400/hr</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Avail Form Section -->
+    <section id="inquire" class="py-16 bg-gray-50">
+        <div class="max-w-3xl mx-auto px-4">
+            <h3 class="text-3xl font-bold text-center mb-6">Book an Amenity</h3>
+            <form action="#" method="POST" class="bg-white p-6 rounded-xl shadow space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium">Full Name</label>
+                    <input type="text" id="name" name="name" required class="w-full mt-1 px-4 py-2 border rounded" />
+                </div>
+                <div>
+                    <label for="email" class="block text-sm font-medium">Email Address</label>
+                    <input type="email" id="email" name="email" required class="w-full mt-1 px-4 py-2 border rounded" />
+                </div>
+                <div>
+                    <label for="amenity" class="block text-sm font-medium">Amenity</label>
+                    <select id="amenity" name="amenity" required class="w-full mt-1 px-4 py-2 border rounded">
+                        <option value="">Select an amenity</option>
+                        <option value="clubhouse">Clubhouse</option>
+                        <option value="pool">Swimming Pool</option>
+                        <option value="gazebo">Gazebo</option>
+                        <option value="basketball">Basketball Court</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="date" class="block text-sm font-medium">Date of Use</label>
+                    <input type="date" id="date" name="date" required class="w-full mt-1 px-4 py-2 border rounded" />
+                </div>
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Submit
+                    Booking</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white text-center py-6">
+        <p>&copy; 2025 HOA Community. All rights reserved.</p>
+    </footer>
+
+</body>
+
+</html>

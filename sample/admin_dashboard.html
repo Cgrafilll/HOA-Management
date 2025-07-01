@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HOA Management Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+    <div class="flex min-h-screen">
+
+        <!-- Sidebar -->
+        <aside class="w-64 bg-blue-800 text-white flex flex-col p-6">
+            <h1 class="text-2xl font-bold mb-6">HOA Admin</h1>
+            <nav class="flex-1 space-y-3">
+                <a href="#dashboard" class="block hover:bg-blue-700 px-3 py-2 rounded">Dashboard</a>
+                <a href="#residents" class="block hover:bg-blue-700 px-3 py-2 rounded">Resident Management</a>
+                <a href="#billing" class="block hover:bg-blue-700 px-3 py-2 rounded">Billing & Accounts</a>
+                <a href="#announcements" class="block hover:bg-blue-700 px-3 py-2 rounded">Announcements</a>
+                <a href="#amenities" class="block hover:bg-blue-700 px-3 py-2 rounded">Amenities</a>
+                <a href="#documents" class="block hover:bg-blue-700 px-3 py-2 rounded">Documents</a>
+                <a href="#security" class="block hover:bg-blue-700 px-3 py-2 rounded">Security & Access</a>
+                <a href="#maintenance" class="block hover:bg-blue-700 px-3 py-2 rounded">Maintenance</a>
+                <a href="#reports" class="block hover:bg-blue-700 px-3 py-2 rounded">Reports</a>
+            </nav>
+            <a href="login.html"
+                class="block text-red-300 hover:text-white mt-auto pt-4 border-t border-blue-700">Logout</a>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8 space-y-12">
+
+            <!-- Dashboard Overview -->
+            <section id="dashboard">
+                <h2 class="text-3xl font-bold mb-4">Dashboard Overview</h2>
+                <div class="grid md:grid-cols-4 gap-6">
+                    <div class="bg-white shadow p-4 rounded-xl">
+                        <p class="text-sm text-gray-600">Total Residents</p>
+                        <h3 class="text-xl font-bold">202</h3>
+                    </div>
+                    <div class="bg-white shadow p-4 rounded-xl">
+                        <p class="text-sm text-gray-600">Outstanding Balances</p>
+                        <h3 class="text-xl font-bold">₱52,300</h3>
+                    </div>
+                    <div class="bg-white shadow p-4 rounded-xl">
+                        <p class="text-sm text-gray-600">Upcoming Reservations</p>
+                        <h3 class="text-xl font-bold">12</h3>
+                    </div>
+                    <div class="bg-white shadow p-4 rounded-xl">
+                        <p class="text-sm text-gray-600">Open Tickets</p>
+                        <h3 class="text-xl font-bold">5</h3>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Residents -->
+            <section id="residents">
+                <h2 class="text-2xl font-semibold mb-4">Resident Management</h2>
+                <p class="text-sm text-gray-600">View, add, or manage homeowner records.</p>
+                <!-- Add table or cards for resident list -->
+            </section>
+
+            <!-- Billing -->
+            <section id="billing">
+                <h2 class="text-2xl font-semibold mb-4">Billing & Statement of Accounts</h2>
+                <p class="text-sm text-gray-600">Monitor dues, payments, and issue receipts.</p>
+                <!-- Add billing table -->
+            </section>
+
+            <!-- Announcements -->
+            <section id="announcements">
+                <h2 class="text-2xl font-semibold mb-4">Community Announcements</h2>
+                <p class="text-sm text-gray-600">Create and post notices for residents.</p>
+                <!-- Add announcement form/list -->
+            </section>
+
+            <!-- Amenities -->
+            <section id="amenities">
+                <h2 class="text-2xl font-semibold mb-4">Amenities Booking</h2>
+                <p class="text-sm text-gray-600">Manage facility reservations and schedules.</p>
+                <!-- Add calendar or table -->
+            </section>
+
+            <!-- Documents -->
+            <section id="documents">
+                <h2 class="text-2xl font-semibold mb-4">Document Management</h2>
+                <p class="text-sm text-gray-600">Upload and organize HOA policies, forms, and minutes.</p>
+            </section>
+
+            <!-- Security -->
+            <section id="security">
+                <h2 class="text-2xl font-semibold mb-4">Security & Access Logs</h2>
+                <p class="text-sm text-gray-600">Monitor gate entries and visitor access records.</p>
+            </section>
+
+            <!-- Maintenance -->
+            <section id="maintenance">
+                <h2 class="text-2xl font-semibold mb-4">Maintenance & Service Requests</h2>
+                <p class="text-sm text-gray-600">Track repair tickets and their status.</p>
+            </section>
+
+            <!-- Reports -->
+            <section id="reports">
+                <h2 class="text-2xl font-semibold mb-4">Reports & Analytics</h2>
+                <p class="text-sm text-gray-600">Generate financial and activity reports for board meetings.</p>
+            </section>
+
+        </main>
+
+    </div>
+
+</body>
+
+</html>
