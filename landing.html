@@ -106,7 +106,8 @@
                     </div>
                     <div class="modal-body text-start">
                         <img id="modalImage" src="" class="img-fluid rounded mb-3" alt="Amenity Image">
-                        <div id="modalContent" class="small text-muted"></div>
+                        <div id="modalContent" class="small text-muted"
+                            style="display: grid;  grid-template-columns: 1fr 1fr;  gap: 0.5rem 1rem;"></div>
                     </div>
                 </div>
             </div>
@@ -118,57 +119,47 @@
                 clubhouse: {
                     title: "Clubhouse",
                     image: "images/clubhouse.png",
-                    details: `
-          <p>🏠 Homeowner: ₱12,000</p>
-          <p>👥 Guest/Non-res: ₱15,000</p>
-        `
+                    details: `<p>🏠 Homeowner: ₱ 12,000.00</p><p>👥 Guest/Non-res: ₱ 15,000.00</p>`
                 },
                 pool: {
                     title: "Swimming Pool",
                     image: "images/pool.png",
-                    details: `
-          <p>🕘 9AM–5PM</p>
-          <p>🏠 Homeowner: ₱100</p>
-          <p>👥 Guest: ₱200</p>
-          <p>🌙 5PM–10PM</p>
-          <p>🏠 Homeowner: ₱200</p>
-          <p>👥 Guest: ₱300</p>
-        `
+                    details: `<p>🕘 9:00 AM – 5:00 PM</p><p>🌙 5:00 PM – 10:00 PM</p><p>🏠 Homeowner: ₱  100.00/pax</p><p>🏠 Homeowner: ₱ 200.00/pax</p><p>👥 Guest: ₱ 200.00/pax</p><p>👥 Guest: ₱ 300.00/pax</p>`
                 },
                 gazebo: {
                     title: "Gazebo",
                     image: "images/gazebo.png",
-                    details: `
-          <p>🕘 9AM–5PM</p>
-          <p>🏠 Homeowner: ₱1,000</p>
-          <p>👥 Guest: ₱2,000</p>
-          <p>🌙 5PM–10PM</p>
-          <p>🏠 Homeowner: ₱1,500</p>
-          <p>👥 Guest: ₱3,000</p>
-        `
+                    details: `<p>🕘 9:00 AM – 5:00 PM</p><p>🌙 5:00 PM – 10:00 PM</p><p>🏠 Homeowner: ₱ 1,000.00</p><p>🏠 Homeowner: ₱ 1,500.00</p><p>👥 Guest: ₱ 2,000.00</p><p>👥 Guest: ₱ 3,000.00</p>`
                 },
                 basketball: {
                     title: "Basketball Court",
                     image: "images/basketball.png",
-                    details: `
-          <p>🕘 9AM–5PM</p>
-          <p>🏠 Homeowner: ₱200/hr</p>
-          <p>👥 Guest: ₱300/hr</p>
-          <p>🌙 5PM–10PM</p>
-          <p>🏠 Homeowner: ₱300/hr</p>
-          <p>👥 Guest: ₱400/hr</p>
-        `
+                    details: `<p>🕘 9:00 AM – 5:00 PM</p><p>🌙 5:00 PM – 10:00 PM</p><p>🏠 Homeowner: ₱ 200.00/hr</p><p>🏠 Homeowner: ₱ 300.00/hr</p><p>👥 Guest: ₱ 300.00/hr</p><p>👥 Guest: ₱ 400.00/hr</p>`
                 }
             };
+
+            const carouselElement = document.getElementById('amenityCarousel');
+            const modalElement = document.getElementById('amenityModal');
+            const carouselInstance = bootstrap.Carousel.getOrCreateInstance(carouselElement);
+            const modalInstance = new bootstrap.Modal(modalElement);
 
             function showDetails(key) {
                 const data = amenityData[key];
                 document.getElementById('modalTitle').innerText = data.title;
                 document.getElementById('modalImage').src = data.image;
                 document.getElementById('modalContent').innerHTML = data.details;
-                const modal = new bootstrap.Modal(document.getElementById('amenityModal'));
-                modal.show();
+                modalInstance.show();
             }
+
+            // Pause carousel AFTER modal is fully shown
+            modalElement.addEventListener('shown.bs.modal', () => {
+                carouselInstance.pause();
+            });
+
+            // Resume carousel AFTER modal is closed
+            modalElement.addEventListener('hidden.bs.modal', () => {
+                carouselInstance.cycle();
+            });
         </script>
     </section>
 
