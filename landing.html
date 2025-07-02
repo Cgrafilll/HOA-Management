@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HOA Management Landing Page</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Bootstrap 5 CSS & JS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 
 <body class="bg-gray-100 text-gray-800">
@@ -28,89 +31,211 @@
             Book your visit online today!</p>
     </section>
 
-    <!-- Amenities Section -->
-    <section id="amenities" class="py-16 bg-white">
-        <div class="max-w-6xl mx-auto px-4">
-            <h3 class="text-3xl font-bold text-center mb-10">Available Amenities & Rates (2025)</h3>
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- Clubhouse -->
-                <div class="bg-blue-50 p-4 rounded-xl shadow">
-                    <img src="images/clubhouse.png" alt="Clubhouse" class="w-full h-32 object-cover rounded mb-2">
-                    <h4 class="text-lg font-semibold">Clubhouse</h4>
-                    <p class="text-sm">🏠 Homeowner: ₱12,000</p>
-                    <p class="text-sm">👥 Guest/Non-res: ₱15,000</p>
+    <!-- Amenities Section with Carousel -->
+    <section id="amenities" class="py-5 bg-white">
+        <div class="container text-center">
+            <h3 class="display-6 fw-bold mb-4">Available Amenities & Rates (2025)</h3>
+
+            <!-- Bootstrap Carousel -->
+            <div id="amenityCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+                <!-- Indicators -->
+                <div class="carousel-indicators mb-2">
+                    <button type="button" data-bs-target="#amenityCarousel" data-bs-slide-to="0" class="active"
+                        aria-current="true"></button>
+                    <button type="button" data-bs-target="#amenityCarousel" data-bs-slide-to="1"></button>
+                    <button type="button" data-bs-target="#amenityCarousel" data-bs-slide-to="2"></button>
+                    <button type="button" data-bs-target="#amenityCarousel" data-bs-slide-to="3"></button>
                 </div>
 
-                <!-- Swimming Pool -->
-                <div class="bg-blue-50 p-4 rounded-xl shadow">
-                    <img src="images/pool.png" alt="Swimming Pool" class="w-full h-32 object-cover rounded mb-2">
-                    <h4 class="text-lg font-semibold">Swimming Pool</h4>
-                    <p class="text-sm">🕘 9AM–5PM</p>
-                    <p class="text-sm">🏠 Homeowner: ₱100</p>
-                    <p class="text-sm">👥 Guest: ₱200</p>
-                    <p class="text-sm">🌙 5PM–10PM</p>
-                    <p class="text-sm">🏠 Homeowner: ₱200</p>
-                    <p class="text-sm">👥 Guest: ₱300</p>
+                <!-- Slides -->
+                <div class="carousel-inner" style="max-height: 600px; overflow: hidden;">
+                    <!-- Clubhouse -->
+                    <div class="carousel-item active">
+                        <img src="images/clubhouse.png" class="d-block w-100 object-fit-cover"
+                            style="height: 600px; object-fit: cover;" alt="Clubhouse" onclick="showDetails('clubhouse')"
+                            role="button">
+                        <h4 class="mt-2 fw-semibold text-center">Clubhouse</h4>
+                    </div>
+
+                    <!-- Pool -->
+                    <div class="carousel-item">
+                        <img src="images/pool.png" class="d-block w-100 object-fit-cover"
+                            style="height: 600px; object-fit: cover;" alt="Swimming Pool" onclick="showDetails('pool')"
+                            role="button">
+                        <h4 class="mt-2 fw-semibold text-center">Swimming Pool</h4>
+                    </div>
+
+                    <!-- Gazebo -->
+                    <div class="carousel-item">
+                        <img src="images/gazebo.png" class="d-block w-100 object-fit-cover"
+                            style="height: 600px; object-fit: cover;" alt="Gazebo" onclick="showDetails('gazebo')"
+                            role="button">
+                        <h4 class="mt-2 fw-semibold text-center">Gazebo</h4>
+                    </div>
+
+                    <!-- Basketball -->
+                    <div class="carousel-item">
+                        <img src="images/basketball.png" class="d-block w-100 object-fit-cover"
+                            style="height: 600px; object-fit: cover;" alt="Basketball Court"
+                            onclick="showDetails('basketball')" role="button">
+                        <h4 class="mt-2 fw-semibold text-center">Basketball Court</h4>
+                    </div>
                 </div>
 
-                <!-- Gazebo -->
-                <div class="bg-blue-50 p-4 rounded-xl shadow">
-                    <img src="images/gazebo.png" alt="Gazebo" class="w-full h-32 object-cover rounded mb-2">
-                    <h4 class="text-lg font-semibold">Gazebo</h4>
-                    <p class="text-sm">🕘 9AM–5PM</p>
-                    <p class="text-sm">🏠 Homeowner: ₱1,000</p>
-                    <p class="text-sm">👥 Guest: ₱2,000</p>
-                    <p class="text-sm">🌙 5PM–10PM</p>
-                    <p class="text-sm">🏠 Homeowner: ₱1,500</p>
-                    <p class="text-sm">👥 Guest: ₱3,000</p>
-                </div>
+                <!-- Arrows -->
+                <button class="carousel-control-prev" type="button" data-bs-target="#amenityCarousel"
+                    data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#amenityCarousel"
+                    data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        </div>
 
-                <!-- Basketball Court -->
-                <div class="bg-blue-50 p-4 rounded-xl shadow">
-                    <img src="images/basketball.png" alt="Basketball Court"
-                        class="w-full h-32 object-cover rounded mb-2">
-                    <h4 class="text-lg font-semibold">Basketball Court</h4>
-                    <p class="text-sm">🕘 9AM–5PM</p>
-                    <p class="text-sm">🏠 Homeowner: ₱200/hr</p>
-                    <p class="text-sm">👥 Guest: ₱300/hr</p>
-                    <p class="text-sm">🌙 5PM–10PM</p>
-                    <p class="text-sm">🏠 Homeowner: ₱300/hr</p>
-                    <p class="text-sm">👥 Guest: ₱400/hr</p>
+        <!-- Bootstrap Modal -->
+        <div class="modal fade" id="amenityModal" tabindex="-1" aria-labelledby="amenityModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTitle">Amenity</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-start">
+                        <img id="modalImage" src="" class="img-fluid rounded mb-3" alt="Amenity Image">
+                        <div id="modalContent" class="small text-muted"></div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- JavaScript for Modal Content -->
+        <script>
+            const amenityData = {
+                clubhouse: {
+                    title: "Clubhouse",
+                    image: "images/clubhouse.png",
+                    details: `
+          <p>🏠 Homeowner: ₱12,000</p>
+          <p>👥 Guest/Non-res: ₱15,000</p>
+        `
+                },
+                pool: {
+                    title: "Swimming Pool",
+                    image: "images/pool.png",
+                    details: `
+          <p>🕘 9AM–5PM</p>
+          <p>🏠 Homeowner: ₱100</p>
+          <p>👥 Guest: ₱200</p>
+          <p>🌙 5PM–10PM</p>
+          <p>🏠 Homeowner: ₱200</p>
+          <p>👥 Guest: ₱300</p>
+        `
+                },
+                gazebo: {
+                    title: "Gazebo",
+                    image: "images/gazebo.png",
+                    details: `
+          <p>🕘 9AM–5PM</p>
+          <p>🏠 Homeowner: ₱1,000</p>
+          <p>👥 Guest: ₱2,000</p>
+          <p>🌙 5PM–10PM</p>
+          <p>🏠 Homeowner: ₱1,500</p>
+          <p>👥 Guest: ₱3,000</p>
+        `
+                },
+                basketball: {
+                    title: "Basketball Court",
+                    image: "images/basketball.png",
+                    details: `
+          <p>🕘 9AM–5PM</p>
+          <p>🏠 Homeowner: ₱200/hr</p>
+          <p>👥 Guest: ₱300/hr</p>
+          <p>🌙 5PM–10PM</p>
+          <p>🏠 Homeowner: ₱300/hr</p>
+          <p>👥 Guest: ₱400/hr</p>
+        `
+                }
+            };
+
+            function showDetails(key) {
+                const data = amenityData[key];
+                document.getElementById('modalTitle').innerText = data.title;
+                document.getElementById('modalImage').src = data.image;
+                document.getElementById('modalContent').innerHTML = data.details;
+                const modal = new bootstrap.Modal(document.getElementById('amenityModal'));
+                modal.show();
+            }
+        </script>
     </section>
 
-    <!-- Avail Form Section -->
-    <section id="inquire" class="py-16 bg-gray-50">
-        <div class="max-w-3xl mx-auto px-4">
-            <h3 class="text-3xl font-bold text-center mb-6">Book an Amenity</h3>
-            <form action="#" method="POST" class="bg-white p-6 rounded-xl shadow space-y-4">
-                <div>
-                    <label for="name" class="block text-sm font-medium">Full Name</label>
-                    <input type="text" id="name" name="name" required class="w-full mt-1 px-4 py-2 border rounded" />
+    <!-- Avail Form Section with Google Map -->
+    <section id="inquire" class="py-5 bg-light">
+        <div class="container">
+            <h3 class="text-center fw-bold mb-4">Book an Amenity</h3>
+            <div class="row justify-content-center">
+                <!-- Google Map Column -->
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <div class="rounded shadow overflow-hidden" style="height: 100%; min-height: 400px;">
+                        <iframe
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1654.007002586308!2d121.06013695214578!3d14.718581856770555!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397b08b93fdec6b%3A0xf47ba662230f452f!2sSitio%20Seville%20Clubhouse!5e0!3m2!1sen!2sph!4v1751431430949!5m2!1sen!2sph"
+                            width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    </div>
                 </div>
-                <div>
-                    <label for="email" class="block text-sm font-medium">Email Address</label>
-                    <input type="email" id="email" name="email" required class="w-full mt-1 px-4 py-2 border rounded" />
+
+                <!-- Booking Form Column -->
+                <div class="col-lg-6">
+                    <form action="#" method="POST" class="bg-white p-4 rounded shadow">
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label for="fname" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="fname" name="fname" required />
+                            </div>
+                            <div class="col-6">
+                                <label for="lname" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="lname" name="lname" required />
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" required />
+                            </div>
+                            <div class="col-6">
+                                <label for="contact" class="form-label">Contact Number</label>
+                                <input type="text" class="form-control" id="contact" name="contact" required />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="amenity" class="form-label">Amenity</label>
+                            <select id="amenity" name="amenity" class="form-select" required>
+                                <option value="">Select an amenity</option>
+                                <option value="clubhouse">Clubhouse</option>
+                                <option value="pool">Swimming Pool</option>
+                                <option value="gazebo">Gazebo</option>
+                                <option value="basketball">Basketball Court</option>
+                            </select>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label for="date" class="form-label">Date of Use</label>
+                                <input type="date" class="form-control" id="date" name="date" required />
+                            </div>
+                            <div class="col-6">
+                                <label for="timeRange" class="form-label">Time Range</label>
+                                <select id="timeRange" name="timeRange" class="form-select" required>
+                                    <option value="">Select time range</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Submit Booking</button>
+                    </form>
                 </div>
-                <div>
-                    <label for="amenity" class="block text-sm font-medium">Amenity</label>
-                    <select id="amenity" name="amenity" required class="w-full mt-1 px-4 py-2 border rounded">
-                        <option value="">Select an amenity</option>
-                        <option value="clubhouse">Clubhouse</option>
-                        <option value="pool">Swimming Pool</option>
-                        <option value="gazebo">Gazebo</option>
-                        <option value="basketball">Basketball Court</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="date" class="block text-sm font-medium">Date of Use</label>
-                    <input type="date" id="date" name="date" required class="w-full mt-1 px-4 py-2 border rounded" />
-                </div>
-                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Submit
-                    Booking</button>
-            </form>
+            </div>
         </div>
     </section>
 
@@ -118,6 +243,45 @@
     <footer class="bg-gray-800 text-white text-center py-6">
         <p>&copy; 2025 HOA Community. All rights reserved.</p>
     </footer>
+
+    <script>
+        const timeRangeSelect = document.getElementById("timeRange");
+        const amenitySelect = document.getElementById("amenity");
+
+        const timeOptions = {
+            clubhouse: [
+                { label: "Whole Day (9AM–10PM)", value: "9AM–10PM" }
+            ],
+            pool: [
+                { label: "Day Time (9AM–5PM)", value: "9AM–5PM" },
+                { label: "Night Time (5PM–10PM)", value: "5PM–10PM" }
+            ],
+            gazebo: [
+                { label: "Day Time (9AM–5PM)", value: "9AM–5PM" },
+                { label: "Night Time (5PM–10PM)", value: "5PM–10PM" }
+            ],
+            basketball: [
+                { label: "Day Time (9AM–5PM)", value: "9AM–5PM" },
+                { label: "Night Time (5PM–10PM)", value: "5PM–10PM" }
+            ]
+        };
+
+        amenitySelect.addEventListener("change", () => {
+            const selectedAmenity = amenitySelect.value;
+            const options = timeOptions[selectedAmenity] || [];
+
+            // Reset
+            timeRangeSelect.innerHTML = '<option value="">Select time range</option>';
+
+            // Add new options
+            options.forEach(opt => {
+                const option = document.createElement("option");
+                option.value = opt.value;
+                option.textContent = opt.label;
+                timeRangeSelect.appendChild(option);
+            });
+        });
+    </script>
 
 </body>
 
