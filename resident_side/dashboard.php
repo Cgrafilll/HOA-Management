@@ -1,3 +1,26 @@
+<?php
+session_start();
+require '../rfid-api/db.php';
+
+if (!isset($_SESSION['resident_id'])) {
+    header("Location: login.php");
+    exit;
+}
+
+$resident_id = $_SESSION['resident_id'];
+$sql = "SELECT * FROM residents WHERE resident_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $resident_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$resident = $result->fetch_assoc();
+
+if (!$resident) {
+    echo "Resident not found.";
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -30,7 +53,8 @@
 
             <!-- Welcome Section -->
             <div class="mb-8">
-                <h2 class="text-3xl font-bold text-gray-800">Welcome, <span class="text-blue-700">Resident Name</span>
+                <h2 class="text-3xl font-bold text-gray-800">Welcome, <span
+                        class="text-blue-700"><?= htmlspecialchars($resident['first_name'] . ' ' . $resident['last_name']) ?></span>
                 </h2>
                 <p class="text-gray-600 mt-1">Here’s an overview of your HOA account and activities.</p>
             </div>
@@ -56,10 +80,13 @@
             <section id="records" class="bg-white p-6 rounded-xl shadow mb-8">
                 <h3 class="text-2xl font-semibold mb-4 text-blue-700">Personal Records</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div><strong>Name:</strong> Juan Dela Cruz</div>
-                    <div><strong>Unit:</strong> Block 4, Lot 23</div>
-                    <div><strong>Email:</strong> juan@example.com</div>
-                    <div><strong>Contact:</strong> 0917-000-0000</div>
+                    <div><strong>Name:</strong>
+                        <?= htmlspecialchars($resident['first_name'] . ' ' . $resident['middle_name'] . ' ' . $resident['last_name']) ?>
+                    </div>
+                    <div><strong>Unit:</strong> Block <?= htmlspecialchars($resident['block_no']) ?>, Lot
+                        <?= htmlspecialchars($resident['lot_no']) ?></div>
+                    <div><strong>Email:</strong> <?= htmlspecialchars($resident['email']) ?></div>
+                    <div><strong>Contact:</strong> <?= htmlspecialchars($resident['contact_number']) ?></div>
                 </div>
             </section>
 

@@ -6,7 +6,7 @@ $email = $_POST['email'] ?? '';
 $password = $_POST['password'] ?? '';
 
 if (empty($email) || empty($password)) {
-    header("Location: login.php?error=Please fill in all fields.");
+    header("Location: login.php?error=" . urlencode("Please fill in all fields."));
     exit;
 }
 
@@ -17,11 +17,19 @@ $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 
-if ($user && password_verify($password, $user['password'])) {
-    $_SESSION['resident_id'] = $user['id'];
-    $_SESSION['resident_name'] = $user['name'];
-    header("Location: dashboard.php"); // use .php so it can read session
-} else {
-    header("Location: login.php?error=Invalid email or password.");
+if (!$user) {
+    header("Location: login.php?error=" . urlencode("Email address not found."));
+    exit;
 }
+
+if (!password_verify($password, $user['password'])) {
+    header("Location: login.php?error=" . urlencode("Incorrect password."));
+    exit;
+}
+
+// Login success
+$_SESSION['resident_id'] = $user['resident_id'];
+$_SESSION['resident_name'] = $user['first_name'] . ' ' . $user['last_name'];
+header("Location: dashboard.php");
+exit;
 ?>

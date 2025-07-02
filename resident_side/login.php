@@ -5,50 +5,69 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Resident Login | HOA Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="bg-light d-flex align-items-center justify-content-center min-vh-100">
 
     <!-- Login Card -->
-    <div class="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md">
-        <h2 class="text-2xl font-bold text-center text-blue-700 mb-6">Resident Login</h2>
+    <div class="card shadow-lg p-4 rounded-4 w-100" style="max-width: 400px;">
+        <h2 class="text-center text-primary fw-bold mb-4">Resident Login</h2>
 
         <?php if (isset($_GET['error'])): ?>
-        <div class="bg-red-100 text-red-700 p-3 mb-4 rounded">
-            <?php echo htmlspecialchars($_GET['error']); ?>
-        </div>
+            <div class="alert alert-danger">
+                <?php echo htmlspecialchars($_GET['error']); ?>
+            </div>
         <?php endif; ?>
 
-        <form action="resident_login.php" method="POST" class="space-y-4">
-            <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" id="email" name="email" required
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <form action="resident_login.php" method="POST">
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" id="email" name="email" required class="form-control" />
             </div>
 
-            <div>
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input type="password" id="password" name="password" required
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div class="mb-3 position-relative">
+                <label for="password" class="form-label">Password</label>
+                <div class="input-group">
+                    <input type="password" id="password" name="password" required class="form-control" />
+                    <button type="button" class="btn btn-outline-secondary" id="togglePassword" tabindex="-1">
+                        <i class="bi bi-eye" id="toggleIcon"></i>
+                    </button>
+                </div>
             </div>
 
-            <div class="flex justify-between items-center text-sm text-gray-600">
-                <label class="flex items-center">
-                    <input type="checkbox" class="mr-2"> Remember me
-                </label>
-                <a href="#" class="text-blue-600 hover:underline">Forgot Password?</a>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="rememberMe" />
+                    <label class="form-check-label" for="rememberMe">Remember me</label>
+                </div>
+                <a href="#" class="text-decoration-none text-primary">Forgot Password?</a>
             </div>
 
-            <button type="submit"
-                class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">Login</button>
+            <button type="submit" class="btn btn-primary w-100">Login</button>
         </form>
 
-        <p class="mt-6 text-center text-sm text-gray-600">
+        <p class="text-center text-muted mt-4 mb-0">
             Don't have an account?
-            <a href="#" class="text-blue-600 hover:underline">Contact Admin</a>
+            <a href="#" class="text-primary text-decoration-none">Contact Admin</a>
         </p>
     </div>
+
+    <!-- Bootstrap 5 JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById("togglePassword").addEventListener("click", function () {
+            const passwordInput = document.getElementById("password");
+            const icon = document.getElementById("toggleIcon");
+
+            const isPassword = passwordInput.type === "password";
+            passwordInput.type = isPassword ? "text" : "password";
+            icon.classList.toggle("bi-eye");
+            icon.classList.toggle("bi-eye-slash");
+        });
+    </script>
 
 </body>
 
