@@ -14,157 +14,171 @@
 <body class="bg-gray-100 text-gray-800">
 
     <!-- Header -->
-    <header class="bg-white shadow p-6">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-blue-700">Neopolitan Sitio Seville</h1>
-            <nav class="space-x-4">
-                <a href="#amenities" class="text-gray-600 hover:text-blue-600">Amenities</a>
-                <a href="#inquire" class="text-gray-600 hover:text-blue-600">Avail Now</a>
+    <header class="sticky top-0 z-50">
+        <div class="bg-white shadow-lg max-w-8xl mx-auto px-6 py-4 flex justify-between items-center">
+            <img src="images/NSSHAI_crop.png" class="object-fit-cover" alt="NSSHAI" style="height: 70px;">
+            <nav class="flex items-center gap-6 text-sm md:text-base" style="font-size: 16px;">
+                <a href="#home" class="nav-link text-green-700 font-semibold">Home</a>
+                <a href="#about" class="nav-link text-gray-600 hover:text-green-600">About Us</a>
+                <a href="#amenities" class="nav-link text-gray-600 hover:text-green-600">Amenities</a>
+                <a href="#pricing" class="nav-link text-gray-600 hover:text-green-600">Pricing</a>
+                <a href="#inquire" class="nav-link text-gray-600 hover:text-green-600">Contact Us</a>
             </nav>
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="text-center py-20 bg-blue-100">
-        <h2 class="text-4xl font-bold mb-4">Welcome to Our Community</h2>
-        <p class="text-lg max-w-xl mx-auto mb-6">Explore our amenities and services available to visitors and residents.
-            Book your visit online today!</p>
+    <!-- Home Section -->
+    <section id="home" class="relative text-center min-h-screen flex flex-col justify-center items-center"
+        style="background-image: url('images/gazebo.png'); background-size: cover; background-position: center;">
+
+        <!-- Translucent Dark Green Overlay -->
+        <div class="absolute inset-0 bg-green-900 opacity-60 z-0"></div>
+
+        <!-- Content -->
+        <div class="relative z-10">
+            <h2 class="text-4xl font-bold mb-4 text-white drop-shadow">Welcome to Our Community</h2>
+            <p class="text-lg max-w-xl mx-auto mb-6 text-white drop-shadow">
+                Explore our amenities and services available to visitors and residents.
+                <br>Book your visit online today!
+            </p>
+        </div>
+    </section>
+
+    <!-- About Us Section -->
+    <section id="about" class="relative min-h-screen flex items-center p-10">
+        <div class="max-w-8xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
+            <!-- Text Content -->
+            <div>
+                <h3 class="text-4xl font-bold mb-2 text-green-700">NSSHAI</h3>
+                <h2 class="text-5xl font-bold mb-4">Neopolitan Sitio Seville</h2>
+                <p class="text-lg mb-6">
+                    Neopolitan Sitio Seville Homeowners' Association, Inc. (NSSHAI) is a private residential subdivision
+                    located in North Fairview, Quezon City.
+                </p>
+            </div>
+            <div>
+                <img src="images/clubhouse.png" class="d-block w-100 object-fit-cover" alt="clubhouse">
+            </div>
+            <div>
+                <img src="images/gazebo.png" class="d-block w-100 object-fit-cover" alt="gazebo">
+            </div>
+            <div>
+                <h2 class="text-5xl font-bold mb-4">Our Mission</h2>
+                <p class="text-lg mb-6">
+                    To foster a safe, organized, and sustainable neighborhood while preserving property values and
+                    improving the quality of life for its residents.
+                </p>
+            </div>
+            <!-- Text Content -->
+            <div>
+                <h3 class="text-4xl font-bold mb-2 text-green-700">NSSHAI</h3>
+                <h2 class="text-5xl font-bold mb-4">Neopolitan Sitio Seville</h2>
+                <p class="text-lg mb-6">
+                    Neopolitan Sitio Seville Homeowners' Association, Inc. (NSSHAI) is a private residential subdivision
+                    located in North Fairview, Quezon City.
+                </p>
+            </div>
+            <div>
+                <img src="images/clubhouse.png" class="d-block w-100 object-fit-cover" alt="clubhouse">
+            </div>
+        </div>
     </section>
 
     <!-- Amenities Section with Carousel -->
-    <section id="amenities" class="py-5 bg-white">
+    <section id="amenities" class="p-10 min-h-screen" style="background-color: #3B724B;">
         <div class="container text-center">
-            <h3 class="display-6 fw-bold mb-4">Available Amenities & Rates (2025)</h3>
-
+            <h3 class="display-6 fw-bold mb-4 text-white">What We Offer</h3>
             <!-- Bootstrap Carousel -->
-            <div id="amenityCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
-                <!-- Indicators -->
-                <div class="carousel-indicators mb-2">
-                    <button type="button" data-bs-target="#amenityCarousel" data-bs-slide-to="0" class="active"
-                        aria-current="true"></button>
-                    <button type="button" data-bs-target="#amenityCarousel" data-bs-slide-to="1"></button>
-                    <button type="button" data-bs-target="#amenityCarousel" data-bs-slide-to="2"></button>
-                    <button type="button" data-bs-target="#amenityCarousel" data-bs-slide-to="3"></button>
-                </div>
-
-                <!-- Slides -->
-                <div class="carousel-inner" style="max-height: 600px; overflow: hidden;">
-                    <!-- Clubhouse -->
-                    <div class="carousel-item active">
-                        <img src="images/clubhouse.png" class="d-block w-100 object-fit-cover"
-                            style="height: 600px; object-fit: cover;" alt="Clubhouse" onclick="showDetails('clubhouse')"
-                            role="button">
-                        <h4 class="mt-2 fw-semibold text-center">Clubhouse</h4>
+            <div>
+                <div id="amenityCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+                    <!-- Indicators -->
+                    <div class="carousel-indicators mb-2">
+                        <button type="button" data-bs-target="#amenityCarousel" data-bs-slide-to="0" class="active"
+                            aria-current="true"></button>
+                        <button type="button" data-bs-target="#amenityCarousel" data-bs-slide-to="1"></button>
+                        <button type="button" data-bs-target="#amenityCarousel" data-bs-slide-to="2"></button>
+                        <button type="button" data-bs-target="#amenityCarousel" data-bs-slide-to="3"></button>
                     </div>
 
-                    <!-- Pool -->
-                    <div class="carousel-item">
-                        <img src="images/pool.png" class="d-block w-100 object-fit-cover"
-                            style="height: 600px; object-fit: cover;" alt="Swimming Pool" onclick="showDetails('pool')"
-                            role="button">
-                        <h4 class="mt-2 fw-semibold text-center">Swimming Pool</h4>
+                    <!-- Slides -->
+                    <div class="carousel-inner rounded-lg overflow-hidden shadow-md" style="max-height: 400px;">
+                        <!-- Clubhouse -->
+                        <div class="carousel-item active">
+                            <img src="images/clubhouse.png" class="d-block w-100 object-fit-cover"
+                                style="height: 400px; object-fit: cover;" alt="Clubhouse">
+                            <h4 class="mt-2 fw-semibold text-center">Clubhouse</h4>
+                        </div>
+
+                        <!-- Pool -->
+                        <div class="carousel-item">
+                            <img src="images/pool.png" class="d-block w-100 object-fit-cover"
+                                style="height: 400px; object-fit: cover;" alt="Swimming Pool">
+                            <h4 class="mt-2 fw-semibold text-center">Swimming Pool</h4>
+                        </div>
+
+                        <!-- Gazebo -->
+                        <div class="carousel-item">
+                            <img src="images/gazebo.png" class="d-block w-100 object-fit-cover"
+                                style="height: 400px; object-fit: cover;" alt="Gazebo">
+                            <h4 class="mt-2 fw-semibold text-center">Gazebo</h4>
+                        </div>
+
+                        <!-- Basketball -->
+                        <div class="carousel-item">
+                            <img src="images/basketball.png" class="d-block w-100 object-fit-cover"
+                                style="height: 400px; object-fit: cover;" alt="Basketball Court">
+                            <h4 class="mt-2 fw-semibold text-center">Basketball Court</h4>
+                        </div>
                     </div>
 
-                    <!-- Gazebo -->
-                    <div class="carousel-item">
-                        <img src="images/gazebo.png" class="d-block w-100 object-fit-cover"
-                            style="height: 600px; object-fit: cover;" alt="Gazebo" onclick="showDetails('gazebo')"
-                            role="button">
-                        <h4 class="mt-2 fw-semibold text-center">Gazebo</h4>
-                    </div>
-
-                    <!-- Basketball -->
-                    <div class="carousel-item">
-                        <img src="images/basketball.png" class="d-block w-100 object-fit-cover"
-                            style="height: 600px; object-fit: cover;" alt="Basketball Court"
-                            onclick="showDetails('basketball')" role="button">
-                        <h4 class="mt-2 fw-semibold text-center">Basketball Court</h4>
-                    </div>
-                </div>
-
-                <!-- Arrows -->
-                <button class="carousel-control-prev" type="button" data-bs-target="#amenityCarousel"
-                    data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                    <span class="visually-hidden">Previous</span>
-                </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#amenityCarousel"
-                    data-bs-slide="next">
-                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                    <span class="visually-hidden">Next</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Bootstrap Modal -->
-        <div class="modal fade" id="amenityModal" tabindex="-1" aria-labelledby="amenityModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalTitle">Amenity</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body text-start">
-                        <img id="modalImage" src="" class="img-fluid rounded mb-3" alt="Amenity Image">
-                        <div id="modalContent" class="small text-muted"
-                            style="display: grid;  grid-template-columns: 1fr 1fr;  gap: 0.5rem 1rem;"></div>
-                    </div>
+                    <!-- Arrows -->
+                    <button class="carousel-control-prev" type="button" data-bs-target="#amenityCarousel"
+                        data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#amenityCarousel"
+                        data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
                 </div>
             </div>
+            <!-- Amenity Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mt-8">
+                <!-- Clubhouse -->
+                <div class="bg-white rounded-xl shadow-lg p-4 text-left">
+                    <h5 class="text-xl font-bold text-green-700 mb-2">Clubhouse</h5>
+                    <p class="text-gray-700 text-sm">A spacious venue for community events, private gatherings, and HOA
+                        meetings equipped with basic amenities and seating.</p>
+                </div>
+
+                <!-- Swimming Pool -->
+                <div class="bg-white rounded-xl shadow-lg p-4 text-left">
+                    <h5 class="text-xl font-bold text-green-700 mb-2">Swimming Pool</h5>
+                    <p class="text-gray-700 text-sm">Perfect for residents and guests to cool off, relax, or host
+                        poolside activities. Cleaned and maintained regularly.</p>
+                </div>
+
+                <!-- Gazebo -->
+                <div class="bg-white rounded-xl shadow-lg p-4 text-left">
+                    <h5 class="text-xl font-bold text-green-700 mb-2">Gazebo</h5>
+                    <p class="text-gray-700 text-sm">A peaceful open-air structure ideal for outdoor relaxation, small
+                        picnics, or quiet community gatherings.</p>
+                </div>
+
+                <!-- Basketball Court -->
+                <div class="bg-white rounded-xl shadow-lg p-4 text-left">
+                    <h5 class="text-xl font-bold text-green-700 mb-2">Basketball Court</h5>
+                    <p class="text-gray-700 text-sm">A full-sized court for residents who love sports. Great for casual
+                        games, practices, or mini tournaments.</p>
+                </div>
+            </div>
         </div>
-
-        <!-- JavaScript for Modal Content -->
-        <script>
-            const amenityData = {
-                clubhouse: {
-                    title: "Clubhouse",
-                    image: "images/clubhouse.png",
-                    details: `<p>🏠 Homeowner: ₱ 12,000.00</p><p>👥 Guest/Non-res: ₱ 15,000.00</p>`
-                },
-                pool: {
-                    title: "Swimming Pool",
-                    image: "images/pool.png",
-                    details: `<p>🕘 9:00 AM – 5:00 PM</p><p>🌙 5:00 PM – 10:00 PM</p><p>🏠 Homeowner: ₱  100.00/pax</p><p>🏠 Homeowner: ₱ 200.00/pax</p><p>👥 Guest: ₱ 200.00/pax</p><p>👥 Guest: ₱ 300.00/pax</p>`
-                },
-                gazebo: {
-                    title: "Gazebo",
-                    image: "images/gazebo.png",
-                    details: `<p>🕘 9:00 AM – 5:00 PM</p><p>🌙 5:00 PM – 10:00 PM</p><p>🏠 Homeowner: ₱ 1,000.00</p><p>🏠 Homeowner: ₱ 1,500.00</p><p>👥 Guest: ₱ 2,000.00</p><p>👥 Guest: ₱ 3,000.00</p>`
-                },
-                basketball: {
-                    title: "Basketball Court",
-                    image: "images/basketball.png",
-                    details: `<p>🕘 9:00 AM – 5:00 PM</p><p>🌙 5:00 PM – 10:00 PM</p><p>🏠 Homeowner: ₱ 200.00/hr</p><p>🏠 Homeowner: ₱ 300.00/hr</p><p>👥 Guest: ₱ 300.00/hr</p><p>👥 Guest: ₱ 400.00/hr</p>`
-                }
-            };
-
-            const carouselElement = document.getElementById('amenityCarousel');
-            const modalElement = document.getElementById('amenityModal');
-            const carouselInstance = bootstrap.Carousel.getOrCreateInstance(carouselElement);
-            const modalInstance = new bootstrap.Modal(modalElement);
-
-            function showDetails(key) {
-                const data = amenityData[key];
-                document.getElementById('modalTitle').innerText = data.title;
-                document.getElementById('modalImage').src = data.image;
-                document.getElementById('modalContent').innerHTML = data.details;
-                modalInstance.show();
-            }
-
-            // Pause carousel AFTER modal is fully shown
-            modalElement.addEventListener('shown.bs.modal', () => {
-                carouselInstance.pause();
-            });
-
-            // Resume carousel AFTER modal is closed
-            modalElement.addEventListener('hidden.bs.modal', () => {
-                carouselInstance.cycle();
-            });
-        </script>
     </section>
 
     <!-- Avail Form Section with Google Map -->
-    <section id="inquire" class="py-5 bg-light">
+    <section id="inquire" class="py-5 bg-light min-h-screen">
         <div class="container">
             <h3 class="text-center fw-bold mb-4">Book an Amenity</h3>
             <div class="row justify-content-center">
@@ -276,6 +290,32 @@
                 timeRangeSelect.appendChild(option);
             });
         });
+
+        const navLinks = document.querySelectorAll('.nav-link');
+        const sections = document.querySelectorAll('section[id]');
+
+        function activateLinkOnScroll() {
+            const scrollY = window.scrollY;
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 120;
+                const sectionHeight = section.offsetHeight;
+                const sectionId = section.getAttribute('id');
+
+                if (scrollY >= sectionTop && scrollY < sectionTop + sectionHeight) {
+                    navLinks.forEach(link => {
+                        link.classList.remove('text-green-700', 'font-semibold');
+                        link.classList.add('text-gray-600');
+                        if (link.getAttribute('href') === `#${sectionId}`) {
+                            link.classList.add('text-green-700', 'font-semibold');
+                            link.classList.remove('text-gray-600');
+                        }
+                    });
+                }
+            });
+        }
+
+        window.addEventListener('scroll', activateLinkOnScroll);
     </script>
 
 </body>
