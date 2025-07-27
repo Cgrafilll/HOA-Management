@@ -1,3 +1,26 @@
+<?php
+session_start();
+require '../rfid-api/db.php';
+
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: login/login.php");
+    exit;
+}
+
+$admin_id = $_SESSION['admin_id'];
+$sql = "SELECT * FROM admin_accounts WHERE admin_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $admin_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$admin = $result->fetch_assoc();
+
+if (!$admin) {
+    echo "Admin not found.";
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -77,7 +100,7 @@
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
             <div class="d-flex align-items-center gap-2">
-                <span class="text-secondary">Hello, Emma</span>
+                <span class="text-secondary">Hello, <?= htmlspecialchars($admin['first_name']) ?></span>
                 <img src="https://i.pravatar.cc/40" alt="Profile" class="rounded-circle" width="40" height="40">
             </div>
         </div>
@@ -86,7 +109,7 @@
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav flex-column gap-1">
-                <a href="admin_dashboard.html"
+                <a href="admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
@@ -100,8 +123,8 @@
                     </button>
                     <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="admin_accounts.html" class="nav-link px-2 actived">Admin</a></li>
-                            <li><a href="household_accounts.html" class="nav-link px-2">Household</a></li>
+                            <li><a href="admin_accounts.php" class="nav-link px-2 actived">Admin</a></li>
+                            <li><a href="household_accounts.php" class="nav-link px-2">Household</a></li>
                             <li><a href="#" class="nav-link px-2">Visitors</a></li>
                         </ul>
                     </div>
@@ -169,7 +192,7 @@
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">List of Admin Accounts</span>
-                        <button class="btn btn-primary btn-sm">+ Create New</button>
+                        <a href="admin/add_admin.php" class="btn btn-primary btn-sm">+ Create New</a>
                     </div>
 
                     <!-- Table -->
@@ -186,46 +209,49 @@
                                 </tr>
                             </thead>
                             <tbody class="small align-middle">
-                                <tr>
-                                    <td>1</td>
-                                    <td>2025-07-23 16:28</td>
-                                    <td>Maoi C. Madrid</td>
-                                    <td>Administrator</td>
-                                    <td class="text-success text-center fw-bold">Active</td>
-                                    <td>
-                                        <div class="dropdown text-center">
-                                            <button class="btn btn-sm btn-secondary dropdown-toggle"
-                                                data-bs-toggle="dropdown">Action</button>
-                                            <ul class="dropdown-menu">
-                                                <li><a class="dropdown-item" href="#">View Details</a></li>
-                                                <li><a class="dropdown-item" href="#">Edit Details</a></li>
-                                                <li><a class="dropdown-item" href="#">Delete Account</a></li>
-                                            </ul>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td>2025-07-23 16:28</td>
-                                    <td>Christian Joerome DC. Grafil</td>
-                                    <td>Administrator</td>
-                                    <td class="text-success text-center fw-bold">Active</td>
-                                    <td>
-                                        <div class="dropdown text-center">
-                                            <button class="btn btn-sm btn-secondary dropdown-toggle"
-                                                data-bs-toggle="dropdown">Action</button>
-                                            <ul class="dropdown-menu">
-                                                <li><a class="dropdown-item" href="#">Edit</a></li>
-                                                <li><a class="dropdown-item" href="#">Deactivate</a></li>
-                                            </ul>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Add more rows as needed -->
+                                <?php
+                                $sql = "SELECT admin_id, first_name, middle_name, last_name, role, status, created_at FROM admin_accounts ORDER BY created_at DESC";
+                                $result = $conn->query($sql);
+
+                                if ($result->num_rows > 0) {
+                                    while ($row = $result->fetch_assoc()) {
+                                        $admin_id = $row['admin_id'];
+                                        $fullName = $row['first_name'] . ' ' . substr($row['middle_name'], 0, 1) . '. ' . $row['last_name'];
+                                        $role = htmlspecialchars($row['role']);
+                                        $status = $row['status'] === 'Active' ? 'text-success' : 'text-danger';
+                                        $statusText = ucfirst($row['status']);
+                                        $created = date('Y-m-d H:i', strtotime($row['created_at']));
+                                        echo <<<HTML
+                                            <tr>
+                                                <td>{$admin_id}</td>
+                                                <td>{$created}</td>
+                                                <td>{$fullName}</td>
+                                                <td>{$role}</td>
+                                                <td class="{$status} text-center fw-bold">{$statusText}</td>
+                                                <td>
+                                                    <div class="dropdown text-center">
+                                                        <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
+                                                        <ul class="dropdown-menu">
+                                                            <li><a class="dropdown-item" href="admin/view_admin.php">View Details</a></li>
+                                                            <li><a class="dropdown-item" href="admin_edit_admin.php">Edit Details</a></li>
+                                                            <li><a class="dropdown-item" href="admin_archive_admin.php">Delete Account</a></li>
+                                                        </ul>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            HTML;
+                                        ;
+                                    }
+                                } else {
+                                    echo '<tr><td colspan="6" class="text-center text-muted">No admin accounts found.</td></tr>';
+                                }
+                                ?>
                             </tbody>
                         </table>
                         <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span class="small">Showing 1 to 5 of 5 entries</span>
+                            <?php $total = $result->num_rows;
+                            echo "<span class='small'>Showing 1 to {$total} of {$total} entries</span>";
+                            ?>
                             <nav>
                                 <ul class="pagination pagination-sm m-0">
                                     <li class="page-item disabled"><a class="page-link">Previous</a></li>

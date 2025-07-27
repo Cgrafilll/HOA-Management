@@ -1,3 +1,26 @@
+<?php
+session_start();
+require '../rfid-api/db.php';
+
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: login/login.php");
+    exit;
+}
+
+$admin_id = $_SESSION['admin_id'];
+$sql = "SELECT * FROM admin_accounts WHERE admin_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $admin_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$admin = $result->fetch_assoc();
+
+if (!$admin) {
+    echo "Admin not found.";
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -77,7 +100,7 @@
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
             <div class="d-flex align-items-center gap-2">
-                <span class="text-secondary">Hello, Emma</span>
+                <span class="text-secondary">Hello, <?= htmlspecialchars($admin['first_name']) ?></span>
                 <img src="https://i.pravatar.cc/40" alt="Profile" class="rounded-circle" width="40" height="40">
             </div>
         </div>
@@ -86,7 +109,7 @@
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav flex-column gap-1">
-                <a href="admin_dashboard.html"
+                <a href="admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
@@ -100,8 +123,8 @@
                     </button>
                     <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="admin_accounts.html" class="nav-link px-2">Admin</a></li>
-                            <li><a href="household_accounts.html" class="nav-link px-2 actived">Household</a></li>
+                            <li><a href="admin_accounts.php" class="nav-link px-2">Admin</a></li>
+                            <li><a href="household_accounts.php" class="nav-link px-2 actived">Household</a></li>
                             <li><a href="#" class="nav-link px-2">Visitors</a></li>
                         </ul>
                     </div>
