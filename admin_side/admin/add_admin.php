@@ -19,6 +19,68 @@ if (!$admin) {
     echo "Admin not found.";
     exit;
 }
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // 1. Sanitize input
+    $first_name = $_POST['first_name'];
+    $middle_name = $_POST['middle_name'];
+    $last_name = $_POST['last_name'];
+    $dob = $_POST['dob'];
+    $age = $_POST['age'];
+    $sex = $_POST['sex'];
+    $cellphone = $_POST['cellphone'];
+    $landline = $_POST['landline'];
+    $email = $_POST['email'];
+    $street = $_POST['street'];
+    $street2 = $_POST['street2'];
+    $city = $_POST['city'];
+    $state = $_POST['state'];
+    $barangay = $_POST['barangay'];
+    $postal = $_POST['postal'];
+    $role = $_POST['role'];
+
+    // 2. Handle profile picture upload
+    $profile_pic = null;
+    if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
+        $file_tmp = $_FILES['profile_pic']['tmp_name'];
+        $profile_pic = file_get_contents($file_tmp); // Read image as binary data
+    }
+
+    // 3. Insert into database
+    $sql = "INSERT INTO admin_accounts (
+        first_name, middle_name, last_name, date_of_birth, age, sex,
+        cellphone_number, landline, email_address, street_address, street_address_2, city,
+        state_province, barangay, postal_zip_code, role, profile_picture
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->send_long_data(16, $profile_pic); // index 16 because it's the 17th parameter
+
+    $stmt->bind_param(
+        "ssssisssssssssssb", // last one is blob
+        $first_name,
+        $middle_name,
+        $last_name,
+        $dob,
+        $age,
+        $sex,
+        $cellphone,
+        $landline,
+        $email,
+        $street,
+        $street2,
+        $city,
+        $state,
+        $barangay,
+        $postal,
+        $role,
+        $profile_pic // binary data
+    );
+
+    if ($stmt->execute()) {
+        $success = true; // Flag to trigger modal in HTML
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -115,7 +177,7 @@ if (!$admin) {
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav flex-column gap-1">
-                <a href="admin_dashboard.php"
+                <a href="../admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
@@ -129,8 +191,8 @@ if (!$admin) {
                     </button>
                     <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="admin_accounts.php" class="nav-link px-2 actived">Admin</a></li>
-                            <li><a href="household_accounts.php" class="nav-link px-2">Household</a></li>
+                            <li><a href="../admin_accounts.php" class="nav-link px-2 actived">Admin</a></li>
+                            <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
                             <li><a href="#" class="nav-link px-2">Visitors</a></li>
                         </ul>
                     </div>
@@ -196,12 +258,13 @@ if (!$admin) {
                     <h5 class="mb-0 fw-bold">Admin Account Management</h5>
                 </div>
                 <div class="p-3">
-                    <form action="insert_admin.php" method="POST" enctype="multipart/form-data">
+                    <form action="add_admin.php" method="POST" enctype="multipart/form-data">
                         <div class="row mb-3">
                             <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
                             <div class="row">
                                 <div class="col-4 mb-3">
-                                    <div id="preview" class="d-flex align-items-center justify-content-center overflow-hidden rounded"
+                                    <div id="preview"
+                                        class="d-flex align-items-center justify-content-center overflow-hidden rounded"
                                         style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
                                         <i class="bi bi-person-fill" style="font-size: 48px;"></i>
                                     </div>
@@ -305,9 +368,39 @@ if (!$admin) {
                         <!-- Submit Buttons -->
                         <div class="d-flex justify-content-end gap-2">
                             <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="admin_accounts.php" class="btn btn-danger">Cancel</a>
+                            <a href="../admin_accounts.php" class="btn btn-danger">Cancel</a>
                         </div>
                     </form>
+                    <!-- Success Modal -->
+                    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-success text-white">
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
+                                    <p class="mb-2"><b>Success</b></p>
+                                    <p class="mb-3">User details have been successfully saved.</p>
+                                    <button type="button" class="btn btn-primary" id="doneButton">Done</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php if (isset($success) && $success): ?>
+                        <script>
+                            window.addEventListener('DOMContentLoaded', () => {
+                                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                                successModal.show();
+
+                                const redirect = () => window.location.href = '../admin_accounts.php';
+                                document.getElementById('doneButton').addEventListener('click', redirect);
+                                document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
+                            });
+                        </script>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>

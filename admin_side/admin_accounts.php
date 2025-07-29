@@ -194,7 +194,6 @@ if (!$admin) {
                         <span class="small">List of Admin Accounts</span>
                         <a href="admin/add_admin.php" class="btn btn-primary btn-sm">+ Create New</a>
                     </div>
-
                     <!-- Table -->
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
@@ -233,8 +232,8 @@ if (!$admin) {
                                                         <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
                                                         <ul class="dropdown-menu">
                                                             <li><a class="dropdown-item" href="admin/view_admin.php">View Details</a></li>
-                                                            <li><a class="dropdown-item" href="admin_edit_admin.php">Edit Details</a></li>
-                                                            <li><a class="dropdown-item" href="admin_archive_admin.php">Delete Account</a></li>
+                                                            <li><a class="dropdown-item" href="admin/edit_admin.php?id=<?= $admin_id ?>">Edit Details</a></li>
+                                                            <li><a class="dropdown-item" href="admin/archive_admin.php">Delete Account</a></li>
                                                         </ul>
                                                     </div>
                                                 </td>
