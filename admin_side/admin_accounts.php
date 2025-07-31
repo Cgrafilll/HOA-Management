@@ -2,15 +2,15 @@
 session_start();
 require '../rfid-api/db.php';
 
-if (!isset($_SESSION['admin_id'])) {
+if (!isset($_SESSION['email_address'])) {
     header("Location: login/login.php");
     exit;
 }
 
-$admin_id = $_SESSION['admin_id'];
-$sql = "SELECT * FROM admin_accounts WHERE admin_id = ?";
+$email_address = $_SESSION['email_address'];
+$sql = "SELECT * FROM admin_accounts WHERE email_address = ?";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $admin_id);
+$stmt->bind_param("s", $email_address);
 $stmt->execute();
 $result = $stmt->get_result();
 $admin = $result->fetch_assoc();
@@ -209,37 +209,35 @@ if (!$admin) {
                             </thead>
                             <tbody class="small align-middle">
                                 <?php
-                                $sql = "SELECT admin_id, first_name, middle_name, last_name, role, status, created_at FROM admin_accounts ORDER BY created_at DESC";
+                                $sql = "SELECT admin_id, first_name, middle_name, last_name, roles, status, created_at FROM admin_accounts ORDER BY created_at DESC";
                                 $result = $conn->query($sql);
 
                                 if ($result->num_rows > 0) {
                                     while ($row = $result->fetch_assoc()) {
                                         $admin_id = $row['admin_id'];
                                         $fullName = $row['first_name'] . ' ' . substr($row['middle_name'], 0, 1) . '. ' . $row['last_name'];
-                                        $role = htmlspecialchars($row['role']);
+                                        $role = htmlspecialchars($row['roles']);
                                         $status = $row['status'] === 'Active' ? 'text-success' : 'text-danger';
                                         $statusText = ucfirst($row['status']);
                                         $created = date('Y-m-d H:i', strtotime($row['created_at']));
-                                        echo <<<HTML
+                                        echo '
                                             <tr>
-                                                <td>{$admin_id}</td>
-                                                <td>{$created}</td>
-                                                <td>{$fullName}</td>
-                                                <td>{$role}</td>
-                                                <td class="{$status} text-center fw-bold">{$statusText}</td>
+                                                <td>' . $admin_id . '</td>
+                                                <td>' . $created . '</td>
+                                                <td>' . $fullName . '</td>
+                                                <td>' . $role . '</td>
+                                                <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
                                                 <td>
                                                     <div class="dropdown text-center">
                                                         <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
                                                         <ul class="dropdown-menu">
-                                                            <li><a class="dropdown-item" href="admin/view_admin.php">View Details</a></li>
-                                                            <li><a class="dropdown-item" href="admin/edit_admin.php?id=<?= $admin_id ?>">Edit Details</a></li>
-                                                            <li><a class="dropdown-item" href="admin/archive_admin.php">Delete Account</a></li>
+                                                            <li><a class="dropdown-item" href="admin/view_admin.php?id=' . $admin_id . '">View Details</a></li>
+                                                            <li><a class="dropdown-item" href="admin/edit_admin.php?id=' . $admin_id . '">Edit Details</a></li>
+                                                            <li><a class="dropdown-item" href="admin/archive_admin.php?id=' . $admin_id . '">Delete Account</a></li>
                                                         </ul>
                                                     </div>
                                                 </td>
-                                            </tr>
-                                            HTML;
-                                        ;
+                                            </tr>';
                                     }
                                 } else {
                                     echo '<tr><td colspan="6" class="text-center text-muted">No admin accounts found.</td></tr>';

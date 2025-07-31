@@ -2,15 +2,15 @@
 session_start();
 require '../../rfid-api/db.php';
 
-if (!isset($_SESSION['admin_id'])) {
+if (!isset($_SESSION['email_address'])) {
     header("Location: login/login.php");
     exit;
 }
 
-$admin_id = $_SESSION['admin_id'];
-$sql = "SELECT * FROM admin_accounts WHERE admin_id = ?";
+$email_address = $_SESSION['email_address'];
+$sql = "SELECT * FROM admin_accounts WHERE email_address = ?";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $admin_id);
+$stmt->bind_param("s", $email_address);
 $stmt->execute();
 $result = $stmt->get_result();
 $admin = $result->fetch_assoc();

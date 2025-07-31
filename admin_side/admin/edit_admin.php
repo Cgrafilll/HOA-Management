@@ -2,26 +2,34 @@
 session_start();
 require '../../rfid-api/db.php';
 
-if (!isset($_SESSION['admin_id'])) {
+if (!isset($_SESSION['email_address'])) {
     header("Location: login/login.php");
     exit;
 }
 
-$admin_id = $_SESSION['admin_id'];
-$sql = "SELECT * FROM admin_accounts WHERE admin_id = ?";
+$email_address = $_SESSION['email_address'];
+$sql = "SELECT * FROM admin_accounts WHERE email_address = ?";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $admin_id);
+$stmt->bind_param("s", $email_address);
 $stmt->execute();
 $result = $stmt->get_result();
-$admin = $result->fetch_assoc();
+$logged = $result->fetch_assoc();
 
-if (!$admin) {
+if (!$logged) {
     echo "Admin not found.";
     exit;
 }
 
+$edit_admin = $_GET['id'];
+$sql2 = "SELECT * FROM admin_accounts WHERE admin_id = ?";
+$stmt2 = $conn->prepare($sql2);
+$stmt2->bind_param("i", $edit_admin);
+$stmt2->execute();
+$result2 = $stmt2->get_result();
+$admin = $result2->fetch_assoc();
+
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 1. Sanitize input
     $first_name = $_POST['first_name'];
     $middle_name = $_POST['middle_name'];
     $last_name = $_POST['last_name'];
@@ -39,46 +47,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postal = $_POST['postal'];
     $role = $_POST['role'];
 
-    // 2. Handle profile picture upload
-    $profile_pic = null;
+    // Profile pic update logic
     if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
-        $file_tmp = $_FILES['profile_pic']['tmp_name'];
-        $profile_pic = file_get_contents($file_tmp); // Read image as binary data
+        $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
+        $sql = "UPDATE admin_accounts SET 
+            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+            cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+            city=?, state_province=?, barangay=?, postal_zip_code=?, roles=?, profile_picture=? 
+            WHERE admin_id=?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param(
+            "ssssissssssssssbsi",
+            $first_name,
+            $middle_name,
+            $last_name,
+            $dob,
+            $age,
+            $sex,
+            $cellphone,
+            $landline,
+            $email,
+            $street,
+            $street2,
+            $city,
+            $state,
+            $barangay,
+            $postal,
+            $role,
+            $profile_pic,
+            $edit_admin
+        );
+        $stmt->send_long_data(16, $profile_pic);
+    } else {
+        $sql = "UPDATE admin_accounts SET 
+            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+            cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+            city=?, state_province=?, barangay=?, postal_zip_code=?, roles=? WHERE admin_id=?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param(
+            "ssssissssssssssi",
+            $first_name,
+            $middle_name,
+            $last_name,
+            $dob,
+            $age,
+            $sex,
+            $cellphone,
+            $landline,
+            $email,
+            $street,
+            $street2,
+            $city,
+            $state,
+            $barangay,
+            $postal,
+            $role,
+            $edit_admin
+        );
     }
 
-    // 3. Insert into database
-    $sql = "INSERT INTO admin_accounts (
-        first_name, middle_name, last_name, date_of_birth, age, sex,
-        cellphone_number, landline, email_address, street_address, street_address_2, city,
-        state_province, barangay, postal_zip_code, role, profile_picture
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-    $stmt = $conn->prepare($sql);
-    $stmt->send_long_data(16, $profile_pic); // index 16 because it's the 17th parameter
-
-    $stmt->bind_param(
-        "ssssisssssssssssb", // last one is blob
-        $first_name,
-        $middle_name,
-        $last_name,
-        $dob,
-        $age,
-        $sex,
-        $cellphone,
-        $landline,
-        $email,
-        $street,
-        $street2,
-        $city,
-        $state,
-        $barangay,
-        $postal,
-        $role,
-        $profile_pic // binary data
-    );
-
     if ($stmt->execute()) {
-        $success = true; // Flag to trigger modal in HTML
+        $success = true;
     }
 }
 ?>
@@ -168,7 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
             <div class="d-flex align-items-center gap-2">
-                <span class="text-secondary">Hello, <?= htmlspecialchars($admin['first_name']) ?></span>
+                <span class="text-secondary">Hello, <?= htmlspecialchars($logged['first_name']) ?></span>
                 <img src="https://i.pravatar.cc/40" alt="Profile" class="rounded-circle" width="40" height="40">
             </div>
         </div>
@@ -266,8 +295,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <div id="preview"
                                         class="d-flex align-items-center justify-content-center overflow-hidden rounded"
                                         style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
-                                        <?php if ($previewImg): ?>
-                                            <img src="<?= $previewImg ?>"
+                                        <?php if (!empty($admin['profile_picture'])): ?>
+                                            <img src="data:image/jpeg;base64,<?= base64_encode($admin['profile_picture']) ?>"
                                                 style="width: 100px; height: 100px; object-fit: cover;">
                                         <?php else: ?>
                                             <i class="bi bi-person-fill" style="font-size: 48px;"></i>
@@ -286,30 +315,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="row">
                             <span class="fw-bold mb-3">Personal Information</span>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="first_name" class="form-control" required />
+                                <input type="text" name="first_name" class="form-control"
+                                    value="<?= htmlspecialchars($admin['first_name']) ?>" required />
                                 <label class="form-label mt-2">First Name</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="middle_name" class="form-control" required />
+                                <input type="text" name="middle_name" class="form-control"
+                                    value="<?= htmlspecialchars($admin['middle_name']) ?>" required />
                                 <label class="form-label mt-2">Middle Name</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="last_name" class="form-control" required />
+                                <input type="text" name="last_name" class="form-control"
+                                    value="<?= htmlspecialchars($admin['last_name']) ?>" required />
                                 <label class="form-label mt-2">Last Name</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="date" name="dob" class="form-control" required />
+                                <input type="date" name="dob" class="form-control"
+                                    value="<?= htmlspecialchars($admin['date_of_birth']) ?>" required />
                                 <label class="form-label mt-2">Date of Birth</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="number" name="age" class="form-control" readonly />
+                                <input type="text" name="age" class="form-control"
+                                    value="<?= htmlspecialchars($admin['age']) ?>" readonly />
                                 <label class="form-label mt-2">Age</label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <select name="sex" class="form-select" required>
                                     <option value="">Select</option>
-                                    <option>Male</option>
-                                    <option>Female</option>
+                                    <option value="Male" <?= $admin['sex'] == 'Male' ? 'selected' : '' ?>>Male</option>
+                                    <option value="Female" <?= $admin['sex'] == 'Female' ? 'selected' : '' ?>>Female
+                                    </option>
                                 </select>
                                 <label class="form-label mt-2">Sex</label>
                             </div>
@@ -318,43 +353,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="row">
                             <span class="fw-bold mb-3">Contact Information</span>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="cellphone" class="form-control" />
+                                <input type="text" name="cellphone" class="form-control"
+                                    value="<?= htmlspecialchars($admin['cellphone_number']) ?>" />
                                 <label class="form-label mt-2">Cellphone Number</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="landline" class="form-control" />
+                                <input type="text" name="landline" class="form-control"
+                                    value="<?= htmlspecialchars($admin['landline']) ?>" />
                                 <label class="form-label mt-2">Landline</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="email" name="email" class="form-control" required />
+                                <input type="email" name="email" class="form-control"
+                                    value="<?= htmlspecialchars($admin['email_address']) ?>" required />
                                 <label class="form-label mt-2">Email Address</label>
                             </div>
                         </div>
                         <!-- Address -->
                         <span class="fw-bold mb-3">Address</span>
                         <div class="my-3">
-                            <input type="text" name="street" class="form-control" required />
+                            <input type="text" name="street" class="form-control"
+                                value="<?= htmlspecialchars($admin['street_address']) ?>" required />
                             <label class="form-label mt-2">Street Address</label>
                         </div>
                         <div class="mb-3">
-                            <input type="text" name="street2" class="form-control" />
+                            <input type="text" name="street2" class="form-control"
+                                value="<?= htmlspecialchars($admin['street_address_2']) ?>" />
                             <label class="form-label mt-2">Street Address Line 2</label>
                         </div>
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="city" class="form-control" />
+                                <input type="text" name="city" class="form-control"
+                                    value="<?= htmlspecialchars($admin['city']) ?>" required />
                                 <label class="form-label mt-2">City</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="state" class="form-control" />
+                                <input type="text" name="state" class="form-control"
+                                    value="<?= htmlspecialchars($admin['state_province']) ?>" required />
                                 <label class="form-label mt-2">State/Province</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="barangay" class="form-control" />
+                                <input type="text" name="barangay" class="form-control"
+                                    value="<?= htmlspecialchars($admin['barangay']) ?>" required />
                                 <label class="form-label mt-2">Barangay</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="postal" class="form-control" />
+                                <input type="text" name="postal" class="form-control"
+                                    value="<?= htmlspecialchars($admin['postal_zip_code']) ?>" required />
                                 <label class="form-label mt-2">Postal/Zip Code</label>
                             </div>
                         </div>
@@ -364,16 +408,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2 fw-bold">Roles</label>
                                 <select name="role" class="form-select" required>
                                     <option value="">--Select Role--</option>
-                                    <option>Board Member</option>
-                                    <option>Clubhouse Staff</option>
-                                    <option>Security Staff</option>
+                                    <option value="Board Member" <?= $admin['roles'] == 'Board Member' ? 'selected' : '' ?>>
+                                        Board Member</option>
+                                    <option value="Clubhouse Staff" <?= $admin['roles'] == 'Clubhouse Staff' ? 'selected' : '' ?>>Clubhouse Staff</option>
+                                    <option value="Security Staff" <?= $admin['roles'] == 'Security Staff' ? 'selected' : '' ?>>Security Staff</option>
                                 </select>
                             </div>
                         </div>
                         <!-- Submit Buttons -->
                         <div class="d-flex justify-content-end gap-2">
                             <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="admin_accounts.php" class="btn btn-danger">Cancel</a>
+                            <a href="../admin_accounts.php" class="btn btn-danger">Cancel</a>
                         </div>
                     </form>
                     <!-- Success Modal -->
