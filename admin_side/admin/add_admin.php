@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sql = "INSERT INTO admin_accounts (
         first_name, middle_name, last_name, date_of_birth, age, sex,
         cellphone_number, landline, email_address, street_address, street_address_2, city,
-        state_province, barangay, postal_zip_code, role, profile_picture
+        state_province, barangay, postal_zip_code, roles, profile_picture
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
@@ -169,7 +169,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?= htmlspecialchars($admin['first_name']) ?></span>
-                <img src="https://i.pravatar.cc/40" alt="Profile" class="rounded-circle" width="40" height="40">
+                <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                    style="height: 40px; width: 40px; border: 2px dashed #ccc; color: #aaa;">
+                    <?php if (!empty($admin['profile_picture'])): ?>
+                        <img src="data:image/jpeg;base64,<?= base64_encode($admin['profile_picture']) ?>"
+                            style="width: 40px; height: 40px; object-fit: cover;">
+                    <?php else: ?>
+                        <i class="bi bi-person-fill" style="font-size: 24px;"></i>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </header>

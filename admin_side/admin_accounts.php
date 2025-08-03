@@ -101,7 +101,15 @@ if (!$admin) {
             <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?= htmlspecialchars($admin['first_name']) ?></span>
-                <img src="https://i.pravatar.cc/40" alt="Profile" class="rounded-circle" width="40" height="40">
+                <div id="preview" class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                    style="height: 40px; width: 40px; border: 2px dashed #ccc; color: #aaa;">
+                    <?php if (!empty($admin['profile_picture'])): ?>
+                        <img src="data:image/jpeg;base64,<?= base64_encode($admin['profile_picture']) ?>"
+                            style="width: 40px; height: 40px; object-fit: cover;">
+                    <?php else: ?>
+                        <i class="bi bi-person-fill" style="font-size: 24px;"></i>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </header>

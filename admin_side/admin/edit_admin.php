@@ -28,7 +28,6 @@ $stmt2->execute();
 $result2 = $stmt2->get_result();
 $admin = $result2->fetch_assoc();
 
-// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $first_name = $_POST['first_name'];
     $middle_name = $_POST['middle_name'];
@@ -56,8 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             city=?, state_province=?, barangay=?, postal_zip_code=?, roles=?, profile_picture=? 
             WHERE admin_id=?";
         $stmt = $conn->prepare($sql);
+        $stmt->send_long_data(16, $profile_pic);
         $stmt->bind_param(
-            "ssssissssssssssbsi",
+            "ssssissssssssssbi",
             $first_name,
             $middle_name,
             $last_name,
@@ -77,8 +77,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $profile_pic,
             $edit_admin
         );
-        $stmt->send_long_data(16, $profile_pic);
+        if ($stmt->execute()) {
+            $success = true;
+        }
     } else {
+        // No image uploaded
         $sql = "UPDATE admin_accounts SET 
             first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
             cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
@@ -104,10 +107,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $role,
             $edit_admin
         );
-    }
 
-    if ($stmt->execute()) {
-        $success = true;
+        if ($stmt->execute()) {
+            $success = true;
+        }
     }
 }
 ?>
@@ -198,7 +201,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?= htmlspecialchars($logged['first_name']) ?></span>
-                <img src="https://i.pravatar.cc/40" alt="Profile" class="rounded-circle" width="40" height="40">
+                <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                    style="height: 40px; width: 40px; border: 2px dashed #ccc; color: #aaa;">
+                    <?php if (!empty($admin['profile_picture'])): ?>
+                        <img src="data:image/jpeg;base64,<?= base64_encode($admin['profile_picture']) ?>"
+                            style="width: 40px; height: 40px; object-fit: cover;">
+                    <?php else: ?>
+                        <i class="bi bi-person-fill" style="font-size: 24px;"></i>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </header>
@@ -287,7 +298,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h5 class="mb-0 fw-bold">Edit Admin Profile</h5>
                 </div>
                 <div class="p-3">
-                    <form action="edit_admin.php" method="POST" enctype="multipart/form-data">
+                    <form action="edit_admin.php?id=<?= $edit_admin ?>" method="POST" enctype="multipart/form-data">
                         <div class="row mb-3">
                             <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
                             <div class="row">
