@@ -23,8 +23,8 @@ try {
         $username = $user['first_name'];
 
         // Only set $photo if profile_pic exists and is not null
-        if (!empty($user['profile_pic'])) {
-            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_pic']);
+        if (!empty($user['profile_picture'])) {
+            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']);
         } else {
             $photo = ''; // Explicitly empty if no image is saved
         }
@@ -38,23 +38,24 @@ try {
 
 // Initialize admin details
 $edit_admin = $_GET['id'] ?? null;
-$first_name = $middle_name = $last_name = $dob = $sex = $cellphone = $landline = $email = $password = $street = $street2 = $city = $state = $brgy = $postal = $roles = $status = '';
+$prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $landline = $email = $password = $street = $street2 = $city = $state = $brgy = $postal = $roles = $status = '';
 
-// Fetch the admin data based on the ID
 if ($edit_admin) {
     try {
-        $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE edit_admin = ?");
+        $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE admin_id = ?");
         $stmt->bind_param("s", $edit_admin);
         $stmt->execute();
         $result = $stmt->get_result();
         $admin = $result->fetch_assoc();
 
         if ($admin) {
+            $prof = !empty($admin['profile_picture']) ? 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']) : '';
             $first_name = $admin['first_name'];
             $middle_name = $admin['middle_name'];
             $last_name = $admin['last_name'];
             $dob = $admin['date_of_birth'];
             $sex = $admin['sex'];
+            $age = $admin['age'];
             $cellphone = $admin['cellphone_number'];
             $landline = $admin['landline'];
             $email = $admin['email_address'];
@@ -68,7 +69,7 @@ if ($edit_admin) {
             $roles = $admin['roles'];
             $status = $admin['status'];
         } else {
-            $error_message = "admin not found!";
+            $error_message = "Admin not found!";
         }
     } catch (Exception $e) {
         $error_message = "Error fetching admin: " . $e->getMessage();
@@ -77,15 +78,8 @@ if ($edit_admin) {
     $error_message = "Invalid admin ID.";
 }
 
-$edit_admin = $_GET['id'];
-$sql2 = "SELECT * FROM admin_accounts WHERE admin_id = ?";
-$stmt2 = $conn->prepare($sql2);
-$stmt2->bind_param("i", $edit_admin);
-$stmt2->execute();
-$result2 = $stmt2->get_result();
-$admin = $result2->fetch_assoc();
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // 1. Sanitize and collect input
     $first_name = $_POST['first_name'];
     $middle_name = $_POST['middle_name'];
     $last_name = $_POST['last_name'];
@@ -103,18 +97,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postal = $_POST['postal'];
     $role = $_POST['role'];
 
-    // Profile pic update logic
-    if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
+    // 2. Check if profile picture was uploaded
+    $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
+
+    if ($has_photo) {
         $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
+
         $sql = "UPDATE admin_accounts SET 
             first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
             cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-            city=?, state_province=?, barangay=?, postal_zip_code=?, roles=?, profile_picture=? 
+            city=?, state_province=?, barangay=?, postal_zip_code=?, roles=?, profile_picture=?
             WHERE admin_id=?";
+
         $stmt = $conn->prepare($sql);
-        $stmt->send_long_data(16, $profile_pic);
+
         $stmt->bind_param(
-            "ssssissssssssssbi",
+            "ssssisssssssssssbs", // 'b' = blob, 'i' = integer (admin_id)
             $first_name,
             $middle_name,
             $last_name,
@@ -131,45 +129,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $barangay,
             $postal,
             $role,
-            $profile_pic,
-            $edit_admin
-        );
-        if ($stmt->execute()) {
-            $success = true;
-        }
-    } else {
-        // No image uploaded
-        $sql = "UPDATE admin_accounts SET 
-            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-            cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-            city=?, state_province=?, barangay=?, postal_zip_code=?, roles=? WHERE admin_id=?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param(
-            "ssssissssssssssi",
-            $first_name,
-            $middle_name,
-            $last_name,
-            $dob,
-            $age,
-            $sex,
-            $cellphone,
-            $landline,
-            $email,
-            $street,
-            $street2,
-            $city,
-            $state,
-            $barangay,
-            $postal,
-            $role,
+            $null_blob, // temporary bind, will overwrite with send_long_data
             $edit_admin
         );
 
-        if ($stmt->execute()) {
-            $success = true;
-        }
+        $stmt->send_long_data(16, $profile_pic); // 17th param (index 16)
+    } else {
+        // No photo uploaded, don't update profile_pic
+        $sql = "UPDATE admin_accounts SET 
+            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+            cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+            city=?, state_province=?, barangay=?, postal_zip_code=?, roles=?
+            WHERE admin_id=?";
+
+        $stmt = $conn->prepare($sql);
+
+        $stmt->bind_param(
+            "ssssisssssssssssi", // no 'b' here
+            $first_name,
+            $middle_name,
+            $last_name,
+            $dob,
+            $age,
+            $sex,
+            $cellphone,
+            $landline,
+            $email,
+            $street,
+            $street2,
+            $city,
+            $state,
+            $barangay,
+            $postal,
+            $role,
+            $edit_admin
+        );
+    }
+
+    // 3. Execute and check success
+    if ($stmt->execute()) {
+        $success = true;
+    } else {
+        $error = "Update failed: " . $stmt->error;
     }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -363,8 +367,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <div id="preview"
                                         class="d-flex align-items-center justify-content-center overflow-hidden rounded"
                                         style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
-                                        <?php if (!empty($admin['profile_picture'])): ?>
-                                            <img src="data:image/jpeg;base64,<?= base64_encode($admin['profile_picture']) ?>"
+                                        <?php if (!empty($prof)): ?>
+                                            <img src="<?php echo htmlspecialchars($prof) ?>"
                                                 style="width: 100px; height: 100px; object-fit: cover;">
                                         <?php else: ?>
                                             <i class="bi bi-person-fill" style="font-size: 48px;"></i>
@@ -384,35 +388,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <span class="fw-bold mb-3">Personal Information</span>
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="first_name" class="form-control"
-                                    value="<?= htmlspecialchars($admin['first_name']) ?>" required />
+                                    value="<?php echo htmlspecialchars($first_name) ?>" required />
                                 <label class="form-label mt-2">First Name</label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="middle_name" class="form-control"
-                                    value="<?= htmlspecialchars($admin['middle_name']) ?>" required />
+                                    value="<?php echo htmlspecialchars($middle_name) ?>" required />
                                 <label class="form-label mt-2">Middle Name</label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="last_name" class="form-control"
-                                    value="<?= htmlspecialchars($admin['last_name']) ?>" required />
+                                    value="<?php echo htmlspecialchars($last_name) ?>" required />
                                 <label class="form-label mt-2">Last Name</label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <input type="date" name="dob" class="form-control"
-                                    value="<?= htmlspecialchars($admin['date_of_birth']) ?>" required />
+                                    value="<?php echo htmlspecialchars($dob) ?>" required />
                                 <label class="form-label mt-2">Date of Birth</label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="age" class="form-control"
-                                    value="<?= htmlspecialchars($admin['age']) ?>" readonly />
+                                    value="<?php echo htmlspecialchars($age) ?>" readonly />
                                 <label class="form-label mt-2">Age</label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <select name="sex" class="form-select" required>
                                     <option value="">Select</option>
-                                    <option value="Male" <?= $admin['sex'] == 'Male' ? 'selected' : '' ?>>Male</option>
-                                    <option value="Female" <?= $admin['sex'] == 'Female' ? 'selected' : '' ?>>Female
-                                    </option>
+                                    <option value="Male" <?= ($sex == 'Male') ? 'selected' : '' ?>>Male</option>
+                                    <option value="Female" <?= ($sex == 'Female') ? 'selected' : '' ?>>Female</option>
                                 </select>
                                 <label class="form-label mt-2">Sex</label>
                             </div>
@@ -422,17 +425,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <span class="fw-bold mb-3">Contact Information</span>
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="cellphone" class="form-control"
-                                    value="<?= htmlspecialchars($admin['cellphone_number']) ?>" />
+                                    value="<?php echo htmlspecialchars($cellphone) ?>" />
                                 <label class="form-label mt-2">Cellphone Number</label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="landline" class="form-control"
-                                    value="<?= htmlspecialchars($admin['landline']) ?>" />
+                                    value="<?php echo htmlspecialchars($landline) ?>" />
                                 <label class="form-label mt-2">Landline</label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <input type="email" name="email" class="form-control"
-                                    value="<?= htmlspecialchars($admin['email_address']) ?>" required />
+                                    value="<?php echo htmlspecialchars($email) ?>" required />
                                 <label class="form-label mt-2">Email Address</label>
                             </div>
                         </div>
@@ -440,33 +443,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <span class="fw-bold mb-3">Address</span>
                         <div class="my-3">
                             <input type="text" name="street" class="form-control"
-                                value="<?= htmlspecialchars($admin['street_address']) ?>" required />
+                                value="<?php echo htmlspecialchars($street) ?>" required />
                             <label class="form-label mt-2">Street Address</label>
                         </div>
                         <div class="mb-3">
                             <input type="text" name="street2" class="form-control"
-                                value="<?= htmlspecialchars($admin['street_address_2']) ?>" />
+                                value="<?php echo htmlspecialchars($street2) ?>" />
                             <label class="form-label mt-2">Street Address Line 2</label>
                         </div>
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="city" class="form-control"
-                                    value="<?= htmlspecialchars($admin['city']) ?>" required />
+                                    value="<?php echo htmlspecialchars($city) ?>" required />
                                 <label class="form-label mt-2">City</label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="state" class="form-control"
-                                    value="<?= htmlspecialchars($admin['state_province']) ?>" required />
+                                    value="<?php echo htmlspecialchars($state) ?>" required />
                                 <label class="form-label mt-2">State/Province</label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="barangay" class="form-control"
-                                    value="<?= htmlspecialchars($admin['barangay']) ?>" required />
+                                    value="<?php echo htmlspecialchars($brgy) ?>" required />
                                 <label class="form-label mt-2">Barangay</label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="postal" class="form-control"
-                                    value="<?= htmlspecialchars($admin['postal_zip_code']) ?>" required />
+                                    value="<?php echo htmlspecialchars($postal) ?>" required />
                                 <label class="form-label mt-2">Postal/Zip Code</label>
                             </div>
                         </div>
@@ -476,10 +479,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2 fw-bold">Roles</label>
                                 <select name="role" class="form-select" required>
                                     <option value="">--Select Role--</option>
-                                    <option value="Board Member" <?= $admin['roles'] == 'Board Member' ? 'selected' : '' ?>>
-                                        Board Member</option>
-                                    <option value="Clubhouse Staff" <?= $admin['roles'] == 'Clubhouse Staff' ? 'selected' : '' ?>>Clubhouse Staff</option>
-                                    <option value="Security Staff" <?= $admin['roles'] == 'Security Staff' ? 'selected' : '' ?>>Security Staff</option>
+                                    <option value="Board Member" <?= ($roles == 'Board Member') ? 'selected' : '' ?>>Board
+                                        Member</option>
+                                    <option value="Clubhouse Staff" <?= ($roles == 'Clubhouse Staff') ? 'selected' : '' ?>>
+                                        Clubhouse Staff</option>
+                                    <option value="Security Staff" <?= ($roles == 'Security Staff') ? 'selected' : '' ?>>
+                                        Security Staff</option>
                                 </select>
                             </div>
                         </div>
