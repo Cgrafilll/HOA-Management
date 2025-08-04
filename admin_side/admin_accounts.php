@@ -7,17 +7,33 @@ if (!isset($_SESSION['email_address'])) {
     exit;
 }
 
+// Initialize user details
 $email_address = $_SESSION['email_address'];
-$sql = "SELECT * FROM admin_accounts WHERE email_address = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $email_address);
-$stmt->execute();
-$result = $stmt->get_result();
-$admin = $result->fetch_assoc();
+$username = $photo = '';// Initialize user details
 
-if (!$admin) {
-    echo "Admin not found.";
-    exit;
+// Fetch user details including profile photo
+try {
+    $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE email_address = ?");
+    $stmt->bind_param("s", $email_address);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+
+    if ($user) {
+        $username = $user['first_name'];
+
+        // Only set $photo if profile_pic exists and is not null
+        if (!empty($user['profile_pic'])) {
+            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_pic']);
+        } else {
+            $photo = ''; // Explicitly empty if no image is saved
+        }
+    } else {
+        $error_message = "Failed to fetch user details.";
+    }
+
+} catch (Exception $e) {
+    $error_message = "Error fetching user details: " . $e->getMessage();
 }
 ?>
 
@@ -100,11 +116,11 @@ if (!$admin) {
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
             <div class="d-flex align-items-center gap-2">
-                <span class="text-secondary">Hello, <?= htmlspecialchars($admin['first_name']) ?></span>
-                <div id="preview" class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
+                <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                     style="height: 40px; width: 40px; border: 2px dashed #ccc; color: #aaa;">
-                    <?php if (!empty($admin['profile_picture'])): ?>
-                        <img src="data:image/jpeg;base64,<?= base64_encode($admin['profile_picture']) ?>"
+                    <?php if (!empty($photo)): ?>
+                        <img src="<?php echo htmlspecialchars($photo); ?>"
                             style="width: 40px; height: 40px; object-fit: cover;">
                     <?php else: ?>
                         <i class="bi bi-person-fill" style="font-size: 24px;"></i>

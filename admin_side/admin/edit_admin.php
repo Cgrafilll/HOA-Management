@@ -3,21 +3,78 @@ session_start();
 require '../../rfid-api/db.php';
 
 if (!isset($_SESSION['email_address'])) {
-    header("Location: login/login.php");
+    header("Location: ../login/login.php");
     exit;
 }
 
+// Initialize user details
 $email_address = $_SESSION['email_address'];
-$sql = "SELECT * FROM admin_accounts WHERE email_address = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $email_address);
-$stmt->execute();
-$result = $stmt->get_result();
-$logged = $result->fetch_assoc();
+$username = $photo = '';// Initialize user details
 
-if (!$logged) {
-    echo "Admin not found.";
-    exit;
+// Fetch user details including profile photo
+try {
+    $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE email_address = ?");
+    $stmt->bind_param("s", $email_address);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+
+    if ($user) {
+        $username = $user['first_name'];
+
+        // Only set $photo if profile_pic exists and is not null
+        if (!empty($user['profile_pic'])) {
+            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_pic']);
+        } else {
+            $photo = ''; // Explicitly empty if no image is saved
+        }
+    } else {
+        $error_message = "Failed to fetch user details.";
+    }
+
+} catch (Exception $e) {
+    $error_message = "Error fetching user details: " . $e->getMessage();
+}
+
+// Initialize admin details
+$edit_admin = $_GET['id'] ?? null;
+$first_name = $middle_name = $last_name = $dob = $sex = $cellphone = $landline = $email = $password = $street = $street2 = $city = $state = $brgy = $postal = $roles = $status = '';
+
+// Fetch the admin data based on the ID
+if ($edit_admin) {
+    try {
+        $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE edit_admin = ?");
+        $stmt->bind_param("s", $edit_admin);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $admin = $result->fetch_assoc();
+
+        if ($admin) {
+            $first_name = $admin['first_name'];
+            $middle_name = $admin['middle_name'];
+            $last_name = $admin['last_name'];
+            $dob = $admin['date_of_birth'];
+            $sex = $admin['sex'];
+            $cellphone = $admin['cellphone_number'];
+            $landline = $admin['landline'];
+            $email = $admin['email_address'];
+            $password = $admin['password'];
+            $street = $admin['street_address'];
+            $street2 = $admin['street_address_2'];
+            $city = $admin['city'];
+            $state = $admin['state_province'];
+            $brgy = $admin['barangay'];
+            $postal = $admin['postal_zip_code'];
+            $roles = $admin['roles'];
+            $status = $admin['status'];
+        } else {
+            $error_message = "admin not found!";
+        }
+    } catch (Exception $e) {
+        $error_message = "Error fetching admin: " . $e->getMessage();
+    }
+} else {
+    $error_message = "Invalid admin ID.";
 }
 
 $edit_admin = $_GET['id'];
@@ -200,11 +257,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
             <div class="d-flex align-items-center gap-2">
-                <span class="text-secondary">Hello, <?= htmlspecialchars($logged['first_name']) ?></span>
+                <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
                 <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                     style="height: 40px; width: 40px; border: 2px dashed #ccc; color: #aaa;">
-                    <?php if (!empty($admin['profile_picture'])): ?>
-                        <img src="data:image/jpeg;base64,<?= base64_encode($admin['profile_picture']) ?>"
+                    <?php if (!empty($photo)): ?>
+                        <img src="<?php echo htmlspecialchars($photo); ?>"
                             style="width: 40px; height: 40px; object-fit: cover;">
                     <?php else: ?>
                         <i class="bi bi-person-fill" style="font-size: 24px;"></i>
