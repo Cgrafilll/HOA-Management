@@ -23,8 +23,8 @@ try {
         $username = $user['first_name'];
 
         // Only set $photo if profile_pic exists and is not null
-        if (!empty($user['profile_pic'])) {
-            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_pic']);
+        if (!empty($user['profile_picture'])) {
+            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']);
         } else {
             $photo = ''; // Explicitly empty if no image is saved
         }
@@ -118,12 +118,12 @@ try {
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
                 <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
-                    style="height: 40px; width: 40px; border: 2px dashed #ccc; color: #aaa;">
+                    style="height: 40px; width: 40px; color: #aaa;">
                     <?php if (!empty($photo)): ?>
                         <img src="<?php echo htmlspecialchars($photo); ?>"
                             style="width: 40px; height: 40px; object-fit: cover;">
                     <?php else: ?>
-                        <i class="bi bi-person-fill" style="font-size: 24px;"></i>
+                        <i class="bi bi-person-circle" style="font-size: 32px;"></i>
                     <?php endif; ?>
                 </div>
             </div>

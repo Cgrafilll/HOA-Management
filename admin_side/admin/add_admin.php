@@ -186,12 +186,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
                 <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
-                    style="height: 40px; width: 40px; border: 2px dashed #ccc; color: #aaa;">
+                    style="height: 40px; width: 40px; color: #aaa;">
                     <?php if (!empty($photo)): ?>
                         <img src="<?php echo htmlspecialchars($photo); ?>"
                             style="width: 40px; height: 40px; object-fit: cover;">
                     <?php else: ?>
-                        <i class="bi bi-person-fill" style="font-size: 24px;"></i>
+                        <i class="bi bi-person-circle" style="font-size: 32px;"></i>
                     <?php endif; ?>
                 </div>
             </div>
@@ -281,6 +281,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Admin Account Management</h5>
                 </div>
+                <div class="p-3 d-flex justify-content-between align-items-center">
+                    <span class="small mb-0">User Details</span>
+                    <a href="../admin_accounts.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                        <i class="bi bi-arrow-left-short me-1"></i>Back
+                    </a>
+                </div>
+                <hr class="my-0">
                 <div class="p-3">
                     <form action="add_admin.php" method="POST" enctype="multipart/form-data">
                         <div class="row mb-3">
@@ -361,19 +368,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="city" class="form-control" />
+                                <input type="text" name="city" class="form-control" required />
                                 <label class="form-label mt-2">City</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="state" class="form-control" />
+                                <input type="text" name="state" class="form-control" required />
                                 <label class="form-label mt-2">State/Province</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="barangay" class="form-control" />
+                                <input type="text" name="barangay" class="form-control" required />
                                 <label class="form-label mt-2">Barangay</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="postal" class="form-control" />
+                                <input type="text" name="postal" class="form-control" required />
                                 <label class="form-label mt-2">Postal/Zip Code</label>
                             </div>
                         </div>
