@@ -259,175 +259,61 @@ if ($edit_admin) {
         <!-- Main Content -->
         <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-3">
+                <!-- Header -->
                 <div class="bg-success text-white rounded-top p-3">
-                    <h5 class="mb-0 fw-bold">Edit Admin Profile</h5>
+                    <h5 class="mb-0 fw-bold">Admin Account Management</h5>
                 </div>
-                <div class="p-3">
-                    <div class="d-flex flex-column justify-content-center align-items-center">
-                        <div class="row mb-3">
-                            <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
-                            <div class="row">
-                                <div class="col-4 mb-3">
-                                    <div id="preview"
-                                        class="d-flex align-items-center justify-content-center overflow-hidden rounded"
-                                        style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
-                                        <?php if (!empty($prof)): ?>
-                                            <img src="<?php echo htmlspecialchars($prof) ?>"
-                                                style="width: 100px; height: 100px; object-fit: cover;">
-                                        <?php else: ?>
-                                            <i class="bi bi-person-fill" style="font-size: 48px;"></i>
-                                        <?php endif; ?>
-                                    </div>
+                <!-- Subheader + Back -->
+                <div class="p-3 d-flex justify-content-between align-items-center">
+                    <span class="small">User Details</span>
+                    <a href="../admin_accounts.php" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i>Back
+                    </a>
+                </div>
+                <hr class="my-0">
+                <!-- Content -->
+                <div class="p-4 text-center">
+                    <!-- Profile Picture + Role -->
+                    <div class="mb-4">
+                        <div class="mx-auto rounded overflow-hidden" style="width: 200px; height: 200px;">
+                            <?php if (!empty($prof)): ?>
+                                <img src="<?php echo htmlspecialchars($prof) ?>" class="img-fluid rounded"
+                                    style="object-fit: cover; width: 100%; height: 100%;">
+                            <?php else: ?>
+                                <div class="d-flex justify-content-center align-items-center border border-2 rounded"
+                                    style="width: 200px; height: 200px;">
+                                    <i class="bi bi-person-fill" style="font-size: 64px; color: #ccc;"></i>
                                 </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-4">
-                                    <input type="file" class="form-control" name="profile_pic" id="profile_pic"
-                                        accept="image/*" />
+                            <?php endif; ?>
+                        </div>
+                        <div class="mt-2 fw-semibold"><?php echo htmlspecialchars($roles); ?></div>
+                    </div>
+                    <!-- Centered Grid for Labels + Values -->
+                    <div class="d-flex justify-content-center">
+                        <div class="w-100" style="max-width: 600px;">
+                            <?php
+                            $details = [
+                                'Full Name' => htmlspecialchars("$first_name $middle_name $last_name"),
+                                'Date of Birth' => date("F j, Y", strtotime($dob)),
+                                'Age' => htmlspecialchars($age),
+                                'Sex' => htmlspecialchars($sex),
+                                'Cellphone Number' => !empty($cellphone) ? htmlspecialchars($cellphone) : 'N/A',
+                                'Landline' => !empty($landline) ? htmlspecialchars($landline) : 'N/A',
+                                'Email' => htmlspecialchars($email),
+                                'Address' => htmlspecialchars(
+                                    $street .
+                                    (!empty($street2) ? ', ' . $street2 : '') .
+                                    ', ' . $brgy . ', ' . $city . ', ' . $state . ', ' . $postal
+                                )
+                            ];
+                            foreach ($details as $label => $value): ?>
+                                <div class="row mb-2">
+                                    <div class="col-4 text-start fw-bold"><?php echo $label ?>:</div>
+                                    <div class="col-8 text-start"><?php echo $value ?></div>
                                 </div>
-                            </div>
-                        </div>
-                        <!-- Personal Info -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Personal Information</span>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="first_name" class="form-control"
-                                    value="<?php echo htmlspecialchars($first_name) ?>" required />
-                                <label class="form-label mt-2">First Name</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="middle_name" class="form-control"
-                                    value="<?php echo htmlspecialchars($middle_name) ?>" required />
-                                <label class="form-label mt-2">Middle Name</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="last_name" class="form-control"
-                                    value="<?php echo htmlspecialchars($last_name) ?>" required />
-                                <label class="form-label mt-2">Last Name</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="date" name="dob" class="form-control"
-                                    value="<?php echo htmlspecialchars($dob) ?>" required />
-                                <label class="form-label mt-2">Date of Birth</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="age" class="form-control"
-                                    value="<?php echo htmlspecialchars($age) ?>" readonly />
-                                <label class="form-label mt-2">Age</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <select name="sex" class="form-select" required>
-                                    <option value="">Select</option>
-                                    <option value="Male" <?= ($sex == 'Male') ? 'selected' : '' ?>>Male</option>
-                                    <option value="Female" <?= ($sex == 'Female') ? 'selected' : '' ?>>Female</option>
-                                </select>
-                                <label class="form-label mt-2">Sex</label>
-                            </div>
-                        </div>
-                        <!-- Contact -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Contact Information</span>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="cellphone" class="form-control"
-                                    value="<?php echo htmlspecialchars($cellphone) ?>" />
-                                <label class="form-label mt-2">Cellphone Number</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="landline" class="form-control"
-                                    value="<?php echo htmlspecialchars($landline) ?>" />
-                                <label class="form-label mt-2">Landline</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="email" name="email" class="form-control"
-                                    value="<?php echo htmlspecialchars($email) ?>" required />
-                                <label class="form-label mt-2">Email Address</label>
-                            </div>
-                        </div>
-                        <!-- Address -->
-                        <span class="fw-bold mb-3">Address</span>
-                        <div class="my-3">
-                            <input type="text" name="street" class="form-control"
-                                value="<?php echo htmlspecialchars($street) ?>" required />
-                            <label class="form-label mt-2">Street Address</label>
-                        </div>
-                        <div class="mb-3">
-                            <input type="text" name="street2" class="form-control"
-                                value="<?php echo htmlspecialchars($street2) ?>" />
-                            <label class="form-label mt-2">Street Address Line 2</label>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="city" class="form-control"
-                                    value="<?php echo htmlspecialchars($city) ?>" required />
-                                <label class="form-label mt-2">City</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="state" class="form-control"
-                                    value="<?php echo htmlspecialchars($state) ?>" required />
-                                <label class="form-label mt-2">State/Province</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="barangay" class="form-control"
-                                    value="<?php echo htmlspecialchars($brgy) ?>" required />
-                                <label class="form-label mt-2">Barangay</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="postal" class="form-control"
-                                    value="<?php echo htmlspecialchars($postal) ?>" required />
-                                <label class="form-label mt-2">Postal/Zip Code</label>
-                            </div>
-                        </div>
-                        <!-- Roles -->
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold">Roles</label>
-                                <select name="role" class="form-select" required>
-                                    <option value="">--Select Role--</option>
-                                    <option value="Board Member" <?= ($roles == 'Board Member') ? 'selected' : '' ?>>Board
-                                        Member</option>
-                                    <option value="Clubhouse Staff" <?= ($roles == 'Clubhouse Staff') ? 'selected' : '' ?>>
-                                        Clubhouse Staff</option>
-                                    <option value="Security Staff" <?= ($roles == 'Security Staff') ? 'selected' : '' ?>>
-                                        Security Staff</option>
-                                </select>
-                            </div>
-                        </div>
-                        <!-- Submit Buttons -->
-                        <div class="d-flex justify-content-end gap-2">
-                            <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="../admin_accounts.php" class="btn btn-danger">Cancel</a>
-                        </div>
-                    </form>
-                    <!-- Success Modal -->
-                    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel"
-                        aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content text-center">
-                                <div class="modal-header bg-success text-white">
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                                        aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
-                                    <p class="mb-2"><b>Success</b></p>
-                                    <p class="mb-3">User details have been successfully saved.</p>
-                                    <button type="button" class="btn btn-primary" id="doneButton">Done</button>
-                                </div>
-                            </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
-                    <?php if (isset($success) && $success): ?>
-                        <script>
-                            window.addEventListener('DOMContentLoaded', () => {
-                                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                                successModal.show();
-
-                                const redirect = () => window.location.href = '../admin_accounts.php';
-                                document.getElementById('doneButton').addEventListener('click', redirect);
-                                document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
-                            });
-                        </script>
-                    <?php endif; ?>
                 </div>
             </div>
         </main>

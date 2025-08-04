@@ -359,7 +359,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <h5 class="mb-0 fw-bold">Admin Account Management</h5>
                 </div>
                 <div class="p-3 d-flex justify-content-between align-items-center">
-                    <span class="small mb-0">User Details</span>
+                    <span class="small mb-0">Edit User Details</span>
                     <a href="../admin_accounts.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                         <i class="bi bi-arrow-left-short me-1"></i>Back
                     </a>
