@@ -1,9 +1,9 @@
 <?php
 session_start();
-require '../rfid-api/db.php';
+require '../../rfid-api/db.php';
 
 if (!isset($_SESSION['email_address'])) {
-    header("Location: login/login.php");
+    header("Location: ../login/login.php");
     exit;
 }
 
@@ -35,6 +35,49 @@ try {
 } catch (Exception $e) {
     $error_message = "Error fetching user details: " . $e->getMessage();
 }
+
+// Initialize admin details
+$edit_household = $_GET['id'] ?? null;
+$prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $landline = $email = $password = $street = $street2 = $city = $state = $brgy = $postal = $members = $status = '';
+
+if ($edit_household) {
+    try {
+        $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE household_id = ?");
+        $stmt->bind_param("s", $edit_household);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $admin = $result->fetch_assoc();
+
+        if ($admin) {
+            $prof = !empty($admin['profile_picture']) ? 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']) : '';
+            $first_name = $admin['first_name'];
+            $middle_name = $admin['middle_name'];
+            $last_name = $admin['last_name'];
+            $dob = $admin['date_of_birth'];
+            $sex = $admin['sex'];
+            $age = $admin['age'];
+            $cellphone = $admin['cellphone_number'];
+            $landline = $admin['landline'];
+            $email = $admin['email_address'];
+            $password = $admin['password'];
+            $street = $admin['street_address'];
+            $street2 = $admin['street_address_2'];
+            $city = $admin['city'];
+            $state = $admin['state_province'];
+            $brgy = $admin['barangay'];
+            $postal = $admin['postal_zip_code'];
+            $members = $admin['members'];
+            $status = $admin['status'];
+        } else {
+            $error_message = "Household Account not found!";
+        }
+    } catch (Exception $e) {
+        $error_message = "Error fetching admin: " . $e->getMessage();
+    }
+} else {
+    $error_message = "Invalid admin ID.";
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -104,6 +147,12 @@ try {
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
         }
+
+        #preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
     </style>
 </head>
 
@@ -111,7 +160,7 @@ try {
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
         <div class="me-4" style="width: 250px;">
-            <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
+            <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
@@ -133,7 +182,7 @@ try {
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav flex-column gap-1">
-                <a href="admin_dashboard.php"
+                <a href="../admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
@@ -147,8 +196,8 @@ try {
                     </button>
                     <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="admin_accounts.php" class="nav-link px-2">Admin</a></li>
-                            <li><a href="household_accounts.php" class="nav-link px-2 actived">Household</a></li>
+                            <li><a href="../admin_accounts.php" class="nav-link px-2">Admin</a></li>
+                            <li><a href="../household_accounts.php" class="nav-link px-2 actived">Household</a></li>
                             <li><a href="#" class="nav-link px-2">Visitors</a></li>
                         </ul>
                     </div>
@@ -210,77 +259,60 @@ try {
         <!-- Main Content -->
         <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-3">
+                <!-- Header -->
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Household Account Management</h5>
                 </div>
-                <div class="p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="small">List of Household Accounts</span>
-                        <a href="household/add_household.php" class="btn btn-primary btn-sm">+ Create New</a>
-                    </div>
+                <!-- Subheader + Back -->
+                <div class="p-3 d-flex justify-content-between align-items-center">
+                    <span class="small">User Details</span>
+                    <a href="../household_accounts.php" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i>Back
+                    </a>
                 </div>
-                <!-- Table -->
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover">
-                        <thead class="bg-success text-white small">
-                            <tr>
-                                <th>#</th>
-                                <th>Date Created</th>
-                                <th>Full Name</th>
-                                <th>User Type</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="small align-middle">
+                <hr class="my-0">
+                <!-- Content -->
+                <div class="p-4 text-center">
+                    <!-- Profile Picture + Role -->
+                    <div class="mb-4">
+                        <div class="mx-auto rounded overflow-hidden" style="width: 200px; height: 200px;">
+                            <?php if (!empty($prof)): ?>
+                                <img src="<?php echo htmlspecialchars($prof) ?>" class="img-fluid rounded"
+                                    style="object-fit: cover; width: 100%; height: 100%;">
+                            <?php else: ?>
+                                <div class="d-flex justify-content-center align-items-center border border-2 rounded"
+                                    style="width: 200px; height: 200px;">
+                                    <i class="bi bi-person-fill" style="font-size: 64px; color: #ccc;"></i>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="mt-2 fw-semibold">Resident</div>
+                    </div>
+                    <!-- Centered Grid for Labels + Values -->
+                    <div class="d-flex justify-content-center">
+                        <div class="w-100" style="max-width: 600px;">
                             <?php
-                            $sql = "SELECT household_id, first_name, middle_name, last_name, members, status, created_at FROM household_accounts ORDER BY created_at DESC";
-                            $result = $conn->query($sql);
-
-                            if ($result->num_rows > 0) {
-                                while ($row = $result->fetch_assoc()) {
-                                    $household_id = $row['household_id'];
-                                    $fullName = $row['first_name'] . ' ' . substr($row['middle_name'], 0, 1) . '. ' . $row['last_name'];
-                                    $userType = "Resident";
-                                    $status = $row['status'] === 'Active' ? 'text-success' : 'text-danger';
-                                    $statusText = ucfirst($row['status']);
-                                    $created = date('Y-m-d H:i', strtotime($row['created_at']));
-                                    echo '
-                                            <tr>
-                                                <td>' . $household_id . '</td>
-                                                <td>' . $created . '</td>
-                                                <td>' . $fullName . '</td>
-                                                <td>' . $userType . '</td>
-                                                <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
-                                                <td>
-                                                    <div class="dropdown text-center">
-                                                        <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
-                                                        <ul class="dropdown-menu">
-                                                            <li><a class="dropdown-item" href="household/view_household.php?id=' . $household_id . '">View Details</a></li>
-                                                            <li><a class="dropdown-item" href="household/edit_household.php?id=' . $household_id . '">Edit Details</a></li>
-                                                            <li><a class="dropdown-item" href="household/archive_household.php?id=' . $household_id . '">Delete Account</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </td>
-                                            </tr>';
-                                }
-                            } else {
-                                echo '<tr><td colspan="6" class="text-center text-muted">No admin accounts found.</td></tr>';
-                            }
-                            ?>
-                        </tbody>
-                    </table>
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                        <?php $total = $result->num_rows;
-                        echo "<span class='small'>Showing 1 to {$total} of {$total} entries</span>";
-                        ?>
-                        <nav>
-                            <ul class="pagination pagination-sm m-0">
-                                <li class="page-item disabled"><a class="page-link">Previous</a></li>
-                                <li class="page-item active"><a class="page-link">1</a></li>
-                                <li class="page-item"><a class="page-link">Next</a></li>
-                            </ul>
-                        </nav>
+                            $details = [
+                                'Full Name' => htmlspecialchars("$first_name $middle_name $last_name"),
+                                'Date of Birth' => date("F j, Y", strtotime($dob)),
+                                'Age' => htmlspecialchars($age),
+                                'Sex' => htmlspecialchars($sex),
+                                'Cellphone Number' => !empty($cellphone) ? htmlspecialchars($cellphone) : 'N/A',
+                                'Landline' => !empty($landline) ? htmlspecialchars($landline) : 'N/A',
+                                'Email' => htmlspecialchars($email),
+                                'Address' => htmlspecialchars(
+                                    $street .
+                                    (!empty($street2) ? ', ' . $street2 : '') .
+                                    ', ' . $brgy . ', ' . $city . ', ' . $state . ', ' . $postal
+                                )
+                            ];
+                            foreach ($details as $label => $value): ?>
+                                <div class="row mb-2">
+                                    <div class="col-4 text-start fw-bold"><?php echo $label ?>:</div>
+                                    <div class="col-8 text-start"><?php echo $value ?></div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -288,6 +320,33 @@ try {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-calculate age from DOB
+        document.querySelector('input[name="dob"]').addEventListener('change', function () {
+            const dob = new Date(this.value);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+            document.querySelector('input[name="age"]').value = age;
+        });
+
+        // Image preview for profile picture
+        document.getElementById('profile_pic').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('preview');
+
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" />`;
+                }
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = '<i class="bi bi-person-fill"></i>';
+            }
+        });
+    </script>
 </body>
 
 </html>
