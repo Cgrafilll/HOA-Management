@@ -37,7 +37,7 @@ try {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 1. Sanitize input
+    // 1. Sanitize inputs
     $first_name = $_POST['first_name'];
     $middle_name = $_POST['middle_name'];
     $last_name = $_POST['last_name'];
@@ -45,35 +45,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $age = $_POST['age'];
     $sex = $_POST['sex'];
     $cellphone = $_POST['cellphone'];
-    $landline = $_POST['landline'];
-    $email = $_POST['email'];
-    $street = $_POST['street'];
-    $street2 = $_POST['street2'];
-    $city = $_POST['city'];
-    $state = $_POST['state'];
-    $barangay = $_POST['barangay'];
-    $postal = $_POST['postal'];
-    $role = $_POST['role'];
+    $employment_status = $_POST['employment_status']; // Yes/No
+    $reason = $_POST['reason'];
 
-    // 2. Handle profile picture upload
+    // 2. Handle profile picture
     $profile_pic = null;
     if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
         $file_tmp = $_FILES['profile_pic']['tmp_name'];
-        $profile_pic = file_get_contents($file_tmp); // Read image as binary data
+        $profile_pic = file_get_contents($file_tmp); // Read image data as binary
     }
 
-    // 3. Insert into database
-    $sql = "INSERT INTO admin_accounts (
+    // 3. Prepare SQL
+    $sql = "INSERT INTO visitor_details (
         first_name, middle_name, last_name, date_of_birth, age, sex,
-        cellphone_number, landline, email_address, street_address, street_address_2, city,
-        state_province, barangay, postal_zip_code, roles, profile_picture
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        cellphone_number, employed_in_subdivision, reason_for_visit, profile_picture
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
-    $stmt->send_long_data(16, $profile_pic); // index 16 because it's the 17th parameter
+    $stmt->send_long_data(9, $profile_pic); // index 16 because it's the 17th parameter
 
+    // Create a variable placeholder for BLOB (must be passed by reference)
     $stmt->bind_param(
-        "ssssisssssssssssb", // last one is blob
+        "ssssissssb",
         $first_name,
         $middle_name,
         $last_name,
@@ -81,21 +74,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $age,
         $sex,
         $cellphone,
-        $landline,
-        $email,
-        $street,
-        $street2,
-        $city,
-        $state,
-        $barangay,
-        $postal,
-        $role,
-        $profile_pic // binary data
+        $employment_status,
+        $reason,
+        $profile_pic
     );
 
+    // 4. Execute statement
     if ($stmt->execute()) {
-        $success = true; // Flag to trigger modal in HTML
+        $success = true;
+    } else {
+        echo "Database error: " . $stmt->error;
     }
+
+    $stmt->close();
 }
 ?>
 
@@ -215,9 +206,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </button>
                     <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../admin_accounts.php" class="nav-link px-2 actived">Admin</a></li>
+                            <li><a href="../admin_accounts.php" class="nav-link px-2">Admin</a></li>
                             <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
-                            <li><a href="../visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
+                            <li><a href="../visitor_accounts.php" class="nav-link px-2 actived">Visitors</a></li>
                         </ul>
                     </div>
                 </div>
@@ -279,17 +270,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
-                    <h5 class="mb-0 fw-bold">Admin Account Management</h5>
+                    <h5 class="mb-0 fw-bold">Visitor Account Management</h5>
                 </div>
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <span class="small mb-0">User Details</span>
-                    <a href="../admin_accounts.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                    <a href="../visitor_accounts.php"
+                        class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                         <i class="bi bi-arrow-left-short me-1"></i>Back
                     </a>
                 </div>
                 <hr class="my-0">
                 <div class="p-3">
-                    <form action="add_admin.php" method="POST" enctype="multipart/form-data">
+                    <form action="add_visitor.php" method="POST" enctype="multipart/form-data">
                         <div class="row mb-3">
                             <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
                             <div class="row">
@@ -347,59 +339,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <input type="text" name="cellphone" class="form-control" />
                                 <label class="form-label mt-2">Cellphone Number</label>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="landline" class="form-control" />
-                                <label class="form-label mt-2">Landline</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="email" name="email" class="form-control" required />
-                                <label class="form-label mt-2">Email Address</label>
-                            </div>
                         </div>
-                        <!-- Address -->
-                        <span class="fw-bold mb-3">Address</span>
+                        <!-- Reason for Visit -->
+                        <span class="fw-bold mb-3">Reason for Visit</span>
                         <div class="my-3">
-                            <input type="text" name="street" class="form-control" required />
-                            <label class="form-label mt-2">Street Address</label>
+                            <span>Are you employed by the subdivision?</span>
                         </div>
-                        <div class="mb-3">
-                            <input type="text" name="street2" class="form-control" />
-                            <label class="form-label mt-2">Street Address Line 2</label>
-                        </div>
+                        <!-- Radio Buttons -->
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="city" class="form-control" required />
-                                <label class="form-label mt-2">City</label>
+                                <div class="form-check">
+                                    <label class="form-check-label me-2" for="noRadio1">No</label>
+                                    <input class="form-check-input" type="radio" name="employment_status" id="noRadio1"
+                                        value="No" required>
+                                </div>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="state" class="form-control" required />
-                                <label class="form-label mt-2">State/Province</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="barangay" class="form-control" required />
-                                <label class="form-label mt-2">Barangay</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="postal" class="form-control" required />
-                                <label class="form-label mt-2">Postal/Zip Code</label>
+                                <div class="form-check">
+                                    <label class="form-check-label me-2" for="yesRadio2">Yes</label>
+                                    <input class="form-check-input" type="radio" name="employment_status" id="yesRadio2"
+                                        value="Yes">
+                                </div>
                             </div>
                         </div>
-                        <!-- Roles -->
+                        <!-- Dropdowns for Reason -->
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold">Roles</label>
-                                <select name="role" class="form-select" required>
-                                    <option value="">--Select Role--</option>
-                                    <option>Board Member</option>
-                                    <option>Clubhouse Staff</option>
-                                    <option>Security Staff</option>
+                                <select id="reasonNo" name="reason" class="form-select">
+                                    <option selected disabled value="">Select a reason</option>
+                                    <option>Personal Visit / Family Gathering</option>
+                                    <option>Delivery or Pickup</option>
+                                    <option>Health or Emergency Services</option>
+                                    <option>Religious or Community Outreach</option>
+                                    <option>Transport Services</option>
+                                    <option>Guest Use of Amenities</option>
+                                    <option>Home Maintenance and Repairs</option>
+                                    <option>Construction or Renovation</option>
+                                    <option>Landscaping and Gardening</option>
+                                    <option>Household Help</option>
+                                    <option>Pest Control / Cleaning Services</option>
+                                    <option>Internet / Cable / Utility Installation</option>
+                                    <option>Furniture or Appliance Delivery</option>
+                                    <option>Server Contractors</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <select id="reasonYes" name="reason" class="form-select">
+                                    <option selected disabled value="">Select a reason</option>
+                                    <option>Administrative Work</option>
+                                    <option>Facilities Management</option>
+                                    <option>IT and System Maintenance</option>
+                                    <option>Security Oversight</option>
                                 </select>
                             </div>
                         </div>
                         <!-- Submit Buttons -->
                         <div class="d-flex justify-content-end gap-2">
                             <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="../admin_accounts.php" class="btn btn-danger">Cancel</a>
+                            <a href="../visitor_accounts.php" class="btn btn-danger">Cancel</a>
                         </div>
                     </form>
                     <!-- Success Modal -->
@@ -426,7 +423,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 const successModal = new bootstrap.Modal(document.getElementById('successModal'));
                                 successModal.show();
 
-                                const redirect = () => window.location.href = '../admin_accounts.php';
+                                const redirect = () => window.location.href = '../visitor_accounts.php';
                                 document.getElementById('doneButton').addEventListener('click', redirect);
                                 document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
                             });
@@ -464,6 +461,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 preview.innerHTML = '<i class="bi bi-person-fill"></i>';
             }
         });
+
+        const form = document.querySelector('form');
+        const reasonNo = document.getElementById('reasonNo');
+        const reasonYes = document.getElementById('reasonYes');
+        const radioNo = document.getElementById('noRadio1');
+        const radioYes = document.getElementById('yesRadio2');
+
+        // When a reason is selected in "No" dropdown
+        reasonNo.addEventListener('change', () => {
+            radioNo.checked = true;
+            reasonYes.selectedIndex = 0; // Clear Yes dropdown
+        });
+
+        // When a reason is selected in "Yes" dropdown
+        reasonYes.addEventListener('change', () => {
+            radioYes.checked = true;
+            reasonNo.selectedIndex = 0; // Clear No dropdown
+        });
+
+        // When "No" radio is clicked directly
+        radioNo.addEventListener('change', () => {
+            if (radioNo.checked) {
+                reasonYes.selectedIndex = 0; // Clear Yes dropdown
+            }
+        });
+
+        // When "Yes" radio is clicked directly
+        radioYes.addEventListener('change', () => {
+            if (radioYes.checked) {
+                reasonNo.selectedIndex = 0; // Clear No dropdown
+            }
+        });
+
+        // Final validation on submit
+        form.addEventListener('submit', function (e) {
+            const isNo = radioNo.checked;
+            const isYes = radioYes.checked;
+            const reasonNoSelected = reasonNo.value !== '';
+            const reasonYesSelected = reasonYes.value !== '';
+
+            let valid = true;
+
+            if (!isNo && !isYes) {
+                alert("Please select if you're employed by the subdivision.");
+                valid = false;
+            } else if (isNo && !reasonNoSelected) {
+                alert("Please select a reason under 'No'.");
+                valid = false;
+            } else if (isYes && !reasonYesSelected) {
+                alert("Please select a reason under 'Yes'.");
+                valid = false;
+            }
+
+            if (!valid) e.preventDefault(); // Stop submission
+        });
+
     </script>
 </body>
 
