@@ -55,6 +55,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postal = $_POST['postal'];
     $members = $_POST['members'];
 
+    // 2. Generate visitor_id (e.g., VIS-0001)
+    $result = $conn->query("SELECT household_id FROM household_accounts ORDER BY household_id DESC LIMIT 1");
+    if ($result && $row = $result->fetch_assoc()) {
+        $last_id = intval(substr($row['household_id'], 4)); // Get numeric part
+        $new_id_number = $last_id + 1;
+    } else {
+        $new_id_number = 1; // Start from 1 if no records
+    }
+
+    $household_id = 'HOU-' . str_pad($new_id_number, 4, '0', STR_PAD_LEFT);
+
     // 2. Handle profile picture upload
     $profile_pic = null;
     if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
@@ -64,16 +75,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // 3. Insert into database
     $sql = "INSERT INTO household_accounts (
-        first_name, middle_name, last_name, date_of_birth, age, sex,
+        household_id, first_name, middle_name, last_name, date_of_birth, age, sex,
         cellphone_number, landline, email_address, street_address, street_address_2, city,
         state_province, barangay, postal_zip_code, members, profile_picture
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
-    $stmt->send_long_data(16, $profile_pic); // index 16 because it's the 17th parameter
+    $stmt->send_long_data(17, $profile_pic); // index 16 because it's the 17th parameter
 
     $stmt->bind_param(
-        "ssssissssssssssib", // last one is blob
+        "sssssissssssssssib", // last one is blob
+        $household_id,
         $first_name,
         $middle_name,
         $last_name,

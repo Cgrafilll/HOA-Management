@@ -48,25 +48,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $employment_status = $_POST['employment_status']; // Yes/No
     $reason = $_POST['reason'];
 
-    // 2. Handle profile picture
+    // 2. Generate visitor_id (e.g., VIS-0001)
+    $result = $conn->query("SELECT visitor_id FROM visitor_details ORDER BY visitor_id DESC LIMIT 1");
+    if ($result && $row = $result->fetch_assoc()) {
+        $last_id = intval(substr($row['visitor_id'], 4)); // Get numeric part
+        $new_id_number = $last_id + 1;
+    } else {
+        $new_id_number = 1; // Start from 1 if no records
+    }
+
+    $visitor_id = 'VIS-' . str_pad($new_id_number, 4, '0', STR_PAD_LEFT);
+
+    // 3. Handle profile picture
     $profile_pic = null;
     if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
         $file_tmp = $_FILES['profile_pic']['tmp_name'];
         $profile_pic = file_get_contents($file_tmp); // Read image data as binary
     }
 
-    // 3. Prepare SQL
+    // 4. Prepare SQL
     $sql = "INSERT INTO visitor_details (
-        first_name, middle_name, last_name, date_of_birth, age, sex,
+        visitor_id, first_name, middle_name, last_name, date_of_birth, age, sex,
         cellphone_number, employed_in_subdivision, reason_for_visit, profile_picture
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
-    $stmt->send_long_data(9, $profile_pic); // index 16 because it's the 17th parameter
 
-    // Create a variable placeholder for BLOB (must be passed by reference)
+    if ($profile_pic !== null) {
+        $stmt->send_long_data(10, $profile_pic); // 11th parameter is index 10 (0-based)
+    }
+
     $stmt->bind_param(
-        "ssssissssb",
+        "ssssisssssb",
+        $visitor_id,
         $first_name,
         $middle_name,
         $last_name,
@@ -79,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $profile_pic
     );
 
-    // 4. Execute statement
+    // 5. Execute statement
     if ($stmt->execute()) {
         $success = true;
     } else {
