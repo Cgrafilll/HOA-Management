@@ -47,60 +47,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cellphone = $_POST['cellphone'];
     $employment_status = $_POST['employment_status']; // Yes/No
     $reason = $_POST['reason'];
+    $rfid = $_POST['rfid'];
 
-    // 2. Generate visitor_id (e.g., VIS-0001)
-    $result = $conn->query("SELECT visitor_id FROM visitor_details ORDER BY visitor_id DESC LIMIT 1");
-    if ($result && $row = $result->fetch_assoc()) {
-        $last_id = intval(substr($row['visitor_id'], 4)); // Get numeric part
-        $new_id_number = $last_id + 1;
-    } else {
-        $new_id_number = 1; // Start from 1 if no records
+    try {
+        // 2. Check if RFID already exists
+        $rfid_check_stmt = $conn->prepare("SELECT visitor_id FROM visitor_details WHERE rfid = ?");
+        $rfid_check_stmt->bind_param("s", $rfid);
+        $rfid_check_stmt->execute();
+        $rfid_result = $rfid_check_stmt->get_result();
+
+        if ($rfid_result->num_rows > 0) {
+            $error = "RFID card is already registered to another household/visitor. Please use a different RFID card.";
+        } else {
+            // 3. Generate new visitor_id (HOU-0001, HOU-0002...)
+            $result = $conn->query("SELECT visitor_id FROM visitor_details ORDER BY visitor_id DESC LIMIT 1");
+            if ($result && $row = $result->fetch_assoc()) {
+                $last_id = intval(substr($row['visitor_id'], 4)); // extract numeric part
+                $new_id_number = $last_id + 1;
+            } else {
+                $new_id_number = 1; // first household
+            }
+            $visitor_id = 'VIS-' . str_pad($new_id_number, 4, '0', STR_PAD_LEFT);
+            // 4. Handle profile picture
+            $profile_pic = null;
+            if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
+                $file_tmp = $_FILES['profile_pic']['tmp_name'];
+                $profile_pic = file_get_contents($file_tmp); // Read image data as binary
+            }
+            // 5. Prepare SQL
+            $sql = "INSERT INTO visitor_details (
+                visitor_id, first_name, middle_name, last_name, date_of_birth, age, sex,
+                cellphone_number, employed_in_subdivision, reason_for_visit, rfid, profile_picture
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            $stmt = $conn->prepare($sql);
+
+            if ($profile_pic !== null) {
+                $stmt->send_long_data(11, $profile_pic); // 12th parameter is index 11 (0-based)
+            }
+
+            $stmt->bind_param(
+                "ssssissssssb",
+                $visitor_id,
+                $first_name,
+                $middle_name,
+                $last_name,
+                $dob,
+                $age,
+                $sex,
+                $cellphone,
+                $employment_status,
+                $reason,
+                $rfid,
+                $profile_pic
+            );
+            
+            // 5. Execute insert
+            if ($stmt->execute()) {
+                $success = true;
+            } else {
+                $error = "Failed to save visitor account: " . $stmt->error;
+            }
+        }
+    } catch (Exception $e) {
+        $error = "Error adding visitor: " . $e->getMessage();
     }
-
-    $visitor_id = 'VIS-' . str_pad($new_id_number, 4, '0', STR_PAD_LEFT);
-
-    // 3. Handle profile picture
-    $profile_pic = null;
-    if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
-        $file_tmp = $_FILES['profile_pic']['tmp_name'];
-        $profile_pic = file_get_contents($file_tmp); // Read image data as binary
-    }
-
-    // 4. Prepare SQL
-    $sql = "INSERT INTO visitor_details (
-        visitor_id, first_name, middle_name, last_name, date_of_birth, age, sex,
-        cellphone_number, employed_in_subdivision, reason_for_visit, profile_picture
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-    $stmt = $conn->prepare($sql);
-
-    if ($profile_pic !== null) {
-        $stmt->send_long_data(10, $profile_pic); // 11th parameter is index 10 (0-based)
-    }
-
-    $stmt->bind_param(
-        "ssssisssssb",
-        $visitor_id,
-        $first_name,
-        $middle_name,
-        $last_name,
-        $dob,
-        $age,
-        $sex,
-        $cellphone,
-        $employment_status,
-        $reason,
-        $profile_pic
-    );
-
-    // 5. Execute statement
-    if ($stmt->execute()) {
-        $success = true;
-    } else {
-        echo "Database error: " . $stmt->error;
-    }
-
-    $stmt->close();
 }
 ?>
 
@@ -221,7 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="../admin_accounts.php" class="nav-link px-2">Admin</a></li>
-                            <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
+                            <li><a href="../visitor_details.php" class="nav-link px-2">Household</a></li>
                             <li><a href="../visitor_accounts.php" class="nav-link px-2 actived">Visitors</a></li>
                         </ul>
                     </div>
@@ -408,6 +419,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </select>
                             </div>
                         </div>
+                        <!-- Resident RFID -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold">Resident RFID</label>
+                                <input type="text" name="rfid" class="form-control" id="rfidInput" required />
+                                <label class="form-label mt-2">Tap your RFID card</label>
+                            </div>
+                        </div>
                         <!-- Submit Buttons -->
                         <div class="d-flex justify-content-end gap-2">
                             <button type="submit" class="btn btn-primary">Save</button>
@@ -432,6 +451,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                     </div>
+                    <!-- Error Modal -->
+                    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-danger text-white">
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
+                                    <p class="mb-2"><b>Error</b></p>
+                                    <p class="mb-3" id="errorMessage">
+                                        <?php echo isset($error) ? htmlspecialchars($error) : 'An error occurred while processing your request.'; ?>
+                                    </p>
+                                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <?php if (isset($success) && $success): ?>
                         <script>
                             window.addEventListener('DOMContentLoaded', () => {
@@ -444,6 +483,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             });
                         </script>
                     <?php endif; ?>
+                    <?php if (isset($error) && $error): ?>
+                        <script>
+                            window.addEventListener('DOMContentLoaded', () => {
+                                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                                errorModal.show();
+                            });
+                        </script>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>
@@ -451,88 +498,143 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-calculate age from DOB
-        document.querySelector('input[name="dob"]').addEventListener('change', function () {
-            const dob = new Date(this.value);
-            const today = new Date();
-            let age = today.getFullYear() - dob.getFullYear();
-            const m = today.getMonth() - dob.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-            document.querySelector('input[name="age"]').value = age;
-        });
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.querySelector('form');
 
-        // Image preview for profile picture
-        document.getElementById('profile_pic').addEventListener('change', function (e) {
-            const file = e.target.files[0];
+            // ====== RFID INPUT HANDLING ======
+            const rfidInput = document.getElementById('rfidInput');
+            if (rfidInput) {
+                // Prevent RFID input from submitting the form
+                rfidInput.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' || event.keyCode === 13) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        event.stopImmediatePropagation();
+
+                        // Blur the input to remove focus after RFID scan
+                        this.blur();
+
+                        // Confirmation log
+                        console.log('RFID captured:', this.value);
+
+                        return false;
+                    }
+                });
+
+                // Additional prevention using keypress
+                rfidInput.addEventListener('keypress', function (event) {
+                    if (event.key === 'Enter' || event.keyCode === 13) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        event.stopImmediatePropagation();
+                        return false;
+                    }
+                });
+
+                // Prevent any form submission triggered by the RFID input
+                rfidInput.addEventListener('input', function () {
+                    if (this.value.length > 0) {
+                        clearTimeout(window.rfidSubmitTimeout);
+                    }
+                });
+            }
+
+            // ====== AUTO-CALCULATE AGE FROM DOB ======
+            const dobInput = document.querySelector('input[name="dob"]');
+            const ageInput = document.querySelector('input[name="age"]');
+
+            if (dobInput && ageInput) {
+                dobInput.addEventListener('change', function () {
+                    const dob = new Date(this.value);
+                    const today = new Date();
+                    let age = today.getFullYear() - dob.getFullYear();
+                    const monthDiff = today.getMonth() - dob.getMonth();
+
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                        age--;
+                    }
+
+                    ageInput.value = age;
+                });
+            }
+
+            // ====== PROFILE PICTURE PREVIEW ======
+            const profilePicInput = document.getElementById('profile_pic');
             const preview = document.getElementById('preview');
 
-            if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" />`;
-                }
-                reader.readAsDataURL(file);
-            } else {
-                preview.innerHTML = '<i class="bi bi-person-fill"></i>';
-            }
-        });
-
-        const form = document.querySelector('form');
-        const reasonNo = document.getElementById('reasonNo');
-        const reasonYes = document.getElementById('reasonYes');
-        const radioNo = document.getElementById('noRadio1');
-        const radioYes = document.getElementById('yesRadio2');
-
-        // When a reason is selected in "No" dropdown
-        reasonNo.addEventListener('change', () => {
-            radioNo.checked = true;
-            reasonYes.selectedIndex = 0; // Clear Yes dropdown
-        });
-
-        // When a reason is selected in "Yes" dropdown
-        reasonYes.addEventListener('change', () => {
-            radioYes.checked = true;
-            reasonNo.selectedIndex = 0; // Clear No dropdown
-        });
-
-        // When "No" radio is clicked directly
-        radioNo.addEventListener('change', () => {
-            if (radioNo.checked) {
-                reasonYes.selectedIndex = 0; // Clear Yes dropdown
-            }
-        });
-
-        // When "Yes" radio is clicked directly
-        radioYes.addEventListener('change', () => {
-            if (radioYes.checked) {
-                reasonNo.selectedIndex = 0; // Clear No dropdown
-            }
-        });
-
-        // Final validation on submit
-        form.addEventListener('submit', function (e) {
-            const isNo = radioNo.checked;
-            const isYes = radioYes.checked;
-            const reasonNoSelected = reasonNo.value !== '';
-            const reasonYesSelected = reasonYes.value !== '';
-
-            let valid = true;
-
-            if (!isNo && !isYes) {
-                alert("Please select if you're employed by the subdivision.");
-                valid = false;
-            } else if (isNo && !reasonNoSelected) {
-                alert("Please select a reason under 'No'.");
-                valid = false;
-            } else if (isYes && !reasonYesSelected) {
-                alert("Please select a reason under 'Yes'.");
-                valid = false;
+            if (profilePicInput && preview) {
+                profilePicInput.addEventListener('change', function (event) {
+                    const file = event.target.files[0];
+                    if (file && file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            preview.innerHTML = `<img src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover;">`;
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        preview.innerHTML = '<i class="bi bi-person-fill"></i>';
+                    }
+                });
             }
 
-            if (!valid) e.preventDefault(); // Stop submission
-        });
+            // ====== RADIO + DROPDOWN SYNC ======
+            const reasonNo = document.getElementById('reasonNo');
+            const reasonYes = document.getElementById('reasonYes');
+            const radioNo = document.getElementById('noRadio1');
+            const radioYes = document.getElementById('yesRadio2');
 
+            if (reasonNo && reasonYes && radioNo && radioYes) {
+                reasonNo.addEventListener('change', () => {
+                    radioNo.checked = true;
+                    reasonYes.selectedIndex = 0;
+                });
+
+                reasonYes.addEventListener('change', () => {
+                    radioYes.checked = true;
+                    reasonNo.selectedIndex = 0;
+                });
+
+                radioNo.addEventListener('change', () => {
+                    if (radioNo.checked) {
+                        reasonYes.selectedIndex = 0;
+                    }
+                });
+
+                radioYes.addEventListener('change', () => {
+                    if (radioYes.checked) {
+                        reasonNo.selectedIndex = 0;
+                    }
+                });
+            }
+
+            // ====== FINAL VALIDATION ON SUBMIT ======
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    const isNo = radioNo && radioNo.checked;
+                    const isYes = radioYes && radioYes.checked;
+                    const reasonNoSelected = reasonNo && reasonNo.value !== '';
+                    const reasonYesSelected = reasonYes && reasonYes.value !== '';
+
+                    let valid = true;
+
+                    if (!isNo && !isYes) {
+                        alert("Please select if you're employed by the subdivision.");
+                        valid = false;
+                    } else if (isNo && !reasonNoSelected) {
+                        alert("Please select a reason under 'No'.");
+                        valid = false;
+                    } else if (isYes && !reasonYesSelected) {
+                        alert("Please select a reason under 'Yes'.");
+                        valid = false;
+                    }
+
+                    if (!valid) e.preventDefault();
+                    else console.log('Form is being submitted via Save button');
+                });
+            }
+        });
     </script>
+
 </body>
 
 </html>

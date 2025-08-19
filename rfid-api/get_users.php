@@ -2,7 +2,7 @@
 header('Content-Type: application/json');
 require 'db.php';
 
-$sql = "SELECT * FROM users";
+$sql = "SELECT * FROM entry_logs";
 $result = $conn->query($sql);
 
 $users = [];
@@ -10,12 +10,7 @@ $users = [];
 while ($row = $result->fetch_assoc()) {
     $users[] = [
         'uid' => $row['uid'],
-        'firstName' => $row['first_name'],
-        'lastName' => $row['last_name'],
-        'name' => $row['first_name'] . ' ' . $row['last_name'],
-        'contact' => $row['contact'],
-        'address' => $row['address'],
-        'type' => $row['type']
+        'date_created' => $row['date_created']
     ];
 }
 

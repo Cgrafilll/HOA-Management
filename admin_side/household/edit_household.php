@@ -38,7 +38,7 @@ try {
 
 // Initialize admin details
 $edit_household = $_GET['id'] ?? null;
-$prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $landline = $email = $password = $street = $street2 = $city = $state = $brgy = $postal = $members = $status = '';
+$prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $landline = $email = $password = $street = $street2 = $city = $state = $brgy = $postal = $members = $rfid = $status = '';
 
 if ($edit_household) {
     try {
@@ -67,15 +67,16 @@ if ($edit_household) {
             $brgy = $admin['barangay'];
             $postal = $admin['postal_zip_code'];
             $members = $admin['members'];
+            $rfid = $admin['rfid'];
             $status = $admin['status'];
         } else {
-            $error_message = "Admin not found!";
+            $error_message = "Resident not found!";
         }
     } catch (Exception $e) {
-        $error_message = "Error fetching admin: " . $e->getMessage();
+        $error_message = "Error fetching resident: " . $e->getMessage();
     }
 } else {
-    $error_message = "Invalid admin ID.";
+    $error_message = "Invalid resident ID.";
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -96,81 +97,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $barangay = $_POST['barangay'];
     $postal = $_POST['postal'];
     $members = $_POST['members'];
+    $rfid = $_POST['rfid'];
 
-    // 2. Check if profile picture was uploaded
-    $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
+    // 2. Check if RFID already exists (excluding current household)
+    try {
+        $rfid_check_stmt = $conn->prepare("SELECT household_id FROM household_accounts WHERE rfid = ? AND household_id != ?");
+        $rfid_check_stmt->bind_param("ss", $rfid, $edit_household);
+        $rfid_check_stmt->execute();
+        $rfid_result = $rfid_check_stmt->get_result();
 
-    if ($has_photo) {
-        $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
+        if ($rfid_result->num_rows > 0) {
+            $error = "RFID card is already registered to another household/visitor. Please use a different RFID card.";
+        } else {
+            // 3. Check if profile picture was uploaded
+            $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
 
-        $sql = "UPDATE household_accounts SET 
-            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-            cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-            city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, profile_picture=?
-            WHERE household_id=?";
+            if ($has_photo) {
+                $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
 
-        $stmt = $conn->prepare($sql);
+                $sql = "UPDATE household_accounts SET 
+                    first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+                    cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+                    city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, rfid=?, profile_picture=?
+                    WHERE household_id=?";
 
-        $stmt->bind_param(
-            "ssssissssssssssibs",
-            $first_name,
-            $middle_name,
-            $last_name,
-            $dob,
-            $age,
-            $sex,
-            $cellphone,
-            $landline,
-            $email,
-            $street,
-            $street2,
-            $city,
-            $state,
-            $barangay,
-            $postal,
-            $members,
-            $null_blob, // temporary bind, will overwrite with send_long_data
-            $edit_household
-        );
+                $stmt = $conn->prepare($sql);
 
-        $stmt->send_long_data(16, $profile_pic); // 17th param (index 16)
-    } else {
-        // No photo uploaded, don't update profile_pic
-        $sql = "UPDATE household_accounts SET 
-            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-            cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-            city=?, state_province=?, barangay=?, postal_zip_code=?, members=?
-            WHERE household_id=?";
+                $stmt->bind_param(
+                    "ssssissssssssssisbs",
+                    $first_name,
+                    $middle_name,
+                    $last_name,
+                    $dob,
+                    $age,
+                    $sex,
+                    $cellphone,
+                    $landline,
+                    $email,
+                    $street,
+                    $street2,
+                    $city,
+                    $state,
+                    $barangay,
+                    $postal,
+                    $members,
+                    $rfid,
+                    $null_blob, // temporary bind, will overwrite with send_long_data
+                    $edit_household
+                );
 
-        $stmt = $conn->prepare($sql);
+                $stmt->send_long_data(16, $profile_pic); // 17th param (index 16)
+            } else {
+                // No photo uploaded, don't update profile_pic
+                $sql = "UPDATE household_accounts SET 
+                    first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+                    cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+                    city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, rfid=?
+                    WHERE household_id=?";
 
-        $stmt->bind_param(
-            "ssssissssssssssis", // no 'b' here
-            $first_name,
-            $middle_name,
-            $last_name,
-            $dob,
-            $age,
-            $sex,
-            $cellphone,
-            $landline,
-            $email,
-            $street,
-            $street2,
-            $city,
-            $state,
-            $barangay,
-            $postal,
-            $members,
-            $edit_household
-        );
-    }
+                $stmt = $conn->prepare($sql);
 
-    // 3. Execute and check success
-    if ($stmt->execute()) {
-        $success = true;
-    } else {
-        $error = "Update failed: " . $stmt->error;
+                $stmt->bind_param(
+                    "ssssissssssssssiss", // no 'b' here
+                    $first_name,
+                    $middle_name,
+                    $last_name,
+                    $dob,
+                    $age,
+                    $sex,
+                    $cellphone,
+                    $landline,
+                    $email,
+                    $street,
+                    $street2,
+                    $city,
+                    $state,
+                    $barangay,
+                    $postal,
+                    $members,
+                    $rfid,
+                    $edit_household
+                );
+            }
+
+            // 4. Execute and check success
+            if ($stmt->execute()) {
+                $success = true;
+            } else {
+                $error = "Update failed: " . $stmt->error;
+            }
+        }
+    } catch (Exception $e) {
+        $error = "Error checking RFID: " . $e->getMessage();
     }
 }
 
@@ -368,7 +386,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <hr class="my-0">
                 <div class="p-3">
-                    <form action="edit_household.php?id=<?= $edit_household ?>" method="POST"
+                    <form action="edit_household.php?id=<?= $edit_household ?>" id="householdForm" method="POST"
                         enctype="multipart/form-data">
                         <div class="row mb-3">
                             <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
@@ -483,7 +501,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Postal/Zip Code</label>
                             </div>
                         </div>
-                        <!-- Roles -->
+                        <!-- Household Members -->
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label class="form-label mt-2 fw-bold">Household Members</label>
@@ -492,10 +510,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">How many members in the household</label>
                             </div>
                         </div>
+                        <!-- Resident RFID -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold">Resident RFID</label>
+                                <input type="text" name="rfid" id="rfidInput" class="form-control"
+                                    value="<?php echo htmlspecialchars($rfid) ?>" required />
+                                <label class="form-label mt-2">Tap your RFID card</label>
+                            </div>
+                        </div>
                         <!-- Submit Buttons -->
                         <div class="d-flex justify-content-end gap-2">
                             <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="../admin_accounts.php" class="btn btn-danger">Cancel</a>
+                            <a href="../household_accounts.php" class="btn btn-danger">Cancel</a>
                         </div>
                     </form>
                     <!-- Success Modal -->
@@ -516,6 +543,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                     </div>
+                    <!-- Error Modal -->
+                    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-danger text-white">
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
+                                    <p class="mb-2"><b>Error</b></p>
+                                    <p class="mb-3" id="errorMessage">
+                                        <?php echo isset($error) ? htmlspecialchars($error) : 'An error occurred while processing your request.'; ?>
+                                    </p>
+                                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <?php if (isset($success) && $success): ?>
                         <script>
                             window.addEventListener('DOMContentLoaded', () => {
@@ -528,6 +575,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             });
                         </script>
                     <?php endif; ?>
+                    <?php if (isset($error) && $error): ?>
+                        <script>
+                            window.addEventListener('DOMContentLoaded', () => {
+                                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                                errorModal.show();
+                            });
+                        </script>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>
@@ -535,29 +590,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-calculate age from DOB
-        document.querySelector('input[name="dob"]').addEventListener('change', function () {
-            const dob = new Date(this.value);
-            const today = new Date();
-            let age = today.getFullYear() - dob.getFullYear();
-            const m = today.getMonth() - dob.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-            document.querySelector('input[name="age"]').value = age;
-        });
+        document.addEventListener('DOMContentLoaded', function () {
+            const rfidInput = document.getElementById('rfidInput');
+            const form = document.getElementById('householdForm');
 
-        // Image preview for profile picture
-        document.getElementById('profile_pic').addEventListener('change', function (e) {
-            const file = e.target.files[0];
+            // Prevent RFID input from submitting the form
+            rfidInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' || event.keyCode === 13) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+
+                    // Blur the input to remove focus after RFID scan
+                    this.blur();
+
+                    // Optional: Show confirmation that RFID was captured
+                    console.log('RFID captured:', this.value);
+
+                    return false;
+                }
+            });
+
+            // Additional prevention using keypress event
+            rfidInput.addEventListener('keypress', function (event) {
+                if (event.key === 'Enter' || event.keyCode === 13) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+                    return false;
+                }
+            });
+
+            // Prevent any form submission triggered by the RFID input
+            rfidInput.addEventListener('input', function (event) {
+                // If the input was filled quickly (typical of RFID readers), prevent form submission
+                if (this.value.length > 0) {
+                    // Remove any pending form submissions
+                    clearTimeout(window.rfidSubmitTimeout);
+                }
+            });
+
+            // Handle actual form submission only when Save button is clicked
+            form.addEventListener('submit', function (event) {
+                // Allow normal form submission when Save button is clicked
+                // This will process the form normally
+                console.log('Form is being submitted via Save button');
+            });
+
+            // Optional: Auto-calculate age when date of birth changes
+            const dobInput = document.querySelector('input[name="dob"]');
+            const ageInput = document.querySelector('input[name="age"]');
+
+            if (dobInput && ageInput) {
+                dobInput.addEventListener('change', function () {
+                    const dob = new Date(this.value);
+                    const today = new Date();
+                    let age = today.getFullYear() - dob.getFullYear();
+                    const monthDiff = today.getMonth() - dob.getMonth();
+
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                        age--;
+                    }
+
+                    ageInput.value = age;
+                });
+            }
+
+            // Profile picture preview
+            const profilePicInput = document.getElementById('profile_pic');
             const preview = document.getElementById('preview');
 
-            if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" />`;
-                }
-                reader.readAsDataURL(file);
-            } else {
-                preview.innerHTML = '<i class="bi bi-person-fill"></i>';
+            if (profilePicInput && preview) {
+                profilePicInput.addEventListener('change', function (event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            preview.innerHTML = `<img src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover;">`;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
             }
         });
     </script>

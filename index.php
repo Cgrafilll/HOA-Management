@@ -66,8 +66,6 @@
     <div class="sidebar">
         <h2><i class='bx bx-id-card'></i> RFID System</h2>
         <a href="#" class="nav-link" onclick="showSection('home')">Home / Scanner</a>
-        <a href="#" class="nav-link" onclick="showSection('residents')">Manage Residents</a>
-        <a href="#" class="nav-link" onclick="showSection('visitors')">Manage Visitors</a>
     </div>
 
     <!-- Main Content -->
@@ -87,64 +85,8 @@
                 Gate Status: <strong>CLOSED</strong>
             </div>
         </div>
-
-        <!-- Residents Section -->
-        <div id="residents-section" style="display: none;">
-            <h2>Manage Residents</h2>
-            <div class="input-group mb-3">
-                <input type="text" id="residentUid" class="form-control" placeholder="Scan or Enter Resident UID">
-                <button class="btn btn-primary" onclick="openModal('resident')">Add</button>
-            </div>
-            <ul id="residentList" class="list-group"></ul>
-        </div>
-
-        <!-- Visitors Section -->
-        <div id="visitors-section" style="display: none;">
-            <h2>Manage Visitors</h2>
-            <div class="input-group mb-3">
-                <input type="text" id="visitorUid" class="form-control" placeholder="Scan or Enter Visitor UID">
-                <button class="btn btn-success" onclick="openModal('visitor')">Add</button>
-            </div>
-            <ul id="visitorList" class="list-group"></ul>
-        </div>
     </div>
 
-    <!-- Modal for Add User -->
-    <div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form onsubmit="submitForm(event)">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Add User Details</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="modalType" />
-                        <input type="hidden" id="modalUid" />
-                        <div class="mb-2">
-                            <label class="form-label">First Name</label>
-                            <input type="text" id="firstName" class="form-control" required />
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Last Name</label>
-                            <input type="text" id="lastName" class="form-control" required />
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Contact Number</label>
-                            <input type="text" id="contact" class="form-control" />
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Address</label>
-                            <textarea id="address" class="form-control" rows="2"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-success">Save</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <script>
         const rfidUsers = { resident: {}, visitor: {} };
