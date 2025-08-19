@@ -34,6 +34,7 @@ $bookings_result = $conn->query($booking_sql);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -97,42 +98,51 @@ $bookings_result = $conn->query($booking_sql);
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
-            
+
         }
+
         /* Make Cancel button slightly darker on hover */
         #confirmModal .btn-cancel:hover {
-            background-color: #d6d8db; /* slightly darker gray */
+            background-color: #d6d8db;
+            /* slightly darker gray */
             color: #000;
         }
+
         /* Cancel hover */
-        .btn-cancel:hover { background-color: #d6d8db; color: #000; }
+        .btn-cancel:hover {
+            background-color: #d6d8db;
+            color: #000;
+        }
     </style>
 </head>
+
 <body class="bg-light">
-<!-- Header -->
-<header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
-    <div class="me-4" style="width: 250px;">
-        <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
-    </div>
-    <div class="d-flex justify-content-between align-items-center flex-grow-1">
-        <h1 class="h5 mb-0 fw-bold">RECORD KEEPING</h1>
-        <div class="d-flex align-items-center gap-2">
-            <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
-            <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5" style="height: 40px; width: 40px; color: #aaa;">
-                <?php if (!empty($photo)): ?>
-                    <img src="<?php echo htmlspecialchars($photo); ?>" style="width: 40px; height: 40px; object-fit: cover;">
-                <?php else: ?>
-                    <i class="bi bi-person-circle" style="font-size: 32px;"></i>
-                <?php endif; ?>
+    <!-- Header -->
+    <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
+        <div class="me-4" style="width: 250px;">
+            <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
+        </div>
+        <div class="d-flex justify-content-between align-items-center flex-grow-1">
+            <h1 class="h5 mb-0 fw-bold">RECORD KEEPING</h1>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
+                <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                    style="height: 40px; width: 40px; color: #aaa;">
+                    <?php if (!empty($photo)): ?>
+                        <img src="<?php echo htmlspecialchars($photo); ?>"
+                            style="width: 40px; height: 40px; object-fit: cover;">
+                    <?php else: ?>
+                        <i class="bi bi-person-circle" style="font-size: 32px;"></i>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
-    </div>
-</header>
+    </header>
 
-<div class="d-flex">
-    <!-- Sidebar -->
-    <aside class="sidebar p-3">
-        <nav class="nav flex-column gap-1">
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <aside class="sidebar p-3">
+            <nav class="nav flex-column gap-1">
                 <a href="admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -207,24 +217,27 @@ $bookings_result = $conn->query($booking_sql);
                     <i class="bi bi-file-earmark me-2"></i> Forms
                 </a>
             </nav>
-    </aside>
+        </aside>
 
-    <!-- Main Content -->
-    <main class="flex-fill p-4">
-        <div class="bg-white shadow rounded p-3">
-            <div class="bg-success text-white rounded-top p-3">
-                <h5 class="mb-0 fw-bold">Amenity Booking Management</h5>
-            </div>
+        <!-- Main Content -->
+        <main class="flex-fill p-4">
+            <div class="bg-white shadow rounded p-3">
+                <div class="bg-success text-white rounded-top p-3">
+                    <h5 class="mb-0 fw-bold">Amenity Booking Management</h5>
+                </div>
                 <!-- Tabs -->
-                <ul class="nav nav-tabs mb-3">
+                <ul class="nav nav-tabs my-3" id="dashboardTabs">
                     <li class="nav-item">
-                        <a class="nav-link active" id="bookings-tab" data-bs-toggle="tab" href="#bookings" role="tab">Bookings</a>
+                        <a class="nav-link active link-dark" id="bookings-tab" data-bs-toggle="tab" href="#bookings"
+                            role="tab">Bookings</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="calendar-tab" data-bs-toggle="tab" href="#calendar" role="tab">Calendar View</a>
+                        <a class="nav-link link-secondary" id="calendar-tab" data-bs-toggle="tab" href="#calendar"
+                            role="tab">Calendar View</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="reschedule-tab" data-bs-toggle="tab" href="#reschedule" role="tab">Reschedule Requests</a>
+                        <a class="nav-link link-secondary" id="reschedule-tab" data-bs-toggle="tab" href="#reschedule"
+                            role="tab">Reschedule Requests</a>
                     </li>
                 </ul>
 
@@ -234,7 +247,8 @@ $bookings_result = $conn->query($booking_sql);
                     <div class="tab-pane fade show active" id="bookings" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <span class="small">List of Amenity Bookings</span>
-                            <a href="amenity_booking/choose_booking.php" class="btn btn-primary btn-sm">+ Create New Booking</a>
+                            <a href="amenity_booking/choose_booking.php" class="btn btn-primary btn-sm">+ Create New
+                                Booking</a>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
@@ -306,10 +320,47 @@ $bookings_result = $conn->query($booking_sql);
                     </nav>
                 </div>
             </div>
-        </div>
-    </main>
-</div>
+        </main>
+    </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle tab switching and link color changes
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabLinks = document.querySelectorAll('#dashboardTabs .nav-link');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            // Add click event listener to each tab link
+            tabLinks.forEach(function (tabLink) {
+                tabLink.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    // Get the target tab pane
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetPane = document.getElementById(targetId);
+
+                    // Remove active classes from all tabs and panes
+                    tabLinks.forEach(function (link) {
+                        link.classList.remove('active', 'link-dark');
+                        link.classList.add('link-secondary');
+                    });
+
+                    tabPanes.forEach(function (pane) {
+                        pane.classList.remove('show', 'active');
+                    });
+
+                    // Add active classes to current tab and pane
+                    this.classList.add('active');
+                    this.classList.remove('link-secondary');
+                    this.classList.add('link-dark');
+
+                    if (targetPane) {
+                        targetPane.classList.add('show', 'active');
+                    }
+                });
+            });
+        });
+    </script>
 </body>
+
 </html>
