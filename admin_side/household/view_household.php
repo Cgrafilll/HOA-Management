@@ -212,9 +212,9 @@ if ($edit_household) {
                     </button>
                     <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2">Amenity Booking</a></li>
+                            <li><a href="../amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
                             <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
-                        </ul>
+                            <li><a href="../entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
                     </div>
                 </div>
                 <!-- Communication -->

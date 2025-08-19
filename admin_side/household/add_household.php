@@ -243,8 +243,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </button>
                     <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2">Amenity Booking</a></li>
+                            <li><a href="../amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
                             <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
+                            <li><a href="../entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
                         </ul>
                     </div>
                 </div>
@@ -365,7 +366,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Landline</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="email" name="email" class="form-control" placeholder="example@example.com" required />
+                                <input type="email" name="email" class="form-control" placeholder="example@example.com"
+                                    required />
                                 <label class="form-label mt-2">Email Address</label>
                             </div>
                         </div>

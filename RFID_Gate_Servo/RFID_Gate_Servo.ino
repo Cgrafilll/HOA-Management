@@ -26,14 +26,16 @@ void setup() {
 void loop() {
   int distance = getDistance();
 
-  // If object detected and gate is closed → open gate
-  if (distance > 0 && distance < objectThreshold && !gateOpen) {
+  // Only open gate if object is detected and gate is currently closed
+  if (!gateOpen && distance > 0 && distance < objectThreshold) {
     openGate();
-    gateOpenTime = millis(); // Record time when opened
+    gateOpenTime = millis();
   }
 
-  // If gate is open and enough time has passed → close gate
-  if (gateOpen && millis() - gateOpenTime >= openDuration) {
+  // Close gate if open and:
+  // 1) the timer expires, OR
+  // 2) the object is no longer detected
+  if (gateOpen && (millis() - gateOpenTime >= openDuration || distance >= objectThreshold)) {
     closeGate();
   }
 }
@@ -58,7 +60,9 @@ int getDistance() {
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
 
-  long duration = pulseIn(echoPin, HIGH);
+  long duration = pulseIn(echoPin, HIGH, 30000); // Timeout to avoid hangs
+  if (duration == 0) return -1; // No echo detected
+
   int distance = duration * 0.034 / 2; // cm
   return distance;
 }

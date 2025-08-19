@@ -147,9 +147,9 @@ try {
                     </button>
                     <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="admin_accounts.php" class="nav-link px-2">Admin</a></li>
-                            <li><a href="household_accounts.php" class="nav-link px-2">Household</a></li>
-                            <li><a href="visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
+                            <li><a href="../admin_accounts.php" class="nav-link px-2">Admin</a></li>
+                            <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
+                            <li><a href="../visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
                         </ul>
                     </div>
                 </div>
@@ -163,8 +163,9 @@ try {
                     </button>
                     <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="amenity_booking.php" class="nav-link px-2 actived">Amenity Booking</a></li>
+                            <li><a href="../amenity_booking.php" class="nav-link px-2 actived">Amenity Booking</a></li>
                             <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
+                            <li><a href="../entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
                         </ul>
                     </div>
                 </div>
