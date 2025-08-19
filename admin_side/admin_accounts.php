@@ -104,6 +104,12 @@ try {
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
         }
+        /* Make Cancel button slightly darker on hover */
+        #confirmModal .btn-cancel:hover {
+            background-color: #d6d8db; /* slightly darker gray */
+            color: #000;
+        }
+        
     </style>
 </head>
 
@@ -163,7 +169,7 @@ try {
                     </button>
                     <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2">Amenity Booking</a></li>
+                            <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
                             <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
                         </ul>
                     </div>
@@ -216,8 +222,75 @@ try {
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">List of Admin Accounts</span>
-                        <a href="admin/add_admin.php" class="btn btn-primary btn-sm">+ Create New</a>
+                        <div class="d-flex gap-2">
+                            <a href="admin/archive_admin.php" class="btn btn-secondary btn-sm">Archived Accounts</a>
+                            <a href="admin/add_admin.php" class="btn btn-primary btn-sm">+ Create New</a>
+                        </div>
                     </div>
+                    <!-- Success Modal -->
+                    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-success text-white">
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
+                                    <p class="mb-2"><b>Success</b></p>
+                                    <p class="mb-3">User has been moved to archives.</p>
+                                    <button type="button" class="btn btn-primary" id="doneButton">Done</button>
+                                </div>
+                            </div> 
+                        </div>
+                    </div>
+                    <!-- Confirmation Modal -->
+                    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title fw-bold">Confirmation</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-x-circle text-danger" style="font-size: 64px;"></i>
+                                    <p class="mb-2"><b>Are you sure?</b></p>
+                                    <p class="mb-3">Do you really want to delete this account?</p>
+                                    <p class="mb-3">This process will archive this account.</p>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button type="button" class="btn btn-danger" id="confirmProceed">Delete</button>
+                                        <button type="button" class="btn btn-light btn-cancel" data-bs-dismiss="modal">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <?php if (isset($success) && $success): ?>
+                        <script>
+                            window.addEventListener('DOMContentLoaded', () => {
+                                const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+                                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+
+                                // Show confirmation modal first
+                                confirmModal.show();
+
+                                // If user clicks Proceed
+                                document.getElementById('confirmProceed').addEventListener('click', () => {
+                                    confirmModal.hide();
+                                    setTimeout(() => successModal.show(), 300); // small delay to avoid overlap
+                                });
+
+                                // Success modal buttons/redirect
+                                const redirect = () => window.location.href = 'admin_accounts.php';
+                                document.getElementById('doneButton').addEventListener('click', redirect);
+                                document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
+                            });
+                        </script>
+                    <?php endif; ?>
                     <!-- Table -->
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
@@ -233,7 +306,10 @@ try {
                             </thead>
                             <tbody class="small align-middle">
                                 <?php
-                                $sql = "SELECT admin_id, first_name, middle_name, last_name, roles, status, created_at FROM admin_accounts ORDER BY created_at DESC";
+                                $sql = "SELECT admin_id, first_name, middle_name, last_name, roles, status, created_at 
+                                        FROM admin_accounts 
+                                        WHERE status = 'Active'
+                                        ORDER BY created_at DESC";
                                 $result = $conn->query($sql);
 
                                 if ($result->num_rows > 0) {
@@ -245,23 +321,27 @@ try {
                                         $statusText = ucfirst($row['status']);
                                         $created = date('Y-m-d H:i', strtotime($row['created_at']));
                                         echo '
-                                            <tr>
-                                                <td>' . $admin_id . '</td>
-                                                <td>' . $created . '</td>
-                                                <td>' . $fullName . '</td>
-                                                <td>' . $role . '</td>
-                                                <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
-                                                <td>
-                                                    <div class="dropdown text-center">
-                                                        <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
-                                                        <ul class="dropdown-menu">
-                                                            <li><a class="dropdown-item" href="admin/view_admin.php?id=' . $admin_id . '">View Details</a></li>
-                                                            <li><a class="dropdown-item" href="admin/edit_admin.php?id=' . $admin_id . '">Edit Details</a></li>
-                                                            <li><a class="dropdown-item" href="admin/archive_admin.php?id=' . $admin_id . '">Delete Account</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </td>
-                                            </tr>';
+                                        <tr data-id="' . $admin_id . '">
+                                            <td>' . $admin_id . '</td>
+                                            <td>' . $created . '</td>
+                                            <td>' . $fullName . '</td>
+                                            <td>' . $role . '</td>
+                                            <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
+                                            <td>
+                                                <div class="dropdown text-center">
+                                                    <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="admin/view_admin.php?id=' . $admin_id . '">View Details</a></li>
+                                                        <li><a class="dropdown-item" href="admin/edit_admin.php?id=' . $admin_id . '">Edit Details</a></li>
+                                                        <li>
+                                                            <a class="dropdown-item delete-account" href="admin/archive_process.php" data-id="' . $admin_id . '" data-bs-toggle="modal" data-bs-target="#confirmModal">
+                                                                Delete Account
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>';
                                     }
                                 } else {
                                     echo '<tr><td colspan="6" class="text-center text-muted">No admin accounts found.</td></tr>';
@@ -286,7 +366,52 @@ try {
             </div>
         </main>
     </div>
+    <script>
+        let selectedId = null;
 
+        // Capture ID when clicking "Delete Account" button
+       document.querySelectorAll('.delete-account').forEach(btn => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault(); // Prevent page reload!
+                selectedId = btn.getAttribute('data-id');
+            });
+        });
+
+        // Handle confirmation proceed
+        document.getElementById('confirmProceed').addEventListener('click', () => {
+            if (selectedId) {
+                fetch('admin/archive_process.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'admin_id=' + encodeURIComponent(selectedId)
+            })
+            .then(res => res.text())  // read as text first
+            .then(text => {
+                let data;
+                try {
+                    data = JSON.parse(text); // then parse
+                } catch (e) {
+                    throw new Error("Invalid JSON response");
+                }
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+                    setTimeout(() => {
+                        new bootstrap.Modal(document.getElementById('successModal')).show();
+                    }, 300);
+                    document.querySelector(`tr[data-id="${selectedId}"]`)?.remove();
+                } else {
+                    alert(data.message || "Failed to archive.");
+                }
+            })
+            } else {
+                alert("Invalid admin ID.");
+            }
+        });
+        // Redirect after success
+        const redirect = () => window.location.href = 'admin_accounts.php';
+        document.getElementById('doneButton').addEventListener('click', redirect);
+        document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

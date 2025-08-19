@@ -162,7 +162,7 @@ try {
                     </button>
                     <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2">Amenity Booking</a></li>
+                            <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
                             <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
                         </ul>
                     </div>
