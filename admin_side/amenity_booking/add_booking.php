@@ -278,7 +278,7 @@ try {
                     <h5 class="mb-0 fw-bold w-100">Amenity Booking Management</h5>
                 </div>
                 <div class="d-flex flex-column flex-md-row align-items-center justify-content-between py-1">
-                    <span class="fw-bold text-center text-md-start" style="font-size:1.25rem;">Select an Amenity</span>
+                    <span class="fw-bold text-center text-md-start ms-md-2" style="font-size:1.25rem;">Select an Amenity</span>
                     <a href="../amenity_booking.php" class="btn btn-secondary btn-sm ms-md-3 mt-2 mt-md-0">Back</a>
                 </div>
                 <hr class="my-2" style="border-top: 2px solid #7a7a7aff;">
