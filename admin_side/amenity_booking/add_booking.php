@@ -111,10 +111,10 @@ try {
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
         <div class="me-4" style="width: 250px;">
-            <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
+            <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
+            <h1 class="h5 mb-0 fw-bold">RECORD KEEPING</h1>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
                 <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
@@ -139,7 +139,7 @@ try {
                 </a>
                 <!-- Accounts -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
                         data-bs-target="#accountsCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-person-lines-fill me-2"></i> Accounts
@@ -148,14 +148,14 @@ try {
                     <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="admin_accounts.php" class="nav-link px-2">Admin</a></li>
-                            <li><a href="household_accounts.php" class="nav-link px-2 actived">Household</a></li>
+                            <li><a href="household_accounts.php" class="nav-link px-2">Household</a></li>
                             <li><a href="visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
                         </ul>
                     </div>
                 </div>
                 <!-- Record Keeping -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
                         data-bs-target="#recordCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-book me-2"></i> Record Keeping
@@ -163,7 +163,7 @@ try {
                     </button>
                     <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
+                            <li><a href="amenity_booking.php" class="nav-link px-2 actived">Amenity Booking</a></li>
                             <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
                         </ul>
                     </div>
@@ -211,7 +211,7 @@ try {
         <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
-                    <h5 class="mb-0 fw-bold">Household Account Management</h5>
+                    <h5 class="mb-0 fw-bold w-100">Amenity Booking Management</h5>
                 </div>
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -219,3 +219,10 @@ try {
                         <a href="household/add_household.php" class="btn btn-primary btn-sm">+ Create New</a>
                     </div>
                 </div>
+            </div>
+        </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+                

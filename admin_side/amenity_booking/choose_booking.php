@@ -167,7 +167,15 @@ try {
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
+            
         }
+        /* Make Cancel button slightly darker on hover */
+        #confirmModal .btn-cancel:hover {
+            background-color: #d6d8db; /* slightly darker gray */
+            color: #000;
+        }
+        /* Cancel hover */
+        .btn-cancel:hover { background-color: #d6d8db; color: #000; }
     </style>
 </head>
 
@@ -219,13 +227,13 @@ try {
                 </div>
                 <!-- Record Keeping -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#recordCollapse" aria-expanded="false">
+                    <button class="btn btn-toggle  px-3 py-2 active" data-bs-toggle="collapse"
+                        data-bs-target="#recordCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-book me-2"></i> Record Keeping
                         </span>
                     </button>
-                    <div class="collapse" id="recordCollapse">
+                    <div class="collapse show" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="amenity_booking.php" class="nav-link px-2 actived">Amenity Booking</a></li>
                             <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
@@ -283,51 +291,51 @@ try {
                 </div>
                 <hr class="my-2" style="border-top: 2px solid #7a7a7aff;">
                 <!-- Responsive Amenity Booking Grid -->
-            <div class="container-fluid booking-grid-container">
-                <div class="row g-2 h-100">
-                    <!-- Clubhouse -->
-                    <div class="col-12 col-md-6 d-flex align-items-stretch">
-                        <div class="booking-card w-100">
-                            <img src="../../images/clubhouse.png" alt="Clubhouse">
-                            <div class="card-body w-100">
-                                <h6 class="card-title mb-2">Clubhouse</h6>
-                                <button class="btn btn-primary w-100">Book</button>
+                <div class="container-fluid booking-grid-container">
+                    <div class="row g-2 h-100">
+                        <!-- Clubhouse -->
+                        <div class="col-12 col-md-6 d-flex align-items-stretch">
+                            <div class="booking-card w-100">
+                                <img src="../../images/clubhouse.png" alt="Clubhouse">
+                                <div class="card-body w-100">
+                                    <h6 class="card-title mb-2">Clubhouse</h6>
+                                    <a href="add_booking.php?amenity=Clubhouse" class="btn btn-primary w-100">Book</a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <!-- Gazebo -->
-                    <div class="col-12 col-md-6 d-flex align-items-stretch">
-                        <div class="booking-card w-100">
-                            <img src="../../images/gazebo.png" alt="Gazebo">
-                            <div class="card-body w-100">
-                                <h6 class="card-title mb-2">Gazebo</h6>
-                                <button class="btn btn-primary w-100">Book</button>
+                        <!-- Gazebo -->
+                        <div class="col-12 col-md-6 d-flex align-items-stretch">
+                            <div class="booking-card w-100">
+                                <img src="../../images/gazebo.png" alt="Gazebo">
+                                <div class="card-body w-100">
+                                    <h6 class="card-title mb-2">Gazebo</h6>
+                                    <a href="add_booking.php?amenity=Gazebo" class="btn btn-primary w-100">Book</a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <!-- Swimming Pool -->
-                    <div class="col-12 col-md-6 d-flex align-items-stretch">
-                        <div class="booking-card w-100">
-                            <img src="../../images/pool.png" alt="Swimming Pool">
-                            <div class="card-body w-100">
-                                <h6 class="card-title mb-2">Swimming Pool</h6>
-                                <button class="btn btn-primary w-100">Book</button>
+                        <!-- Swimming Pool -->
+                        <div class="col-12 col-md-6 d-flex align-items-stretch">
+                            <div class="booking-card w-100">
+                                <img src="../../images/pool.png" alt="Swimming Pool">
+                                <div class="card-body w-100">
+                                    <h6 class="card-title mb-2">Swimming Pool</h6>
+                                    <a href="add_booking.php?amenity=Swimming%20Pool" class="btn btn-primary w-100">Book</a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <!-- Basketball Court -->
-                    <div class="col-12 col-md-6 d-flex align-items-stretch">
-                        <div class="booking-card w-100">
-                            <img src="../../images/basketball.png" alt="Basketball Court">
-                            <div class="card-body w-100">
-                                <h6 class="card-title mb-2">Basketball Court</h6>
-                                <button class="btn btn-primary w-100">Book</button>
+                        <!-- Basketball Court -->
+                        <div class="col-12 col-md-6 d-flex align-items-stretch">
+                            <div class="booking-card w-100">
+                                <img src="../../images/basketball.png" alt="Basketball Court">
+                                <div class="card-body w-100">
+                                    <h6 class="card-title mb-2">Basketball Court</h6>
+                                    <a href="add_booking.php?amenity=Basketball%20Court" class="btn btn-primary w-100">Book</a>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     </div>
         </main>
