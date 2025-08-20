@@ -154,8 +154,20 @@
                             nameText.classList.remove("text-muted");
                             console.error("Error:", err);
 
-                            // ✅ Close gate on error
-                            triggerGate("close");
+                            // Use mock database when API fails
+                            const userData = mockDatabase[uid];
+                            if (userData) {
+                                statusSpan.textContent = userData.type === "household" ? "Household Member" : "Visitor";
+                                statusSpan.classList.remove("text-secondary", "text-warning");
+                                statusSpan.classList.add(userData.type === "household" ? "text-success" : "text-primary");
+
+                                nameText.textContent = "Name: " + userData.full_name;
+                                triggerGate("open");
+                                resetAutoClose();
+                            } else {
+                                // ✅ Close gate on error or unknown card
+                                triggerGate("close");
+                            }
                         });
                 }
             } else {
@@ -186,6 +198,14 @@
                 })
                 .catch(err => {
                     console.error("Gate trigger error:", err);
+
+                    // Demo gate status update when API fails
+                    const gateStatus = document.getElementById("gateStatus");
+                    if (action === "open") {
+                        updateGateDisplay("OPEN");
+                    } else if (action === "close") {
+                        updateGateDisplay("CLOSED");
+                    }
                 });
         }
 
@@ -194,7 +214,21 @@
             if (autoCloseTimer) clearTimeout(autoCloseTimer);
             autoCloseTimer = setTimeout(() => {
                 triggerGate("close");
+                // Update status display when auto-closing
+                updateGateDisplay("CLOSED");
             }, 5000);
+        }
+
+        // Update gate status display
+        function updateGateDisplay(status) {
+            const gateStatus = document.getElementById("gateStatus");
+            if (status === "OPEN") {
+                gateStatus.innerHTML = `Gate Status: <strong>OPEN</strong>`;
+                gateStatus.className = "alert alert-success mt-3";
+            } else {
+                gateStatus.innerHTML = `Gate Status: <strong>CLOSED</strong>`;
+                gateStatus.className = "alert alert-secondary mt-3";
+            }
         }
     </script>
 

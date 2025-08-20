@@ -37,8 +37,8 @@ try {
 }
 
 // Fetch Amenity Bookings from booking_details table
-$entry_sql = "SELECT * FROM booking_details ORDER BY booking_date DESC";
-$bookings_result = $conn->query($entry_sql);
+$entry_sql = "SELECT * FROM entry_logs ORDER BY date_created DESC";
+$entry_result = $conn->query($entry_sql);
 ?>
 
 <!DOCTYPE html>
@@ -125,7 +125,7 @@ $bookings_result = $conn->query($entry_sql);
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
+            <h1 class="h5 mb-0 fw-bold">RECORD KEEPING</h1>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
                 <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
@@ -304,7 +304,7 @@ $bookings_result = $conn->query($entry_sql);
                     </ul>
                     <!-- Tab Content -->
                     <div class="tab-content p-3">
-                        <!-- Bookings Table -->
+                        <!-- Resident Table -->
                         <div class="tab-pane fade show active" id="homeowner" role="tabpanel">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <span class="small">Homeowner Entry Logs</span>
@@ -328,52 +328,94 @@ $bookings_result = $conn->query($entry_sql);
                                     </thead>
                                     <tbody class="small align-middle">
                                         <?php
-                                        if ($bookings_result->num_rows > 0) {
-                                            while ($row = $bookings_result->fetch_assoc()) {
-                                                $id = $row['booking_id'];
-                                                $fullName = $row['full_name'];
-                                                $amenity = $row['amenity'];
-                                                $bookingDate = $row['booking_date'];
-                                                $resCode = $row['reservation_code'];
-                                                $statusClass = $row['payment_status'] === 'Paid' ? 'text-success' : ($row['payment_status'] === 'Partial' ? 'text-warning' : 'text-muted');
-                                                echo "<tr>
-                                                <td>{$id}</td>
-                                                <td>{$bookingDate}</td>
-                                                <td>{$fullName}</td>
-                                                <td>{$amenity}</td>
-                                                <td>{$resCode}</td>
-                                                <td class='{$statusClass} fw-bold'>{$row['payment_status']}</td>
-                                                <td>
-                                                    <div class='dropdown'>
-                                                        <button class='btn btn-sm btn-secondary dropdown-toggle' data-bs-toggle='dropdown'>Action</button>
-                                                        <ul class='dropdown-menu'>
-                                                            <li><a class='dropdown-item' href='#'>View Details</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </td>
-                                            </tr>";
+                                        $household_count = 0;
+                                        if ($entry_result->num_rows > 0) {
+                                            $entry_result->data_seek(0); // Reset result pointer
+                                            while ($row = $entry_result->fetch_assoc()) {
+                                                if ($row['type'] === 'household') {
+                                                    $household_count++;
+                                                    $id = $row['entry_id'];
+                                                    $uid = $row['uid'];
+                                                    $fullName = trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
+                                                    $date = date('F j, Y, g:i A', strtotime($row['date_created']));
+                                                    $location = "Gate 1";
+                                                    echo "<tr>
+                                                            <td>{$id}</td>
+                                                            <td>{$uid}</td>
+                                                            <td>{$fullName}</td>
+                                                            <td>{$date}</td>
+                                                            <td>{$location}</td>
+                                                        </tr>";
+                                                }
                                             }
-                                        } else {
-                                            echo "<tr><td colspan='7' class='text-center text-muted'>No bookings found.</td></tr>";
+                                        }
+                                        if ($household_count === 0) {
+                                            echo "<tr><td colspan='5' class='text-center text-muted'>No household entry logs found.</td></tr>";
                                         }
                                         ?>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-
-                        <!-- Calendar View -->
-                        <div class="tab-pane fade" id="calendar" role="tabpanel">
-                            <div class="p-3 text-center text-muted">Calendar view coming soon.</div>
-                        </div>
-
-                        <!-- Reschedule Requests -->
-                        <div class="tab-pane fade" id="reschedule" role="tabpanel">
-                            <div class="p-3 text-center text-muted">Reschedule requests coming soon.</div>
+                        <!-- Visitor Table -->
+                        <div class="tab-pane fade" id="visitor" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="small">Visitor Entry Logs</span>
+                                <div class="d-flex gap-2">
+                                    <a href="entry_logs/archive_visitor.php" class="btn btn-secondary btn-sm">Archived
+                                        RFID</a>
+                                    <a href="entry_logs/manage_visitor.php" class="btn btn-primary btn-sm">Manage
+                                        Visitor RFID</a>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead class="bg-primary text-white small">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Visitor RFID</th>
+                                            <th>Full Name</th>
+                                            <th>Date and Time</th>
+                                            <th>Location</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="small align-middle">
+                                        <?php
+                                        $visitor_count = 0;
+                                        if ($entry_result->num_rows > 0) {
+                                            $entry_result->data_seek(0); // Reset result pointer
+                                            while ($row = $entry_result->fetch_assoc()) {
+                                                if ($row['type'] === 'visitor') {
+                                                    $visitor_count++;
+                                                    $id = $row['entry_id'];
+                                                    $uid = $row['uid'];
+                                                    $fullName = trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
+                                                    $date = date('F j, Y, g:i A', strtotime($row['date_created']));
+                                                    $location = "Gate 1";
+                                                    echo "<tr>
+                                                            <td>{$id}</td>
+                                                            <td>{$uid}</td>
+                                                            <td>{$fullName}</td>
+                                                            <td>{$date}</td>
+                                                            <td>{$location}</td>
+                                                        </tr>";
+                                                }
+                                            }
+                                        }
+                                        if ($visitor_count === 0) {
+                                            echo "<tr><td colspan='5' class='text-center text-muted'>No visitor entry logs found.</td></tr>";
+                                        }
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
+
                     <div class="d-flex justify-content-between align-items-center mt-2">
-                        <span class="small">Showing 1 to <?php echo $bookings_result->num_rows; ?> entries</span>
+                        <?php $total = $result->num_rows;
+                        echo "<span class='small'>Showing 1 to {$total} of {$total} entries</span>";
+                        ?>
                         <nav>
                             <ul class="pagination pagination-sm m-0">
                                 <li class="page-item disabled"><a class="page-link">Previous</a></li>
@@ -388,6 +430,42 @@ $bookings_result = $conn->query($entry_sql);
     </div>
     <script>
         let selectedId = null;
+
+        // Handle tab switching and link color changes
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabLinks = document.querySelectorAll('#dashboardTabs .nav-link');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            // Add click event listener to each tab link
+            tabLinks.forEach(function (tabLink) {
+                tabLink.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    // Get the target tab pane
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetPane = document.getElementById(targetId);
+
+                    // Remove active classes from all tabs and panes
+                    tabLinks.forEach(function (link) {
+                        link.classList.remove('active', 'link-dark');
+                        link.classList.add('link-secondary');
+                    });
+
+                    tabPanes.forEach(function (pane) {
+                        pane.classList.remove('show', 'active');
+                    });
+
+                    // Add active classes to current tab and pane
+                    this.classList.add('active');
+                    this.classList.remove('link-secondary');
+                    this.classList.add('link-dark');
+
+                    if (targetPane) {
+                        targetPane.classList.add('show', 'active');
+                    }
+                });
+            });
+        });
 
         // Capture ID when clicking "Delete Account" button
         document.querySelectorAll('.delete-account').forEach(btn => {
