@@ -1,50 +1,56 @@
 <?php
 header('Content-Type: application/json');
-require 'db.php'; // make sure this connects to your MySQL
+require 'db.php'; // DB connection
 
 if (!isset($_POST['uid'])) {
     echo json_encode(["status" => "error", "message" => "No UID provided"]);
     exit;
 }
 
-$uid = trim($_POST['uid']);
+$uid = strtoupper(trim($_POST['uid'])); // normalize UID
 
 try {
-    // Prepare and check in household_accounts
-    $stmt1 = $conn->prepare("SELECT * FROM household_accounts WHERE rfid = ?");
+    // ✅ Check household_accounts
+    $stmt1 = $conn->prepare("SELECT first_name, middle_name, last_name, rfid 
+                             FROM household_accounts WHERE rfid = ?");
     $stmt1->bind_param("s", $uid);
     $stmt1->execute();
     $result1 = $stmt1->get_result();
 
-    if ($result1->num_rows > 0) {
+    if ($result1 && $result1->num_rows > 0) {
         $row = $result1->fetch_assoc();
+        $full_name = trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
         echo json_encode([
             "status" => "success",
             "type" => "household",
-            "data" => $row
+            "rfid" => $row['rfid'],
+            "full_name" => $full_name
         ]);
         exit;
     }
 
-    // Prepare and check in visitor_details
-    $stmt2 = $conn->prepare("SELECT * FROM visitor_details WHERE rfid = ?");
+    // ✅ Check visitor_details
+    $stmt2 = $conn->prepare("SELECT first_name, middle_name, last_name, rfid 
+                             FROM visitor_details WHERE rfid = ?");
     $stmt2->bind_param("s", $uid);
     $stmt2->execute();
     $result2 = $stmt2->get_result();
 
-    if ($result2->num_rows > 0) {
+    if ($result2 && $result2->num_rows > 0) {
         $row = $result2->fetch_assoc();
+        $full_name = trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
         echo json_encode([
             "status" => "success",
             "type" => "visitor",
-            "data" => $row
+            "rfid" => $row['rfid'],
+            "full_name" => $full_name
         ]);
         exit;
     }
 
-    // If not found in both tables
+    // ✅ If not found in both tables
     echo json_encode([
-        "status" => "not_found",
+        "status" => "error",
         "message" => "UID not registered"
     ]);
 
@@ -54,4 +60,3 @@ try {
         "message" => $e->getMessage()
     ]);
 }
-?>

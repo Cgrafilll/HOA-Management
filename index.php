@@ -72,6 +72,7 @@
 
     <script>
         let buffer = "";
+        let autoCloseTimer = null;
 
         document.addEventListener("keypress", function (e) {
             if (e.key === "Enter") {
@@ -79,25 +80,31 @@
                     const uid = buffer;
                     buffer = "";
 
-                    // Create entry div
                     const entriesDiv = document.getElementById("entries");
                     const newEntry = document.createElement("div");
-                    newEntry.classList.add("p-2", "border-bottom", "d-flex", "justify-content-between", "align-items-center");
+                    newEntry.classList.add("p-2", "border-bottom");
 
-                    // UID text
+                    const topLine = document.createElement("div");
+                    topLine.classList.add("d-flex", "justify-content-between", "fw-bold");
+
                     const uidText = document.createElement("span");
                     uidText.textContent = "Scanned UID: " + uid;
 
-                    // Status placeholder
                     const statusSpan = document.createElement("span");
                     statusSpan.textContent = "Checking...";
-                    statusSpan.classList.add("ms-2", "fw-bold", "text-secondary");
+                    statusSpan.classList.add("text-secondary");
 
-                    newEntry.appendChild(uidText);
-                    newEntry.appendChild(statusSpan);
+                    topLine.appendChild(uidText);
+                    topLine.appendChild(statusSpan);
+
+                    const nameText = document.createElement("div");
+                    nameText.textContent = "Name: Checking...";
+                    nameText.classList.add("text-muted");
+
+                    newEntry.appendChild(topLine);
+                    newEntry.appendChild(nameText);
                     entriesDiv.prepend(newEntry);
 
-                    // Send to backend for validation
                     fetch("rfid-api/check_uid.php", {
                         method: "POST",
                         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -106,32 +113,89 @@
                         .then(res => res.json())
                         .then(data => {
                             if (data.status === "success") {
+                                nameText.textContent = "Name: " + (data.full_name || "Unknown Card");
+                                nameText.classList.remove("text-muted");
+
                                 if (data.type === "household") {
                                     statusSpan.textContent = "Household Member";
                                     statusSpan.classList.remove("text-secondary");
                                     statusSpan.classList.add("text-success");
+                                    triggerGate("open");
+
                                 } else if (data.type === "visitor") {
                                     statusSpan.textContent = "Visitor";
                                     statusSpan.classList.remove("text-secondary");
                                     statusSpan.classList.add("text-primary");
+                                    triggerGate("open");
                                 }
+
+                                // ✅ Auto close after 5 seconds
+                                resetAutoClose();
+
                             } else {
                                 statusSpan.textContent = "Not Registered";
                                 statusSpan.classList.remove("text-secondary");
                                 statusSpan.classList.add("text-danger");
+
+                                nameText.textContent = "Name: Unknown Card";
+                                nameText.classList.remove("text-muted");
+
+                                // ✅ Immediately close gate if not registered
+                                triggerGate("close");
                             }
                         })
+
                         .catch(err => {
                             statusSpan.textContent = "Error";
                             statusSpan.classList.remove("text-secondary");
                             statusSpan.classList.add("text-warning");
+
+                            nameText.textContent = "Name: Unknown Card";
+                            nameText.classList.remove("text-muted");
                             console.error("Error:", err);
+
+                            // ✅ Close gate on error
+                            triggerGate("close");
                         });
                 }
             } else {
                 buffer += e.key;
             }
         });
+
+        // ✅ Function to call open_gate.php
+        function triggerGate(action) {
+            fetch("rfid-api/open_gate.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: "action=" + encodeURIComponent(action)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const gateStatus = document.getElementById("gateStatus");
+                    if (data.status === "success") {
+                        gateStatus.innerHTML = `Gate Status: <strong>${data.gate}</strong>`;
+                        gateStatus.className =
+                            data.gate === "OPEN"
+                                ? "alert alert-success mt-3"
+                                : "alert alert-secondary mt-3";
+                    } else {
+                        gateStatus.innerHTML = `Gate Status: <strong>Error</strong>`;
+                        gateStatus.className = "alert alert-danger mt-3";
+                    }
+                })
+                .catch(err => {
+                    console.error("Gate trigger error:", err);
+                });
+        }
+
+        // ✅ Close gate automatically after 5 seconds
+        function resetAutoClose() {
+            if (autoCloseTimer) clearTimeout(autoCloseTimer);
+            autoCloseTimer = setTimeout(() => {
+                triggerGate("close");
+            }, 5000);
+        }
     </script>
 
 </body>

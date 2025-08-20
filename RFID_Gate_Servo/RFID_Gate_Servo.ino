@@ -2,52 +2,59 @@
 
 Servo myservo;
 
-// Ultrasonic pins
 #define trigPin 2
 #define echoPin 3
 
-// Distance threshold in cm
-const int objectThreshold = 20;
-const unsigned long openDuration = 5000; // Gate stays open for 5 seconds
+const int objectThreshold = 20;          // cm
+const unsigned long openDuration = 5000; // ms
 
 bool gateOpen = false;
 unsigned long gateOpenTime = 0;
 
 void setup() {
   Serial.begin(9600);
-  
   myservo.attach(9);
-  myservo.write(0); // Initially closed
-  
+  myservo.write(20); // closed position (avoids twitch)
+
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
+
+  Serial.println("System ready.");
 }
 
 void loop() {
+  // 🔹 Listen for Serial commands
+  if (Serial.available() > 0) {
+    String command = Serial.readStringUntil('\n');
+    command.trim();
+
+    if (command.equalsIgnoreCase("OPEN")) {
+      openGate();
+      gateOpenTime = millis();
+    }
+    else if (command.equalsIgnoreCase("CLOSE")) {
+      closeGate();
+    }
+  }
+
+  // 🔹 Ultrasonic auto-close
   int distance = getDistance();
 
-  // Only open gate if object is detected and gate is currently closed
-  if (!gateOpen && distance > 0 && distance < objectThreshold) {
-    openGate();
-    gateOpenTime = millis();
+  if (gateOpen && distance <= objectThreshold) {
+    closeGate(); // close if object detected
   }
 
-  // Close gate if open and:
-  // 1) the timer expires, OR
-  // 2) the object is no longer detected
-  if (gateOpen && (millis() - gateOpenTime >= openDuration || distance >= objectThreshold)) {
-    closeGate();
-  }
+  delay(50); // keep servo pulses smooth
 }
 
 void openGate() {
-  myservo.write(90); // Open position
+  myservo.write(160); // open
   gateOpen = true;
   Serial.println("Gate opened.");
 }
 
 void closeGate() {
-  myservo.write(0); // Close position
+  myservo.write(20); // closed
   gateOpen = false;
   Serial.println("Gate closed.");
 }
@@ -55,14 +62,12 @@ void closeGate() {
 int getDistance() {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
-
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
 
-  long duration = pulseIn(echoPin, HIGH, 30000); // Timeout to avoid hangs
-  if (duration == 0) return -1; // No echo detected
+  long duration = pulseIn(echoPin, HIGH, 30000);
+  if (duration == 0) return 9999;
 
-  int distance = duration * 0.034 / 2; // cm
-  return distance;
+  return duration * 0.034 / 2;
 }
