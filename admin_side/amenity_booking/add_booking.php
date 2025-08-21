@@ -242,10 +242,8 @@ $amenity = $_GET['amenity'] ?? null;
                         <h5 class="fw-bold">CLUBHOUSE POOL USAGE GUIDELINES</h5>
                         <p>
                             We're happy to announce that our pool is now open to walk-ins! To ensure a safe and
-                            enjoyable
-                            experience for everyone, please take note of the following guidelines:
+                            enjoyable experience for everyone, please take note of the following guidelines:
                         </p>
-
                         <h6 class="fw-bold mt-3">General Access of Pool:</h6>
                         <div class="ms-3">
                             <p class="mb-1">Walk-in Homeowners/Guests</p>
@@ -363,6 +361,7 @@ $amenity = $_GET['amenity'] ?? null;
                         </div>
                     </div>
                 </div>
+            </div>
         </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
