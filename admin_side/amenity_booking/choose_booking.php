@@ -306,20 +306,21 @@ try {
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold w-100">Amenity Booking Management</h5>
                 </div>
-                <div class="d-flex flex-column flex-md-row align-items-center justify-content-between py-1">
-                    <span class="fw-bold text-center text-md-start ms-md-2" style="font-size:1.25rem;">Select an
-                        Amenity</span>
-                    <a href="../amenity_booking.php" class="btn btn-outline-secondary btn-sm ms-md-3 mt-2 mt-md-0"><i
-                            class="bi bi-arrow-left-short me-1"></i>Back</a>
+                <div class="p-3 d-flex justify-content-between align-items-center">
+                    <span class="mb-0">Select an Amenity</span>
+                    <a href="../amenity_booking.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                        <i class="bi bi-arrow-left-short me-1"></i>Back
+                    </a>
                 </div>
-                <hr class="my-2" style="border-top: 2px solid #7a7a7aff;">
+                <hr class="mb-3 mt-0">
                 <!-- Responsive Amenity Booking Grid -->
                 <div class="container-fluid booking-grid-container">
                     <div class="row g-2 h-100">
                         <!-- Clubhouse -->
                         <div class="col-12 col-md-6 d-flex align-items-stretch">
                             <div class="booking-card w-100">
-                                <img src="../../images/clubhouse.png" alt="Clubhouse">
+                                <img src="../../images/clubhouse.png" alt="Clubhouse" class="object-fit-cover"
+                                    style="height: 300px;">
                                 <div class="card-body w-100">
                                     <h6 class="card-title mb-2">Clubhouse</h6>
                                     <a href="add_booking.php?amenity=Clubhouse" class="btn btn-primary w-100">Book</a>
@@ -329,7 +330,8 @@ try {
                         <!-- Gazebo -->
                         <div class="col-12 col-md-6 d-flex align-items-stretch">
                             <div class="booking-card w-100">
-                                <img src="../../images/gazebo.png" alt="Gazebo">
+                                <img src="../../images/gazebo.png" alt="Gazebo" class="object-fit-cover"
+                                    style="height: 300px;">
                                 <div class="card-body w-100">
                                     <h6 class="card-title mb-2">Gazebo</h6>
                                     <a href="add_booking.php?amenity=Gazebo" class="btn btn-primary w-100">Book</a>
@@ -339,7 +341,8 @@ try {
                         <!-- Swimming Pool -->
                         <div class="col-12 col-md-6 d-flex align-items-stretch">
                             <div class="booking-card w-100">
-                                <img src="../../images/pool.png" alt="Swimming Pool">
+                                <img src="../../images/pool.png" alt="Swimming Pool" class="object-fit-cover"
+                                    style="height: 300px;">
                                 <div class="card-body w-100">
                                     <h6 class="card-title mb-2">Swimming Pool</h6>
                                     <a href="add_booking.php?amenity=Swimming%20Pool"
@@ -350,7 +353,8 @@ try {
                         <!-- Basketball Court -->
                         <div class="col-12 col-md-6 d-flex align-items-stretch">
                             <div class="booking-card w-100">
-                                <img src="../../images/basketball.png" alt="Basketball Court">
+                                <img src="../../images/basketball.png" alt="Basketball Court" class="object-fit-cover"
+                                    style="height: 300px;">
                                 <div class="card-body w-100">
                                     <h6 class="card-title mb-2">Basketball Court</h6>
                                     <a href="add_booking.php?amenity=Basketball%20Court"
@@ -361,10 +365,10 @@ try {
                     </div>
                 </div>
             </div>
-            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        </main>
     </div>
-    </main>
-    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

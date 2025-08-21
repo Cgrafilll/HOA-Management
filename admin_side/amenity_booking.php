@@ -44,10 +44,24 @@ $bookings_result = $conn->query($booking_sql);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+
         .sidebar {
             width: 250px;
-            min-height: 100vh;
+            height: 100vh;
+            position: fixed;
+            top: 20;
+            left: 0;
             background-color: #1F2937;
+            overflow-y: auto;
+        }
+
+        main {
+            margin-left: 250px;
         }
 
         .sidebar a,
@@ -100,7 +114,6 @@ $bookings_result = $conn->query($booking_sql);
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
-
         }
 
         /* Make Cancel button slightly darker on hover */
@@ -114,6 +127,96 @@ $bookings_result = $conn->query($booking_sql);
         .btn-cancel:hover {
             background-color: #d6d8db;
             color: #000;
+        }
+
+        .calendar-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .calendar-nav button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .calendar-nav button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .calendar-nav button.active {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            border-left: 1px solid #dee2e6;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .calendar-day-header {
+            background: #f8f9fa;
+            padding: 0.75rem 0.5rem;
+            font-weight: 600;
+            text-align: center;
+            border-right: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 0.875rem;
+        }
+
+        .calendar-day {
+            min-height: 120px;
+            border-right: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
+            padding: 0.5rem;
+            position: relative;
+            background: white;
+        }
+
+        .calendar-day.other-month {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+
+        .calendar-day.today {
+            background: #e3f2fd;
+        }
+
+        .legend {
+            display: flex;
+            gap: 1rem;
+            padding: 0.75rem;
+            border-radius: 4px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 2px;
+        }
+
+        .booking-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .booking-detail:last-child {
+            border-bottom: none;
         }
     </style>
 </head>
@@ -220,7 +323,6 @@ $bookings_result = $conn->query($booking_sql);
                 </a>
             </nav>
         </aside>
-
         <!-- Main Content -->
         <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-3">
@@ -242,7 +344,6 @@ $bookings_result = $conn->query($booking_sql);
                             role="tab">Reschedule Requests</a>
                     </li>
                 </ul>
-
                 <!-- Tab Content -->
                 <div class="tab-content">
                     <!-- Bookings Table -->
@@ -299,27 +400,157 @@ $bookings_result = $conn->query($booking_sql);
                                 </tbody>
                             </table>
                         </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="small">Showing 1 to <?php echo $bookings_result->num_rows; ?> entries</span>
+                            <nav>
+                                <ul class="pagination pagination-sm m-0">
+                                    <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                                    <li class="page-item active"><a class="page-link">1</a></li>
+                                    <li class="page-item"><a class="page-link">Next</a></li>
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
-
                     <!-- Calendar View -->
                     <div class="tab-pane fade" id="calendar" role="tabpanel">
-                        <div class="p-3 text-center text-muted">Calendar view coming soon.</div>
+                        <!-- Calendar Controls -->
+                        <div class="row mb-3 align-items-center">
+                            <div class="col-md-4">
+                                <div class="legend">
+                                    <div class="legend-item">
+                                        <div class="legend-color paid bg-success"></div>
+                                        <span>Paid</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color partial bg-warning"></div>
+                                        <span>Partial Payment</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color pending bg-secondary"></div>
+                                        <span>Pending Payment</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-8 text-end">
+                                <button class="btn btn-primary btn-sm" onclick="goToToday()">
+                                    <i class="bi bi-calendar-date me-1"></i>Today
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Calendar -->
+                        <div class="calendar-container shadow-sm">
+                            <div
+                                class="calendar-header bg-success text-white p-3 d-flex justify-content-between align-items-center">
+                                <div class="calendar-nav d-flex gap-2">
+                                    <button onclick="previousMonth()">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </button>
+                                    <button onclick="nextMonth()">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <h4 class="mb-0" id="monthYear">August 2025</h4>
+                                <div class="calendar-nav d-flex gap-2">
+                                    <button id="monthBtn" class="active" onclick="setView('month')">Month</button>
+                                    <button id="weekBtn" onclick="setView('week')">Week</button>
+                                </div>
+                            </div>
+
+                            <div class="calendar-grid" id="calendarGrid">
+                                <!-- Calendar will be generated here -->
+                            </div>
+                        </div>
+                        <!-- Booking Details Modal -->
+                        <div class="modal fade booking-modal" id="bookingModal" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-success text-white">
+                                        <h5 class="modal-title">Booking Details</h5>
+                                        <button type="button" class="btn-close btn-close-white"
+                                            data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body" id="modalContent">
+                                        <!-- Booking details will be populated here -->
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-primary">Edit Booking</button>
+                                        <button type="button" class="btn btn-secondary"
+                                            data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Reschedule Requests -->
                     <div class="tab-pane fade" id="reschedule" role="tabpanel">
-                        <div class="p-3 text-center text-muted">Reschedule requests coming soon.</div>
+                        <!-- Bookings Table -->
+                        <div class="tab-pane fade show active" id="bookings" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="small">List of Amenity Bookings</span>
+                                <a href="amenity_booking/choose_booking.php" class="btn btn-primary btn-sm">+ Create New
+                                    Booking</a>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead class="bg-success text-white small">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Booking Date</th>
+                                            <th>Full Name</th>
+                                            <th>Amenity</th>
+                                            <th>Reservation Code</th>
+                                            <th>Payment Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="small align-middle">
+                                        <?php
+                                        if ($bookings_result->num_rows > 0) {
+                                            while ($row = $bookings_result->fetch_assoc()) {
+                                                $id = $row['booking_id'];
+                                                $fullName = $row['full_name'];
+                                                $amenity = $row['amenity'];
+                                                $bookingDate = $row['booking_date'];
+                                                $resCode = $row['reservation_code'];
+                                                $statusClass = $row['payment_status'] === 'Paid' ? 'text-success' : ($row['payment_status'] === 'Partial' ? 'text-warning' : 'text-muted');
+                                                echo "<tr>
+                                                <td>{$id}</td>
+                                                <td>{$bookingDate}</td>
+                                                <td>{$fullName}</td>
+                                                <td>{$amenity}</td>
+                                                <td>{$resCode}</td>
+                                                <td class='{$statusClass} fw-bold'>{$row['payment_status']}</td>
+                                                <td>
+                                                    <div class='dropdown'>
+                                                        <button class='btn btn-sm btn-secondary dropdown-toggle' data-bs-toggle='dropdown'>Action</button>
+                                                        <ul class='dropdown-menu'>
+                                                            <li><a class='dropdown-item' href='#'>View Details</a></li>
+                                                        </ul>
+                                                    </div>
+                                                </td>
+                                            </tr>";
+                                            }
+                                        } else {
+                                            echo "<tr><td colspan='7' class='text-center text-muted'>No bookings found.</td></tr>";
+                                        }
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span class="small">Showing 1 to <?php echo $bookings_result->num_rows; ?>
+                                    entries</span>
+                                <nav>
+                                    <ul class="pagination pagination-sm m-0">
+                                        <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                                        <li class="page-item active"><a class="page-link">1</a></li>
+                                        <li class="page-item"><a class="page-link">Next</a></li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-2">
-                    <span class="small">Showing 1 to <?php echo $bookings_result->num_rows; ?> entries</span>
-                    <nav>
-                        <ul class="pagination pagination-sm m-0">
-                            <li class="page-item disabled"><a class="page-link">Previous</a></li>
-                            <li class="page-item active"><a class="page-link">1</a></li>
-                            <li class="page-item"><a class="page-link">Next</a></li>
-                        </ul>
-                    </nav>
                 </div>
             </div>
         </main>
@@ -362,6 +593,197 @@ $bookings_result = $conn->query($booking_sql);
                 });
             });
         });
+
+        // Sample booking data - in real implementation, this would come from PHP/database
+        const bookings = [
+            {
+                id: 1,
+                date: '2025-08-15',
+                fullName: 'John Doe',
+                amenity: 'Swimming Pool',
+                reservationCode: 'SP001',
+                paymentStatus: 'Paid',
+                amount: '$50.00',
+                time: '10:00 AM - 2:00 PM'
+            },
+            {
+                id: 2,
+                date: '2025-08-15',
+                fullName: 'Jane Smith',
+                amenity: 'Clubhouse',
+                reservationCode: 'CH002',
+                paymentStatus: 'Partial',
+                amount: '$25.00 / $75.00',
+                time: '6:00 PM - 10:00 PM'
+            },
+            {
+                id: 3,
+                date: '2025-08-22',
+                fullName: 'Bob Johnson',
+                amenity: 'Tennis Court',
+                reservationCode: 'TC003',
+                paymentStatus: 'Pending',
+                amount: '$30.00',
+                time: '3:00 PM - 5:00 PM'
+            },
+            {
+                id: 4,
+                date: '2025-08-28',
+                fullName: 'Alice Brown',
+                amenity: 'Function Hall',
+                reservationCode: 'FH004',
+                paymentStatus: 'Paid',
+                amount: '$200.00',
+                time: '7:00 PM - 11:00 PM'
+            }
+        ];
+
+        let currentDate = new Date(2025, 7, 1); // August 2025
+        let currentView = 'month';
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const monthYear = document.getElementById('monthYear');
+
+            grid.innerHTML = '';
+
+            // Update header
+            const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'];
+            monthYear.textContent = `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+
+            // Day headers
+            const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+
+            // Get first day of month and number of days
+            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+            // Create calendar days
+            const today = new Date();
+            for (let i = 0; i < 35; i++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+
+                // Add classes for styling
+                if (date.getMonth() !== currentDate.getMonth()) {
+                    dayElement.classList.add('other-month');
+                }
+                if (date.toDateString() === today.toDateString()) {
+                    dayElement.classList.add('today');
+                }
+
+                // Day number
+                const dayNumber = document.createElement('div');
+                dayNumber.className = 'day-number fw-medium';
+                dayNumber.style.fontSize = `0.875rem`;
+                dayNumber.textContent = date.getDate();
+                dayElement.appendChild(dayNumber);
+
+                // Add bookings for this date
+                const dateStr = date.toISOString().split('T')[0];
+                const dayBookings = bookings.filter(booking => booking.date === dateStr);
+
+                dayBookings.forEach(booking => {
+                    const bookingElement = document.createElement('div');
+                    let bgClass = 'bg-secondary'; // default for pending
+                    if (booking.paymentStatus === 'Paid') {
+                        bgClass = 'bg-success';
+                    } else if (booking.paymentStatus === 'Partial') {
+                        bgClass = 'bg-warning';
+                    }
+                    bookingElement.className = `booking-item ${bgClass} text-white overflow-hidden text-nowrap mb-1 rounded-2`;
+                    bookingElement.style.fontSize = '0.75rem';
+                    bookingElement.style.padding = '0.125rem 0.25rem';
+                    bookingElement.textContent = `${booking.amenity} - ${booking.fullName}`;
+                    bookingElement.onclick = () => showBookingDetails(booking);
+                    dayElement.appendChild(bookingElement);
+                });
+                grid.appendChild(dayElement);
+            }
+        }
+
+        function showBookingDetails(booking) {
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="booking-detail">
+                    <strong>Booking ID:</strong>
+                    <span>#${booking.id}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Guest Name:</strong>
+                    <span>${booking.fullName}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Amenity:</strong>
+                    <span>${booking.amenity}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Date:</strong>
+                    <span>${new Date(booking.date).toLocaleDateString()}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Time:</strong>
+                    <span>${booking.time}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Reservation Code:</strong>
+                    <span>${booking.reservationCode}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Payment Status:</strong>
+                    <span class="badge bg-${booking.paymentStatus === 'Paid' ? 'success' : booking.paymentStatus === 'Partial' ? 'warning' : 'secondary'}">${booking.paymentStatus}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Amount:</strong>
+                    <span>${booking.amount}</span>
+                </div>
+            `;
+
+            new bootstrap.Modal(document.getElementById('bookingModal')).show();
+        }
+
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        function goToToday() {
+            currentDate = new Date();
+            renderCalendar();
+        }
+
+        function setView(view) {
+            currentView = view;
+            document.getElementById('monthBtn').classList.toggle('active', view === 'month');
+            document.getElementById('weekBtn').classList.toggle('active', view === 'week');
+
+            if (view === 'week') {
+                // You can implement week view here
+                alert('Week view feature coming soon!');
+            } else {
+                renderCalendar();
+            }
+        }
+
+        // Initialize calendar
+        renderCalendar();
     </script>
 </body>
 
