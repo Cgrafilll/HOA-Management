@@ -89,69 +89,85 @@ if ($edit_household) {
     <title>NSSHAI HOA Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon"> .sidebar {
-    width: 250px;
-    min-height: 100vh;
-    background-color: #1F2937;
-    }
+    <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
+    <style>
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
 
-    .sidebar a,
-    .sidebar button {
-    color: #ffffff;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    }
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            top: 20;
+            left: 0;
+            background-color: #1F2937;
+            overflow-y: auto;
+        }
 
-    .sidebar a:hover,
-    .sidebar button:hover,
-    .collapse ul li a:hover,
-    .collapse ul li a.actived {
-    color: #80ed99;
-    }
+        main {
+            margin-left: 250px;
+        }
 
-    .sidebar .nav-link.active,
-    .sidebar .btn-toggle:not(.collapsed),
-    .sidebar .btn-toggle.active {
-    background-color: #198754;
-    border-radius: 0.375rem;
-    }
+        .sidebar a,
+        .sidebar button {
+            color: #ffffff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-    .sidebar .btn-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    color: #ffffff;
-    background: none;
-    border: none;
-    }
+        .sidebar a:hover,
+        .sidebar button:hover,
+        .collapse ul li a:hover,
+        .collapse ul li a.actived {
+            color: #80ed99;
+        }
 
-    .sidebar .btn-toggle i {
-    margin-right: 8px;
-    }
+        .sidebar .nav-link.active,
+        .sidebar .btn-toggle:not(.collapsed),
+        .sidebar .btn-toggle.active {
+            background-color: #198754;
+            border-radius: 0.375rem;
+        }
 
-    .sidebar .btn-toggle::after {
-    content: "▼";
-    font-size: 10px;
-    transition: transform 0.3s;
-    margin-left: auto;
-    }
+        .sidebar .btn-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            color: #ffffff;
+            background: none;
+            border: none;
+        }
 
-    .sidebar .btn-toggle.collapsed::after {
-    transform: rotate(0deg);
-    }
+        .sidebar .btn-toggle i {
+            margin-right: 8px;
+        }
 
-    .sidebar .btn-toggle:not(.collapsed)::after {
-    transform: rotate(180deg);
-    }
+        .sidebar .btn-toggle::after {
+            content: "▼";
+            font-size: 10px;
+            transition: transform 0.3s;
+            margin-left: auto;
+        }
 
-    #preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    }
+        .sidebar .btn-toggle.collapsed::after {
+            transform: rotate(0deg);
+        }
+
+        .sidebar .btn-toggle:not(.collapsed)::after {
+            transform: rotate(180deg);
+        }
+
+        #preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
     </style>
 </head>
 

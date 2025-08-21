@@ -35,6 +35,9 @@ try {
 } catch (Exception $e) {
     $error_message = "Error fetching user details: " . $e->getMessage();
 }
+
+// Initialize amenity details
+$amenity = $_GET['amenity'] ?? null;
 ?>
 
 <!DOCTYPE html>

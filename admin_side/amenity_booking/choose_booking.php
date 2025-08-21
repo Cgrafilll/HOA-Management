@@ -124,10 +124,24 @@ try {
             margin: auto;
         }
 
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+
         .sidebar {
             width: 250px;
-            min-height: 100vh;
+            height: 100vh;
+            position: fixed;
+            top: 20;
+            left: 0;
             background-color: #1F2937;
+            overflow-y: auto;
+        }
+
+        main {
+            margin-left: 250px;
         }
 
         .sidebar a,
