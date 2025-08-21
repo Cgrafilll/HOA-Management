@@ -37,22 +37,8 @@
                     </button>
                 </div>
             </div>
-
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="rememberMe" />
-                    <label class="form-check-label" for="rememberMe">Remember me</label>
-                </div>
-                <a href="#" class="text-decoration-none text-primary">Forgot Password?</a>
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100">Login</button>
+            <button type="submit" class="btn btn-primary w-100 mt-5 mb-3">Login</button>
         </form>
-
-        <p class="text-center text-muted mt-4 mb-0">
-            Don't have an account?
-            <a href="#" class="text-primary text-decoration-none">Contact Admin</a>
-        </p>
     </div>
 
     <!-- Bootstrap 5 JS (Optional) -->
