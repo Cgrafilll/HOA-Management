@@ -43,27 +43,32 @@ try {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Accounts</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <title>NSSHAI HOA Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
-        
         .booking-grid-container {
             padding: 0;
             margin: 0;
         }
+
         .row.g-2 {
             margin: 0;
         }
+
         .booking-card {
             width: 100%;
             display: flex;
             flex-direction: column;
             border-radius: 1rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             background: #fff;
-            height: 100%; /* Fill column height */
+            height: 100%;
+            /* Fill column height */
         }
+
         .booking-card img {
             width: 100%;
             height: 180px;
@@ -71,6 +76,7 @@ try {
             border-top-left-radius: 1rem;
             border-top-right-radius: 1rem;
         }
+
         .booking-card .card-body {
             flex: 1 1 auto;
             display: flex;
@@ -79,38 +85,46 @@ try {
             align-items: center;
             padding: 1rem;
         }
+
         @media (min-width: 768px) {
             .row.g-2 {
                 /* Remove h-100 from .row in HTML if present */
                 min-height: 0;
             }
+
             .col-12.col-md-6 {
                 display: flex;
                 align-items: stretch;
             }
         }
+
         @media (min-width: 768px) {
             .gap-2 {
                 gap: 0.75rem !important;
             }
         }
+
         .bg-success.text-white.rounded-top.p-3 {
             display: flex;
             justify-content: center;
             align-items: center;
         }
+
         .row-cols-md-2 {
             width: 100%;
         }
+
         .card-img-top {
             height: 200px;
             object-fit: cover;
         }
+
         .card {
             min-width: 220px;
             max-width: 350px;
             margin: auto;
         }
+
         .sidebar {
             width: 250px;
             min-height: 100vh;
@@ -167,15 +181,21 @@ try {
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
-            
+
         }
+
         /* Make Cancel button slightly darker on hover */
         #confirmModal .btn-cancel:hover {
-            background-color: #d6d8db; /* slightly darker gray */
+            background-color: #d6d8db;
+            /* slightly darker gray */
             color: #000;
         }
+
         /* Cancel hover */
-        .btn-cancel:hover { background-color: #d6d8db; color: #000; }
+        .btn-cancel:hover {
+            background-color: #d6d8db;
+            color: #000;
+        }
     </style>
 </head>
 
@@ -287,8 +307,10 @@ try {
                     <h5 class="mb-0 fw-bold w-100">Amenity Booking Management</h5>
                 </div>
                 <div class="d-flex flex-column flex-md-row align-items-center justify-content-between py-1">
-                    <span class="fw-bold text-center text-md-start ms-md-2" style="font-size:1.25rem;">Select an Amenity</span>
-                    <a href="../amenity_booking.php" class="btn btn-outline-secondary btn-sm ms-md-3 mt-2 mt-md-0"><i class="bi bi-arrow-left-short me-1"></i>Back</a>
+                    <span class="fw-bold text-center text-md-start ms-md-2" style="font-size:1.25rem;">Select an
+                        Amenity</span>
+                    <a href="../amenity_booking.php" class="btn btn-outline-secondary btn-sm ms-md-3 mt-2 mt-md-0"><i
+                            class="bi bi-arrow-left-short me-1"></i>Back</a>
                 </div>
                 <hr class="my-2" style="border-top: 2px solid #7a7a7aff;">
                 <!-- Responsive Amenity Booking Grid -->
@@ -320,7 +342,8 @@ try {
                                 <img src="../../images/pool.png" alt="Swimming Pool">
                                 <div class="card-body w-100">
                                     <h6 class="card-title mb-2">Swimming Pool</h6>
-                                    <a href="add_booking.php?amenity=Swimming%20Pool" class="btn btn-primary w-100">Book</a>
+                                    <a href="add_booking.php?amenity=Swimming%20Pool"
+                                        class="btn btn-primary w-100">Book</a>
                                 </div>
                             </div>
                         </div>
@@ -330,17 +353,18 @@ try {
                                 <img src="../../images/basketball.png" alt="Basketball Court">
                                 <div class="card-body w-100">
                                     <h6 class="card-title mb-2">Basketball Court</h6>
-                                    <a href="add_booking.php?amenity=Basketball%20Court" class="btn btn-primary w-100">Book</a>
+                                    <a href="add_booking.php?amenity=Basketball%20Court"
+                                        class="btn btn-primary w-100">Book</a>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     </div>
-        </main>
+    </main>
     </div>
 </body>
-</html>
 
+</html>

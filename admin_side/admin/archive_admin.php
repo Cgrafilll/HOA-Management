@@ -43,9 +43,11 @@ try {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Accounts</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <title>NSSHAI HOA Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         .sidebar {
             width: 250px;
@@ -103,11 +105,13 @@ try {
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
-            
+
         }
+
         /* Make Cancel button slightly darker on hover */
         #confirmModal .btn-cancel:hover {
-            background-color: #d6d8db; /* slightly darker gray */
+            background-color: #d6d8db;
+            /* slightly darker gray */
             color: #000;
         }
     </style>
@@ -224,7 +228,8 @@ try {
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">Archived Accounts</span>
                         <div class="d-flex gap-2">
-                            <a href="../admin_accounts.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                            <a href="../admin_accounts.php"
+                                class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                                 <i class="bi bi-arrow-left-short me-1"></i>Back
                             </a>
                         </div>
@@ -244,7 +249,7 @@ try {
                                     <p class="mb-3">User has been activated.</p>
                                     <button type="button" class="btn btn-primary" id="doneButton">Done</button>
                                 </div>
-                            </div> 
+                            </div>
                         </div>
                     </div>
                     <!-- Confirmation Modal -->
@@ -263,8 +268,10 @@ try {
                                     <p class="mb-3">Do you really want to activate this account?</p>
                                     <p class="mb-3">This process will activate this account.</p>
                                     <div class="d-flex justify-content-center gap-2">
-                                        <button type="button" class="btn btn-success" id="confirmActivate">Activate</button>
-                                        <button type="button" class="btn btn-light btn-cancel" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-success"
+                                            id="confirmActivate">Activate</button>
+                                        <button type="button" class="btn btn-light btn-cancel"
+                                            data-bs-dismiss="modal">Cancel</button>
                                     </div>
                                 </div>
                             </div>
@@ -372,20 +379,20 @@ try {
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: 'activate_id=' + encodeURIComponent(selectedAdminId)
                 })
-                .then(response => response.json())
-                .then(data => {
-                    confirmModal.hide(); // Hide confirmation
-                    if (data.success) {
-                        successModal.show(); // Show success
-                    } else {
-                        alert(data.message); // Show error message
-                    }
-                })
-                .catch(err => {
-                    confirmModal.hide();
-                    console.error(err);
-                    alert('An error occurred.');
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        confirmModal.hide(); // Hide confirmation
+                        if (data.success) {
+                            successModal.show(); // Show success
+                        } else {
+                            alert(data.message); // Show error message
+                        }
+                    })
+                    .catch(err => {
+                        confirmModal.hide();
+                        console.error(err);
+                        alert('An error occurred.');
+                    });
             });
 
             // Done button in success modal reloads the page

@@ -43,9 +43,11 @@ try {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Accounts</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <title>NSSHAI HOA Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         .sidebar {
             width: 250px;
@@ -104,12 +106,13 @@ try {
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
         }
+
         /* Make Cancel button slightly darker on hover */
         #confirmModal .btn-cancel:hover {
-            background-color: #d6d8db; /* slightly darker gray */
+            background-color: #d6d8db;
+            /* slightly darker gray */
             color: #000;
         }
-        
     </style>
 </head>
 
@@ -243,7 +246,7 @@ try {
                                     <p class="mb-3">User has been moved to archives.</p>
                                     <button type="button" class="btn btn-primary" id="doneButton">Done</button>
                                 </div>
-                            </div> 
+                            </div>
                         </div>
                     </div>
                     <!-- Confirmation Modal -->
@@ -263,7 +266,8 @@ try {
                                     <p class="mb-3">This process will archive this account.</p>
                                     <div class="d-flex justify-content-center gap-2">
                                         <button type="button" class="btn btn-danger" id="confirmProceed">Delete</button>
-                                        <button type="button" class="btn btn-light btn-cancel" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-light btn-cancel"
+                                            data-bs-dismiss="modal">Cancel</button>
                                     </div>
                                 </div>
                             </div>
@@ -371,7 +375,7 @@ try {
         let selectedId = null;
 
         // Capture ID when clicking "Delete Account" button
-       document.querySelectorAll('.delete-account').forEach(btn => {
+        document.querySelectorAll('.delete-account').forEach(btn => {
             btn.addEventListener('click', (event) => {
                 event.preventDefault(); // Prevent page reload!
                 selectedId = btn.getAttribute('data-id');
@@ -382,28 +386,28 @@ try {
         document.getElementById('confirmProceed').addEventListener('click', () => {
             if (selectedId) {
                 fetch('admin/archive_process.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'admin_id=' + encodeURIComponent(selectedId)
-            })
-            .then(res => res.text())  // read as text first
-            .then(text => {
-                let data;
-                try {
-                    data = JSON.parse(text); // then parse
-                } catch (e) {
-                    throw new Error("Invalid JSON response");
-                }
-                if (data.success) {
-                    bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
-                    setTimeout(() => {
-                        new bootstrap.Modal(document.getElementById('successModal')).show();
-                    }, 300);
-                    document.querySelector(`tr[data-id="${selectedId}"]`)?.remove();
-                } else {
-                    alert(data.message || "Failed to archive.");
-                }
-            })
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'admin_id=' + encodeURIComponent(selectedId)
+                })
+                    .then(res => res.text())  // read as text first
+                    .then(text => {
+                        let data;
+                        try {
+                            data = JSON.parse(text); // then parse
+                        } catch (e) {
+                            throw new Error("Invalid JSON response");
+                        }
+                        if (data.success) {
+                            bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+                            setTimeout(() => {
+                                new bootstrap.Modal(document.getElementById('successModal')).show();
+                            }, 300);
+                            document.querySelector(`tr[data-id="${selectedId}"]`)?.remove();
+                        } else {
+                            alert(data.message || "Failed to archive.");
+                        }
+                    })
             } else {
                 alert("Invalid admin ID.");
             }
