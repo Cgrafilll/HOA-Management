@@ -6,7 +6,7 @@
     background-position: center; 
     background-repeat: no-repeat;">
 </div>
-<h5 class="fw-bold mb-4">GAZEBO RATES</h5>
+<h5 class="fw-bold mb-4">BASKETBALL COURT RATES</h5>
 <div class="container my-5">
     <div class="row">
         <!-- Homeowner Table -->
@@ -26,8 +26,8 @@
                             <td>5:00 PM - 10:00 PM</td>
                         </tr>
                         <tr>
-                            <td>₱1000.00</td>
-                            <td>₱1500.00</td>
+                            <td>₱200.00/per head</td>
+                            <td>₱300.00/per head</td>
                         </tr>
                     </tbody>
                 </table> 
@@ -50,8 +50,8 @@
                             <td>5:00 PM - 10:00 PM</td>
                         </tr>
                         <tr>
-                            <td>₱2000.00</td>
-                            <td>₱3000.00</td>
+                            <td>₱300.00</td>
+                            <td>₱400.00</td>
                         </tr>
                     </tbody>
                 </table>
