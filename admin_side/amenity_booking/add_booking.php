@@ -137,7 +137,7 @@ $amenity = $_GET['amenity'] ?? null;
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav flex-column gap-1">
-                <a href="admin_dashboard.php"
+                <a href="../admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
@@ -225,7 +225,7 @@ $amenity = $_GET['amenity'] ?? null;
                             <a href="choose_booking.php" class="btn btn-outline-secondary btn-sm me-2">
                                 <i class="bi bi-arrow-left-short me-1"></i>Back
                             </a>
-                            <a href="household/add_household.php" class="btn btn-primary btn-sm">Book Now</a>
+                            <a href="household/book_amenity.php" class="btn btn-primary btn-sm">Book Now</a>
                         </div>
                     </div>
                     <hr class="my-2" style="border-top: 2px solid #7a7a7aff" ;>

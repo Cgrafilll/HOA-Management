@@ -238,7 +238,7 @@ try {
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav flex-column gap-1">
-                <a href="admin_dashboard.php"
+                <a href="../admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
