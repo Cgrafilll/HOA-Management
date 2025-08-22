@@ -54,10 +54,24 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
 
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+
         .sidebar {
             width: 250px;
-            min-height: 100vh;
+            height: 100vh;
+            position: fixed;
+            top: 20;
+            left: 0;
             background-color: #1F2937;
+            overflow-y: auto;
+        }
+
+        main {
+            margin-left: 250px;
         }
 
         .sidebar a,
@@ -111,6 +125,46 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
         }
+
+        .file-drop-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background-color: #f9fafb;
+            transition: all 0.3s ease;
+        }
+
+        .file-drop-area:hover {
+            border-color: #6b7280;
+            background-color: #f3f4f6;
+        }
+
+        .file-drop-area.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        .cloud-icon {
+            font-size: 48px;
+            color: #9ca3af;
+            margin-bottom: 16px;
+        }
+
+        .payment-info {
+            background-color: #f8f9fa;
+            border-left: 4px solid #198754;
+        }
+
+        .form-floating>.form-select {
+            padding-top: 1.625rem;
+            padding-bottom: 0.625rem;
+        }
+
+        .form-check-input:checked {
+            background-color: #198754;
+            border-color: #198754;
+        }
     </style>
 </head>
 
@@ -163,7 +217,7 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
                 <!-- Record Keeping -->
                 <div>
                     <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#recordCollapse" aria-expanded="false">
+                        data-bs-target="#recordCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-book me-2"></i> Record Keeping
                         </span>
@@ -236,66 +290,389 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
                 </div>
                 <div class="p-3">
                     <form action="reserve_booking.php?reserve=<?php echo htmlspecialchars($amenity); ?>" method="POST"
-                        id="householdForm" enctype="multipart/form-data">
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <div class="form-floating">
-                                    <select class="form-select" id="userType">
-                                        <option value="resident">Homeowner / Resident</option>
+                        id="householdForm" enctype="multipart/form-data" id="reservationForm">
+                        <div class="row">
+                            <!-- Left Column -->
+                            <div class="col-lg-6">
+                                <!-- User Type -->
+                                <div class="form-floating mb-3">
+                                    <select class="form-select" id="userType" name="userType" required>
+                                        <option value="homeowner" selected>Homeowner/Resident</option>
                                         <option value="visitor">Visitor</option>
                                     </select>
-                                    <label for="userType">User Type</label>
+                                    <label for="userType">User Type<small class="fw-bold text-danger">*</small></label>
+                                </div>
+
+                                <!-- First Name -->
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="firstName" name="firstName"
+                                        placeholder="First Name" required>
+                                    <label for="firstName">First Name<small
+                                            class="fw-bold text-danger">*</small></label>
+                                </div>
+
+                                <!-- Middle Name -->
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="middleName" name="middleName"
+                                        placeholder="Middle Name">
+                                    <label for="middleName">Middle Name<small
+                                            class="fw-bold text-danger">*</small></label>
+                                </div>
+
+                                <!-- Last Name -->
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="lastName" name="lastName"
+                                        placeholder="Last Name" required>
+                                    <label for="lastName">Last Name<small class="fw-bold text-danger">*</small></label>
+                                </div>
+
+                                <!-- Email Address -->
+                                <div class="form-floating mb-3">
+                                    <input type="email" class="form-control" id="emailAddress" name="emailAddress"
+                                        placeholder="name@example.com" required>
+                                    <label for="emailAddress">Email Address<small
+                                            class="fw-bold text-danger">*</small></label>
+                                </div>
+
+                                <!-- Date -->
+                                <div class="form-floating mb-3">
+                                    <input type="date" class="form-control" id="reservationDate" name="reservationDate"
+                                        required>
+                                    <label for="reservationDate">Date<small
+                                            class="fw-bold text-danger">*</small></label>
+                                </div>
+
+                                <!-- Guests -->
+                                <div class="mb-3 position-relative">
+                                    <label class="form-label">Guests<small class="fw-bold text-danger">*</small></label>
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
+                                            type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                            id="guestsButton">
+                                            <span id="guestsDisplay">1</span>
+                                        </button>
+                                        <div class="dropdown-menu w-100 p-3" id="guestsDropdown">
+                                            <!-- Household Members -->
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <span>Household Members</span>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <button type="button"
+                                                        class="btn btn-outline-secondary btn-sm rounded-circle p-1"
+                                                        onclick="changeCount('household', -1)"
+                                                        style="width: 30px; height: 30px;">
+                                                        <i class="bi bi-dash"></i>
+                                                    </button>
+                                                    <span id="householdCount" class="fw-bold">1</span>
+                                                    <button type="button"
+                                                        class="btn btn-outline-secondary btn-sm rounded-circle p-1"
+                                                        onclick="changeCount('household', 1)"
+                                                        style="width: 30px; height: 30px;">
+                                                        <i class="bi bi-plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Guests -->
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span>Guests</span>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <button type="button"
+                                                        class="btn btn-outline-secondary btn-sm rounded-circle p-1"
+                                                        onclick="changeCount('guests', -1)"
+                                                        style="width: 30px; height: 30px;">
+                                                        <i class="bi bi-dash"></i>
+                                                    </button>
+                                                    <span id="guestCount" class="fw-bold">0</span>
+                                                    <button type="button"
+                                                        class="btn btn-outline-secondary btn-sm rounded-circle p-1"
+                                                        onclick="changeCount('guests', 1)"
+                                                        style="width: 30px; height: 30px;">
+                                                        <i class="bi bi-plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="householdMembers" id="householdMembers" value="1">
+                                    <input type="hidden" name="guestMembers" id="guestMembers" value="0">
+                                </div>
+
+                                <!-- Rates -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Rates</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="rate" id="dayRate"
+                                            value="day" required>
+                                        <label class="form-check-label" for="dayRate">
+                                            Day - ₱500.00 local
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="rate" id="nightRate"
+                                            value="night">
+                                        <label class="form-check-label" for="nightRate">
+                                            Night - ₱500.00 total
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Payment -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Payment</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment" id="cash"
+                                            value="cash" required>
+                                        <label class="form-check-label" for="cash">
+                                            Cash
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment" id="bankDeposit"
+                                            value="bank">
+                                        <label class="form-check-label" for="bankDeposit">
+                                            Bank Deposit
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Exclusive Booking -->
+                                <div class="form-floating mb-3">
+                                    <select class="form-select" id="exclusiveBooking" name="exclusiveBooking" required>
+                                        <option value="no" selected>No</option>
+                                        <option value="yes">Yes</option>
+                                    </select>
+                                    <label for="exclusiveBooking">Is this an exclusive booking?</label>
+                                </div>
+
+                                <!-- Add-Ons -->
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="number" class="form-control" id="chairs" name="chairs" min="0"
+                                                value="0">
+                                            <label for="chairs">Chairs</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="number" class="form-control" id="tables" name="tables" min="0"
+                                                value="0">
+                                            <label for="tables">Tables</label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-6">
-                                <div class="form-floating">
-                                    <input type="text" class="form-control" id="floatingInput"
-                                        placeholder="name@example.com">
-                                    <label for="floatingInput">Email address</label>
+
+                            <!-- Right Column -->
+                            <div class="col-lg-6">
+                                <!-- Payment Information -->
+                                <div class="payment-info p-3 rounded mb-4">
+                                    <h6 class="fw-bold mb-3">Payment Account</h6>
+                                    <div class="mb-2">
+                                        <strong>EastWest Bank</strong><br>
+                                        <small class="text-muted">Nesaphan Sitio Seville</small>
+                                    </div>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Account Number: 200056977f</small>
+                                    </div>
+                                    <div class="small text-muted">
+                                        Please settle payment as soon as possible to secure your slot. We strictly
+                                        enforce payment first before we begin with your schedule/session.
+                                        Failure to do so will result in cancellation of your reservation.
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <div class="form-floating">
-                                    <input type="text" class="form-control" id="fname" name="fname">
-                                    <label for="fname">First Name<span class="text-danger">*</span></label>
+
+                                <!-- Reference Number -->
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="referenceNumber" name="referenceNumber"
+                                        placeholder="Reference Number">
+                                    <label for="referenceNumber">Reference Number</label>
                                 </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-floating">
-                                    <input type="email" class="form-control" id="floatingInput"
-                                        placeholder="name@example.com">
-                                    <label for="floatingInput">Email address</label>
+
+                                <!-- Amount Paid -->
+                                <div class="form-floating mb-3">
+                                    <input type="number" class="form-control" id="amountPaid" name="amountPaid"
+                                        placeholder="Amount Paid" step="0.01">
+                                    <label for="amountPaid">Amount Paid</label>
+                                </div>
+
+                                <!-- File Upload -->
+                                <div class="mb-4">
+                                    <div class="file-drop-area" id="fileDropArea">
+                                        <div class="cloud-icon">
+                                            <i class="bi bi-cloud-upload"></i>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Drag & drop files or <a href="#" id="browseLink">Browse</a></strong>
+                                        </div>
+                                        <div class="small text-muted">
+                                            Supported formats: JPEG, PNG, GIF, PDF, TXT, XLS, AI, Word, PPT
+                                        </div>
+                                        <input type="file" id="fileInput" name="proofOfPayment" class="d-none"
+                                            accept=".jpeg,.jpg,.png,.gif,.pdf,.txt,.xls,.xlsx,.ai,.doc,.docx,.ppt,.pptx">
+                                    </div>
+                                    <div id="filePreview" class="mt-2"></div>
+                                </div>
+
+                                <!-- Terms and Conditions -->
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="termsConditions"
+                                        name="termsConditions" required>
+                                    <label class="form-check-label" for="termsConditions">
+                                        I agree to <a href="#" class="text-success">Terms and Conditions</a>
+                                    </label>
+                                </div>
+
+                                <!-- Privacy Policy -->
+                                <div class="form-check mb-4">
+                                    <input class="form-check-input" type="checkbox" id="privacyPolicy"
+                                        name="privacyPolicy" required>
+                                    <label class="form-check-label" for="privacyPolicy">
+                                        I agree to <a href="#" class="text-success">Privacy Policy</a>
+                                    </label>
+                                </div>
+
+                                <!-- Submit Button -->
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-success btn-lg">Reserve</button>
                                 </div>
                             </div>
                         </div>
                     </form>
                 </div>
-                <div class="p-3">
-                    <?php if ($amenity && isset($amenities[$amenity])): ?>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="small"><?php echo htmlspecialchars($amenity); ?></span>
-                            <div>
-                                <a href="choose_booking.php" class="btn btn-outline-secondary btn-sm me-2">
-                                    <i class="bi bi-arrow-left-short me-1"></i>Back
-                                </a>
-                                <a href="household/add_household.php" class="btn btn-primary btn-sm">Book Now</a>
-                            </div>
-                        </div>
-                        <hr class="my-2" style="border-top: 2px solid #7a7a7aff;">
-                        <!-- Amenity-Specific Content -->
-                        <div class="mt-4">
-                            <?php include __DIR__ . '/' . $amenities[$amenity]['file']; ?>
-                        </div>
-                    <?php else: ?>
-                        <p class="text-danger">Invalid or missing amenity selection.</p>
-                    <?php endif; ?>
-                </div>
             </div>
         </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // File upload functionality
+        const fileDropArea = document.getElementById('fileDropArea');
+        const fileInput = document.getElementById('fileInput');
+        const browseLink = document.getElementById('browseLink');
+        const filePreview = document.getElementById('filePreview');
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileDropArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        // Highlight drop area when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileDropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileDropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        // Handle dropped files
+        fileDropArea.addEventListener('drop', handleDrop, false);
+
+        // Handle browse link click
+        browseLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            fileInput.click();
+        });
+
+        // Handle file input change
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            fileDropArea.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            fileDropArea.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            if (files.length > 0) {
+                const file = files[0];
+                filePreview.innerHTML = `
+                    <div class="alert alert-success d-flex align-items-center">
+                        <i class="bi bi-file-earmark-check me-2"></i>
+                        <div>
+                            <strong>${file.name}</strong><br>
+                            <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                        </div>
+                        <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
+                    </div>
+                `;
+            }
+        }
+
+        function clearFile() {
+            fileInput.value = '';
+            filePreview.innerHTML = '';
+        }
+
+        // Form submission
+        document.getElementById('reservationForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Basic form validation
+            if (!this.checkValidity()) {
+                e.stopPropagation();
+                this.classList.add('was-validated');
+                return;
+            }
+
+            // Show success message
+            alert('Reservation submitted successfully!');
+
+            // Reset form
+            this.reset();
+            filePreview.innerHTML = '';
+            this.classList.remove('was-validated');
+        });
+
+        // Guest counter functionality
+        let householdCount = 1;
+        let guestCount = 0;
+
+        function changeCount(type, change) {
+            if (type === 'household') {
+                householdCount = Math.max(1, householdCount + change);
+                document.getElementById('householdCount').textContent = householdCount;
+                document.getElementById('householdMembers').value = householdCount;
+            } else if (type === 'guests') {
+                guestCount = Math.max(0, guestCount + change);
+                document.getElementById('guestCount').textContent = guestCount;
+                document.getElementById('guestMembers').value = guestCount;
+            }
+
+            updateGuestsDisplay();
+        }
+
+        function updateGuestsDisplay() {
+            const total = householdCount + guestCount;
+            const displayText = total === 1 ? '1 guest' : `${total} guests`;
+            document.getElementById('guestsDisplay').textContent = displayText;
+        }
+
+        // Prevent dropdown from closing when clicking inside
+        document.getElementById('guestsDropdown').addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+
+        // Set minimum date to today
+        document.getElementById('reservationDate').setAttribute('min', new Date().toISOString().split('T')[0]);
+    </script>
 </body>
 
 </html>

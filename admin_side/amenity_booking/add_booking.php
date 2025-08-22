@@ -71,10 +71,24 @@ $amenities = [
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+
         .sidebar {
             width: 250px;
-            min-height: 100vh;
+            height: 100vh;
+            position: fixed;
+            top: 20;
+            left: 0;
             background-color: #1F2937;
+            overflow-y: auto;
+        }
+
+        main {
+            margin-left: 250px;
         }
 
         .sidebar a,
@@ -180,7 +194,7 @@ $amenities = [
                 <!-- Record Keeping -->
                 <div>
                     <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#recordCollapse" aria-expanded="false">
+                        data-bs-target="#recordCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-book me-2"></i> Record Keeping
                         </span>
