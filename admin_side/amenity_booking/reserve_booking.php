@@ -36,8 +36,57 @@ try {
     $error_message = "Error fetching user details: " . $e->getMessage();
 }
 
-//Initialize amenity details
+// Initialize amenity details (make sure case & spacing match keys)
 $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
+
+// Define rates
+$amenityRates = [
+    "Swimming Pool" => [
+        "homeowner" => [
+            "day" => "₱100.00 / per person",
+            "night" => "₱200.00 / per person"
+        ],
+        "visitor" => [
+            "day" => "₱200.00 / per person",
+            "night" => "₱300.00 / per person"
+        ]
+    ],
+    "Clubhouse" => [
+        "homeowner" => [
+            "day" => "₱12,000.00",
+            "night" => "₱12,000.00"
+        ],
+        "visitor" => [
+            "day" => "₱15,000.00",
+            "night" => "₱15,000.00"
+        ]
+    ],
+    "Basketball Court" => [
+        "homeowner" => [
+            "day" => "₱200.00 / per person",
+            "night" => "₱300.00 / per person"
+        ],
+        "visitor" => [
+            "day" => "₱300.00 / per person",
+            "night" => "₱400.00 / per person"
+        ]
+    ],
+    "Gazebo" => [
+        "homeowner" => [
+            "day" => "₱1,000.00",
+            "night" => "₱2,000.00"
+        ],
+        "visitor" => [
+            "day" => "₱2,000.00",
+            "night" => "₱3,000.00"
+        ]
+    ]
+];
+
+// Get default rates (homeowner)
+$currentRates = ($amenity && isset($amenityRates[$amenity]))
+    ? $amenityRates[$amenity]['homeowner']
+    : null;
 
 ?>
 
@@ -53,6 +102,11 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
     <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+        * {
+            font-family: "Montserrat", sans-serif;
+        }
 
         header {
             position: sticky;
@@ -161,9 +215,64 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
             padding-bottom: 0.625rem;
         }
 
-        .form-check-input:checked {
-            background-color: #198754;
+        .custom-radio-container {
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        .custom-radio-option {
+            padding: 16px 20px;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .custom-radio-option:not(:last-child) {
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .custom-radio-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .custom-radio-option.selected {
+            background-color: #f0f9ff;
             border-color: #198754;
+        }
+
+        .custom-radio-circle {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #6c757d;
+            border-radius: 50%;
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: all 0.2s ease;
+        }
+
+        .custom-radio-circle.selected {
+            border-color: #198754;
+            background-color: #198754;
+        }
+
+        .custom-radio-circle.selected::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
     </style>
 </head>
@@ -284,14 +393,14 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
                 </div>
                 <div class="p-3">
                     <form action="reserve_booking.php?reserve=<?php echo htmlspecialchars($amenity); ?>" method="POST"
-                        id="householdForm" enctype="multipart/form-data" id="reservationForm">
+                        enctype="multipart/form-data" id="reservationForm">
                         <div class="row">
                             <!-- Left Column -->
                             <div class="col-lg-6">
                                 <!-- User Type -->
                                 <div class="form-floating mb-3">
                                     <select class="form-select" id="userType" name="userType" required>
-                                        <option value="homeowner" selected>Homeowner/Resident</option>
+                                        <option value="homeowner">Homeowner/Resident</option>
                                         <option value="visitor">Visitor</option>
                                     </select>
                                     <label for="userType">User Type<small class="fw-bold text-danger">*</small></label>
@@ -336,97 +445,54 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
 
-                                <!-- Guests -->
-                                <div class="mb-3 position-relative">
-                                    <label class="form-label">Guests<small class="fw-bold text-danger">*</small></label>
-                                    <div class="dropdown">
-                                        <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
-                                            type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                                            id="guestsButton">
-                                            <span id="guestsDisplay">1</span>
-                                        </button>
-                                        <div class="dropdown-menu w-100 p-3" id="guestsDropdown">
-                                            <!-- Household Members -->
-                                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                                <span>Household Members</span>
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <button type="button"
-                                                        class="btn btn-outline-secondary btn-sm rounded-circle p-1"
-                                                        onclick="changeCount('household', -1)"
-                                                        style="width: 30px; height: 30px;">
-                                                        <i class="bi bi-dash"></i>
-                                                    </button>
-                                                    <span id="householdCount" class="fw-bold">1</span>
-                                                    <button type="button"
-                                                        class="btn btn-outline-secondary btn-sm rounded-circle p-1"
-                                                        onclick="changeCount('household', 1)"
-                                                        style="width: 30px; height: 30px;">
-                                                        <i class="bi bi-plus"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <!-- Guests -->
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span>Guests</span>
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <button type="button"
-                                                        class="btn btn-outline-secondary btn-sm rounded-circle p-1"
-                                                        onclick="changeCount('guests', -1)"
-                                                        style="width: 30px; height: 30px;">
-                                                        <i class="bi bi-dash"></i>
-                                                    </button>
-                                                    <span id="guestCount" class="fw-bold">0</span>
-                                                    <button type="button"
-                                                        class="btn btn-outline-secondary btn-sm rounded-circle p-1"
-                                                        onclick="changeCount('guests', 1)"
-                                                        style="width: 30px; height: 30px;">
-                                                        <i class="bi bi-plus"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
+                                <?php if ($amenity !== "Gazebo" && $amenity !== "Clubhouse"): ?>
+                                    <!-- Guests -->
+                                    <div class="form-floating mb-3">
+                                        <input type="number" class="form-control" id="guests" name="guests" min="0">
+                                        <label for="guests">Guests<small class="fw-bold text-danger">*</small></label>
                                     </div>
-                                    <input type="hidden" name="householdMembers" id="householdMembers" value="1">
-                                    <input type="hidden" name="guestMembers" id="guestMembers" value="0">
-                                </div>
+                                <?php endif; ?>
 
                                 <!-- Rates -->
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Rates</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="rate" id="dayRate"
-                                            value="day" required>
-                                        <label class="form-check-label" for="dayRate">
-                                            Day - ₱500.00 local
-                                        </label>
+                                    <label class="form-label fw-bold">Rates<small
+                                            class="fw-bold text-danger">*</small></label>
+                                    <div id="ratesContainer" class="custom-radio-container">
+                                        <?php if ($currentRates): ?>
+                                            <div class="custom-radio-option" data-value="day"
+                                                onclick="selectRate(this, 'day')">
+                                                <span id="dayRate">Day • <?= $currentRates['day'] ?></span>
+                                                <div class="custom-radio-circle"></div>
+                                            </div>
+                                            <div class="custom-radio-option" data-value="night"
+                                                onclick="selectRate(this, 'night')">
+                                                <span id="nightRate">Night • <?= $currentRates['night'] ?></span>
+                                                <div class="custom-radio-circle"></div>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-danger">Rates not available for this amenity.</p>
+                                        <?php endif; ?>
                                     </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="rate" id="nightRate"
-                                            value="night">
-                                        <label class="form-check-label" for="nightRate">
-                                            Night - ₱500.00 total
-                                        </label>
-                                    </div>
+                                    <input type="hidden" name="rate" id="selectedRate" value="day" required>
                                 </div>
 
                                 <!-- Payment -->
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Payment</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="payment" id="cash"
-                                            value="cash" required>
-                                        <label class="form-check-label" for="cash">
-                                            Cash
-                                        </label>
+                                    <label class="form-label fw-bold">Payment<small
+                                            class="fw-bold text-danger">*</small></label>
+                                    <div class="custom-radio-container">
+                                        <div class="custom-radio-option" data-value="cash"
+                                            onclick="selectPayment(this, 'cash')">
+                                            <span>Cash</span>
+                                            <div class="custom-radio-circle"></div>
+                                        </div>
+                                        <div class="custom-radio-option" data-value="bank"
+                                            onclick="selectPayment(this, 'bank')">
+                                            <span>Bank Deposit</span>
+                                            <div class="custom-radio-circle"></div>
+                                        </div>
                                     </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="payment" id="bankDeposit"
-                                            value="bank">
-                                        <label class="form-check-label" for="bankDeposit">
-                                            Bank Deposit
-                                        </label>
-                                    </div>
+                                    <input type="hidden" name="payment" id="selectedPayment" value="bank" required>
                                 </div>
 
                                 <!-- Exclusive Booking -->
@@ -435,7 +501,8 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
                                         <option value="no" selected>No</option>
                                         <option value="yes">Yes</option>
                                     </select>
-                                    <label for="exclusiveBooking">Is this an exclusive booking?</label>
+                                    <label for="exclusiveBooking">Is this an exclusive booking?<small
+                                            class="fw-bold text-danger">*</small></label>
                                 </div>
 
                                 <!-- Add-Ons -->
@@ -444,14 +511,14 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="chairs" name="chairs" min="0"
                                                 value="0">
-                                            <label for="chairs">Chairs</label>
+                                            <label for="chairs">Chairs <small>(₱12.00/pc)</small></label>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="tables" name="tables" min="0"
                                                 value="0">
-                                            <label for="tables">Tables</label>
+                                            <label for="tables">Tables <small>(₱20.00/pc)</small></label>
                                         </div>
                                     </div>
                                 </div>
@@ -463,13 +530,15 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
                                 <div class="payment-info p-3 rounded mb-4">
                                     <h6 class="fw-bold mb-3">Payment Account</h6>
                                     <div class="mb-2">
-                                        <strong>EastWest Bank</strong><br>
-                                        <small class="text-muted">Nesaphan Sitio Seville</small>
+                                        <small>EastWest Bank</small><br>
                                     </div>
                                     <div class="mb-2">
-                                        <small class="text-muted">Account Number: 200056977f</small>
+                                        <small>Neopolitan Sitio Seville</small>
                                     </div>
-                                    <div class="small text-muted">
+                                    <div class="mb-2">
+                                        <small>Account Number: 20049887271</small>
+                                    </div>
+                                    <div class="small fw-bold">
                                         Please settle payment as soon as possible to secure your slot. We strictly
                                         enforce payment first before we begin with your schedule/session.
                                         Failure to do so will result in cancellation of your reservation.
@@ -480,14 +549,30 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="referenceNumber" name="referenceNumber"
                                         placeholder="Reference Number">
-                                    <label for="referenceNumber">Reference Number</label>
+                                    <label for="referenceNumber">Reference Number<small
+                                            class="fw-bold text-danger">*</small></label>
+                                </div>
+
+                                <!-- Total Amount -->
+                                <div class="mb-3">
+                                    <label for="total" class="form-label">Total<span
+                                            class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₱</span>
+                                        <input type="text" class="form-control" id="total" name="total"
+                                            placeholder="0.00" readonly>
+                                    </div>
                                 </div>
 
                                 <!-- Amount Paid -->
-                                <div class="form-floating mb-3">
-                                    <input type="number" class="form-control" id="amountPaid" name="amountPaid"
-                                        placeholder="Amount Paid" step="0.01">
-                                    <label for="amountPaid">Amount Paid</label>
+                                <div class="mb-3">
+                                    <label for="amountPaid" class="form-label">Amount Paid<small
+                                            class="fw-bold text-danger">*</small></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₱</span>
+                                        <input type="number" class="form-control" id="amountPaid" name="amountPaid"
+                                            placeholder="0.00" min="0" step="0.25" required>
+                                    </div>
                                 </div>
 
                                 <!-- File Upload -->
@@ -513,8 +598,93 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
                                     <input class="form-check-input" type="checkbox" id="termsConditions"
                                         name="termsConditions" required>
                                     <label class="form-check-label" for="termsConditions">
-                                        I agree to <a href="#" class="text-success">Terms and Conditions</a>
+                                        I agree to <a href="#" class="text-success" data-bs-toggle="modal"
+                                            data-bs-target="#termsModal">Terms and Conditions</a>
                                     </label>
+                                </div>
+
+                                <!-- Terms and Conditions Modal -->
+                                <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel"
+                                    aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-success text-white">
+                                                <h5 class="modal-title" id="termsModalLabel">TERMS AND CONDITIONS FOR
+                                                    AMENITY BOOKING</h5>
+                                                <button type="button" class="btn-close btn-close-white"
+                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p><strong>Neopolitan Sitio Seville Homeowners' Association, Inc.
+                                                        (NSSHAI)</strong></p>
+                                                <p><em>Effective Date: April 2025</em></p>
+                                                <p>By booking any amenity through the NSSHAI HOA Management System, you
+                                                    agree to the following terms and conditions:</p>
+
+                                                <h6>1. Reservation and Payment</h6>
+                                                <ul>
+                                                    <li>A minimum of 50% down payment is required for all reservations.
+                                                        This payment is <strong>non-refundable</strong> but may be
+                                                        rescheduled upon request.</li>
+                                                    <li>Reservations must be made through the official HOA system and
+                                                        are considered valid only once payment is received and
+                                                        confirmed.</li>
+                                                    <li>All payments must be made via:
+                                                        <ul>
+                                                            <li><strong>EastWest Bank</strong><br>Account Name:
+                                                                Neopolitan Sitio Seville<br>Account Number: 20049887271
+                                                            </li>
+                                                            <li><strong>Or in person</strong> at the HOA Administrative
+                                                                Office</li>
+                                                        </ul>
+                                                    </li>
+                                                </ul>
+                                                <h6>2. Payment Confirmation</h6>
+                                                <ul>
+                                                    <li>Proof of payment (e.g., deposit slip or screenshot) must be
+                                                        uploaded through the online form or submitted to the office to
+                                                        confirm the booking.</li>
+                                                    <li>Incomplete or unverified reservations may be canceled without
+                                                        notice.</li>
+                                                </ul>
+                                                <h6>3. Rescheduling Policy</h6>
+                                                <ul>
+                                                    <li>Rescheduling is allowed but must be requested at least 24 hours
+                                                        before the reserved date.</li>
+                                                    <li>New schedule is subject to availability and HOA approval.</li>
+                                                    <li>Only one (1) rescheduling per booking is permitted. Further
+                                                        changes may require a new reservation and payment.</li>
+                                                </ul>
+                                                <h6>4. Exclusive Use and Special Requests</h6>
+                                                <ul>
+                                                    <li>Requests for exclusive use of amenities (e.g., swimming pool)
+                                                        require a minimum of 10 guests, higher rates, and prior
+                                                        approval.</li>
+                                                    <li>Special bookings are dependent on HOA availability and
+                                                        administrative discretion.</li>
+                                                </ul>
+                                                <h6>5. Overtime Usage</h6>
+                                                <ul>
+                                                    <li>Use of the Basketball Court beyond the booked session (Day or
+                                                        Night) will incur an additional charge of ₱100.00 per hour.</li>
+                                                    <li>This applies only to excess hours beyond the reserved time.</li>
+                                                    <li>Overtime use is subject to HOA approval and monitoring.</li>
+                                                </ul>
+                                                <h6>6. Policy Enforcement</h6>
+                                                <ul>
+                                                    <li>The HOA reserves the right to cancel or deny any booking due to
+                                                        safety issues, maintenance, or failure to comply with policies.
+                                                    </li>
+                                                    <li>Improper use of the system or false information may lead to
+                                                        suspension of booking privileges.</li>
+                                                </ul>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-success"
+                                                    data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Privacy Policy -->
@@ -635,37 +805,144 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
             this.classList.remove('was-validated');
         });
 
-        // Guest counter functionality
-        let householdCount = 1;
-        let guestCount = 0;
+        // Store rates from PHP into JS
+        const amenityRates = <?php echo json_encode($amenityRates); ?>;
+        const currentAmenity = "<?php echo $amenity; ?>";
 
-        function changeCount(type, change) {
-            if (type === 'household') {
-                householdCount = Math.max(1, householdCount + change);
-                document.getElementById('householdCount').textContent = householdCount;
-                document.getElementById('householdMembers').value = householdCount;
-            } else if (type === 'guests') {
-                guestCount = Math.max(0, guestCount + change);
-                document.getElementById('guestCount').textContent = guestCount;
-                document.getElementById('guestMembers').value = guestCount;
+        // Listen for userType change
+        document.getElementById('userType').addEventListener('change', function () {
+            const userType = this.value;
+
+            // ✅ Keep previously selected rate (default to 'day' if none)
+            const prevSelectedRate = document.getElementById('selectedRate').value || 'day';
+
+            if (amenityRates[currentAmenity] && amenityRates[currentAmenity][userType]) {
+                const rates = amenityRates[currentAmenity][userType];
+
+                // Update labels
+                document.getElementById('dayRate').textContent = `Day • ${rates.day}`;
+                document.getElementById('nightRate').textContent = `Night • ${rates.night}`;
+
+                // ✅ Restore the same rate (day/night) as before
+                document.getElementById('selectedRate').value = prevSelectedRate;
+
+                // Reset UI
+                const container = document.getElementById('ratesContainer');
+                container.querySelectorAll('.custom-radio-option').forEach(el => {
+                    el.classList.remove('selected');
+                    el.querySelector('.custom-radio-circle').classList.remove('selected');
+                });
+
+                const selectedOption = container.querySelector(`[data-value="${prevSelectedRate}"]`);
+                if (selectedOption) {
+                    selectedOption.classList.add('selected');
+                    selectedOption.querySelector('.custom-radio-circle').classList.add('selected');
+                }
+            } else {
+                console.warn("No rates found for:", currentAmenity, userType);
             }
 
-            updateGuestsDisplay();
-        }
-
-        function updateGuestsDisplay() {
-            const total = householdCount + guestCount;
-            const displayText = total === 1 ? '1 guest' : `${total} guests`;
-            document.getElementById('guestsDisplay').textContent = displayText;
-        }
-
-        // Prevent dropdown from closing when clicking inside
-        document.getElementById('guestsDropdown').addEventListener('click', function (e) {
-            e.stopPropagation();
+            calculateTotal();
         });
 
+        function selectRate(option, value) {
+            const container = document.getElementById('ratesContainer');
+            container.querySelectorAll('.custom-radio-option').forEach(el => {
+                el.classList.remove('selected');
+                el.querySelector('.custom-radio-circle').classList.remove('selected');
+            });
+            option.classList.add('selected');
+            option.querySelector('.custom-radio-circle').classList.add('selected');
+            document.getElementById('selectedRate').value = value;
+
+            calculateTotal();
+        }
+
+        function selectPayment(option, value) {
+            const container = option.closest('.custom-radio-container');
+            container.querySelectorAll('.custom-radio-option').forEach(el => {
+                el.classList.remove('selected');
+                el.querySelector('.custom-radio-circle').classList.remove('selected');
+            });
+            option.classList.add('selected');
+            option.querySelector('.custom-radio-circle').classList.add('selected');
+            document.getElementById('selectedPayment').value = value;
+        }
+
+        // Prices for add-ons
+        const chairPrice = 12;
+        const tablePrice = 20;
+
+        function extractPrice(priceStr) {
+            // Extract numbers from something like "₱100.00 / per person"
+            const match = priceStr.replace(/,/g, '').match(/[\d.]+/);
+            return match ? parseFloat(match[0]) : 0;
+        }
+
+        function calculateTotal() {
+            const userType = document.getElementById("userType").value;
+            const rateType = document.getElementById("selectedRate").value;
+
+            let guests = parseInt(document.getElementById("guests")?.value || 0);
+            let chairs = parseInt(document.getElementById("chairs").value || 0);
+            let tables = parseInt(document.getElementById("tables").value || 0);
+
+            // Get amenity rate from PHP rates
+            let rateStr = amenityRates[currentAmenity]?.[userType]?.[rateType] || "₱0";
+            let rateValue = extractPrice(rateStr);
+
+            let total = 0;
+
+            // Some amenities are per person (e.g., Swimming Pool, Basketball Court)
+            if (rateStr.includes("per person")) {
+                total += rateValue * guests;
+            } else {
+                total += rateValue;
+            }
+
+            // Add chairs and tables
+            total += chairs * chairPrice;
+            total += tables * tablePrice;
+
+            // ✅ Format with commas and 2 decimals
+            const formattedTotal = total.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            // Display in Total field
+            document.getElementById("total").value = formattedTotal;
+        }
+
+        // Recalculate total when fields change
+        ["guests", "chairs", "tables", "userType"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener("input", calculateTotal);
+                el.addEventListener("change", calculateTotal);
+            }
+        });
+
+        // Run on load
+        document.addEventListener("DOMContentLoaded", calculateTotal);
+        // Recalculate total when fields change
+        ["guests", "chairs", "tables", "userType"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener("input", calculateTotal);
+                el.addEventListener("change", calculateTotal);
+            }
+        });
+
+        // Run on load
+        document.addEventListener("DOMContentLoaded", calculateTotal);
+
         // Set minimum date to today
-        document.getElementById('reservationDate').setAttribute('min', new Date().toISOString().split('T')[0]);
+        document.addEventListener("DOMContentLoaded", function () {
+            const today = new Date().toISOString().split("T")[0];
+            const dateInput = document.getElementById("reservationDate");
+            dateInput.min = today; // disables all past options
+        });    
     </script>
 </body>
 

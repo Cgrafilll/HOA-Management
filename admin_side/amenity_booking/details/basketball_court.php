@@ -26,8 +26,8 @@
                             <td>5:00 PM - 10:00 PM</td>
                         </tr>
                         <tr>
-                            <td>₱200.00/per head</td>
-                            <td>₱300.00/per head</td>
+                            <td>₱200.00 / per head</td>
+                            <td>₱300.00 / per head</td>
                         </tr>
                     </tbody>
                 </table> 
@@ -50,8 +50,8 @@
                             <td>5:00 PM - 10:00 PM</td>
                         </tr>
                         <tr>
-                            <td>₱300.00</td>
-                            <td>₱400.00</td>
+                            <td>₱300.00 / per head</td>
+                            <td>₱400.00 / per head</td>
                         </tr>
                     </tbody>
                 </table>
