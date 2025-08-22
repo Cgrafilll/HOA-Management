@@ -234,12 +234,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <!-- Accounts -->
                 <div>
                     <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#accountsCollapse" aria-expanded="false">
+                        data-bs-target="#accountsCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-person-lines-fill me-2"></i> Accounts
                         </span>
                     </button>
-                    <div class="collapse" id="accountsCollapse">
+                    <div class="collapse show" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="../admin_accounts.php" class="nav-link px-2 actived">Admin</a></li>
                             <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
@@ -291,15 +291,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="#" class="nav-link px-2">Payments</a></li>
                             <li><a href="#" class="nav-link px-2">Invoices</a></li>
-                            <li><a href="#" class="nav-link px-2">Transactions</a></li>
-                            <li><a href="#" class="nav-link px-2">Budgets</a></li>
                         </ul>
                     </div>
                 </div>
-                <!-- Forms -->
-                <a href="#" class="nav-link px-3 py-2 d-flex align-items-center justify-content-start">
-                    <i class="bi bi-file-earmark me-2"></i> Forms
-                </a>
             </nav>
         </aside>
         <!-- Main Content -->

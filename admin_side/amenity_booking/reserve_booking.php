@@ -222,7 +222,7 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
                             <i class="bi bi-book me-2"></i> Record Keeping
                         </span>
                     </button>
-                    <div class="collapse" id="recordCollapse">
+                    <div class="collapse show" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="../amenity_booking.php" class="nav-link px-2 actived">Amenity Booking</a></li>
                             <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
@@ -258,15 +258,9 @@ $amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="#" class="nav-link px-2">Payments</a></li>
                             <li><a href="#" class="nav-link px-2">Invoices</a></li>
-                            <li><a href="#" class="nav-link px-2">Transactions</a></li>
-                            <li><a href="#" class="nav-link px-2">Budgets</a></li>
                         </ul>
                     </div>
                 </div>
-                <!-- Forms -->
-                <a href="#" class="nav-link px-3 py-2 d-flex align-items-center justify-content-start">
-                    <i class="bi bi-file-earmark me-2"></i> Forms
-                </a>
             </nav>
         </aside>
         <!-- Main Content -->
