@@ -349,7 +349,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     </button>
                     <div class="collapse" id="commCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2">Announcements</a></li>
+                            <li><a href="../announcements.php" class="nav-link px-2">Announcements</a></li>
                             <li><a href="#" class="nav-link px-2">Events</a></li>
                             <li><a href="#" class="nav-link px-2">Phone Book</a></li>
                         </ul>

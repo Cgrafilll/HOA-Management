@@ -171,17 +171,17 @@ try {
                 </a>
                 <!-- Accounts -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#accountsCollapse" aria-expanded="true">
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#accountsCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-person-lines-fill me-2"></i> Accounts
                         </span>
                     </button>
-                    <div class="collapse show" id="accountsCollapse">
+                    <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../admin_accounts.php" class="nav-link px-2 actived">Admin</a></li>
-                            <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
-                            <li><a href="../visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
+                            <li><a href="admin_accounts.php" class="nav-link px-2">Admin</a></li>
+                            <li><a href="household_accounts.php" class="nav-link px-2">Household</a></li>
+                            <li><a href="visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
                         </ul>
                     </div>
                 </div>
@@ -195,23 +195,23 @@ try {
                     </button>
                     <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
-                            <li><a href="../#" class="nav-link px-2">Violation Tracking</a></li>
-                            <li><a href="../entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
+                            <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
+                            <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
+                            <li><a href="entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
                         </ul>
                     </div>
                 </div>
                 <!-- Communication -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
                         data-bs-target="#commCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-chat-left-text me-2"></i> Communication
                         </span>
                     </button>
-                    <div class="collapse" id="commCollapse">
+                    <div class="collapse show" id="commCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2">Announcements</a></li>
+                            <li><a href="#" class="nav-link px-2 actived">Announcements</a></li>
                             <li><a href="#" class="nav-link px-2">Events</a></li>
                             <li><a href="#" class="nav-link px-2">Phone Book</a></li>
                         </ul>
@@ -232,6 +232,10 @@ try {
                         </ul>
                     </div>
                 </div>
+                <!-- Forms -->
+                <a href="#" class="nav-link px-3 py-2 d-flex align-items-center justify-content-start">
+                    <i class="bi bi-file-earmark me-2"></i> Forms
+                </a>
             </nav>
         </aside>
         <!-- Main Content -->
