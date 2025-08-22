@@ -42,19 +42,19 @@ $amenity = isset($_GET['amenity']) ? urldecode($_GET['amenity']) : null;
 $amenities = [
     "Clubhouse" => [
         "image" => "../../images/clubhouse.png",
-        "file"  => "details/clubhouse.php"
+        "file" => "details/clubhouse.php"
     ],
     "Gazebo" => [
         "image" => "../../images/gazebo.png",
-        "file"  => "details/gazebo.php"
+        "file" => "details/gazebo.php"
     ],
     "Swimming Pool" => [
         "image" => "../../images/pool.png",
-        "file"  => "details/swimming_pool.php"
+        "file" => "details/swimming_pool.php"
     ],
     "Basketball Court" => [
         "image" => "../../images/basketball.png",
-        "file"  => "details/basketball_court.php"
+        "file" => "details/basketball_court.php"
     ]
 ];
 
@@ -69,7 +69,7 @@ $amenities = [
     <title>NSSHAI HOA Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
+    <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         .sidebar {
             width: 250px;
@@ -246,7 +246,8 @@ $amenities = [
                                 <a href="choose_booking.php" class="btn btn-outline-secondary btn-sm me-2">
                                     <i class="bi bi-arrow-left-short me-1"></i>Back
                                 </a>
-                                <a href="household/add_household.php" class="btn btn-primary btn-sm">Book Now</a>
+                                <a href="reserve_booking.php?reserve=<?php echo htmlspecialchars($amenity); ?>"
+                                    class="btn btn-primary btn-sm">Book Now</a>
                             </div>
                         </div>
                         <hr class="my-2" style="border-top: 2px solid #7a7a7aff;">

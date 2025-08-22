@@ -35,6 +35,10 @@ try {
 } catch (Exception $e) {
     $error_message = "Error fetching user details: " . $e->getMessage();
 }
+
+//Initialize amenity details
+$amenity = isset($_GET['reserve']) ? urldecode($_GET['reserve']) : null;
+
 ?>
 
 <!DOCTYPE html>
@@ -48,100 +52,12 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
-        .booking-grid-container {
-            padding: 0;
-            margin: 0;
-        }
-
-        .row.g-2 {
-            margin: 0;
-        }
-
-        .booking-card {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            border-radius: 1rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            background: #fff;
-            height: 100%;
-            /* Fill column height */
-        }
-
-        .booking-card img {
-            width: 100%;
-            height: 180px;
-            object-fit: cover;
-            border-top-left-radius: 1rem;
-            border-top-right-radius: 1rem;
-        }
-
-        .booking-card .card-body {
-            flex: 1 1 auto;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: center;
-            padding: 1rem;
-        }
-
-        @media (min-width: 768px) {
-            .row.g-2 {
-                /* Remove h-100 from .row in HTML if present */
-                min-height: 0;
-            }
-
-            .col-12.col-md-6 {
-                display: flex;
-                align-items: stretch;
-            }
-        }
-
-        @media (min-width: 768px) {
-            .gap-2 {
-                gap: 0.75rem !important;
-            }
-        }
-
-        .bg-success.text-white.rounded-top.p-3 {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .row-cols-md-2 {
-            width: 100%;
-        }
-
-        .card-img-top {
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .card {
-            min-width: 220px;
-            max-width: 350px;
-            margin: auto;
-        }
-
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 1030;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
 
         .sidebar {
             width: 250px;
-            height: 100vh;
-            position: fixed;
-            top: 20;
-            left: 0;
+            min-height: 100vh;
             background-color: #1F2937;
-            overflow-y: auto;
-        }
-
-        main {
-            margin-left: 250px;
         }
 
         .sidebar a,
@@ -194,20 +110,6 @@ try {
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
-
-        }
-
-        /* Make Cancel button slightly darker on hover */
-        #confirmModal .btn-cancel:hover {
-            background-color: #d6d8db;
-            /* slightly darker gray */
-            color: #000;
-        }
-
-        /* Cancel hover */
-        .btn-cancel:hover {
-            background-color: #d6d8db;
-            color: #000;
         }
     </style>
 </head>
@@ -238,7 +140,7 @@ try {
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav flex-column gap-1">
-                <a href="../admin_dashboard.php"
+                <a href="admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
@@ -260,16 +162,16 @@ try {
                 </div>
                 <!-- Record Keeping -->
                 <div>
-                    <button class="btn btn-toggle  px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#recordCollapse" aria-expanded="true">
+                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
+                        data-bs-target="#recordCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-book me-2"></i> Record Keeping
                         </span>
                     </button>
-                    <div class="collapse show" id="recordCollapse">
+                    <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="../amenity_booking.php" class="nav-link px-2 actived">Amenity Booking</a></li>
-                            <li><a href="../#" class="nav-link px-2">Violation Tracking</a></li>
+                            <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
                             <li><a href="../entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
                         </ul>
                     </div>
@@ -320,67 +222,79 @@ try {
                     <h5 class="mb-0 fw-bold w-100">Amenity Booking Management</h5>
                 </div>
                 <div class="p-3 d-flex justify-content-between align-items-center">
-                    <span class="mb-0">Select an Amenity</span>
-                    <a href="../amenity_booking.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                    <span class="small mb-0"><?php echo htmlspecialchars($amenity); ?></span>
+                    <a href="add_booking.php?amenity=<?php echo htmlspecialchars($amenity); ?>"
+                        class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                         <i class="bi bi-arrow-left-short me-1"></i>Back
                     </a>
                 </div>
-                <hr class="mb-3 mt-0">
-                <!-- Responsive Amenity Booking Grid -->
-                <div class="container-fluid booking-grid-container">
-                    <div class="row g-2 h-100">
-                        <!-- Clubhouse -->
-                        <div class="col-12 col-md-6 d-flex align-items-stretch">
-                            <div class="booking-card w-100">
-                                <img src="../../images/clubhouse.png" alt="Clubhouse" class="object-fit-cover"
-                                    style="height: 300px;">
-                                <div class="card-body w-100">
-                                    <h6 class="card-title mb-2">Clubhouse</h6>
-                                    <a href="add_booking.php?amenity=Clubhouse" class="btn btn-primary w-100">Book</a>
+                <hr class="my-0">
+                <div class="d-flex justify-content-center align-items-center my-3">
+                    <span class="text-uppercase text-center fw-medium"
+                        style="font-family: 'Libre Baskervill', serif; font-size: 36px; letter-spacing: 10px;"><?php echo htmlspecialchars($amenity); ?>
+                        RESERVATION</span>
+                </div>
+                <div class="p-3">
+                    <form action="reserve_booking.php?reserve=<?php echo htmlspecialchars($amenity); ?>" method="POST"
+                        id="householdForm" enctype="multipart/form-data">
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="form-floating">
+                                    <select class="form-select" id="userType">
+                                        <option value="resident">Homeowner / Resident</option>
+                                        <option value="visitor">Visitor</option>
+                                    </select>
+                                    <label for="userType">User Type</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="floatingInput"
+                                        placeholder="name@example.com">
+                                    <label for="floatingInput">Email address</label>
                                 </div>
                             </div>
                         </div>
-                        <!-- Gazebo -->
-                        <div class="col-12 col-md-6 d-flex align-items-stretch">
-                            <div class="booking-card w-100">
-                                <img src="../../images/gazebo.png" alt="Gazebo" class="object-fit-cover"
-                                    style="height: 300px;">
-                                <div class="card-body w-100">
-                                    <h6 class="card-title mb-2">Gazebo</h6>
-                                    <a href="add_booking.php?amenity=Gazebo" class="btn btn-primary w-100">Book</a>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="fname" name="fname">
+                                    <label for="fname">First Name<span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-floating">
+                                    <input type="email" class="form-control" id="floatingInput"
+                                        placeholder="name@example.com">
+                                    <label for="floatingInput">Email address</label>
                                 </div>
                             </div>
                         </div>
-                        <!-- Swimming Pool -->
-                        <div class="col-12 col-md-6 d-flex align-items-stretch">
-                            <div class="booking-card w-100">
-                                <img src="../../images/pool.png" alt="Swimming Pool" class="object-fit-cover"
-                                    style="height: 300px;">
-                                <div class="card-body w-100">
-                                    <h6 class="card-title mb-2">Swimming Pool</h6>
-                                    <a href="add_booking.php?amenity=Swimming%20Pool"
-                                        class="btn btn-primary w-100">Book</a>
-                                </div>
+                    </form>
+                </div>
+                <div class="p-3">
+                    <?php if ($amenity && isset($amenities[$amenity])): ?>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="small"><?php echo htmlspecialchars($amenity); ?></span>
+                            <div>
+                                <a href="choose_booking.php" class="btn btn-outline-secondary btn-sm me-2">
+                                    <i class="bi bi-arrow-left-short me-1"></i>Back
+                                </a>
+                                <a href="household/add_household.php" class="btn btn-primary btn-sm">Book Now</a>
                             </div>
                         </div>
-                        <!-- Basketball Court -->
-                        <div class="col-12 col-md-6 d-flex align-items-stretch">
-                            <div class="booking-card w-100">
-                                <img src="../../images/basketball.png" alt="Basketball Court" class="object-fit-cover"
-                                    style="height: 300px;">
-                                <div class="card-body w-100">
-                                    <h6 class="card-title mb-2">Basketball Court</h6>
-                                    <a href="add_booking.php?amenity=Basketball%20Court"
-                                        class="btn btn-primary w-100">Book</a>
-                                </div>
-                            </div>
+                        <hr class="my-2" style="border-top: 2px solid #7a7a7aff;">
+                        <!-- Amenity-Specific Content -->
+                        <div class="mt-4">
+                            <?php include __DIR__ . '/' . $amenities[$amenity]['file']; ?>
                         </div>
-                    </div>
+                    <?php else: ?>
+                        <p class="text-danger">Invalid or missing amenity selection.</p>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
