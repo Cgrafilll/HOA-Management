@@ -405,7 +405,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     </select>
                                     <label for="userType">User Type<small class="fw-bold text-danger">*</small></label>
                                 </div>
-
                                 <!-- First Name -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="firstName" name="firstName"
@@ -413,7 +412,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <label for="firstName">First Name<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
-
                                 <!-- Middle Name -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="middleName" name="middleName"
@@ -421,14 +419,12 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <label for="middleName">Middle Name<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
-
                                 <!-- Last Name -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="lastName" name="lastName"
                                         placeholder="Last Name" required>
                                     <label for="lastName">Last Name<small class="fw-bold text-danger">*</small></label>
                                 </div>
-
                                 <!-- Email Address -->
                                 <div class="form-floating mb-3">
                                     <input type="email" class="form-control" id="emailAddress" name="emailAddress"
@@ -436,7 +432,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <label for="emailAddress">Email Address<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
-
                                 <!-- Date -->
                                 <div class="form-floating mb-3">
                                     <input type="date" class="form-control" id="reservationDate" name="reservationDate"
@@ -444,7 +439,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <label for="reservationDate">Date<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
-
                                 <?php if ($amenity !== "Gazebo" && $amenity !== "Clubhouse"): ?>
                                     <!-- Guests -->
                                     <div class="form-floating mb-3">
@@ -452,17 +446,16 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         <label for="guests">Guests<small class="fw-bold text-danger">*</small></label>
                                     </div>
                                 <?php endif; ?>
-
                                 <!-- Rates -->
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Rates<small
                                             class="fw-bold text-danger">*</small></label>
                                     <div id="ratesContainer" class="custom-radio-container">
                                         <?php if ($currentRates): ?>
-                                            <div class="custom-radio-option" data-value="day"
+                                            <div class="custom-radio-option selected" data-value="day"
                                                 onclick="selectRate(this, 'day')">
                                                 <span id="dayRate">Day • <?= $currentRates['day'] ?></span>
-                                                <div class="custom-radio-circle"></div>
+                                                <div class="custom-radio-circle selected"></div>
                                             </div>
                                             <div class="custom-radio-option" data-value="night"
                                                 onclick="selectRate(this, 'night')">
@@ -475,26 +468,24 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     </div>
                                     <input type="hidden" name="rate" id="selectedRate" value="day" required>
                                 </div>
-
                                 <!-- Payment -->
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Payment<small
                                             class="fw-bold text-danger">*</small></label>
                                     <div class="custom-radio-container">
+                                        <div class="custom-radio-option selected" data-value="bank"
+                                            onclick="selectPayment(this, 'bank')">
+                                            <span>Bank Deposit</span>
+                                            <div class="custom-radio-circle selected"></div>
+                                        </div>
                                         <div class="custom-radio-option" data-value="cash"
                                             onclick="selectPayment(this, 'cash')">
                                             <span>Cash</span>
                                             <div class="custom-radio-circle"></div>
                                         </div>
-                                        <div class="custom-radio-option" data-value="bank"
-                                            onclick="selectPayment(this, 'bank')">
-                                            <span>Bank Deposit</span>
-                                            <div class="custom-radio-circle"></div>
-                                        </div>
                                     </div>
                                     <input type="hidden" name="payment" id="selectedPayment" value="bank" required>
                                 </div>
-
                                 <!-- Exclusive Booking -->
                                 <div class="form-floating mb-3">
                                     <select class="form-select" id="exclusiveBooking" name="exclusiveBooking" required>
@@ -504,7 +495,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <label for="exclusiveBooking">Is this an exclusive booking?<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
-
                                 <!-- Add-Ons -->
                                 <div class="row">
                                     <div class="col-6">
@@ -523,28 +513,34 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     </div>
                                 </div>
                             </div>
-
                             <!-- Right Column -->
                             <div class="col-lg-6">
                                 <!-- Payment Information -->
-                                <div class="payment-info p-3 rounded mb-4">
-                                    <h6 class="fw-bold mb-3">Payment Account</h6>
-                                    <div class="mb-2">
-                                        <small>EastWest Bank</small><br>
+                                <div id="paymentInfo" class="payment-info p-3 rounded mb-4">
+                                    <!-- Default Bank Info -->
+                                    <div id="bankInfo">
+                                        <h6 class="fw-bold mb-3">Payment Account</h6>
+                                        <div class="mb-2"><small>EastWest Bank</small><br></div>
+                                        <div class="mb-2"><small>Neopolitan Sitio Seville</small></div>
+                                        <div class="mb-2"><small>Account Number: 20049887271</small></div>
+                                        <div class="small fw-bold">
+                                            Please settle payment as soon as possible to secure your slot. We strictly
+                                            enforce payment first before we begin with your schedule/session.
+                                            Failure to do so will result in cancellation of your reservation.
+                                        </div>
                                     </div>
-                                    <div class="mb-2">
-                                        <small>Neopolitan Sitio Seville</small>
-                                    </div>
-                                    <div class="mb-2">
-                                        <small>Account Number: 20049887271</small>
-                                    </div>
-                                    <div class="small fw-bold">
-                                        Please settle payment as soon as possible to secure your slot. We strictly
-                                        enforce payment first before we begin with your schedule/session.
-                                        Failure to do so will result in cancellation of your reservation.
+
+                                    <!-- Cash Info -->
+                                    <div id="cashInfo" class="d-none">
+                                        <h6 class="fw-bold mb-3">Payment Method: Cash</h6>
+                                        <div class="small fw-bold">
+                                            Please proceed to the clubhouse office at Neopolitan Sitio Seville to pay in
+                                            cash.
+                                            Make sure to settle your payment as soon as possible to confirm your
+                                            booking.
+                                        </div>
                                     </div>
                                 </div>
-
                                 <!-- Reference Number -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="referenceNumber" name="referenceNumber"
@@ -552,7 +548,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <label for="referenceNumber">Reference Number<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
-
                                 <!-- Total Amount -->
                                 <div class="mb-3">
                                     <label for="total" class="form-label">Total<span
@@ -563,7 +558,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             placeholder="0.00" readonly>
                                     </div>
                                 </div>
-
                                 <!-- Amount Paid -->
                                 <div class="mb-3">
                                     <label for="amountPaid" class="form-label">Amount Paid<small
@@ -574,7 +568,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             placeholder="0.00" min="0" step="0.25" required>
                                     </div>
                                 </div>
-
                                 <!-- File Upload -->
                                 <div class="mb-4">
                                     <div class="file-drop-area" id="fileDropArea">
@@ -592,7 +585,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     </div>
                                     <div id="filePreview" class="mt-2"></div>
                                 </div>
-
                                 <!-- Terms and Conditions -->
                                 <div class="form-check mb-3">
                                     <input class="form-check-input" type="checkbox" id="termsConditions"
@@ -602,7 +594,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             data-bs-target="#termsModal">Terms and Conditions</a>
                                     </label>
                                 </div>
-
                                 <!-- Terms and Conditions Modal -->
                                 <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel"
                                     aria-hidden="true">
@@ -620,10 +611,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                 <p><em>Effective Date: April 2025</em></p>
                                                 <p>By booking any amenity through the NSSHAI HOA Management System, you
                                                     agree to the following terms and conditions:</p>
-
-                                                <h6>1. Reservation and Payment</h6>
+                                                <h6><strong>1. Reservation and Payment</strong></h6>
                                                 <ul>
-                                                    <li>A minimum of 50% down payment is required for all reservations.
+                                                    <li>A <strong>minimum of 50% down payment</strong> is required for
+                                                        all reservations.
                                                         This payment is <strong>non-refundable</strong> but may be
                                                         rescheduled upon request.</li>
                                                     <li>Reservations must be made through the official HOA system and
@@ -639,7 +630,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                         </ul>
                                                     </li>
                                                 </ul>
-                                                <h6>2. Payment Confirmation</h6>
+                                                <h6><strong>2. Payment Confirmation</strong></h6>
                                                 <ul>
                                                     <li>Proof of payment (e.g., deposit slip or screenshot) must be
                                                         uploaded through the online form or submitted to the office to
@@ -647,30 +638,40 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                     <li>Incomplete or unverified reservations may be canceled without
                                                         notice.</li>
                                                 </ul>
-                                                <h6>3. Rescheduling Policy</h6>
+                                                <h6><strong>3. Rescheduling Policy</strong></h6>
                                                 <ul>
-                                                    <li>Rescheduling is allowed but must be requested at least 24 hours
-                                                        before the reserved date.</li>
-                                                    <li>New schedule is subject to availability and HOA approval.</li>
-                                                    <li>Only one (1) rescheduling per booking is permitted. Further
+                                                    <li><strong>Rescheduling is allowed</strong> but must be requested
+                                                        <strong>at least 24 hours</strong>
+                                                        before the reserved date.
+                                                    </li>
+                                                    <li>New schedule is subject to <strong>availability and HOA
+                                                            approval.</strong></li>
+                                                    <li>Only <strong>one (1) rescheduling</strong> per booking is
+                                                        permitted. Further
                                                         changes may require a new reservation and payment.</li>
                                                 </ul>
-                                                <h6>4. Exclusive Use and Special Requests</h6>
+                                                <h6><strong>4. Exclusive Use and Special Requests</strong></h6>
                                                 <ul>
-                                                    <li>Requests for exclusive use of amenities (e.g., swimming pool)
-                                                        require a minimum of 10 guests, higher rates, and prior
+                                                    <li>Requests for <strong>exclusive use</strong> of amenities (e.g.,
+                                                        swimming pool)
+                                                        require a <strong>minimum of 10 guests</strong>, higher rates,
+                                                        and prior
                                                         approval.</li>
                                                     <li>Special bookings are dependent on HOA availability and
                                                         administrative discretion.</li>
                                                 </ul>
-                                                <h6>5. Overtime Usage</h6>
+                                                <h6><strong>5. Overtime Usage</strong></h6>
                                                 <ul>
-                                                    <li>Use of the Basketball Court beyond the booked session (Day or
-                                                        Night) will incur an additional charge of ₱100.00 per hour.</li>
-                                                    <li>This applies only to excess hours beyond the reserved time.</li>
-                                                    <li>Overtime use is subject to HOA approval and monitoring.</li>
+                                                    <li>Use of the <strong>Basketball Court beyond the booked
+                                                            session</strong> (Day or
+                                                        Night) will incur <strong>an additional charge of ₱100.00 per
+                                                            hour.</strong></li>
+                                                    <li>This applies only to <strong>excess hours beyond the reserved
+                                                            time.</strong></li>
+                                                    <li>Overtime use is subject to <strong>HOA approval and
+                                                            monitoring.</strong></li>
                                                 </ul>
-                                                <h6>6. Policy Enforcement</h6>
+                                                <h6><strong>6. Policy Enforcement</strong></h6>
                                                 <ul>
                                                     <li>The HOA reserves the right to cancel or deny any booking due to
                                                         safety issues, maintenance, or failure to comply with policies.
@@ -686,16 +687,115 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Privacy Policy -->
+                                <!-- Privacy Policy Checkbox -->
                                 <div class="form-check mb-4">
                                     <input class="form-check-input" type="checkbox" id="privacyPolicy"
                                         name="privacyPolicy" required>
                                     <label class="form-check-label" for="privacyPolicy">
-                                        I agree to <a href="#" class="text-success">Privacy Policy</a>
+                                        I agree to <a href="#" class="text-success" data-bs-toggle="modal"
+                                            data-bs-target="#privacyPolicyModal">Privacy Policy</a>
                                     </label>
                                 </div>
+                                <!-- Privacy Policy Modal -->
+                                <div class="modal fade" id="privacyPolicyModal" tabindex="-1"
+                                    aria-labelledby="privacyPolicyModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-success text-white">
+                                                <h5 class="modal-title fw-bold" id="privacyPolicyModalLabel">PRIVACY
+                                                    POLICY FOR AMENITY BOOKING</h5>
+                                                <button type="button" class="btn-close btn-close-white"
+                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p><strong>Neopolitan Sitio Seville Homeowners' Association, Inc.
+                                                        (NSSHAI)</strong></p>
+                                                <p><em>Effective Date: April 2025</em></p>
+                                                <p>NSSHAl values your privacy and is committed to protecting the
+                                                    personal information you provide when using our Amenity Booking
+                                                    feature through our HOA Management System.</p>
 
+                                                <h6><strong>1. Information We Collect</strong></h6>
+                                                <span>When you access and use the Amenity Booking feature, we may
+                                                    collect
+                                                    the following personal and transactional information:</span>
+                                                <ul>
+                                                    <li>Full Name (First, Middle, Last)</li>
+                                                    <li>Email Address</li>
+                                                    <li>Date and time of booking</li>
+                                                    <li>Number of guests</li>
+                                                    <li>Amenity type and time slot selected</li>
+                                                    <li>Payment details (amount paid, mode of payment, reference number)
+                                                    </li>
+                                                    <li>Uploaded files (e.g., proof of payment)</li>
+                                                </ul>
+                                                <h6><strong>2. Purpose of Data Collection</strong></h6>
+                                                <span>We use the collected information to:</span>
+                                                <ul>
+                                                    <li>Manage and confirm amenity reservations</li>
+                                                    <li>Process and verify payments</li>
+                                                    <li>Maintain organized HOA records for amenities usage</li>
+                                                    <li>Communicate updates regarding bookings, schedule changes, or
+                                                        policy updates</li>
+                                                    <li>Ensure security, usage tracking, and compliance with HOA
+                                                        regulations</li>
+                                                </ul>
+                                                <h6><strong>3. Data Storage and Protection</strong></h6>
+                                                <span>Your personal information is stored securely within the HOA
+                                                    Management System and protected through:</span>
+                                                <ul>
+                                                    <li>User authentication and administrative access controls</li>
+                                                    <li>Secure encrypted file and data storage</li>
+                                                    <li>Internal system logs and audit trails</li>
+                                                    <li>Routine backups and restricted access to authorized personnel
+                                                        only</li>
+                                                </ul>
+                                                <h6><strong>4. Data Sharing</strong></h6>
+                                                <span>We do not sell or share personal information to third parties. All
+                                                    access is governed by a need-to-know basis. Data
+                                                    is accessed ony by:</span>
+                                                <ul>
+                                                    <li>HOA administrative staff</li>
+                                                    <li>Authorized clubhouse personnel</li>
+                                                    <li>Finance and accounting officers for verification and reporting
+                                                    </li>
+                                                </ul>
+                                                <h6><strong>5. Retention of Records</strong></h6>
+                                                <span>Personal and booking data is retained for as long as necessary to:
+                                                </span>
+                                                <ul>
+                                                    <li>Manage amenity usage history</li>
+                                                    <li>Maintain accounting and audit records</li>
+                                                    <li>Comply with legal or regulatory obligations</li>
+                                                    <li>Records are periodically reviewed and securely deleted when no
+                                                        longer required.</li>
+                                                </ul>
+                                                <h6><strong>6. Your Data Privacy Rights</strong></h6>
+                                                <span>You have the right to:</span>
+                                                <ul class="mb-0">
+                                                    <li>Request access to your personal booking and payment information
+                                                    </li>
+                                                    <li>Request correction of any inaccuracies</li>
+                                                    <li>Request deletion of your personal data, subject to HOA
+                                                        guidelines</li>
+                                                    <li>Withdraw consent for data processing where applicable</li>
+                                                </ul>
+                                                <p>To exercise any of these rights, you may contact our HOA Admin Office
+                                                    at:
+                                                    8-2457647</p>
+                                                <h6><strong>7. Policy Updates</strong></h6>
+                                                <span>We reserve the right to update this Privacy Policy. Updates will
+                                                    be
+                                                    reflected on our official system and communicated to residents as
+                                                    necessary.</span>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-success"
+                                                    data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <!-- Submit Button -->
                                 <div class="d-grid">
                                     <button type="submit" class="btn btn-success btn-lg">Reserve</button>
@@ -864,9 +964,35 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 el.classList.remove('selected');
                 el.querySelector('.custom-radio-circle').classList.remove('selected');
             });
+
+            // Apply selected styling
             option.classList.add('selected');
             option.querySelector('.custom-radio-circle').classList.add('selected');
+
+            // Save selected value
             document.getElementById('selectedPayment').value = value;
+
+            // Toggle Payment Info + Reference + File Upload
+            const bankInfo = document.getElementById("bankInfo");
+            const cashInfo = document.getElementById("cashInfo");
+            const referenceNumber = document.getElementById("referenceNumber").closest(".form-floating");
+            const fileDropArea = document.getElementById("fileDropArea");
+
+            if (value === "cash") {
+                cashInfo.classList.remove("d-none");
+                bankInfo.classList.add("d-none");
+
+                // Hide reference number & file upload
+                referenceNumber.classList.add("d-none");
+                fileDropArea.classList.add("d-none");
+            } else {
+                bankInfo.classList.remove("d-none");
+                cashInfo.classList.add("d-none");
+
+                // Show reference number & file upload
+                referenceNumber.classList.remove("d-none");
+                fileDropArea.classList.remove("d-none");
+            }
         }
 
         // Prices for add-ons
