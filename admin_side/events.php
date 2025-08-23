@@ -542,6 +542,42 @@ try {
                                 </div>
                             </div>
                         </div>
+                        <!-- Default Confirm Publish Modal -->
+                        <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content text-center">
+                                    <div class="modal-header bg-primary text-white">
+                                        <h5 class="modal-title fw-bold">Confirm Publish</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <i class="bi bi-question-circle text-primary" style="font-size: 64px;"></i>
+                                        <p class="mb-2"><b>Are you sure?</b></p>
+                                        <p class="mb-3">Do you really want to publish this event?</p>
+                                        <button type="button" class="btn btn-primary" id="confirmPublish">Yes, Publish</button>
+                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Default Publish Success Modal -->
+                        <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content text-center">
+                                    <div class="modal-header bg-success text-white">
+                                        <h5 class="modal-title fw-bold">Published!</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
+                                        <p class="mt-3 mb-2"><b>Event published successfully.</b></p>
+                                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
