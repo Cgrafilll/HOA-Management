@@ -630,6 +630,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 const saveBtn = row.querySelector('.save-btn');
                 const cancelBtn = row.querySelector('.cancel-btn');
 
+                // Reset save button text and state
+                saveBtn.innerHTML = '<i class="bi bi-check2 me-2"></i>Save';
+                saveBtn.disabled = false;
+
                 editBtn.style.display = 'inline-block';
                 saveBtn.style.display = 'none';
                 cancelBtn.style.display = 'none';

@@ -113,11 +113,11 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
             .booking-details h3::before { content: "📋"; margin-right: 10px; }
             
             .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e9ecef; }
-            .detail-row:last-child { border-bottom: none; }
-            .detail-label { font-weight: 600; color: #495057; font-size: 14px; flex: 1; }
-            .detail-value { color: #212529; font-size: 14px; flex: 2; text-align: right; }
+            detail-row:last-child { border-bottom: none; }
+            detail-label { font-weight: 600; color: #495057; font-size: 14px; flex: 0 0 auto; margin-right: 15px; }
+            .detail-value { color: #212529; font-size: 14px; text-align: right;flex: 0 0 auto; }
             .detail-value.highlight { background-color: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-weight: 600; }
-            
+
             .important-section { background: linear-gradient(135deg, #fff3cd 0%, #fef9e7 100%); border: 1px solid #ffc107; border-radius: 12px; padding: 25px; margin: 30px 0; }
             .important-section h4 { color: #856404; font-size: 18px; margin-bottom: 15px; display: flex; align-items: center; }
             .important-section h4::before { content: "⚠️"; margin-right: 10px; }
