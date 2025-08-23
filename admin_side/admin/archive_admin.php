@@ -278,7 +278,6 @@ try {
                                 <div class="modal-body">
                                     <i class="bi bi-key text-success" style="font-size: 64px;"></i>
                                     <p class="mb-2"><b>Are you sure?</b></p>
-                                    <p class="mb-3">Do you really want to activate this account?</p>
                                     <p class="mb-3">This process will activate this account.</p>
                                     <div class="d-flex justify-content-center gap-2">
                                         <button type="button" class="btn btn-success"

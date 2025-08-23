@@ -44,13 +44,13 @@ if (!isset($_SESSION['form_token'])) {
 // ✅ Handle Announcement Insert BEFORE any HTML output
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['title'], $_POST['body'], $_POST['form_token'])) {
-        
+
         // ✅ Check for duplicate submission
         if ($_POST['form_token'] !== $_SESSION['form_token']) {
             header("Location: " . $_SERVER['PHP_SELF'] . "?error=duplicate");
             exit;
         }
-        
+
         $title = trim($_POST['title']);
         $body = trim($_POST['body']);         // remove leading/trailing whitespace
         $body = preg_replace('/\s+/', ' ', $body); // collapse multiple spaces/newlines into single space
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // ✅ Clear the form token after successful insert
             unset($_SESSION['form_token']);
-            
+
             // ✅ Redirect after insert (prevents duplicates on refresh)
             header("Location: " . $_SERVER['PHP_SELF'] . "?success=1");
             exit;
@@ -92,6 +92,7 @@ try {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -100,6 +101,12 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+        * {
+            font-family: "Montserrat", sans-serif;
+        }
+
         header {
             position: sticky;
             top: 0;
@@ -115,6 +122,7 @@ try {
             background-color: #1F2937;
             overflow-y: auto;
         }
+
         .announcement-card {
             word-wrap: break-word;
             overflow-wrap: break-word;
@@ -122,48 +130,29 @@ try {
             max-width: 100%;
         }
 
-        .announcement-title {
-            font-weight: 600;
-            font-size: 1rem;       /* smaller, more compact */
-            margin-bottom: 6px;
-        }
-
         .announcement-body {
-            font-size: 0.95rem;    /* slightly smaller */
+            font-size: 0.95rem;
             margin: 0;
             margin-bottom: 8px;
             line-height: 1.4;
-            white-space: pre-wrap; /* keeps newlines */
-            word-wrap: break-word;   /* break long words if needed */
+            word-wrap: break-word;
             overflow-wrap: break-word;
-        }
-
-        .announcement-meta {
-            font-size: 0.8rem;
-            color: #6c757d; /* Bootstrap muted gray */
-        }
-
-        .announcement-actions a {
-            font-size: 1rem;  /* adjust icon size */
-            text-decoration: none;
-        }
-        .announcement-actions a:hover {
-            opacity: 0.8;
-        }
-        .announcement-actions .btn {
-            padding: 2px 6px; /* smaller buttons */
-            font-size: 0.9rem;
         }
 
         main {
             margin-left: 250px;
-            padding-bottom: 100px; /* ✅ give breathing room at bottom */
+            padding-bottom: 100px;
+            /* ✅ give breathing room at bottom */
         }
-        .card-body p, 
+
+        .card-body p,
         .card-body h6 {
-            word-wrap: break-word;       /* Old support */
-            overflow-wrap: break-word;   /* Modern support */
-            white-space: pre-wrap;       /* Keeps newlines */
+            word-wrap: break-word;
+            /* Old support */
+            overflow-wrap: break-word;
+            /* Modern support */
+            white-space: pre-wrap;
+            /* Keeps newlines */
         }
 
         .sidebar a,
@@ -224,12 +213,16 @@ try {
             /* slightly darker gray */
             color: #000;
         }
+
         .form-control.border-danger {
-            border: 2px solid #dc3545 !important; /* force red */
+            border: 2px solid #dc3545 !important;
+            /* force red */
         }
+
         textarea {
             min-height: 100px;
-            resize: none; /* optional: prevent manual drag */
+            resize: none;
+            /* optional: prevent manual drag */
         }
     </style>
 </head>
@@ -299,7 +292,7 @@ try {
                 <!-- Communication -->
                 <div>
                     <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#commCollapse" aria-expanded="false">
+                        data-bs-target="#commCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-chat-left-text me-2"></i> Communication
                         </span>
@@ -324,15 +317,9 @@ try {
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="#" class="nav-link px-2">Payments</a></li>
                             <li><a href="#" class="nav-link px-2">Invoices</a></li>
-                            <li><a href="#" class="nav-link px-2">Transactions</a></li>
-                            <li><a href="#" class="nav-link px-2">Budgets</a></li>
                         </ul>
                     </div>
                 </div>
-                <!-- Forms -->
-                <a href="#" class="nav-link px-3 py-2 d-flex align-items-center justify-content-start">
-                    <i class="bi bi-file-earmark me-2"></i> Forms
-                </a>
             </nav>
         </aside>
         <!-- Main Content -->
@@ -345,7 +332,8 @@ try {
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">Announcement Form</span>
                         <div class="d-flex gap-2">
-                            <a href="announcements/archive_announcements.php" class="btn btn-outline-secondary btn-sm">Archived Announcements</a>
+                            <a href="announcements/archive_announcements.php"
+                                class="btn btn-outline-secondary btn-sm">Archived Announcements</a>
                         </div>
                     </div>
                     <hr class="mb-3 mt-0">
@@ -360,28 +348,27 @@ try {
                     <!-- Announcement Form -->
                     <form method="POST" id="announcementForm">
                         <!-- ✅ Add hidden form token -->
-                        <input type="hidden" name="form_token" value="<?php echo htmlspecialchars($_SESSION['form_token']); ?>">
-
+                        <input type="hidden" name="form_token"
+                            value="<?php echo htmlspecialchars($_SESSION['form_token']); ?>">
                         <!-- Title -->
                         <h5 class="fw mb-2">Title</h5>
-                        <input type="text" id="title" name="title" 
-                            class="form-control border-dark rounded mb-1" maxlength="150" placeholder="Enter announcement title">
-
+                        <input type="text" id="title" name="title" class="form-control border-dark rounded mb-1"
+                            maxlength="150" placeholder="Enter announcement title">
                         <!-- Body -->
                         <h5 class="fw mb-2 mt-3">Body</h5>
-                        <textarea id="body" name="body" class="form-control border-dark rounded mb-1"style="min-height:100px; resize:none;" placeholder="Enter a description"></textarea>
-
+                        <textarea id="body" name="body" class="form-control border-dark rounded mb-1"
+                            style="min-height:100px; resize:none;" placeholder="Enter a description"></textarea>
                         <!-- Error message -->
                         <p id="formError" class="text-danger small mt-2" style="display:none;">
                             Please fill in both Title and Body before publishing.
                         </p>
-
                         <!-- Publish button -->
-                        <button type="button" class="btn btn-primary mt-3" id="publishBtn">
-                            Publish
-                        </button>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-primary mt-3" id="publishBtn">
+                                Publish
+                            </button>
+                        </div>
                     </form>
-
                     <!-- Confirmation Modal -->
                     <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel"
                         aria-hidden="true">
@@ -398,7 +385,8 @@ try {
                                     <p class="mb-3">Do you really want to publish this announcement?</p>
                                     <div class="d-flex justify-content-center gap-2">
                                         <!-- Submit confirm -->
-                                        <button type="button" class="btn btn-success" id="confirmPublish">Yes, Publish</button>
+                                        <button type="button" class="btn btn-success"
+                                            id="confirmPublish">Publish</button>
                                         <!-- Cancel -->
                                         <button type="button" class="btn btn-light btn-cancel"
                                             data-bs-dismiss="modal">Cancel</button>
@@ -422,176 +410,184 @@ try {
                                     <p class="mt-3 mb-2"><b>Announcement Published!</b></p>
                                     <p class="mb-3">Your announcement has been successfully published.</p>
                                     <div class="d-flex justify-content-center">
-                                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                                        <button type="button" class="btn btn-success"
+                                            data-bs-dismiss="modal">OK</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="mt-4">
-                            <h5 class="fw-bold">Published Announcements</h5>
-                            <hr>
-                            <?php if ($result && $result->num_rows > 0): ?>
-                                <?php while($row = $result->fetch_assoc()): ?>
-                                    <div class="card mb-3 shadow-sm announcement-card">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div class="announcement-title">
-                                                    <?= htmlspecialchars($row['title']); ?>
-                                                </div>
-                                                <div class="announcement-actions">
-                                                    <!-- Edit button triggers modal -->
-                                                    <button type="button" class="btn btn-sm btn-outline-primary me-1" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#editModal<?= $row['id']; ?>" 
-                                                        title="Edit">
+                        <h5 class="fw-bold">Published Announcements</h5>
+                        <hr>
+                        <?php if ($result && $result->num_rows > 0): ?>
+                            <?php while ($row = $result->fetch_assoc()): ?>
+                                <div class="card mb-3 shadow-sm announcement-card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="announcement-title"
+                                                style="font-weight: 600;font-size: 1rem;margin-bottom: 6px;">
+                                                <?= htmlspecialchars($row['title']); ?>
+                                            </div>
+                                            <div class="announcement-actions">
+                                                <!-- Edit button triggers modal -->
+                                                <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                                                    data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id']; ?>"
+                                                    title="Edit" style="padding: 2px 6px; font-size: 0.9rem;">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </button>
-
                                                 <!-- Archive button -->
-                                                <button type="button" 
-                                                        class="btn btn-sm btn-outline-secondary archiveBtn" 
-                                                        data-id="<?= $row['id']; ?>" 
-                                                        title="Archive">
+                                                <button type="button" class="btn btn-sm btn-outline-danger archiveBtn"
+                                                    data-id="<?= $row['id']; ?>" title="Archive"
+                                                    style="padding: 2px 6px; font-size: 0.9rem;">
                                                     <i class="bi bi-archive"></i>
                                                 </button>
+                                            </div>
+                                        </div>
+                                        <div class="announcement-body mt-2">
+                                            <?= nl2br(htmlspecialchars($row['body'])); ?>
+                                        </div>
+                                        <div class="announcement-meta mt-1 text-muted" style="font-size: 0.8rem;">
+                                            Posted by <?= htmlspecialchars($row['first_name'] . " " . $row['last_name']); ?>
+                                            on <?= date("M d, Y h:i A", strtotime($row['created_at'])); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Edit Modal -->
+                                <div class="modal fade" id="editModal<?= $row['id']; ?>" tabindex="-1"
+                                    aria-labelledby="editModalLabel<?= $row['id']; ?>" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <form class="editForm" data-id="<?= $row['id']; ?>">
+                                                <div class="modal-header bg-success text-white">
+                                                    <h5 class="modal-title" id="editModalLabel<?= $row['id']; ?>">Edit
+                                                        Announcement</h5>
+                                                    <button type="button" class="btn-close btn-close-white"
+                                                        data-bs-dismiss="modal" aria-label="Close"></button>
                                                 </div>
-                                            </div>
-
-                                            <div class="announcement-body mt-2">
-                                                <?= nl2br(htmlspecialchars($row['body'])); ?>
-                                            </div>
-
-                                            <div class="announcement-meta mt-1">
-                                                Posted by <?= htmlspecialchars($row['first_name'] . " " . $row['last_name']); ?> 
-                                                on <?= date("M d, Y h:i A", strtotime($row['created_at'])); ?>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Edit Modal -->
-                                    <div class="modal fade" id="editModal<?= $row['id']; ?>" tabindex="-1" aria-labelledby="editModalLabel<?= $row['id']; ?>" aria-hidden="true">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <form class="editForm" data-id="<?= $row['id']; ?>">
-                                                    <div class="modal-header bg-success text-white">
-                                                        <h5 class="modal-title" id="editModalLabel<?= $row['id']; ?>">Edit Announcement</h5>
-                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <label class="form-label">Title</label>
-                                                        <input type="text" name="title" class="form-control mb-2" value="<?= htmlspecialchars($row['title']); ?>" required>
-                                                        <label class="form-label mt-2">Body</label>
-                                                        <textarea name="body" class="form-control" rows="5" required><?= htmlspecialchars($row['body']); ?></textarea>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                        <button type="button" class="btn btn-success confirmEditBtn" data-bs-toggle="modal" data-bs-target="#confirmEditModal" data-id="<?= $row['id']; ?>">Save Changes</button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endwhile; ?>
-                            <?php else: ?>
-                                <p class="text-muted">No published announcements yet.</p>
-                            <?php endif; ?>
-                        </div>
-                            <!--Reusable Confirmation modal for Archive button on publish announcements-->
-                        <div class="modal fade" id="confirmArchiveModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content text-center">
-                                    <div class="modal-header bg-secondary text-white">
-                                        <h5 class="modal-title fw-bold">Confirm Archive</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <i class="bi bi-question-circle text-secondary" style="font-size: 64px;"></i>
-                                        <p class="mt-3 mb-2"><b>Are you sure?</b></p>
-                                        <p class="mb-3">Do you want to archive this announcement?</p>
-                                        <button type="button" class="btn btn-secondary" id="confirmArchiveBtn">Yes, Archive</button>
-                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Archive Success Modal -->
-                        <div class="modal fade" id="archiveSuccessModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content text-center">
-                                    <div class="modal-header bg-secondary text-white">
-                                        <h5 class="modal-title fw-bold">Archived</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                    </div>
-                                        <div class="modal-body">
-                                            <i class="bi bi-archive-fill text-secondary" style="font-size: 64px;"></i>
-                                            <p class="mt-3 mb-2"><b>Announcement Archived!</b></p>
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">OK</button>
+                                                <div class="modal-body">
+                                                    <label class="form-label">Title</label>
+                                                    <input type="text" name="title" class="form-control mb-2"
+                                                        value="<?= htmlspecialchars($row['title']); ?>" required>
+                                                    <label class="form-label mt-2">Body</label>
+                                                    <textarea name="body" class="form-control" rows="8"
+                                                        style="resize: vertical; max-height: 300px; overflow-y: auto;"
+                                                        required><?= htmlspecialchars($row['body']); ?></textarea>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-success confirmEditBtn"
+                                                        data-bs-toggle="modal" data-bs-target="#confirmEditModal"
+                                                        data-id="<?= $row['id']; ?>">Save Changes</button>
+                                                    <button type="button" class="btn btn-secondary"
+                                                        data-bs-dismiss="modal">Cancel</button>
+                                                </div>
+                                            </form>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                        <!-- Confirmation Modal (single, reused for any announcement) -->
-                        <div class="modal fade" id="confirmEditModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content text-center">
-                                    <div class="modal-header bg-success text-white">
-                                        <h5 class="modal-title fw-bold">Confirm Update</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <i class="bi bi-question-circle text-success" style="font-size: 64px;"></i>
-                                        <p class="mt-3 mb-2"><b>Are you sure?</b></p>
-                                        <p class="mb-3">Do you want to save the changes to this announcement?</p>
-                                        <button type="button" class="btn btn-success" id="saveEditBtn">Yes, Update</button>
-                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                                    </div>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <p class="text-muted">No published announcements yet.</p>
+                        <?php endif; ?>
+                    </div>
+                    <!--Reusable Confirmation modal for Archive button on publish announcements-->
+                    <div class="modal fade" id="confirmArchiveModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title fw-bold">Confirm Archive</h5>
+                                    <button type="button" class="btn-close btn-close-white"
+                                        data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-question-circle text-danger" style="font-size: 64px;"></i>
+                                    <p class="mt-3 mb-2"><b>Are you sure?</b></p>
+                                    <p class="mb-3">Do you want to archive this announcement?</p>
+                                    <button type="button" class="btn btn-danger" id="confirmArchiveBtn">Archive</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Success Modal -->
-                        <div class="modal fade" id="editSuccessModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content text-center">
-                                    <div class="modal-header bg-success text-white">
-                                        <h5 class="modal-title fw-bold">Success</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
-                                        <p class="mt-3 mb-2"><b>Announcement Updated!</b></p>
-                                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
-                                    </div>
+                    </div>
+                    <!-- Archive Success Modal -->
+                    <div class="modal fade" id="archiveSuccessModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title fw-bold">Archived</h5>
+                                    <button type="button" class="btn-close btn-close-white"
+                                        data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-archive-fill text-success" style="font-size: 64px;"></i>
+                                    <p class="mt-3 mb-2"><b>Announcement Archived!</b></p>
+                                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
                                 </div>
                             </div>
                         </div>
-                    </div> 
+                    </div>
+                </div>
+                <!-- Confirmation Modal (single, reused for any announcement) -->
+                <div class="modal fade" id="confirmEditModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content text-center">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title fw-bold">Confirm Update</h5>
+                                <button type="button" class="btn-close btn-close-white"
+                                    data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <i class="bi bi-question-circle text-success" style="font-size: 64px;"></i>
+                                <p class="mt-3 mb-2"><b>Are you sure?</b></p>
+                                <p class="mb-3">Do you want to save the changes to this announcement?</p>
+                                <button type="button" class="btn btn-success" id="saveEditBtn">Update</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Success Modal -->
+                <div class="modal fade" id="editSuccessModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content text-center">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title fw-bold">Success</h5>
+                                <button type="button" class="btn-close btn-close-white"
+                                    data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
+                                <p class="mt-3 mb-2"><b>Announcement Updated!</b></p>
+                                <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
     <?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>
         <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            let successModalEl = document.getElementById('successModal');
-            if (successModalEl) {
-                let successModal = new bootstrap.Modal(successModalEl);
-                successModal.show();
-                
-                // ✅ Clear the URL parameter after showing modal to prevent showing on refresh
-                successModalEl.addEventListener('hidden.bs.modal', function () {
-                    const url = new URL(window.location);
-                    url.searchParams.delete('success');
-                    window.history.replaceState({}, document.title, url.pathname);
-                });
-            }
-        });
+            document.addEventListener('DOMContentLoaded', function () {
+                let successModalEl = document.getElementById('successModal');
+                if (successModalEl) {
+                    let successModal = new bootstrap.Modal(successModalEl);
+                    successModal.show();
+
+                    // ✅ Clear the URL parameter after showing modal to prevent showing on refresh
+                    successModalEl.addEventListener('hidden.bs.modal', function () {
+                        const url = new URL(window.location);
+                        url.searchParams.delete('success');
+                        window.history.replaceState({}, document.title, url.pathname);
+                    });
+                }
+            });
         </script>
     <?php endif; ?>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // ✅ Validation function
             function validateForm() {
                 let title = document.getElementById("title");
@@ -621,7 +617,7 @@ try {
                     errorMsg.style.display = "block";
                     return false;
                 }
-                
+
                 return true;
             }
 
@@ -643,12 +639,13 @@ try {
             // ✅ Prevent form submission on Enter key unless validation passes
             document.getElementById("announcementForm").addEventListener("submit", function (e) {
                 e.preventDefault(); // Always prevent default
-                
+
                 if (validateForm()) {
                     let modal = new bootstrap.Modal(document.getElementById("confirmModal"));
                     modal.show();
                 }
             });
+
             // Auto-expand textarea
             document.querySelectorAll("textarea").forEach(function (el) {
                 el.addEventListener("input", function () {
@@ -657,23 +654,36 @@ try {
                 });
             });
         });
-        document.addEventListener('DOMContentLoaded', function() {
+
+        // ✅ FIXED EDIT MODAL FUNCTIONALITY
+        document.addEventListener('DOMContentLoaded', function () {
             let currentEditForm = null;
+            let currentEditModalId = null;
 
             // When clicking "Save Changes" -> open confirmation modal
             document.querySelectorAll('.confirmEditBtn').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function () {
                     const announcementId = this.dataset.id;
                     currentEditForm = document.querySelector(`.editForm[data-id='${announcementId}']`);
+                    currentEditModalId = `editModal${announcementId}`;
 
-                    // Show confirmation modal
-                    const confirmModal = new bootstrap.Modal(document.getElementById('confirmEditModal'));
-                    confirmModal.show();
+                    // Hide the current edit modal first
+                    const editModalEl = document.getElementById(currentEditModalId);
+                    const editModalInstance = bootstrap.Modal.getInstance(editModalEl);
+                    if (editModalInstance) {
+                        editModalInstance.hide();
+                    }
+
+                    // Show confirmation modal after a small delay
+                    setTimeout(() => {
+                        const confirmModal = new bootstrap.Modal(document.getElementById('confirmEditModal'));
+                        confirmModal.show();
+                    }, 300);
                 });
             });
 
             // When confirming update
-            document.getElementById('saveEditBtn').addEventListener('click', function() {
+            document.getElementById('saveEditBtn').addEventListener('click', function () {
                 if (!currentEditForm) return;
 
                 const formData = new FormData(currentEditForm);
@@ -683,58 +693,122 @@ try {
                     method: 'POST',
                     body: formData
                 })
-                .then(res => res.json())
-                .then(data => {
-                    const confirmModalEl = document.getElementById('confirmEditModal');
-                    const confirmModal = bootstrap.Modal.getInstance(confirmModalEl);
+                    .then(res => res.json())
+                    .then(data => {
+                        const confirmModalEl = document.getElementById('confirmEditModal');
+                        const confirmModal = bootstrap.Modal.getInstance(confirmModalEl);
 
-                    if (data.success) {
-                        // Hide confirmation modal
-                        confirmModal.hide();
+                        if (data.success) {
+                            // Hide confirmation modal
+                            confirmModal.hide();
 
-                        // Show success modal
-                        const successModalEl = document.getElementById('editSuccessModal');
-                        const successModal = new bootstrap.Modal(successModalEl);
-                        successModal.show();
+                            // Show success modal
+                            const successModalEl = document.getElementById('editSuccessModal');
+                            const successModal = new bootstrap.Modal(successModalEl);
+                            successModal.show();
 
-                        // Refresh page after closing success modal
-                        successModalEl.addEventListener('hidden.bs.modal', () => location.reload());
-                    } else {
-                        alert('Failed to update announcement: ' + data.message);
-                    }
-                })
-                .catch(err => {
-                    alert('Error updating announcement: ' + err.message);
-                });
+                            // Refresh page after closing success modal
+                            successModalEl.addEventListener('hidden.bs.modal', () => location.reload());
+                        } else {
+                            alert('Failed to update announcement: ' + data.message);
+                        }
+                    })
+                    .catch(err => {
+                        alert('Error updating announcement: ' + err.message);
+                    });
             });
 
+            // Handle confirmation modal close/cancel - return to edit modal
+            const confirmEditModalEl = document.getElementById('confirmEditModal');
             confirmEditModalEl.addEventListener('hidden.bs.modal', function () {
-                // Check if any other modals are still open
-                const anyOpenModals = document.querySelectorAll('.modal.show').length > 0;
-
-                if (!anyOpenModals) {
-                    // Remove leftover backdrop if no other modals are open
+                // Clean up backdrops first
+                setTimeout(() => {
                     const backdrops = document.querySelectorAll('.modal-backdrop');
                     backdrops.forEach(b => b.remove());
-                    document.body.classList.remove('modal-open'); // reset body scroll
+                }, 100);
+
+                // If we came from an edit modal and user canceled, show the edit modal again
+                if (currentEditModalId && !document.querySelector('.modal.show')) {
+                    setTimeout(() => {
+                        const editModalEl = document.getElementById(currentEditModalId);
+                        if (editModalEl) {
+                            const editModal = new bootstrap.Modal(editModalEl);
+                            editModal.show();
+                        } else {
+                            // If edit modal doesn't exist anymore, clean up completely
+                            cleanupModalState();
+                        }
+                    }, 100);
+                } else if (!document.querySelector('.modal.show')) {
+                    // If no modals should be open, clean up completely
+                    cleanupModalState();
                 }
             });
 
+            // Clean up function
+            function cleanupModalState() {
+                // Remove all backdrops
+                document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                    backdrop.remove();
+                });
+
+                // Reset body state
+                document.body.classList.remove('modal-open');
+                document.body.style.paddingRight = '';
+                document.body.style.overflow = '';
+
+                // Clear stored data
+                currentEditForm = null;
+                currentEditModalId = null;
+            }
+
+            // Handle edit modal close events - clean up if no other modals are open
+            document.querySelectorAll('[id^="editModal"]').forEach(modal => {
+                modal.addEventListener('hidden.bs.modal', function () {
+                    setTimeout(() => {
+                        const openModals = document.querySelectorAll('.modal.show');
+                        if (openModals.length === 0) {
+                            cleanupModalState();
+                        }
+                    }, 100);
+                });
+            });
+
+            // Handle escape key and outside clicks
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    setTimeout(() => {
+                        const openModals = document.querySelectorAll('.modal.show');
+                        if (openModals.length === 0) {
+                            cleanupModalState();
+                        }
+                    }, 300);
+                }
+            });
+
+            // Additional cleanup on window focus (helps with tab switching issues)
+            window.addEventListener('focus', function () {
+                setTimeout(() => {
+                    const openModals = document.querySelectorAll('.modal.show');
+                    if (openModals.length === 0) {
+                        cleanupModalState();
+                    }
+                }, 100);
+            });
         });
 
-    </script>
-    <script>
+        // ✅ ARCHIVE FUNCTIONALITY
         let archiveAnnouncementId = null;
 
         document.querySelectorAll('.archiveBtn').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function () {
                 archiveAnnouncementId = this.dataset.id;
                 const archiveModal = new bootstrap.Modal(document.getElementById('confirmArchiveModal'));
                 archiveModal.show();
             });
         });
 
-        document.getElementById('confirmArchiveBtn').addEventListener('click', function() {
+        document.getElementById('confirmArchiveBtn').addEventListener('click', function () {
             if (!archiveAnnouncementId) return;
 
             const formData = new FormData();
@@ -744,30 +818,29 @@ try {
                 method: 'POST',
                 body: formData
             })
-            .then(res => res.json())
-            .then(data => {
-                const archiveModalEl = document.getElementById('confirmArchiveModal');
-                const archiveModal = bootstrap.Modal.getInstance(archiveModalEl);
+                .then(res => res.json())
+                .then(data => {
+                    const archiveModalEl = document.getElementById('confirmArchiveModal');
+                    const archiveModal = bootstrap.Modal.getInstance(archiveModalEl);
 
-                if (data.success) {
-                    archiveModal.hide();
+                    if (data.success) {
+                        archiveModal.hide();
 
-                    const archiveSuccessModalEl = document.getElementById('archiveSuccessModal');
-                    const archiveSuccessModal = new bootstrap.Modal(archiveSuccessModalEl);
-                    archiveSuccessModal.show();
-                    
-                    // Reload only after the user closes success modal
-                    archiveSuccessModalEl.addEventListener('hidden.bs.modal', () => location.reload());
-                } else {
-                    alert('Failed to archive announcement: ' + data.message);
-                }
-            })
-            .catch(err => {
-                alert('Error archiving announcement: ' + err.message);
-            });
+                        const archiveSuccessModalEl = document.getElementById('archiveSuccessModal');
+                        const archiveSuccessModal = new bootstrap.Modal(archiveSuccessModalEl);
+                        archiveSuccessModal.show();
+
+                        // Reload only after the user closes success modal
+                        archiveSuccessModalEl.addEventListener('hidden.bs.modal', () => location.reload());
+                    } else {
+                        alert('Failed to archive announcement: ' + data.message);
+                    }
+                })
+                .catch(err => {
+                    alert('Error archiving announcement: ' + err.message);
+                });
         });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

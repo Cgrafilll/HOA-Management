@@ -267,7 +267,7 @@ try {
                         aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content text-center">
-                                <div class="modal-header bg-success text-white">
+                                <div class="modal-header bg-danger text-white">
                                     <h5 class="modal-title fw-bold">Confirmation</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                                         aria-label="Close"></button>
@@ -275,11 +275,10 @@ try {
                                 <div class="modal-body">
                                     <i class="bi bi-x-circle text-danger" style="font-size: 64px;"></i>
                                     <p class="mb-2"><b>Are you sure?</b></p>
-                                    <p class="mb-3">Do you really want to delete this account?</p>
                                     <p class="mb-3">This process will archive this account.</p>
                                     <div class="d-flex justify-content-center gap-2">
-                                        <button type="button" class="btn btn-danger" id="confirmProceed">Delete</button>
-                                        <button type="button" class="btn btn-light btn-cancel"
+                                        <button type="button" class="btn btn-danger" id="confirmProceed">Archive</button>
+                                        <button type="button" class="btn btn-secondary btn-cancel"
                                             data-bs-dismiss="modal">Cancel</button>
                                     </div>
                                 </div>
@@ -353,7 +352,7 @@ try {
                                                         <li><a class="dropdown-item" href="admin/edit_admin.php?id=' . $admin_id . '">Edit Details</a></li>
                                                         <li>
                                                             <a class="dropdown-item delete-account" href="admin/archive_process.php" data-id="' . $admin_id . '" data-bs-toggle="modal" data-bs-target="#confirmModal">
-                                                                Delete Account
+                                                                Archive Account
                                                             </a>
                                                         </li>
                                                     </ul>

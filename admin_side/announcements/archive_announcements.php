@@ -179,9 +179,9 @@ try {
                     </button>
                     <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="admin_accounts.php" class="nav-link px-2">Admin</a></li>
-                            <li><a href="household_accounts.php" class="nav-link px-2">Household</a></li>
-                            <li><a href="visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
+                            <li><a href="../admin_accounts.php" class="nav-link px-2">Admin</a></li>
+                            <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
+                            <li><a href="../visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
                         </ul>
                     </div>
                 </div>
@@ -195,25 +195,25 @@ try {
                     </button>
                     <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
-                            <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
-                            <li><a href="entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
+                            <li><a href="../amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
+                            <li><a href="../#" class="nav-link px-2">Violation Tracking</a></li>
+                            <li><a href="../entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
                         </ul>
                     </div>
                 </div>
                 <!-- Communication -->
                 <div>
                     <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#commCollapse" aria-expanded="false">
+                        data-bs-target="#commCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-chat-left-text me-2"></i> Communication
                         </span>
                     </button>
                     <div class="collapse show" id="commCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2 actived">Announcements</a></li>
-                            <li><a href="#" class="nav-link px-2">Events</a></li>
-                            <li><a href="#" class="nav-link px-2">Phone Book</a></li>
+                            <li><a href="../#" class="nav-link px-2 actived">Announcements</a></li>
+                            <li><a href="../#" class="nav-link px-2">Events</a></li>
+                            <li><a href="../#" class="nav-link px-2">Phone Book</a></li>
                         </ul>
                     </div>
                 </div>
@@ -232,10 +232,6 @@ try {
                         </ul>
                     </div>
                 </div>
-                <!-- Forms -->
-                <a href="#" class="nav-link px-3 py-2 d-flex align-items-center justify-content-start">
-                    <i class="bi bi-file-earmark me-2"></i> Forms
-                </a>
             </nav>
         </aside>
         <!-- Main Content -->
@@ -316,7 +312,7 @@ try {
                                             <td><?php echo nl2br(htmlspecialchars($row['body'])); ?></td>
                                             <td><?php echo htmlspecialchars($row['created_at']); ?></td>
                                             <td class="text-end">
-                                                <button class="btn btn-sm btn-success activateBtn" 
+                                                <button class="btn btn-sm btn-success activateBtn"
                                                     data-id="<?php echo $row['id']; ?>">
                                                     <i class="bi bi-check-circle me-1"></i> Activate
                                                 </button>
@@ -331,50 +327,50 @@ try {
                             </tbody>
                         </table>
                     </div>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <?php $total = $announcementsResult->num_rows;
-                            echo "<span class='small'>Showing 1 to {$total} of {$total} entries</span>";
-                            ?>
-                            <nav>
-                                <ul class="pagination pagination-sm m-0">
-                                    <li class="page-item disabled"><a class="page-link">Previous</a></li>
-                                    <li class="page-item active"><a class="page-link">1</a></li>
-                                    <li class="page-item"><a class="page-link">Next</a></li>
-                                </ul>
-                            </nav>
-                        </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <?php $total = $announcementsResult->num_rows;
+                        echo "<span class='small'>Showing 1 to {$total} of {$total} entries</span>";
+                        ?>
+                        <nav>
+                            <ul class="pagination pagination-sm m-0">
+                                <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                                <li class="page-item active"><a class="page-link">1</a></li>
+                                <li class="page-item"><a class="page-link">Next</a></li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>
-        </main>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                let currentId = null;
+    </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let currentId = null;
 
-                // When clicking Activate button → open confirmation modal
-                document.querySelectorAll('.activateBtn').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        currentId = this.dataset.id;
-                        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-                        confirmModal.show();
-                    });
+            // When clicking Activate button → open confirmation modal
+            document.querySelectorAll('.activateBtn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    currentId = this.dataset.id;
+                    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+                    confirmModal.show();
                 });
-                document.getElementById('doneButton').addEventListener('click', function() {
-                    const successModalEl = document.getElementById('successModal');
-                    const successModal = bootstrap.Modal.getInstance(successModalEl);
-                    successModal.hide();
-                });
+            });
+            document.getElementById('doneButton').addEventListener('click', function () {
+                const successModalEl = document.getElementById('successModal');
+                const successModal = bootstrap.Modal.getInstance(successModalEl);
+                successModal.hide();
+            });
 
 
-                // Confirm Activate
-                document.getElementById('confirmActivate').addEventListener('click', function() {
-                    if (!currentId) return;
+            // Confirm Activate
+            document.getElementById('confirmActivate').addEventListener('click', function () {
+                if (!currentId) return;
 
-                    fetch('activate_announcements.php', {
-                        method: 'POST',
-                        body: new URLSearchParams({ id: currentId })
-                    })
+                fetch('activate_announcements.php', {
+                    method: 'POST',
+                    body: new URLSearchParams({ id: currentId })
+                })
                     .then(res => res.json())
                     .then(data => {
                         const confirmModalEl = document.getElementById('confirmModal');
@@ -395,9 +391,8 @@ try {
                     .catch(err => {
                         alert('Error: ' + err.message);
                     });
-                });
             });
-        </script>
-    </body>
+        });
+    </script>
+</body>
 </div>
-   
