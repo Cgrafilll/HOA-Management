@@ -483,7 +483,6 @@ try {
                                 </div>
                             </div>
                         </div>
-
                         <!-- Edit Success Modal -->
                         <div class="modal fade" id="editSuccessModal" tabindex="-1">
                             <div class="modal-dialog modal-dialog-centered">
