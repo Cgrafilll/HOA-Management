@@ -544,7 +544,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <!-- Reference Number -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="referenceNumber" name="referenceNumber"
-                                        placeholder="Reference Number">
+                                        placeholder="Reference Number" required>
                                     <label for="referenceNumber">Reference Number<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
@@ -581,7 +581,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             Supported formats: JPEG, PNG, GIF, PDF, TXT, XLS, AI, Word, PPT
                                         </div>
                                         <input type="file" id="fileInput" name="proofOfPayment" class="d-none"
-                                            accept=".jpeg,.jpg,.png,.gif,.pdf,.txt,.xls,.xlsx,.ai,.doc,.docx,.ppt,.pptx">
+                                            accept=".jpeg,.jpg,.png,.gif,.pdf,.txt,.xls,.xlsx,.ai,.doc,.docx,.ppt,.pptx"
+                                            required>
                                     </div>
                                     <div id="filePreview" class="mt-2"></div>
                                 </div>
@@ -805,6 +806,99 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     </form>
                 </div>
             </div>
+            <!-- Confirmation Modal -->
+            <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content text-center">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title fw-bold">Confirm Reservation</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <i class="bi bi-question-circle text-primary" style="font-size: 64px;"></i>
+                            <p class="mb-2"><b>Are you sure?</b></p>
+                            <p class="mb-3">Please confirm your amenity reservation details before proceeding.</p>
+                            <div class="alert alert-info text-start mb-3">
+                                <div class="row">
+                                    <div class="col-4"><strong>Amenity:</strong></div>
+                                    <div class="col-8" id="confirmAmenity">-</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4"><strong>Date:</strong></div>
+                                    <div class="col-8" id="confirmDate">-</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4"><strong>Name:</strong></div>
+                                    <div class="col-8" id="confirmName">-</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-4"><strong>Total:</strong></div>
+                                    <div class="col-8" id="confirmTotal">-</div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-center gap-2">
+                                <button type="button" class="btn btn-primary" id="confirmProceed">Confirm &
+                                    Submit</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Success Modal -->
+            <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content text-center">
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title fw-bold">Booking Confirmation</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
+                            <p class="mb-2"><b>Success!</b></p>
+                            <p class="mb-1">Your reservation has been successfully submitted.</p>
+                            <p class="mb-3"><strong>Reservation Code: <span class="text-primary"
+                                        id="reservationCode"></span></strong></p>
+                            <div class="alert alert-info text-start">
+                                <small>
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    Please keep your reservation code for future reference. You will receive a
+                                    confirmation email shortly.
+                                </small>
+                            </div>
+                            <button type="button" class="btn btn-success" id="doneButton">Done</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Error Modal -->
+            <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content text-center">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title fw-bold">Booking Error</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <i class="bi bi-x-circle text-danger" style="font-size: 64px;"></i>
+                            <p class="mb-2"><b>Oops! Something went wrong</b></p>
+                            <p class="mb-3">There was an error processing your reservation. Please try again.</p>
+                            <div class="alert alert-danger text-start">
+                                <small id="errorMessage">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    Please check your information and try again.
+                                </small>
+                            </div>
+                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -976,23 +1070,28 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             // Toggle Payment Info + Reference + File Upload
             const bankInfo = document.getElementById("bankInfo");
             const cashInfo = document.getElementById("cashInfo");
-            const referenceNumber = document.getElementById("referenceNumber").closest(".form-floating");
-            const fileDropArea = document.getElementById("fileDropArea");
+            const referenceNumber = document.getElementById("referenceNumber");
+            const fileInput = document.getElementById("fileInput");
 
             if (value === "cash") {
                 cashInfo.classList.remove("d-none");
                 bankInfo.classList.add("d-none");
 
-                // Hide reference number & file upload
-                referenceNumber.classList.add("d-none");
-                fileDropArea.classList.add("d-none");
+                // Hide & remove required
+                referenceNumber.closest(".form-floating").classList.add("d-none");
+                fileInput.closest("#fileDropArea").classList.add("d-none");
+                referenceNumber.removeAttribute("required");
+                fileInput.removeAttribute("required");
+
             } else {
                 bankInfo.classList.remove("d-none");
                 cashInfo.classList.add("d-none");
 
-                // Show reference number & file upload
-                referenceNumber.classList.remove("d-none");
-                fileDropArea.classList.remove("d-none");
+                // Show & add required
+                referenceNumber.closest(".form-floating").classList.remove("d-none");
+                fileInput.closest("#fileDropArea").classList.remove("d-none");
+                referenceNumber.setAttribute("required", "required");
+                fileInput.setAttribute("required", "required");
             }
         }
 
@@ -1059,41 +1158,42 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const dateInput = document.getElementById("reservationDate");
             dateInput.min = today; // disables all past options
         });
+
         // Amount Paid Validation - Consolidated and fixed
         function validateAmountPaid() {
             const totalField = document.getElementById("total");
             const amountPaidField = document.getElementById("amountPaid");
-            
+
             if (!totalField || !amountPaidField) return true;
-            
+
             // Get values and clean them
             const totalValue = parseFloat(totalField.value.replace(/,/g, '')) || 0;
             const amountPaidValue = parseFloat(amountPaidField.value) || 0;
-            
+
             // Remove any existing validation classes and messages
             amountPaidField.classList.remove('border-danger', 'is-invalid');
             const existingFeedback = amountPaidField.parentNode.parentNode.querySelector('.invalid-feedback');
             if (existingFeedback) {
                 existingFeedback.remove();
             }
-            
+
             // Check if amount paid exceeds total
             if (amountPaidValue > totalValue && totalValue > 0) {
                 // Add danger border and invalid class
                 amountPaidField.classList.add('border-danger', 'is-invalid');
-                
+
                 // Create and add error message
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'invalid-feedback';
                 errorDiv.style.display = 'block';
-                errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>Amount paid cannot exceed total amount (₱${totalValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})`;
-                
+                errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>Amount paid cannot exceed total amount (₱${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+
                 // Insert error message after the input group
                 amountPaidField.parentNode.parentNode.insertAdjacentElement('beforeend', errorDiv);
-                
+
                 return false; // Validation failed
             }
-            
+
             return true; // Validation passed
         }
 
@@ -1103,13 +1203,13 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         function initializeAmountPaidValidation() {
             if (amountPaidInitialized) return; // Prevent duplicate initialization
             amountPaidInitialized = true;
-            
+
             const amountPaidField = document.getElementById("amountPaid");
-            
+
             if (amountPaidField) {
                 // Validate on input (real-time)
                 amountPaidField.addEventListener('input', validateAmountPaid);
-                
+
                 // Validate on blur (when field loses focus)
                 amountPaidField.addEventListener('blur', validateAmountPaid);
             }
@@ -1121,27 +1221,27 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         function initializeFormSubmission() {
             if (formSubmissionInitialized) return; // Prevent duplicate initialization
             formSubmissionInitialized = true;
-            
+
             const form = document.getElementById('reservationForm');
             const submitButton = form.querySelector('button[type="submit"]');
-            
+
             if (submitButton) {
-                submitButton.addEventListener('click', function(e) {
+                submitButton.addEventListener('click', function (e) {
                     e.preventDefault(); // Always prevent default submission
-                    
+
                     // Run form validation first
                     if (!form.checkValidity()) {
                         form.classList.add('was-validated');
                         return;
                     }
-                    
+
                     // Run amount paid validation
                     if (!validateAmountPaid()) {
                         const amountPaidField = document.getElementById("amountPaid");
                         amountPaidField.focus();
                         return;
                     }
-                    
+
                     // If all validations pass, show confirmation modal
                     showConfirmationModal();
                 });
@@ -1155,18 +1255,18 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const firstName = document.getElementById('firstName').value;
             const lastName = document.getElementById('lastName').value;
             const total = document.getElementById('total').value;
-            
+
             document.getElementById('confirmAmenity').textContent = amenity;
             document.getElementById('confirmDate').textContent = date || '-';
             document.getElementById('confirmName').textContent = (firstName + ' ' + lastName).trim() || '-';
             document.getElementById('confirmTotal').textContent = total ? '₱' + total : '-';
-            
+
             // Show confirmation modal
             const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
             confirmModal.show();
-            
+
             // Handle confirmation
-            document.getElementById('confirmProceed').onclick = function() {
+            document.getElementById('confirmProceed').onclick = function () {
                 confirmModal.hide();
                 // Actually submit the form
                 document.getElementById('reservationForm').submit();
@@ -1176,151 +1276,65 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         // Update calculateTotal to trigger validation
         const originalCalculateTotal = window.calculateTotal;
         if (originalCalculateTotal) {
-            window.calculateTotal = function() {
+            window.calculateTotal = function () {
                 originalCalculateTotal();
                 setTimeout(validateAmountPaid, 50); // Small delay to ensure total is updated first
             };
         }
 
         // Initialize everything when DOM is ready
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             initializeAmountPaidValidation();
             initializeFormSubmission();
         });
-                // Modal Handler - Updated for confirmation flow
-        document.addEventListener("DOMContentLoaded", function() {
+        // Modal Handler - Updated for confirmation flow
+        document.addEventListener("DOMContentLoaded", function () {
             // Check URL parameters for success/error messages
             const urlParams = new URLSearchParams(window.location.search);
-            
+
             if (urlParams.has('success') && urlParams.get('success') === '1') {
                 // Show success modal
                 const reservationCode = urlParams.get('code');
-                
+
                 if (reservationCode) {
                     document.getElementById('reservationCode').textContent = reservationCode;
                 }
-                
+
                 const successModal = new bootstrap.Modal(document.getElementById('successModal'));
                 successModal.show();
-                
+
                 // Handle Done button click
-                document.getElementById('doneButton').addEventListener('click', function() {
+                document.getElementById('doneButton').addEventListener('click', function () {
                     // Clear URL parameters and redirect to amenity booking page
                     window.location.href = '../amenity_booking.php';
                 });
-                
+
                 // Clear URL parameters when modal is closed
-                document.getElementById('successModal').addEventListener('hidden.bs.modal', function() {
+                document.getElementById('successModal').addEventListener('hidden.bs.modal', function () {
                     const amenity = urlParams.get('reserve');
                     window.history.replaceState({}, document.title, window.location.pathname + (amenity ? '?reserve=' + encodeURIComponent(amenity) : ''));
                 });
             }
-            
+
             if (urlParams.has('error') && urlParams.get('error') === '1') {
                 // Show error modal
                 const errorMessage = urlParams.get('message') || 'An unknown error occurred.';
-                
-                document.getElementById('errorMessage').innerHTML = 
+
+                document.getElementById('errorMessage').innerHTML =
                     '<i class="bi bi-exclamation-triangle me-2"></i>' + decodeURIComponent(errorMessage);
-                
+
                 const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
                 errorModal.show();
-                
+
                 // Clear URL parameters when modal is closed
-                document.getElementById('errorModal').addEventListener('hidden.bs.modal', function() {
+                document.getElementById('errorModal').addEventListener('hidden.bs.modal', function () {
                     const amenity = urlParams.get('reserve');
                     window.history.replaceState({}, document.title, window.location.pathname + (amenity ? '?reserve=' + encodeURIComponent(amenity) : ''));
                 });
             }
         });
     </script>
-    <!-- Confirmation Modal -->
-    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content text-center">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title fw-bold">Confirm Reservation</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <i class="bi bi-question-circle text-primary" style="font-size: 64px;"></i>
-                    <p class="mb-2"><b>Are you sure?</b></p>
-                    <p class="mb-3">Please confirm your amenity reservation details before proceeding.</p>
-                    <div class="alert alert-info text-start mb-3">
-                        <div class="row">
-                            <div class="col-4"><strong>Amenity:</strong></div>
-                            <div class="col-8" id="confirmAmenity">-</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4"><strong>Date:</strong></div>
-                            <div class="col-8" id="confirmDate">-</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4"><strong>Name:</strong></div>
-                            <div class="col-8" id="confirmName">-</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4"><strong>Total:</strong></div>
-                            <div class="col-8" id="confirmTotal">-</div>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-center gap-2">
-                        <button type="button" class="btn btn-primary" id="confirmProceed">Confirm & Submit</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Success Modal -->
-    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content text-center">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title fw-bold">Booking Confirmation</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
-                    <p class="mb-2"><b>Success!</b></p>
-                    <p class="mb-1">Your reservation has been successfully submitted.</p>
-                    <p class="mb-3"><strong>Reservation Code: <span class="text-primary" id="reservationCode"></span></strong></p>
-                    <div class="alert alert-info text-start">
-                        <small>
-                            <i class="bi bi-info-circle me-2"></i>
-                            Please keep your reservation code for future reference. You will receive a confirmation email shortly.
-                        </small>
-                    </div>
-                    <button type="button" class="btn btn-success" id="doneButton">Done</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Error Modal -->
-    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content text-center">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title fw-bold">Booking Error</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <i class="bi bi-x-circle text-danger" style="font-size: 64px;"></i>
-                    <p class="mb-2"><b>Oops! Something went wrong</b></p>
-                    <p class="mb-3">There was an error processing your reservation. Please try again.</p>
-                    <div class="alert alert-danger text-start">
-                        <small id="errorMessage">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            Please check your information and try again.
-                        </small>
-                    </div>
-                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
 </body>
 
 </html>

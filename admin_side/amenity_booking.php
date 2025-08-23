@@ -28,10 +28,63 @@ try {
     $error_message = "Error fetching user details: " . $e->getMessage();
 }
 
-// Fetch Amenity Bookings from booking_details table
-$booking_sql = "SELECT * FROM booking_details ORDER BY booking_date DESC";
+// How many records per page
+$limit = 10;
+
+// Current page number (default 1 if not set)
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
+
+// Calculate offset for SQL query
+$offset = ($page - 1) * $limit;
+
+// Get total number of records from amenity_bookings
+$totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings";
+$totalResult = $conn->query($totalQuery);
+$totalRow = $totalResult->fetch_assoc();
+$totalRecords = $totalRow['total'];
+
+// Calculate total pages
+$totalPages = ceil($totalRecords / $limit);
+
+// ✅ Fetch only the records for THIS PAGE (table)
+$booking_sql = "SELECT * FROM amenity_bookings ORDER BY reservation_date DESC LIMIT $limit OFFSET $offset";
 $bookings_result = $conn->query($booking_sql);
+
+// ✅ Fetch ALL records (for calendar JSON)
+$sql = "SELECT id, first_name, middle_name, last_name, amenity, reservation_code, 
+               reservation_date, status, total_amount, amount_paid, created_at 
+        FROM amenity_bookings 
+        ORDER BY reservation_date ASC";
+
+$result = $conn->query($sql);
+
+$bookings = [];
+while ($row = $result->fetch_assoc()) {
+    // Determine time slot based on 'rate'
+    $timeSlot = "N/A";
+    if (isset($row['rate'])) {
+        if ($row['rate'] === "day") {
+            $timeSlot = "9:00 AM - 5:00 PM";
+        } elseif ($row['rate'] === "night") {
+            $timeSlot = "5:00 PM - 10:00 PM";
+        }
+    }
+
+    $bookings[] = [
+        "id" => $row['id'],
+        "date" => $row['reservation_date'],
+        "fullName" => trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']),
+        "amenity" => $row['amenity'],
+        "reservationCode" => $row['reservation_code'],
+        "paymentStatus" => ucfirst($row['status']), // pending → Pending
+        "amount" => "$" . number_format($row['amount_paid'], 2) .
+            ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : ""),
+        "time" => $timeSlot
+    ];
+}
+
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -356,44 +409,42 @@ $bookings_result = $conn->query($booking_sql);
                             <table class="table table-bordered table-hover">
                                 <thead class="bg-success text-white small">
                                     <tr>
-                                        <th>#</th>
                                         <th>Booking Date</th>
                                         <th>Full Name</th>
                                         <th>Amenity</th>
                                         <th>Reservation Code</th>
                                         <th>Payment Status</th>
-                                        <th>Actions</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="small align-middle">
                                     <?php
                                     if ($bookings_result->num_rows > 0) {
                                         while ($row = $bookings_result->fetch_assoc()) {
-                                            $id = $row['booking_id'];
-                                            $fullName = $row['full_name'];
+                                            $id = $row['id'];
+                                            $fullName = ucwords($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
                                             $amenity = $row['amenity'];
-                                            $bookingDate = $row['booking_date'];
+                                            $bookingDate = $row['reservation_date'];
                                             $resCode = $row['reservation_code'];
-                                            $statusClass = $row['payment_status'] === 'Paid' ? 'text-success' : ($row['payment_status'] === 'Partial' ? 'text-warning' : 'text-muted');
+                                            $statusClass = $row['status'] === 'Paid' ? 'text-success' : ($row['status'] === 'Partial' ? 'text-warning' : 'text-muted');
                                             echo "<tr>
-                                                <td>{$id}</td>
-                                                <td>{$bookingDate}</td>
-                                                <td>{$fullName}</td>
-                                                <td>{$amenity}</td>
-                                                <td>{$resCode}</td>
-                                                <td class='{$statusClass} fw-bold'>{$row['payment_status']}</td>
-                                                <td>
-                                                    <div class='dropdown'>
-                                                        <button class='btn btn-sm btn-secondary dropdown-toggle' data-bs-toggle='dropdown'>Action</button>
-                                                        <ul class='dropdown-menu'>
-                                                            <li><a class='dropdown-item' href='#'>View Details</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </td>
-                                            </tr>";
+                                                    <td>{$bookingDate}</td>
+                                                    <td>{$fullName}</td>
+                                                    <td>{$amenity}</td>
+                                                    <td>{$resCode}</td>
+                                                    <td class='{$statusClass} fw-bold'>" . ucfirst($row['status']) . "</td>
+                                                    <td class='text-center'>
+                                                        <div class='dropdown'>
+                                                            <button class='btn btn-sm btn-secondary dropdown-toggle' data-bs-toggle='dropdown'>Action</button>
+                                                            <ul class='dropdown-menu'>
+                                                                <li><a class='dropdown-item' href='#'>View Details</a></li>
+                                                            </ul>
+                                                        </div>
+                                                    </td>
+                                                </tr>";
                                         }
                                     } else {
-                                        echo "<tr><td colspan='7' class='text-center text-muted'>No bookings found.</td></tr>";
+                                        echo "<tr><td colspan='6' class='text-center text-muted'>No bookings found.</td></tr>";
                                     }
                                     ?>
                                 </tbody>
@@ -402,12 +453,29 @@ $bookings_result = $conn->query($booking_sql);
                         <div class="d-flex justify-content-between align-items-center mt-2">
                             <span class="small">Showing 1 to <?php echo $bookings_result->num_rows; ?> entries</span>
                             <nav>
-                                <ul class="pagination pagination-sm m-0">
-                                    <li class="page-item disabled"><a class="page-link">Previous</a></li>
-                                    <li class="page-item active"><a class="page-link">1</a></li>
-                                    <li class="page-item"><a class="page-link">Next</a></li>
+                                <ul class="pagination justify-content-center">
+                                    <!-- Previous button -->
+                                    <li class="page-item <?php if ($page <= 1)
+                                        echo 'disabled'; ?>">
+                                        <a class="page-link" href="?page=<?php echo $page - 1; ?>">Previous</a>
+                                    </li>
+
+                                    <!-- Page numbers -->
+                                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                        <li class="page-item <?php if ($page == $i)
+                                            echo 'active'; ?>">
+                                            <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                                        </li>
+                                    <?php endfor; ?>
+
+                                    <!-- Next button -->
+                                    <li class="page-item <?php if ($page >= $totalPages)
+                                        echo 'disabled'; ?>">
+                                        <a class="page-link" href="?page=<?php echo $page + 1; ?>">Next</a>
+                                    </li>
                                 </ul>
                             </nav>
+
                         </div>
                     </div>
                     <!-- Calendar View -->
@@ -454,7 +522,6 @@ $bookings_result = $conn->query($booking_sql);
                                     <button id="weekBtn" onclick="setView('week')">Week</button>
                                 </div>
                             </div>
-
                             <div class="calendar-grid" id="calendarGrid">
                                 <!-- Calendar will be generated here -->
                             </div>
@@ -593,49 +660,7 @@ $bookings_result = $conn->query($booking_sql);
             });
         });
 
-        // Sample booking data - in real implementation, this would come from PHP/database
-        const bookings = [
-            {
-                id: 1,
-                date: '2025-08-15',
-                fullName: 'John Doe',
-                amenity: 'Swimming Pool',
-                reservationCode: 'SP001',
-                paymentStatus: 'Paid',
-                amount: '$50.00',
-                time: '10:00 AM - 2:00 PM'
-            },
-            {
-                id: 2,
-                date: '2025-08-15',
-                fullName: 'Jane Smith',
-                amenity: 'Clubhouse',
-                reservationCode: 'CH002',
-                paymentStatus: 'Partial',
-                amount: '$25.00 / $75.00',
-                time: '6:00 PM - 10:00 PM'
-            },
-            {
-                id: 3,
-                date: '2025-08-22',
-                fullName: 'Bob Johnson',
-                amenity: 'Tennis Court',
-                reservationCode: 'TC003',
-                paymentStatus: 'Pending',
-                amount: '$30.00',
-                time: '3:00 PM - 5:00 PM'
-            },
-            {
-                id: 4,
-                date: '2025-08-28',
-                fullName: 'Alice Brown',
-                amenity: 'Function Hall',
-                reservationCode: 'FH004',
-                paymentStatus: 'Paid',
-                amount: '$200.00',
-                time: '7:00 PM - 11:00 PM'
-            }
-        ];
+        const bookings = <?php echo json_encode($bookings); ?>;
 
         let currentDate = new Date(2025, 7, 1); // August 2025
         let currentView = 'month';

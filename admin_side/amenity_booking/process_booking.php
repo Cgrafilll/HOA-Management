@@ -113,9 +113,9 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
             .booking-details h3::before { content: "📋"; margin-right: 10px; }
             
             .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e9ecef; }
-            detail-row:last-child { border-bottom: none; }
-            detail-label { font-weight: 600; color: #495057; font-size: 14px; flex: 0 0 auto; margin-right: 15px; }
-            .detail-value { color: #212529; font-size: 14px; text-align: right;flex: 0 0 auto; }
+            .detail-row:last-child { border-bottom: none; }
+            .detail-label { font-weight: 600; color: #495057; font-size: 14px; flex: 0 0 auto; margin-right: 20px; }
+            .detail-value { color: #212529; font-size: 14px; text-align: right; flex: 0 0 auto; }
             .detail-value.highlight { background-color: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-weight: 600; }
 
             .important-section { background: linear-gradient(135deg, #fff3cd 0%, #fef9e7 100%); border: 1px solid #ffc107; border-radius: 12px; padding: 25px; margin: 30px 0; }
@@ -250,11 +250,11 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
                 <div class="important-section">
                     <h4>Important Reminders</h4>
                     <ul>
-                        <li>Your booking status is currently <strong>PENDING</strong> and requires HOA approval</li>
-                        <li>Please save your reservation code <strong>' . $reservationCode . '</strong> for future reference</li>
-                        <li>You will receive another email once your booking is approved or if additional information is needed</li>
-                        <li>Minimum 50% down payment is required. Payment must be received before your scheduled date</li>
-                        <li>Rescheduling is allowed but must be requested at least 24 hours in advance</li>
+                        <li>• Your booking status is currently <strong>PENDING</strong> and requires HOA approval.</li>
+                        <li>• Please save your reservation code <strong>' . $reservationCode . '</strong> for future reference.</li>
+                        <li>• You will receive another email once your booking is approved or if additional information is needed.</li>
+                        <li>• Minimum 50% down payment is required. Payment must be received before your scheduled date.</li>
+                        <li>• Rescheduling is allowed but must be requested at least 24 hours in advance.</li>
                     </ul>
                 </div>
                 
