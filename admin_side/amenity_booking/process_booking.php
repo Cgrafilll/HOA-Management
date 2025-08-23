@@ -172,14 +172,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($stmt->execute()) {
         // Success - redirect with success parameter and reservation code
         header("Location: reserve_booking.php?reserve=" . urlencode($amenity) . "&success=1&code=" . urlencode($reservation_code));
+        $stmt->close();
+        $conn->close();
         exit();
     } else {
         // Error - redirect with error parameter
         header("Location: reserve_booking.php?reserve=" . urlencode($amenity) . "&error=1&message=" . urlencode($stmt->error));
+        $stmt->close();
+        $conn->close();
         exit();
     }
-
-    $stmt->close();
-    $conn->close();
 }
 ?>
