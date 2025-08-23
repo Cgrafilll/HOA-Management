@@ -238,9 +238,16 @@ $entry_result = $conn->query($entry_sql);
         <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
-                    <h5 class="mb-0 fw-bold">Entry Logs</h5>
+                    <h5 class="mb-0 fw-bold">Phone Book</h5>
                 </div>
-                <div class="">
+                <div class="p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small">List of Contacts</span>
+                        <div class="d-flex gap-2">
+                            <a href="phonebook/archive_phonebook.php" class="btn btn-secondary btn-sm">Archived Accounts</a>
+                            <a href="phonebook/add_phonebook.php" class="btn btn-primary btn-sm">+ Create New</a>
+                        </div>
+                    </div>
                     <!-- Success Modal -->
                     <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel"
                         aria-hidden="true">
@@ -264,7 +271,7 @@ $entry_result = $conn->query($entry_sql);
                         aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content text-center">
-                                <div class="modal-header bg-success text-white">
+                                <div class="modal-header bg-danger text-white">
                                     <h5 class="modal-title fw-bold">Confirmation</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                                         aria-label="Close"></button>
@@ -272,11 +279,11 @@ $entry_result = $conn->query($entry_sql);
                                 <div class="modal-body">
                                     <i class="bi bi-x-circle text-danger" style="font-size: 64px;"></i>
                                     <p class="mb-2"><b>Are you sure?</b></p>
-                                    <p class="mb-3">Do you really want to delete this account?</p>
                                     <p class="mb-3">This process will archive this account.</p>
                                     <div class="d-flex justify-content-center gap-2">
-                                        <button type="button" class="btn btn-danger" id="confirmProceed">Delete</button>
-                                        <button type="button" class="btn btn-light btn-cancel"
+                                        <button type="button" class="btn btn-danger"
+                                            id="confirmProceed">Archive</button>
+                                        <button type="button" class="btn btn-secondary btn-cancel"
                                             data-bs-dismiss="modal">Cancel</button>
                                     </div>
                                 </div>
@@ -306,138 +313,76 @@ $entry_result = $conn->query($entry_sql);
                             });
                         </script>
                     <?php endif; ?>
-                    <!-- Tabs -->
-                    <ul class="nav nav-tabs mt-3" id="dashboardTabs">
-                        <li class="nav-item">
-                            <a class="nav-link active link-dark" id="homeowners-tab" data-bs-toggle="tab"
-                                href="#homeowner" role="tab">Homeowner / Resident</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link link-secondary" id="visitor-tab" data-bs-toggle="tab" href="#visitor"
-                                role="tab">Visitor</a>
-                        </li>
-                    </ul>
-                    <!-- Tab Content -->
-                    <div class="tab-content p-3">
-                        <!-- Resident Table -->
-                        <div class="tab-pane fade show active" id="homeowner" role="tabpanel">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="small">Homeowner Entry Logs</span>
-                                <div class="d-flex gap-2">
-                                    <a href="entry_logs/archive_homeowner.php" class="btn btn-secondary btn-sm">Archived
-                                        RFID</a>
-                                    <a href="entry_logs/manage_homeowner.php" class="btn btn-primary btn-sm">Manage
-                                        Homeowner RFID</a>
-                                </div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
-                                    <thead class="bg-success text-white small">
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Resident RFID</th>
-                                            <th>Full Name</th>
-                                            <th>Date and Time</th>
-                                            <th>Location</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="small align-middle">
-                                        <?php
-                                        $household_count = 0;
-                                        if ($entry_result->num_rows > 0) {
-                                            $entry_result->data_seek(0); // Reset result pointer
-                                            while ($row = $entry_result->fetch_assoc()) {
-                                                if ($row['type'] === 'household') {
-                                                    $household_count++;
-                                                    $id = $row['entry_id'];
-                                                    $uid = $row['uid'];
-                                                    $fullName = trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
-                                                    $date = date('F j, Y, g:i A', strtotime($row['date_created']));
-                                                    $location = "Gate 1";
-                                                    echo "<tr>
-                                                            <td>{$id}</td>
-                                                            <td>{$uid}</td>
-                                                            <td>{$fullName}</td>
-                                                            <td>{$date}</td>
-                                                            <td>{$location}</td>
-                                                        </tr>";
-                                                }
-                                            }
-                                        }
-                                        if ($household_count === 0) {
-                                            echo "<tr><td colspan='5' class='text-center text-muted'>No household entry logs found.</td></tr>";
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <!-- Visitor Table -->
-                        <div class="tab-pane fade" id="visitor" role="tabpanel">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="small">Visitor Entry Logs</span>
-                                <div class="d-flex gap-2">
-                                    <a href="entry_logs/archive_visitor.php" class="btn btn-secondary btn-sm">Archived
-                                        RFID</a>
-                                    <a href="entry_logs/manage_visitor.php" class="btn btn-primary btn-sm">Manage
-                                        Visitor RFID</a>
-                                </div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
-                                    <thead class="bg-primary text-white small">
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Visitor RFID</th>
-                                            <th>Full Name</th>
-                                            <th>Date and Time</th>
-                                            <th>Location</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="small align-middle">
-                                        <?php
-                                        $visitor_count = 0;
-                                        if ($entry_result->num_rows > 0) {
-                                            $entry_result->data_seek(0); // Reset result pointer
-                                            while ($row = $entry_result->fetch_assoc()) {
-                                                if ($row['type'] === 'visitor') {
-                                                    $visitor_count++;
-                                                    $id = $row['entry_id'];
-                                                    $uid = $row['uid'];
-                                                    $fullName = trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
-                                                    $date = date('F j, Y, g:i A', strtotime($row['date_created']));
-                                                    $location = "Gate 1";
-                                                    echo "<tr>
-                                                            <td>{$id}</td>
-                                                            <td>{$uid}</td>
-                                                            <td>{$fullName}</td>
-                                                            <td>{$date}</td>
-                                                            <td>{$location}</td>
-                                                        </tr>";
-                                                }
-                                            }
-                                        }
-                                        if ($visitor_count === 0) {
-                                            echo "<tr><td colspan='5' class='text-center text-muted'>No visitor entry logs found.</td></tr>";
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Table -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="bg-success text-white small">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Date Created</th>
+                                    <th>Full Name</th>
+                                    <th>User Type</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="small align-middle">
+                                <?php
+                                $sql = "SELECT admin_id, first_name, middle_name, last_name, roles, status, created_at 
+                                        FROM admin_accounts 
+                                        WHERE status = 'Active'
+                                        ORDER BY created_at DESC";
+                                $result = $conn->query($sql);
 
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                        <?php $total = $result->num_rows;
-                        echo "<span class='small'>Showing 1 to {$total} of {$total} entries</span>";
-                        ?>
-                        <nav>
-                            <ul class="pagination pagination-sm m-0">
-                                <li class="page-item disabled"><a class="page-link">Previous</a></li>
-                                <li class="page-item active"><a class="page-link">1</a></li>
-                                <li class="page-item"><a class="page-link">Next</a></li>
-                            </ul>
-                        </nav>
+                                if ($result->num_rows > 0) {
+                                    while ($row = $result->fetch_assoc()) {
+                                        $admin_id = $row['admin_id'];
+                                        $fullName = $row['first_name'] . ' ' . substr($row['middle_name'], 0, 1) . '. ' . $row['last_name'];
+                                        $role = htmlspecialchars($row['roles']);
+                                        $status = $row['status'] === 'Active' ? 'text-success' : 'text-danger';
+                                        $statusText = ucfirst($row['status']);
+                                        $created = date('Y-m-d H:i', strtotime($row['created_at']));
+                                        echo '
+                                        <tr data-id="' . $admin_id . '">
+                                            <td>' . $admin_id . '</td>
+                                            <td>' . $created . '</td>
+                                            <td>' . $fullName . '</td>
+                                            <td>' . $role . '</td>
+                                            <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
+                                            <td>
+                                                <div class="dropdown text-center">
+                                                    <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="admin/view_admin.php?id=' . $admin_id . '">View Details</a></li>
+                                                        <li><a class="dropdown-item" href="admin/edit_admin.php?id=' . $admin_id . '">Edit Details</a></li>
+                                                        <li>
+                                                            <a class="dropdown-item delete-account" href="admin/archive_process.php" data-id="' . $admin_id . '" data-bs-toggle="modal" data-bs-target="#confirmModal">
+                                                                Archive Account
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>';
+                                    }
+                                } else {
+                                    echo '<tr><td colspan="6" class="text-center text-muted">No admin accounts found.</td></tr>';
+                                }
+                                ?>
+                            </tbody>
+                        </table>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <?php $total = $result->num_rows;
+                            echo "<span class='small'>Showing 1 to {$total} of {$total} entries</span>";
+                            ?>
+                            <nav>
+                                <ul class="pagination pagination-sm m-0">
+                                    <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                                    <li class="page-item active"><a class="page-link">1</a></li>
+                                    <li class="page-item"><a class="page-link">Next</a></li>
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
                 </div>
             </div>

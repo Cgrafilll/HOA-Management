@@ -1,5 +1,4 @@
-
-        <?php
+<?php
 // process_event_booking.php
 session_start();
 require '../rfid-api/db.php';
@@ -39,13 +38,13 @@ if (!isset($_SESSION['form_token'])) {
 // ✅ Handle Event Insert BEFORE any HTML output
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['title'], $_POST['body'], $_POST['event_date'], $_POST['form_token'])) {
-        
+
         // ✅ Check for duplicate submission
         if ($_POST['form_token'] !== $_SESSION['form_token']) {
             header("Location: " . $_SERVER['PHP_SELF'] . "?error=duplicate");
             exit;
         }
-        
+
         $title = trim($_POST['title']);
         $body = trim($_POST['body']);
         $body = preg_replace('/\s+/', ' ', $body); // collapse multiple spaces/newlines
@@ -60,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // ✅ Clear the form token after successful insert
             unset($_SESSION['form_token']);
-            
+
             // ✅ Redirect after insert (prevents duplicates on refresh)
             header("Location: " . $_SERVER['PHP_SELF'] . "?success=1");
             exit;
@@ -92,6 +91,7 @@ try {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -100,6 +100,12 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+        * {
+            font-family: "Montserrat", sans-serif;
+        }
+
         header {
             position: sticky;
             top: 0;
@@ -115,6 +121,7 @@ try {
             background-color: #1F2937;
             overflow-y: auto;
         }
+
         /* Same CSS as before, updated only where necessary for event cards */
         .event-card {
             word-wrap: break-word;
@@ -122,49 +129,64 @@ try {
             white-space: normal;
             max-width: 100%;
         }
-        .event-title { 
+
+        .event-title {
             font-weight: 600;
             font-size: 1rem;
-            margin-bottom: 6px; 
+            margin-bottom: 6px;
         }
-        .event-body { 
-            font-size: 0.95rem; 
-            margin: 0; margin-bottom: 8px;
+
+        .event-body {
+            font-size: 0.95rem;
+            margin: 0;
+            margin-bottom: 8px;
             line-height: 1.4;
             white-space: pre-wrap;
             word-wrap: break-word;
             overflow-wrap: break-word;
-         }
+        }
+
         .event-meta {
             font-size: 0.8rem;
-            color: #6c757d; 
+            color: #6c757d;
         }
+
         .announcement-meta {
             font-size: 0.8rem;
-            color: #6c757d; /* Bootstrap muted gray */
+            color: #6c757d;
+            /* Bootstrap muted gray */
         }
 
         .announcement-actions a {
-            font-size: 1rem;  /* adjust icon size */
+            font-size: 1rem;
+            /* adjust icon size */
             text-decoration: none;
         }
+
         .announcement-actions a:hover {
             opacity: 0.8;
         }
+
         .announcement-actions .btn {
-            padding: 2px 6px; /* smaller buttons */
+            padding: 2px 6px;
+            /* smaller buttons */
             font-size: 0.9rem;
         }
 
         main {
             margin-left: 250px;
-            padding-bottom: 100px; /* ✅ give breathing room at bottom */
+            padding-bottom: 100px;
+            /* ✅ give breathing room at bottom */
         }
-        .card-body p, 
+
+        .card-body p,
         .card-body h6 {
-            word-wrap: break-word;       /* Old support */
-            overflow-wrap: break-word;   /* Modern support */
-            white-space: pre-wrap;       /* Keeps newlines */
+            word-wrap: break-word;
+            /* Old support */
+            overflow-wrap: break-word;
+            /* Modern support */
+            white-space: pre-wrap;
+            /* Keeps newlines */
         }
 
         .sidebar a,
@@ -225,15 +247,20 @@ try {
             /* slightly darker gray */
             color: #000;
         }
+
         .form-control.border-danger {
-            border: 2px solid #dc3545 !important; /* force red */
+            border: 2px solid #dc3545 !important;
+            /* force red */
         }
+
         textarea {
             min-height: 100px;
-            resize: none; /* optional: prevent manual drag */
+            resize: none;
+            /* optional: prevent manual drag */
         }
     </style>
 </head>
+
 <body class="bg-light">
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
@@ -245,9 +272,10 @@ try {
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
                 <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
-                     style="height: 40px; width: 40px; color: #aaa;">
+                    style="height: 40px; width: 40px; color: #aaa;">
                     <?php if (!empty($photo)): ?>
-                        <img src="<?php echo htmlspecialchars($photo); ?>" style="width: 40px; height: 40px; object-fit: cover;">
+                        <img src="<?php echo htmlspecialchars($photo); ?>"
+                            style="width: 40px; height: 40px; object-fit: cover;">
                     <?php else: ?>
                         <i class="bi bi-person-circle" style="font-size: 32px;"></i>
                     <?php endif; ?>
@@ -324,15 +352,9 @@ try {
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="#" class="nav-link px-2">Payments</a></li>
                             <li><a href="#" class="nav-link px-2">Invoices</a></li>
-                            <li><a href="#" class="nav-link px-2">Transactions</a></li>
-                            <li><a href="#" class="nav-link px-2">Budgets</a></li>
                         </ul>
                     </div>
                 </div>
-                <!-- Forms -->
-                <a href="#" class="nav-link px-3 py-2 d-flex align-items-center justify-content-start">
-                    <i class="bi bi-file-earmark me-2"></i> Forms
-                </a>
             </nav>
         </aside>
         <!-- Main Content -->
@@ -349,25 +371,33 @@ try {
                         </div>
                     </div>
                     <hr class="mb-3 mt-0">
-
                     <!-- Event Form -->
                     <form method="POST" id="eventForm">
-                        <input type="hidden" name="form_token" value="<?php echo htmlspecialchars($_SESSION['form_token']); ?>">
-
-                        <h5 class="fw mb-2">Event Title</h5>
-                        <input type="text" id="title" name="title" class="form-control border-dark rounded mb-1" maxlength="150" placeholder="Enter event title" required>
-
-                        <h5 class="fw mb-2">Event Date</h5>
-                        <input type="date" id="event_date" name="event_date" class="form-control mb-3" required>
-
+                        <input type="hidden" name="form_token"
+                            value="<?php echo htmlspecialchars($_SESSION['form_token']); ?>">
+                        <div class="row">
+                            <div class="col-6">
+                                <h5 class="fw mb-2">Event Title</h5>
+                                <input type="text" id="title" name="title" class="form-control border-dark rounded mb-1"
+                                    maxlength="150" placeholder="Enter event title" required>
+                            </div>
+                            <div class="col-6">
+                                <h5 class="fw mb-2">Event Date</h5>
+                                <input type="date" id="event_date" name="event_date"
+                                    class="form-control border-dark mb-3" required>
+                            </div>
+                        </div>
                         <h5 class="fw mb-2 mt-3">Description</h5>
-                        <textarea id="body" name="body" class="form-control border-dark rounded mb-1" style="min-height:100px; resize:none;" placeholder="Enter event description" required></textarea>
-
+                        <textarea id="body" name="body" class="form-control border-dark rounded mb-1"
+                            style="min-height:100px; resize:none;" placeholder="Enter event description"
+                            required></textarea>
                         <p id="formError" class="text-danger small mt-2" style="display:none;">
                             Please fill in both Title, Description and Date before publishing.
                         </p>
-
-                        <button type="button" class="btn btn-primary mt-3" id="publishBtn">Publish Event</button>
+                        <!-- Publish button -->
+                        <div class="text-end">
+                            <button type="button" class="btn btn-primary mt-3" id="publishBtn">Publish</button>
+                        </div>
                     </form>
                     <!-- Published Events -->
                     <div class="mt-4">
@@ -381,22 +411,23 @@ try {
                                             <div class="event-title"><?= htmlspecialchars($row['title']); ?></div>
                                             <div class="event-actions">
                                                 <button type="button" class="btn btn-sm btn-outline-primary me-1"
-                                                        data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id']; ?>" title="Edit">
+                                                    data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id']; ?>"
+                                                    title="Edit">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-outline-secondary archiveBtn"
-                                                        data-id="<?= $row['id']; ?>" title="Archive">
+                                                    data-id="<?= $row['id']; ?>" title="Archive">
                                                     <i class="bi bi-archive"></i>
                                                 </button>
                                             </div>
                                         </div>
                                         <div class="event-body mt-2"><?= nl2br(htmlspecialchars($row['body'])); ?></div>
                                         <div class="event-meta mt-1">
-                                            Posted by <?= htmlspecialchars($row['first_name'] . " " . $row['last_name']); ?> 
-                                            on <?= date("M d, Y h:i A", strtotime($row['created_at'])); ?> | Event Date: <?= date("M d, Y", strtotime($row['event_date'])); ?>
+                                            Posted by <?= htmlspecialchars($row['first_name'] . " " . $row['last_name']); ?>
+                                            on <?= date("M d, Y h:i A", strtotime($row['created_at'])); ?> | Event Date:
+                                            <?= date("M d, Y", strtotime($row['event_date'])); ?>
                                         </div>
                                     </div>
-
                                     <!-- Move Edit Modal here for this event -->
                                     <div class="modal fade" id="editModal<?= $row['id']; ?>" tabindex="-1" aria-hidden="true">
                                         <div class="modal-dialog">
@@ -404,19 +435,25 @@ try {
                                                 <form class="editForm" data-id="<?= $row['id']; ?>">
                                                     <div class="modal-header bg-success text-white">
                                                         <h5 class="modal-title">Edit Event</h5>
-                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                        <button type="button" class="btn-close btn-close-white"
+                                                            data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <div class="modal-body">
                                                         <label class="form-label">Title</label>
-                                                        <input type="text" name="title" class="form-control mb-2" value="<?= htmlspecialchars($row['title']); ?>" required>
+                                                        <input type="text" name="title" class="form-control mb-2"
+                                                            value="<?= htmlspecialchars($row['title']); ?>" required>
                                                         <label class="form-label mt-2">Event Date</label>
-                                                        <input type="date" name="event_date" class="form-control mb-2" value="<?= htmlspecialchars($row['event_date']); ?>" required>
+                                                        <input type="date" name="event_date" class="form-control mb-2"
+                                                            value="<?= htmlspecialchars($row['event_date']); ?>" required>
                                                         <label class="form-label mt-2">Description</label>
-                                                        <textarea name="body" class="form-control" rows="5" required><?= htmlspecialchars($row['body']); ?></textarea>
+                                                        <textarea name="body" class="form-control" rows="5"
+                                                            required><?= htmlspecialchars($row['body']); ?></textarea>
                                                     </div>
                                                     <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                        <button type="button" class="btn btn-success confirmEditBtn" data-id="<?= $row['id']; ?>">Save Changes</button>
+                                                        <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="button" class="btn btn-success confirmEditBtn"
+                                                            data-id="<?= $row['id']; ?>">Save Changes</button>
                                                     </div>
                                                 </form>
                                             </div>
@@ -430,17 +467,20 @@ try {
                         <!-- Edit Confirmation Modal -->
                         <div class="modal fade" id="confirmEditModal" tabindex="-1">
                             <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content text-center">
-                                        <div class="modal-header bg-success text-white">
-                                            <h5 class="modal-title">Confirm Edit</h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <p>Are you sure you want to save changes to this event?</p>
-                                                <button type="button" class="btn btn-success" id="confirmEditBtn">Yes, Save</button>
-                                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                                        </div>
+                                <div class="modal-content text-center">
+                                    <div class="modal-header bg-success text-white">
+                                        <h5 class="modal-title">Confirm Edit</h5>
+                                        <button type="button" class="btn-close btn-close-white"
+                                            data-bs-dismiss="modal"></button>
                                     </div>
+                                    <div class="modal-body">
+                                        <p>Are you sure you want to save changes to this event?</p>
+                                        <button type="button" class="btn btn-success" id="confirmEditBtn">Yes,
+                                            Save</button>
+                                        <button type="button" class="btn btn-light"
+                                            data-bs-dismiss="modal">Cancel</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -450,11 +490,13 @@ try {
                                 <div class="modal-content text-center">
                                     <div class="modal-header bg-success text-white">
                                         <h5 class="modal-title">Success</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        <button type="button" class="btn-close btn-close-white"
+                                            data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
                                         <p>Event updated successfully!</p>
-                                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                                        <button type="button" class="btn btn-success"
+                                            data-bs-dismiss="modal">OK</button>
                                     </div>
                                 </div>
                             </div>
@@ -466,14 +508,17 @@ try {
                                 <div class="modal-content text-center">
                                     <div class="modal-header bg-warning text-white">
                                         <h5 class="modal-title fw-bold">Confirm Archive</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        <button type="button" class="btn-close btn-close-white"
+                                            data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
                                         <i class="bi bi-exclamation-triangle text-warning" style="font-size: 64px;"></i>
                                         <p class="mb-2"><b>Are you sure?</b></p>
                                         <p class="mb-3">Do you really want to archive this event?</p>
-                                        <button type="button" class="btn btn-warning" id="confirmArchiveBtn">Yes, Archive</button>
-                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-warning" id="confirmArchiveBtn">Yes,
+                                            Archive</button>
+                                        <button type="button" class="btn btn-light"
+                                            data-bs-dismiss="modal">Cancel</button>
                                     </div>
                                 </div>
                             </div>
@@ -485,12 +530,14 @@ try {
                                 <div class="modal-content text-center">
                                     <div class="modal-header bg-success text-white">
                                         <h5 class="modal-title fw-bold">Archived!</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        <button type="button" class="btn-close btn-close-white"
+                                            data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
                                         <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
                                         <p class="mt-3 mb-2"><b>Event archived successfully.</b></p>
-                                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                                        <button type="button" class="btn btn-success"
+                                            data-bs-dismiss="modal">OK</button>
                                     </div>
                                 </div>
                             </div>
@@ -501,7 +548,7 @@ try {
         </main>
     </div>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('success') === '1') {
                 let successModalEl = document.getElementById('successModal');
@@ -520,7 +567,7 @@ try {
         });
     </script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             function validateForm() {
                 let title = document.getElementById("title");
                 let body = document.getElementById("body");
@@ -562,20 +609,20 @@ try {
             });
 
             // Auto-expand textarea
-            document.querySelectorAll("textarea").forEach(function(el) {
+            document.querySelectorAll("textarea").forEach(function (el) {
                 el.addEventListener("input", function () {
                     this.style.height = "auto";
                     this.style.height = this.scrollHeight + "px";
                 });
             });
         });
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             let currentEditForm = null;
             let currentEventId = null;
 
             // When clicking "Save Changes" -> open confirmation modal
             document.querySelectorAll('.confirmEditBtn').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function () {
                     currentEventId = this.dataset.id;
                     currentEditForm = document.querySelector(`.editForm[data-id='${currentEventId}']`);
 
@@ -601,7 +648,7 @@ try {
             });
 
             // When confirming in the modal, send the update
-            document.getElementById('confirmEditBtn').addEventListener('click', function() {
+            document.getElementById('confirmEditBtn').addEventListener('click', function () {
                 if (!currentEditForm) return;
 
                 const formData = new FormData(currentEditForm);
@@ -611,42 +658,42 @@ try {
                     method: 'POST',
                     body: formData
                 })
-                .then(res => res.json())
-                .then(data => {
-                    const confirmModalEl = document.getElementById('confirmEditModal');
-                    const confirmModal = bootstrap.Modal.getInstance(confirmModalEl);
+                    .then(res => res.json())
+                    .then(data => {
+                        const confirmModalEl = document.getElementById('confirmEditModal');
+                        const confirmModal = bootstrap.Modal.getInstance(confirmModalEl);
 
-                    if (data.success) {
-                        confirmModal.hide();
+                        if (data.success) {
+                            confirmModal.hide();
 
-                        const successModalEl = document.getElementById('editSuccessModal');
-                        const successModal = new bootstrap.Modal(successModalEl);
-                        successModal.show();
+                            const successModalEl = document.getElementById('editSuccessModal');
+                            const successModal = new bootstrap.Modal(successModalEl);
+                            successModal.show();
 
-                        successModalEl.addEventListener('hidden.bs.modal', () => location.reload());
-                    } else {
-                        alert('Failed to update event: ' + data.message);
-                    }
-                })
-                .catch(err => alert('Error updating event: ' + err.message));
+                            successModalEl.addEventListener('hidden.bs.modal', () => location.reload());
+                        } else {
+                            alert('Failed to update event: ' + data.message);
+                        }
+                    })
+                    .catch(err => alert('Error updating event: ' + err.message));
             });
         });
 
 
     </script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             let archiveEventId = null;
 
             document.querySelectorAll('.archiveBtn').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function () {
                     archiveEventId = this.dataset.id;
                     const archiveModal = new bootstrap.Modal(document.getElementById('confirmArchiveModal'));
                     archiveModal.show();
                 });
             });
 
-            document.getElementById('confirmArchiveBtn').addEventListener('click', function() {
+            document.getElementById('confirmArchiveBtn').addEventListener('click', function () {
                 if (!archiveEventId) return;
 
                 const formData = new FormData();
@@ -656,30 +703,38 @@ try {
                     method: 'POST',
                     body: formData
                 })
-                .then(res => res.json())
-                .then(data => {
-                    const archiveModalEl = document.getElementById('confirmArchiveModal');
-                    const archiveModal = bootstrap.Modal.getInstance(archiveModalEl);
+                    .then(res => res.json())
+                    .then(data => {
+                        const archiveModalEl = document.getElementById('confirmArchiveModal');
+                        const archiveModal = bootstrap.Modal.getInstance(archiveModalEl);
 
-                    if (data.success) {
-                        archiveModal.hide();
+                        if (data.success) {
+                            archiveModal.hide();
 
-                        const archiveSuccessModalEl = document.getElementById('archiveSuccessModal');
-                        const archiveSuccessModal = new bootstrap.Modal(archiveSuccessModalEl);
-                        archiveSuccessModal.show();
+                            const archiveSuccessModalEl = document.getElementById('archiveSuccessModal');
+                            const archiveSuccessModal = new bootstrap.Modal(archiveSuccessModalEl);
+                            archiveSuccessModal.show();
 
-                        archiveSuccessModalEl.addEventListener('hidden.bs.modal', () => location.reload());
-                    } else {
-                        alert('Failed to archive event: ' + data.message);
-                    }
-                })
-                .catch(err => {
-                    alert('Error archiving event: ' + err.message);
-                });
+                            archiveSuccessModalEl.addEventListener('hidden.bs.modal', () => location.reload());
+                        } else {
+                            alert('Failed to archive event: ' + data.message);
+                        }
+                    })
+                    .catch(err => {
+                        alert('Error archiving event: ' + err.message);
+                    });
             });
+        });
+
+        // Set minimum date to today
+        document.addEventListener("DOMContentLoaded", function () {
+            const today = new Date().toISOString().split("T")[0];
+            const dateInput = document.getElementById("event_date");
+            dateInput.min = today; // disables all past options
         });
 
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
