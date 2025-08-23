@@ -1,0 +1,16 @@
+# Sensitive Configuration Files
+.env
+email_config.php
+test_email.php
+
+# Upload Directories
+uploads/
+temp/
+
+# Log Files
+*.log
+error.log
+
+# System Files
+.DS_Store
+Thumbs.db
