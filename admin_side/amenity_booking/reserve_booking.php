@@ -457,8 +457,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                 <span id="dayRate">Day • <?= $currentRates['day'] ?></span>
                                                 <div class="custom-radio-circle selected"></div>
                                             </div>
-                                            <div class="custom-radio-option" data-value="night"
-                                                onclick="selectRate(this, 'night')">
+                                            <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'disabled d-none' : '' ?>"
+                                                data-value="night" onclick="selectRate(this, 'night')">
                                                 <span id="nightRate">Night • <?= $currentRates['night'] ?></span>
                                                 <div class="custom-radio-circle"></div>
                                             </div>
@@ -664,7 +664,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                 <ul>
                                                     <li>Use of the <strong>Basketball Court beyond the booked
                                                             session</strong> (Day or
-                                                        Night) will incur <strong>an additional charge of ₱100.00 per
+                                                        Night) will incur <strong>an additional charge of ₱1,000.00 per
                                                             hour.</strong></li>
                                                     <li>This applies only to <strong>excess hours beyond the reserved
                                                             time.</strong></li>
@@ -914,29 +914,47 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const userType = this.value;
 
             // ✅ Keep previously selected rate (default to 'day' if none)
-            const prevSelectedRate = document.getElementById('selectedRate').value || 'day';
+            let prevSelectedRate = document.getElementById('selectedRate').value || 'day';
+
+            // ✅ For Clubhouse, always default to 'day' since night option won't exist
+            if (currentAmenity === "Clubhouse") {
+                prevSelectedRate = 'day';
+            }
 
             if (amenityRates[currentAmenity] && amenityRates[currentAmenity][userType]) {
                 const rates = amenityRates[currentAmenity][userType];
 
                 // Update labels
                 document.getElementById('dayRate').textContent = `Day • ${rates.day}`;
-                document.getElementById('nightRate').textContent = `Night • ${rates.night}`;
 
-                // ✅ Restore the same rate (day/night) as before
-                document.getElementById('selectedRate').value = prevSelectedRate;
+                // Only update night rate if it exists in the DOM
+                const nightRateElement = document.getElementById('nightRate');
+                if (nightRateElement) {
+                    nightRateElement.textContent = `Night • ${rates.night}`;
+                }
+
+                // ✅ Restore the same rate (day/night) as before, but ensure it exists
+                const container = document.getElementById('ratesContainer');
+                const selectedOption = container.querySelector(`[data-value="${prevSelectedRate}"]`);
+
+                if (selectedOption) {
+                    document.getElementById('selectedRate').value = prevSelectedRate;
+                } else {
+                    // If the previously selected rate doesn't exist (e.g., night for Clubhouse), default to day
+                    document.getElementById('selectedRate').value = 'day';
+                    prevSelectedRate = 'day';
+                }
 
                 // Reset UI
-                const container = document.getElementById('ratesContainer');
                 container.querySelectorAll('.custom-radio-option').forEach(el => {
                     el.classList.remove('selected');
                     el.querySelector('.custom-radio-circle').classList.remove('selected');
                 });
 
-                const selectedOption = container.querySelector(`[data-value="${prevSelectedRate}"]`);
-                if (selectedOption) {
-                    selectedOption.classList.add('selected');
-                    selectedOption.querySelector('.custom-radio-circle').classList.add('selected');
+                const finalSelectedOption = container.querySelector(`[data-value="${prevSelectedRate}"]`);
+                if (finalSelectedOption) {
+                    finalSelectedOption.classList.add('selected');
+                    finalSelectedOption.querySelector('.custom-radio-circle').classList.add('selected');
                 }
             } else {
                 console.warn("No rates found for:", currentAmenity, userType);
@@ -994,7 +1012,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 fileDropArea.classList.remove("d-none");
             }
         }
-
         // Prices for add-ons
         const chairPrice = 12;
         const tablePrice = 20;
