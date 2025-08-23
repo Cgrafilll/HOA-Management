@@ -57,6 +57,12 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+        * {
+            font-family: "Montserrat", sans-serif;
+        }
+
         header {
             position: sticky;
             top: 0;
@@ -165,7 +171,7 @@ try {
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav flex-column gap-1">
-                <a href="admin_dashboard.php"
+                <a href="../admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
@@ -211,9 +217,9 @@ try {
                     </button>
                     <div class="collapse show" id="commCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../#" class="nav-link px-2">Announcements</a></li>
-                            <li><a href="../#" class="nav-link px-2 actived">Events</a></li>
-                            <li><a href="../#" class="nav-link px-2">Phone Book</a></li>
+                            <li><a href="../announcements.php" class="nav-link px-2">Announcements</a></li>
+                            <li><a href="../events.php" class="nav-link px-2 actived">Events</a></li>
+                            <li><a href="../phonebook.php" class="nav-link px-2">Phone Book</a></li>
                         </ul>
                     </div>
                 </div>
@@ -244,8 +250,7 @@ try {
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">Archived Events</span>
                         <div class="d-flex gap-2">
-                            <a href="../events.php"
-                                class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                            <a href="../events.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                                 <i class="bi bi-arrow-left-short me-1"></i>Back
                             </a>
                         </div>
@@ -263,7 +268,7 @@ try {
                                 <div class="modal-body">
                                     <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
                                     <p class="mb-2"><b>Success</b></p>
-                                    <p class="mb-3">Event has been re-published.</p>
+                                    <p class="mb-3">Event has been republished.</p>
                                     <button type="button" class="btn btn-primary" id="doneButton">Done</button>
                                 </div>
                             </div>
@@ -282,8 +287,8 @@ try {
                                 <div class="modal-body">
                                     <i class="bi bi-key text-success" style="font-size: 64px;"></i>
                                     <p class="mb-2"><b>Are you sure?</b></p>
-                                    <p class="mb-3">Do you really want to re-publish this event?</p>
-                                    <p class="mb-3">This process will re-publish this event.</p>
+                                    <span class="mb-3">Do you really want to republish this event?</span>
+                                    <p class="mb-3">This process will republish this event.</p>
                                     <div class="d-flex justify-content-center gap-2">
                                         <button type="button" class="btn btn-success"
                                             id="confirmActivate">Activate</button>
@@ -301,7 +306,7 @@ try {
                                     <th>Title</th>
                                     <th>Body</th>
                                     <th>Created At</th>
-                                    <th class="text-end">Action</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody class="small align-middle">
@@ -311,7 +316,7 @@ try {
                                             <td><?php echo htmlspecialchars($row['title']); ?></td>
                                             <td><?php echo nl2br(htmlspecialchars($row['body'])); ?></td>
                                             <td><?php echo htmlspecialchars($row['created_at']); ?></td>
-                                            <td class="text-end">
+                                            <td class="text-center">
                                                 <button class="btn btn-sm btn-success activateBtn"
                                                     data-id="<?php echo $row['id']; ?>">
                                                     <i class="bi bi-check-circle me-1"></i> Activate

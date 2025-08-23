@@ -217,7 +217,7 @@ try {
                     </button>
                     <div class="collapse show" id="commCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../announcement.php" class="nav-link px-2 actived">Announcements</a></li>
+                            <li><a href="../announcements.php" class="nav-link px-2 actived">Announcements</a></li>
                             <li><a href="../events.php" class="nav-link px-2">Events</a></li>
                             <li><a href="../phonebook.php" class="nav-link px-2">Phone Book</a></li>
                         </ul>
@@ -269,7 +269,7 @@ try {
                                 <div class="modal-body">
                                     <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
                                     <p class="mb-2"><b>Success</b></p>
-                                    <p class="mb-3">Announcement has been re-published.</p>
+                                    <p class="mb-3">Announcement has been republished.</p>
                                     <button type="button" class="btn btn-primary" id="doneButton">Done</button>
                                 </div>
                             </div>
@@ -288,8 +288,8 @@ try {
                                 <div class="modal-body">
                                     <i class="bi bi-key text-success" style="font-size: 64px;"></i>
                                     <p class="mb-2"><b>Are you sure?</b></p>
-                                    <p class="mb-3">Do you really want to re-publish this announcement?</p>
-                                    <p class="mb-3">This process will re-publish this announcement.</p>
+                                    <span class="mb-3">Do you really want to republish this announcement?</span>
+                                    <p class="mb-3">This process will republish this announcement.</p>
                                     <div class="d-flex justify-content-center gap-2">
                                         <button type="button" class="btn btn-success"
                                             id="confirmActivate">Activate</button>
