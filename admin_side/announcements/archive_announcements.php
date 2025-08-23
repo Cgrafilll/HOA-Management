@@ -1,11 +1,13 @@
 <?php
 session_start();
-require '../rfid-api/db.php';
+
+require '../../rfid-api/db.php';
 
 if (!isset($_SESSION['email_address'])) {
-    header("Location: login/login.php");
+    header("Location: ../login/login.php");
     exit;
 }
+
 
 // Initialize user details
 $email_address = $_SESSION['email_address'];
@@ -31,9 +33,16 @@ try {
     } else {
         $error_message = "Failed to fetch user details.";
     }
-
 } catch (Exception $e) {
     $error_message = "Error fetching user details: " . $e->getMessage();
+}
+// Fetch archived announcements
+try {
+    $stmt = $conn->prepare("SELECT * FROM announcements WHERE status = 'archived' ORDER BY created_at DESC");
+    $stmt->execute();
+    $announcementsResult = $stmt->get_result();
+} catch (Exception $e) {
+    $error_message = "Error fetching announcements: " . $e->getMessage();
 }
 ?>
 
@@ -46,14 +55,8 @@ try {
     <title>NSSHAI HOA Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
+    <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
-
-        * {
-            font-family: "Montserrat", sans-serif;
-        }
-
         header {
             position: sticky;
             top: 0;
@@ -124,6 +127,7 @@ try {
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
+
         }
 
         /* Make Cancel button slightly darker on hover */
@@ -139,10 +143,10 @@ try {
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
         <div class="me-4" style="width: 250px;">
-            <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
+            <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
+            <h1 class="h5 mb-0 fw-bold">COMMUNICATION</h1>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
                 <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
@@ -167,15 +171,15 @@ try {
                 </a>
                 <!-- Accounts -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#accountsCollapse" aria-expanded="true">
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#accountsCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-person-lines-fill me-2"></i> Accounts
                         </span>
                     </button>
-                    <div class="collapse show" id="accountsCollapse">
+                    <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="admin_accounts.php" class="nav-link px-2 actived">Admin</a></li>
+                            <li><a href="admin_accounts.php" class="nav-link px-2">Admin</a></li>
                             <li><a href="household_accounts.php" class="nav-link px-2">Household</a></li>
                             <li><a href="visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
                         </ul>
@@ -199,15 +203,15 @@ try {
                 </div>
                 <!-- Communication -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
                         data-bs-target="#commCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-chat-left-text me-2"></i> Communication
                         </span>
                     </button>
-                    <div class="collapse" id="commCollapse">
+                    <div class="collapse show" id="commCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="announcements.php" class="nav-link px-2">Announcements</a></li>
+                            <li><a href="#" class="nav-link px-2 actived">Announcements</a></li>
                             <li><a href="#" class="nav-link px-2">Events</a></li>
                             <li><a href="#" class="nav-link px-2">Phone Book</a></li>
                         </ul>
@@ -228,22 +232,29 @@ try {
                         </ul>
                     </div>
                 </div>
+                <!-- Forms -->
+                <a href="#" class="nav-link px-3 py-2 d-flex align-items-center justify-content-start">
+                    <i class="bi bi-file-earmark me-2"></i> Forms
+                </a>
             </nav>
         </aside>
         <!-- Main Content -->
         <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
-                    <h5 class="mb-0 fw-bold">Admin Account Management</h5>
+                    <h5 class="mb-0 fw-bold">Announcements</h5>
                 </div>
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="small">List of Admin Accounts</span>
+                        <span class="small">Archived Announcements</span>
                         <div class="d-flex gap-2">
-                            <a href="admin/archive_admin.php" class="btn btn-secondary btn-sm">Archived Accounts</a>
-                            <a href="admin/add_admin.php" class="btn btn-primary btn-sm">+ Create New</a>
+                            <a href="../announcements.php"
+                                class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                                <i class="bi bi-arrow-left-short me-1"></i>Back
+                            </a>
                         </div>
                     </div>
+                    <hr class="mb-3 mt-0">
                     <!-- Success Modal -->
                     <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel"
                         aria-hidden="true">
@@ -256,7 +267,7 @@ try {
                                 <div class="modal-body">
                                     <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
                                     <p class="mb-2"><b>Success</b></p>
-                                    <p class="mb-3">User has been moved to archives.</p>
+                                    <p class="mb-3">Announcement has been re-published.</p>
                                     <button type="button" class="btn btn-primary" id="doneButton">Done</button>
                                 </div>
                             </div>
@@ -273,12 +284,13 @@ try {
                                         aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <i class="bi bi-x-circle text-danger" style="font-size: 64px;"></i>
+                                    <i class="bi bi-key text-success" style="font-size: 64px;"></i>
                                     <p class="mb-2"><b>Are you sure?</b></p>
-                                    <p class="mb-3">Do you really want to delete this account?</p>
-                                    <p class="mb-3">This process will archive this account.</p>
+                                    <p class="mb-3">Do you really want to re-publish this announcement?</p>
+                                    <p class="mb-3">This process will re-publish this announcement.</p>
                                     <div class="d-flex justify-content-center gap-2">
-                                        <button type="button" class="btn btn-danger" id="confirmProceed">Delete</button>
+                                        <button type="button" class="btn btn-success"
+                                            id="confirmActivate">Activate</button>
                                         <button type="button" class="btn btn-light btn-cancel"
                                             data-bs-dismiss="modal">Cancel</button>
                                     </div>
@@ -286,89 +298,41 @@ try {
                             </div>
                         </div>
                     </div>
-
-                    <?php if (isset($success) && $success): ?>
-                        <script>
-                            window.addEventListener('DOMContentLoaded', () => {
-                                const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-                                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-
-                                // Show confirmation modal first
-                                confirmModal.show();
-
-                                // If user clicks Proceed
-                                document.getElementById('confirmProceed').addEventListener('click', () => {
-                                    confirmModal.hide();
-                                    setTimeout(() => successModal.show(), 300); // small delay to avoid overlap
-                                });
-
-                                // Success modal buttons/redirect
-                                const redirect = () => window.location.href = 'admin_accounts.php';
-                                document.getElementById('doneButton').addEventListener('click', redirect);
-                                document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
-                            });
-                        </script>
-                    <?php endif; ?>
-                    <!-- Table -->
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
                             <thead class="bg-success text-white small">
                                 <tr>
-                                    <th>#</th>
-                                    <th>Date Created</th>
-                                    <th>Full Name</th>
-                                    <th>User Type</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th>Title</th>
+                                    <th>Body</th>
+                                    <th>Created At</th>
+                                    <th class="text-end">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="small align-middle">
-                                <?php
-                                $sql = "SELECT admin_id, first_name, middle_name, last_name, roles, status, created_at 
-                                        FROM admin_accounts 
-                                        WHERE status = 'Active'
-                                        ORDER BY created_at DESC";
-                                $result = $conn->query($sql);
-
-                                if ($result->num_rows > 0) {
-                                    while ($row = $result->fetch_assoc()) {
-                                        $admin_id = $row['admin_id'];
-                                        $fullName = $row['first_name'] . ' ' . substr($row['middle_name'], 0, 1) . '. ' . $row['last_name'];
-                                        $role = htmlspecialchars($row['roles']);
-                                        $status = $row['status'] === 'Active' ? 'text-success' : 'text-danger';
-                                        $statusText = ucfirst($row['status']);
-                                        $created = date('Y-m-d H:i', strtotime($row['created_at']));
-                                        echo '
-                                        <tr data-id="' . $admin_id . '">
-                                            <td>' . $admin_id . '</td>
-                                            <td>' . $created . '</td>
-                                            <td>' . $fullName . '</td>
-                                            <td>' . $role . '</td>
-                                            <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
-                                            <td>
-                                                <div class="dropdown text-center">
-                                                    <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
-                                                    <ul class="dropdown-menu">
-                                                        <li><a class="dropdown-item" href="admin/view_admin.php?id=' . $admin_id . '">View Details</a></li>
-                                                        <li><a class="dropdown-item" href="admin/edit_admin.php?id=' . $admin_id . '">Edit Details</a></li>
-                                                        <li>
-                                                            <a class="dropdown-item delete-account" href="admin/archive_process.php" data-id="' . $admin_id . '" data-bs-toggle="modal" data-bs-target="#confirmModal">
-                                                                Delete Account
-                                                            </a>
-                                                        </li>
-                                                    </ul>
-                                                </div>
+                                <?php if ($announcementsResult->num_rows > 0): ?>
+                                    <?php while ($row = $announcementsResult->fetch_assoc()): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($row['title']); ?></td>
+                                            <td><?php echo nl2br(htmlspecialchars($row['body'])); ?></td>
+                                            <td><?php echo htmlspecialchars($row['created_at']); ?></td>
+                                            <td class="text-end">
+                                                <button class="btn btn-sm btn-success activateBtn" 
+                                                    data-id="<?php echo $row['id']; ?>">
+                                                    <i class="bi bi-check-circle me-1"></i> Activate
+                                                </button>
                                             </td>
-                                        </tr>';
-                                    }
-                                } else {
-                                    echo '<tr><td colspan="6" class="text-center text-muted">No admin accounts found.</td></tr>';
-                                }
-                                ?>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No archived announcements found.</td>
+                                    </tr>
+                                <?php endif; ?>
                             </tbody>
                         </table>
+                    </div>
                         <div class="d-flex justify-content-between align-items-center mt-2">
-                            <?php $total = $result->num_rows;
+                            <?php $total = $announcementsResult->num_rows;
                             echo "<span class='small'>Showing 1 to {$total} of {$total} entries</span>";
                             ?>
                             <nav>
@@ -383,54 +347,57 @@ try {
                 </div>
             </div>
         </main>
-    </div>
-    <script>
-        let selectedId = null;
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                let currentId = null;
 
-        // Capture ID when clicking "Delete Account" button
-        document.querySelectorAll('.delete-account').forEach(btn => {
-            btn.addEventListener('click', (event) => {
-                event.preventDefault(); // Prevent page reload!
-                selectedId = btn.getAttribute('data-id');
-            });
-        });
+                // When clicking Activate button → open confirmation modal
+                document.querySelectorAll('.activateBtn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        currentId = this.dataset.id;
+                        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+                        confirmModal.show();
+                    });
+                });
+                document.getElementById('doneButton').addEventListener('click', function() {
+                    const successModalEl = document.getElementById('successModal');
+                    const successModal = bootstrap.Modal.getInstance(successModalEl);
+                    successModal.hide();
+                });
 
-        // Handle confirmation proceed
-        document.getElementById('confirmProceed').addEventListener('click', () => {
-            if (selectedId) {
-                fetch('admin/archive_process.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'admin_id=' + encodeURIComponent(selectedId)
-                })
-                    .then(res => res.text())  // read as text first
-                    .then(text => {
-                        let data;
-                        try {
-                            data = JSON.parse(text); // then parse
-                        } catch (e) {
-                            throw new Error("Invalid JSON response");
-                        }
+
+                // Confirm Activate
+                document.getElementById('confirmActivate').addEventListener('click', function() {
+                    if (!currentId) return;
+
+                    fetch('activate_announcements.php', {
+                        method: 'POST',
+                        body: new URLSearchParams({ id: currentId })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        const confirmModalEl = document.getElementById('confirmModal');
+                        const confirmModal = bootstrap.Modal.getInstance(confirmModalEl);
+                        confirmModal.hide();
+
                         if (data.success) {
-                            bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
-                            setTimeout(() => {
-                                new bootstrap.Modal(document.getElementById('successModal')).show();
-                            }, 300);
-                            document.querySelector(`tr[data-id="${selectedId}"]`)?.remove();
+                            const successModalEl = document.getElementById('successModal');
+                            const successModal = new bootstrap.Modal(successModalEl);
+                            successModal.show();
+
+                            // Reload when success modal closes
+                            successModalEl.addEventListener('hidden.bs.modal', () => location.reload());
                         } else {
-                            alert(data.message || "Failed to archive.");
+                            alert('Activation failed: ' + data.message);
                         }
                     })
-            } else {
-                alert("Invalid admin ID.");
-            }
-        });
-        // Redirect after success
-        const redirect = () => window.location.href = 'admin_accounts.php';
-        document.getElementById('doneButton').addEventListener('click', redirect);
-        document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-
-</html>
+                    .catch(err => {
+                        alert('Error: ' + err.message);
+                    });
+                });
+            });
+        </script>
+    </body>
+</div>
+   
