@@ -307,7 +307,7 @@ try {
                                     <th>Title</th>
                                     <th>Body</th>
                                     <th>Created At</th>
-                                    <th class="text-end">Action</th>
+                                    <th class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="small align-middle">
@@ -317,7 +317,7 @@ try {
                                             <td><?php echo htmlspecialchars($row['title']); ?></td>
                                             <td><?php echo nl2br(htmlspecialchars($row['body'])); ?></td>
                                             <td><?php echo htmlspecialchars($row['created_at']); ?></td>
-                                            <td class="text-end">
+                                            <td class="text-center">
                                                 <button class="btn btn-sm btn-success activateBtn"
                                                     data-id="<?php echo $row['id']; ?>">
                                                     <i class="bi bi-check-circle me-1"></i> Activate

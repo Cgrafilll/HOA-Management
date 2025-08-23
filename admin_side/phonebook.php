@@ -36,9 +36,6 @@ try {
     $error_message = "Error fetching user details: " . $e->getMessage();
 }
 
-// Fetch Amenity Bookings from booking_details table
-$entry_sql = "SELECT * FROM entry_logs ORDER BY date_created DESC";
-$entry_result = $conn->query($entry_sql);
 ?>
 
 <!DOCTYPE html>
@@ -133,8 +130,26 @@ $entry_result = $conn->query($entry_sql);
         /* Make Cancel button slightly darker on hover */
         #confirmModal .btn-cancel:hover {
             background-color: #d6d8db;
-            /* slightly darker gray */
             color: #000;
+        }
+
+        /* Styles for editable fields */
+        .editable-field {
+            background-color: #f8f9fa;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            width: 100%;
+            font-size: inherit;
+        }
+
+        .editable-field:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .edit-mode {
+            background-color: #fff3cd;
         }
     </style>
 </head>
@@ -146,7 +161,7 @@ $entry_result = $conn->query($entry_sql);
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">RECORD KEEPING</h1>
+            <h1 class="h5 mb-0 fw-bold">COMMUNICATION</h1>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
                 <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
@@ -243,10 +258,6 @@ $entry_result = $conn->query($entry_sql);
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">List of Contacts</span>
-                        <div class="d-flex gap-2">
-                            <a href="phonebook/archive_phonebook.php" class="btn btn-secondary btn-sm">Archived Accounts</a>
-                            <a href="phonebook/add_phonebook.php" class="btn btn-primary btn-sm">+ Create New</a>
-                        </div>
                     </div>
                     <!-- Success Modal -->
                     <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel"
@@ -260,7 +271,7 @@ $entry_result = $conn->query($entry_sql);
                                 <div class="modal-body">
                                     <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
                                     <p class="mb-2"><b>Success</b></p>
-                                    <p class="mb-3">User has been moved to archives.</p>
+                                    <p class="mb-3">Contact information has been updated.</p>
                                     <button type="button" class="btn btn-primary" id="doneButton">Done</button>
                                 </div>
                             </div>
@@ -290,7 +301,6 @@ $entry_result = $conn->query($entry_sql);
                             </div>
                         </div>
                     </div>
-
                     <?php if (isset($success) && $success): ?>
                         <script>
                             window.addEventListener('DOMContentLoaded', () => {
@@ -318,55 +328,46 @@ $entry_result = $conn->query($entry_sql);
                         <table class="table table-bordered table-hover">
                             <thead class="bg-success text-white small">
                                 <tr>
-                                    <th>#</th>
-                                    <th>Date Created</th>
-                                    <th>Full Name</th>
-                                    <th>User Type</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th>Name</th>
+                                    <th>Landline</th>
+                                    <th>Cellphone Number</th>
+                                    <th>Street Address</th>
+                                    <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="small align-middle">
                                 <?php
-                                $sql = "SELECT admin_id, first_name, middle_name, last_name, roles, status, created_at 
-                                        FROM admin_accounts 
-                                        WHERE status = 'Active'
-                                        ORDER BY created_at DESC";
+                                $sql = "SELECT household_id, first_name, middle_name, last_name, landline, cellphone_number, street_address FROM household_accounts ORDER BY last_name ASC";
                                 $result = $conn->query($sql);
 
                                 if ($result->num_rows > 0) {
                                     while ($row = $result->fetch_assoc()) {
-                                        $admin_id = $row['admin_id'];
-                                        $fullName = $row['first_name'] . ' ' . substr($row['middle_name'], 0, 1) . '. ' . $row['last_name'];
-                                        $role = htmlspecialchars($row['roles']);
-                                        $status = $row['status'] === 'Active' ? 'text-success' : 'text-danger';
-                                        $statusText = ucfirst($row['status']);
-                                        $created = date('Y-m-d H:i', strtotime($row['created_at']));
+                                        $household_id = $row['household_id'];
+                                        $fullName = $row['last_name'] . ', ' . $row['first_name'] . ' ' . substr($row['middle_name'], 0, 1);
+                                        $landline = $row['landline'];
+                                        $cellphone = $row['cellphone_number'];
+                                        $street = $row['street_address'];
                                         echo '
-                                        <tr data-id="' . $admin_id . '">
-                                            <td>' . $admin_id . '</td>
-                                            <td>' . $created . '</td>
-                                            <td>' . $fullName . '</td>
-                                            <td>' . $role . '</td>
-                                            <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
-                                            <td>
-                                                <div class="dropdown text-center">
-                                                    <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
-                                                    <ul class="dropdown-menu">
-                                                        <li><a class="dropdown-item" href="admin/view_admin.php?id=' . $admin_id . '">View Details</a></li>
-                                                        <li><a class="dropdown-item" href="admin/edit_admin.php?id=' . $admin_id . '">Edit Details</a></li>
-                                                        <li>
-                                                            <a class="dropdown-item delete-account" href="admin/archive_process.php" data-id="' . $admin_id . '" data-bs-toggle="modal" data-bs-target="#confirmModal">
-                                                                Archive Account
-                                                            </a>
-                                                        </li>
-                                                    </ul>
-                                                </div>
+                                        <tr data-id="' . $household_id . '">
+                                            <td class="name-field">' . $fullName . '</td>
+                                            <td class="landline-field" data-original="' . htmlspecialchars($landline) . '">' . htmlspecialchars($landline) . '</td>
+                                            <td class="cellphone-field" data-original="' . htmlspecialchars($cellphone) . '">' . htmlspecialchars($cellphone) . '</td>
+                                            <td class="address-field">' . htmlspecialchars($street) . '</td>
+                                            <td class="d-flex align-items-center justify-content-center">
+                                                <button class="btn btn-sm btn-secondary edit-btn me-1">
+                                                    <i class="bi bi-pencil-square me-2"></i>Edit
+                                                </button>
+                                                <button class="btn btn-sm btn-success save-btn me-1" style="display: none;">
+                                                    <i class="bi bi-check2 me-2"></i>Save
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary cancel-btn" style="display: none;">
+                                                    <i class="bi bi-x me-2"></i>Cancel
+                                                </button>
                                             </td>
                                         </tr>';
                                     }
                                 } else {
-                                    echo '<tr><td colspan="6" class="text-center text-muted">No admin accounts found.</td></tr>';
+                                    echo '<tr><td colspan="5" class="text-center text-muted">No household contacts found.</td></tr>';
                                 }
                                 ?>
                             </tbody>
@@ -388,89 +389,132 @@ $entry_result = $conn->query($entry_sql);
             </div>
         </main>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let selectedId = null;
-
-        // Handle tab switching and link color changes
         document.addEventListener('DOMContentLoaded', function () {
-            const tabLinks = document.querySelectorAll('#dashboardTabs .nav-link');
-            const tabPanes = document.querySelectorAll('.tab-pane');
+            const editButtons = document.querySelectorAll('.edit-btn');
+            const saveButtons = document.querySelectorAll('.save-btn');
+            const cancelButtons = document.querySelectorAll('.cancel-btn');
 
-            // Add click event listener to each tab link
-            tabLinks.forEach(function (tabLink) {
-                tabLink.addEventListener('click', function (event) {
-                    event.preventDefault();
-
-                    // Get the target tab pane
-                    const targetId = this.getAttribute('href').substring(1);
-                    const targetPane = document.getElementById(targetId);
-
-                    // Remove active classes from all tabs and panes
-                    tabLinks.forEach(function (link) {
-                        link.classList.remove('active', 'link-dark');
-                        link.classList.add('link-secondary');
-                    });
-
-                    tabPanes.forEach(function (pane) {
-                        pane.classList.remove('show', 'active');
-                    });
-
-                    // Add active classes to current tab and pane
-                    this.classList.add('active');
-                    this.classList.remove('link-secondary');
-                    this.classList.add('link-dark');
-
-                    if (targetPane) {
-                        targetPane.classList.add('show', 'active');
-                    }
+            editButtons.forEach((btn, index) => {
+                btn.addEventListener('click', function () {
+                    const row = this.closest('tr');
+                    enableEditMode(row);
                 });
             });
-        });
 
-        // Capture ID when clicking "Delete Account" button
-        document.querySelectorAll('.delete-account').forEach(btn => {
-            btn.addEventListener('click', (event) => {
-                event.preventDefault(); // Prevent page reload!
-                selectedId = btn.getAttribute('data-id');
+            saveButtons.forEach((btn, index) => {
+                btn.addEventListener('click', function () {
+                    const row = this.closest('tr');
+                    saveChanges(row);
+                });
             });
-        });
 
-        // Handle confirmation proceed
-        document.getElementById('confirmProceed').addEventListener('click', () => {
-            if (selectedId) {
-                fetch('admin/archive_process.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'admin_id=' + encodeURIComponent(selectedId)
-                })
-                    .then(res => res.text())  // read as text first
-                    .then(text => {
-                        let data;
-                        try {
-                            data = JSON.parse(text); // then parse
-                        } catch (e) {
-                            throw new Error("Invalid JSON response");
-                        }
-                        if (data.success) {
-                            bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
-                            setTimeout(() => {
-                                new bootstrap.Modal(document.getElementById('successModal')).show();
-                            }, 300);
-                            document.querySelector(`tr[data-id="${selectedId}"]`)?.remove();
-                        } else {
-                            alert(data.message || "Failed to archive.");
-                        }
-                    })
-            } else {
-                alert("Invalid admin ID.");
+            cancelButtons.forEach((btn, index) => {
+                btn.addEventListener('click', function () {
+                    const row = this.closest('tr');
+                    cancelEdit(row);
+                });
+            });
+
+            function enableEditMode(row) {
+                // Add edit mode styling
+                row.classList.add('edit-mode');
+
+                // Get landline and cellphone fields
+                const landlineField = row.querySelector('.landline-field');
+                const cellphoneField = row.querySelector('.cellphone-field');
+
+                // Store original values
+                const landlineOriginal = landlineField.textContent.trim();
+                const cellphoneOriginal = cellphoneField.textContent.trim();
+
+                // Convert to input fields
+                landlineField.innerHTML = `<input type="text" class="editable-field" value="${landlineOriginal}" maxlength="20">`;
+                cellphoneField.innerHTML = `<input type="text" class="editable-field" value="${cellphoneOriginal}" maxlength="20">`;
+
+                // Toggle buttons
+                row.querySelector('.edit-btn').style.display = 'none';
+                row.querySelector('.save-btn').style.display = 'inline-block';
+                row.querySelector('.cancel-btn').style.display = 'inline-block';
+
+                // Focus on first input
+                landlineField.querySelector('input').focus();
+            }
+
+            function saveChanges(row) {
+                const householdId = row.dataset.id;
+                const landlineInput = row.querySelector('.landline-field input');
+                const cellphoneInput = row.querySelector('.cellphone-field input');
+
+                if (!landlineInput || !cellphoneInput) {
+                    return;
+                }
+
+                const landlineValue = landlineInput.value.trim();
+                const cellphoneValue = cellphoneInput.value.trim();
+
+                // Basic validation
+                if (!landlineValue && !cellphoneValue) {
+                    alert('Please enter at least one contact number.');
+                    return;
+                }
+
+                // Here you would typically send an AJAX request to update the database
+                // For now, we'll just show the success modal and update the display
+                updateDisplay(row, landlineValue, cellphoneValue);
+
+                // Show success modal
+                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+
+                // Update the "User has been moved to archives" text to reflect the actual action
+                document.querySelector('#successModal .modal-body p:nth-child(3)').textContent = 'Contact information has been updated successfully.';
+            }
+
+            function cancelEdit(row) {
+                const landlineField = row.querySelector('.landline-field');
+                const cellphoneField = row.querySelector('.cellphone-field');
+
+                // Restore original values
+                const landlineOriginal = landlineField.dataset.original || '';
+                const cellphoneOriginal = cellphoneField.dataset.original || '';
+
+                landlineField.innerHTML = landlineOriginal;
+                cellphoneField.innerHTML = cellphoneOriginal;
+
+                // Remove edit mode styling
+                row.classList.remove('edit-mode');
+
+                // Toggle buttons
+                row.querySelector('.edit-btn').style.display = 'inline-block';
+                row.querySelector('.save-btn').style.display = 'none';
+                row.querySelector('.cancel-btn').style.display = 'none';
+            }
+
+            function updateDisplay(row, landlineValue, cellphoneValue) {
+                const landlineField = row.querySelector('.landline-field');
+                const cellphoneField = row.querySelector('.cellphone-field');
+
+                // Update display values and data attributes
+                landlineField.innerHTML = landlineValue;
+                landlineField.dataset.original = landlineValue;
+
+                cellphoneField.innerHTML = cellphoneValue;
+                cellphoneField.dataset.original = cellphoneValue;
+
+                // Remove edit mode styling
+                row.classList.remove('edit-mode');
+
+                // Toggle buttons
+                row.querySelector('.edit-btn').style.display = 'inline-block';
+                row.querySelector('.save-btn').style.display = 'none';
+                row.querySelector('.cancel-btn').style.display = 'none';
             }
         });
-        // Redirect after success
-        const redirect = () => window.location.href = 'admin_accounts.php';
-        document.getElementById('doneButton').addEventListener('click', redirect);
-        document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 
 </html>

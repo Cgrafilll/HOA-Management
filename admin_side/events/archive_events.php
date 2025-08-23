@@ -306,7 +306,7 @@ try {
                                     <th>Title</th>
                                     <th>Body</th>
                                     <th>Created At</th>
-                                    <th>Action</th>
+                                    <th class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="small align-middle">
