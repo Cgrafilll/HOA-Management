@@ -130,12 +130,6 @@ try {
             max-width: 100%;
         }
 
-        .event-title {
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 6px;
-        }
-
         .event-body {
             font-size: 0.95rem;
             margin: 0;
@@ -146,47 +140,15 @@ try {
             overflow-wrap: break-word;
         }
 
-        .event-meta {
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
-
-        .announcement-meta {
-            font-size: 0.8rem;
-            color: #6c757d;
-            /* Bootstrap muted gray */
-        }
-
-        .announcement-actions a {
-            font-size: 1rem;
-            /* adjust icon size */
-            text-decoration: none;
-        }
-
-        .announcement-actions a:hover {
-            opacity: 0.8;
-        }
-
-        .announcement-actions .btn {
-            padding: 2px 6px;
-            /* smaller buttons */
-            font-size: 0.9rem;
-        }
-
         main {
             margin-left: 250px;
-            padding-bottom: 100px;
-            /* ✅ give breathing room at bottom */
         }
 
         .card-body p,
         .card-body h6 {
             word-wrap: break-word;
-            /* Old support */
             overflow-wrap: break-word;
-            /* Modern support */
             white-space: pre-wrap;
-            /* Keeps newlines */
         }
 
         .sidebar a,
@@ -367,7 +329,7 @@ try {
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">Event Form</span>
                         <div class="d-flex gap-2">
-                            <a href="#" class="btn btn-outline-secondary btn-sm">Archived Events</a>
+                            <a href="events/archive_events.php" class="btn btn-outline-secondary btn-sm">Archived Events</a>
                         </div>
                     </div>
                     <hr class="mb-3 mt-0">
@@ -403,26 +365,29 @@ try {
                     <div class="mt-4">
                         <h5 class="fw-bold">Published Events</h5>
                         <hr>
-                        <?php if (!empty($events_result)): ?>
-                            <?php foreach ($events_result as $row): ?>
+                        <?php if ($events_result && $events_result->num_rows > 0): ?>
+                            <?php while ($row = $events_result->fetch_assoc()): ?>
                                 <div class="card mb-3 shadow-sm event-card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <div class="event-title"><?= htmlspecialchars($row['title']); ?></div>
+                                            <div class="event-title"
+                                                style="font-weight: 600; font-size: 1rem; margin-bottom: 6px;">
+                                                <?= htmlspecialchars($row['title']); ?>
+                                            </div>
                                             <div class="event-actions">
                                                 <button type="button" class="btn btn-sm btn-outline-primary me-1"
                                                     data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id']; ?>"
                                                     title="Edit">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary archiveBtn"
+                                                <button type="button" class="btn btn-sm btn-outline-danger archiveBtn"
                                                     data-id="<?= $row['id']; ?>" title="Archive">
                                                     <i class="bi bi-archive"></i>
                                                 </button>
                                             </div>
                                         </div>
                                         <div class="event-body mt-2"><?= nl2br(htmlspecialchars($row['body'])); ?></div>
-                                        <div class="event-meta mt-1">
+                                        <div class="event-meta text-muted mt-1" style="font-size: 0.8rem;">
                                             Posted by <?= htmlspecialchars($row['first_name'] . " " . $row['last_name']); ?>
                                             on <?= date("M d, Y h:i A", strtotime($row['created_at'])); ?> | Event Date:
                                             <?= date("M d, Y", strtotime($row['event_date'])); ?>
@@ -430,7 +395,7 @@ try {
                                     </div>
                                     <!-- Move Edit Modal here for this event -->
                                     <div class="modal fade" id="editModal<?= $row['id']; ?>" tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog">
+                                        <div class="modal-dialog modal-lg modal-dialog-centered">
                                             <div class="modal-content">
                                                 <form class="editForm" data-id="<?= $row['id']; ?>">
                                                     <div class="modal-header bg-success text-white">
@@ -439,28 +404,38 @@ try {
                                                             data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <div class="modal-body">
-                                                        <label class="form-label">Title</label>
-                                                        <input type="text" name="title" class="form-control mb-2"
-                                                            value="<?= htmlspecialchars($row['title']); ?>" required>
-                                                        <label class="form-label mt-2">Event Date</label>
-                                                        <input type="date" name="event_date" class="form-control mb-2"
-                                                            value="<?= htmlspecialchars($row['event_date']); ?>" required>
+                                                        <!-- Title and Event Date in the same row -->
+                                                        <div class="row">
+                                                            <div class="col-6">
+                                                                <label class="form-label">Title</label>
+                                                                <input type="text" name="title" class="form-control mb-2"
+                                                                    value="<?= htmlspecialchars($row['title']); ?>" required>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <label class="form-label">Event Date</label>
+                                                                <input type="date" name="event_date" class="form-control mb-2"
+                                                                    value="<?= htmlspecialchars($row['event_date']); ?>"
+                                                                    required>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Description with scrollable textarea -->
                                                         <label class="form-label mt-2">Description</label>
-                                                        <textarea name="body" class="form-control" rows="5"
+                                                        <textarea name="body" class="form-control" rows="8"
+                                                            style="resize: vertical; max-height: 300px; overflow-y: auto;"
                                                             required><?= htmlspecialchars($row['body']); ?></textarea>
                                                     </div>
                                                     <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary"
-                                                            data-bs-dismiss="modal">Cancel</button>
                                                         <button type="button" class="btn btn-success confirmEditBtn"
                                                             data-id="<?= $row['id']; ?>">Save Changes</button>
+                                                        <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">Cancel</button>
                                                     </div>
                                                 </form>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
+                            <?php endwhile; ?>
                         <?php else: ?>
                             <p class="text-muted">No published events yet.</p>
                         <?php endif; ?>
@@ -474,9 +449,10 @@ try {
                                             data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <p>Are you sure you want to save changes to this event?</p>
-                                        <button type="button" class="btn btn-success" id="confirmEditBtn">Yes,
-                                            Save</button>
+                                        <i class="bi bi-question-circle text-success" style="font-size: 64px;"></i>
+                                        <p class="mt-3 mb-2"><b>Are you sure?</b></p>
+                                        <p class="mb-3">Do you want to save the changes to this event?</p>
+                                        <button type="button" class="btn btn-success" id="confirmEditBtn">Save</button>
                                         <button type="button" class="btn btn-light"
                                             data-bs-dismiss="modal">Cancel</button>
                                     </div>
@@ -493,6 +469,7 @@ try {
                                             data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
+                                        <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
                                         <p>Event updated successfully!</p>
                                         <button type="button" class="btn btn-success"
                                             data-bs-dismiss="modal">OK</button>
@@ -500,29 +477,27 @@ try {
                                 </div>
                             </div>
                         </div>
-
                         <!-- Archive Confirmation Modal -->
                         <div class="modal fade" id="confirmArchiveModal" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered">
                                 <div class="modal-content text-center">
-                                    <div class="modal-header bg-warning text-white">
+                                    <div class="modal-header bg-danger text-white">
                                         <h5 class="modal-title fw-bold">Confirm Archive</h5>
                                         <button type="button" class="btn-close btn-close-white"
                                             data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <i class="bi bi-exclamation-triangle text-warning" style="font-size: 64px;"></i>
+                                        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
                                         <p class="mb-2"><b>Are you sure?</b></p>
-                                        <p class="mb-3">Do you really want to archive this event?</p>
-                                        <button type="button" class="btn btn-warning" id="confirmArchiveBtn">Yes,
-                                            Archive</button>
+                                        <p class="mb-3">Do you want to archive this event?</p>
+                                        <button type="button" class="btn btn-danger"
+                                            id="confirmArchiveBtn">Archive</button>
                                         <button type="button" class="btn btn-light"
                                             data-bs-dismiss="modal">Cancel</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
                         <!-- Archive Success Modal -->
                         <div class="modal fade" id="archiveSuccessModal" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered">
@@ -547,14 +522,17 @@ try {
                                 <div class="modal-content text-center">
                                     <div class="modal-header bg-primary text-white">
                                         <h5 class="modal-title fw-bold">Confirm Publish</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        <button type="button" class="btn-close btn-close-white"
+                                            data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
                                         <i class="bi bi-question-circle text-primary" style="font-size: 64px;"></i>
                                         <p class="mb-2"><b>Are you sure?</b></p>
                                         <p class="mb-3">Do you really want to publish this event?</p>
-                                        <button type="button" class="btn btn-primary" id="confirmPublish">Yes, Publish</button>
-                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-primary" id="confirmPublish">Yes,
+                                            Publish</button>
+                                        <button type="button" class="btn btn-light"
+                                            data-bs-dismiss="modal">Cancel</button>
                                     </div>
                                 </div>
                             </div>
@@ -566,12 +544,14 @@ try {
                                 <div class="modal-content text-center">
                                     <div class="modal-header bg-success text-white">
                                         <h5 class="modal-title fw-bold">Published!</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        <button type="button" class="btn-close btn-close-white"
+                                            data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
                                         <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
                                         <p class="mt-3 mb-2"><b>Event published successfully.</b></p>
-                                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                                        <button type="button" class="btn btn-success"
+                                            data-bs-dismiss="modal">OK</button>
                                     </div>
                                 </div>
                             </div>
