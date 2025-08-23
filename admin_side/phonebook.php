@@ -187,33 +187,33 @@ $entry_result = $conn->query($entry_sql);
                 </div>
                 <!-- Record Keeping -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#recordCollapse" aria-expanded="true">
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#recordCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-book me-2"></i> Record Keeping
                         </span>
                     </button>
-                    <div class="collapse show" id="recordCollapse">
+                    <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
                             <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
-                            <li><a href="entry_logs.php" class="nav-link px-2 actived">Entry Logs</a></li>
+                            <li><a href="entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
                         </ul>
                     </div>
                 </div>
                 <!-- Communication -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#commCollapse" aria-expanded="false">
+                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
+                        data-bs-target="#commCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-chat-left-text me-2"></i> Communication
                         </span>
                     </button>
-                    <div class="collapse" id="commCollapse">
+                    <div class="collapse show" id="commCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="announcements.php" class="nav-link px-2">Announcements</a></li>
                             <li><a href="events.php" class="nav-link px-2">Events</a></li>
-                            <li><a href="phonebook.php" class="nav-link px-2">Phone Book</a></li>
+                            <li><a href="phonebook.php" class="nav-link px-2 actived">Phone Book</a></li>
                         </ul>
                     </div>
                 </div>

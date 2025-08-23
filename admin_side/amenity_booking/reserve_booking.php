@@ -303,7 +303,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav flex-column gap-1">
-                <a href="admin_dashboard.php"
+                <a href="../admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
@@ -350,8 +350,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     <div class="collapse" id="commCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="../announcements.php" class="nav-link px-2">Announcements</a></li>
-                            <li><a href="#" class="nav-link px-2">Events</a></li>
-                            <li><a href="#" class="nav-link px-2">Phone Book</a></li>
+                            <li><a href="../events.php" class="nav-link px-2">Events</a></li>
+                            <li><a href="../phonebook.php" class="nav-link px-2">Phone Book</a></li>
                         </ul>
                     </div>
                 </div>
