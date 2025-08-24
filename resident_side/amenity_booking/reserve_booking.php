@@ -9,7 +9,7 @@ if (!isset($_SESSION['email_address'])) {
 
 // Initialize user details
 $email_address = $_SESSION['email_address'];
-$username = $photo = '';// Initialize user details
+$username = $photo = $first_name = $middle_name = $last_name = '';
 
 // Fetch user details including profile photo
 try {
@@ -21,6 +21,9 @@ try {
 
     if ($user) {
         $username = $user['first_name'];
+        $first_name = $user['first_name'];
+        $middle_name = $user['middle_name'] ?? ''; // Use null coalescing in case field is null
+        $last_name = $user['last_name'];
 
         // Only set $photo if profile_pic exists and is not null
         if (!empty($user['profile_picture'])) {
@@ -372,29 +375,28 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <!-- First Name -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="firstName" name="firstName"
-                                        placeholder="First Name" required>
-                                    <label for="firstName">First Name<small
-                                            class="fw-bold text-danger">*</small></label>
+                                        placeholder="First Name" value="<?php echo htmlspecialchars($first_name); ?>" readonly required>
+                                    <label for="firstName">First Name<small class="fw-bold text-danger">*</small></label>
                                 </div>
                                 <!-- Middle Name -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="middleName" name="middleName"
-                                        placeholder="Middle Name">
-                                    <label for="middleName">Middle Name<small
-                                            class="fw-bold text-danger">*</small></label>
+                                        placeholder="Middle Name" value="<?php echo htmlspecialchars($middle_name); ?>" readonly>
+                                    <label for="middleName">Middle Name</label>
                                 </div>
+
                                 <!-- Last Name -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="lastName" name="lastName"
-                                        placeholder="Last Name" required>
+                                        placeholder="Last Name" value="<?php echo htmlspecialchars($last_name); ?>" readonly required>
                                     <label for="lastName">Last Name<small class="fw-bold text-danger">*</small></label>
                                 </div>
+
                                 <!-- Email Address -->
                                 <div class="form-floating mb-3">
                                     <input type="email" class="form-control" id="emailAddress" name="emailAddress"
-                                        placeholder="name@example.com" required>
-                                    <label for="emailAddress">Email Address<small
-                                            class="fw-bold text-danger">*</small></label>
+                                        placeholder="name@example.com" value="<?php echo htmlspecialchars($email_address); ?>" readonly required>
+                                    <label for="emailAddress">Email Address<small class="fw-bold text-danger">*</small></label>
                                 </div>
                                 <!-- Date -->
                                 <div class="form-floating mb-3">
@@ -1271,7 +1273,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 // Handle Done button click
                 document.getElementById('doneButton').addEventListener('click', function () {
                     // Clear URL parameters and redirect to amenity booking page
-                    window.location.href = '../amenity_booking.php';
+                    window.location.href = 'amenity_booking.php';
                 });
 
                 // Clear URL parameters when modal is closed
