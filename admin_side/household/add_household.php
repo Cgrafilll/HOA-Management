@@ -55,6 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postal = $_POST['postal'];
     $members = $_POST['members'];
     $rfid = $_POST['rfid'];
+    $password = $_POST['password'];
+
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
 
     try {
         // 2. Check if RFID already exists
@@ -83,17 +87,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($has_photo) {
                 $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
 
-                $sql = "INSERT INTO household_accounts (
+               $sql = "INSERT INTO household_accounts (
                     household_id, first_name, middle_name, last_name, date_of_birth, age, sex,
                     cellphone_number, landline, email_address, street_address, street_address_2, city,
-                    state_province, barangay, postal_zip_code, members, rfid, profile_picture
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    state_province, barangay, postal_zip_code, members, rfid, profile_picture, password
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                 $stmt = $conn->prepare($sql);
 
-                $null_blob = null; // placeholder for blob binding
+                $null_blob = null;
                 $stmt->bind_param(
-                    "sssssissssssssssisb",
+                    "sssssissssssssssibss",
                     $household_id,
                     $first_name,
                     $middle_name,
@@ -112,7 +116,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $postal,
                     $members,
                     $rfid,
-                    $null_blob // placeholder
+                    $null_blob,
+                    $hashedPassword
                 );
 
                 // overwrite blob with actual binary
@@ -122,12 +127,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $sql = "INSERT INTO household_accounts (
                     household_id, first_name, middle_name, last_name, date_of_birth, age, sex,
                     cellphone_number, landline, email_address, street_address, street_address_2, city,
-                    state_province, barangay, postal_zip_code, members, rfid
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    state_province, barangay, postal_zip_code, members, rfid, password
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                 $stmt = $conn->prepare($sql);
                 $stmt->bind_param(
-                    "sssssissssssssssss",
+                    "sssssisssssssssssss",
                     $household_id,
                     $first_name,
                     $middle_name,
@@ -145,8 +150,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $barangay,
                     $postal,
                     $members,
-                    $rfid
+                    $rfid,
+                    $hashedPassword
                 );
+
             }
 
             // 5. Execute insert
@@ -472,6 +479,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2 fw-bold">Household Members</label>
                                 <input type="number" name="members" class="form-control" min="1" required />
                                 <label class="form-label mt-2">How many members in the household</label>
+                            </div>
+                        </div>
+                        <!-- Account Password -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold">Password</label>
+                                <input type="password" name="password" class="form-control" required />
+                                <label class="form-label mt-2">Set a password for this account</label>
                             </div>
                         </div>
                         <!-- Resident RFID -->
