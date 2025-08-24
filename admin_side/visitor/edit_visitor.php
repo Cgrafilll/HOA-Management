@@ -665,26 +665,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const radioNo = document.getElementById('noRadio1');
             const radioYes = document.getElementById('yesRadio2');
 
-            if (reasonNo && reasonYes && radioNo && radioYes) {
-                reasonNo.addEventListener('change', () => {
-                    radioNo.checked = true;
-                    reasonYes.selectedIndex = 0;
-                });
-
-                reasonYes.addEventListener('change', () => {
-                    radioYes.checked = true;
-                    reasonNo.selectedIndex = 0;
-                });
-
-                radioNo.addEventListener('change', () => {
+            // INITIALIZE DROPDOWNS ON PAGE LOAD BASED ON SELECTED RADIO BUTTON
+            function initializeDropdowns() {
+                if (radioNo && radioYes && reasonNo && reasonYes) {
                     if (radioNo.checked) {
+                        // If "No" is selected, clear the "Yes" dropdown
                         reasonYes.selectedIndex = 0;
+                        console.log('Initialized: No radio selected, cleared Yes dropdown');
+                    } else if (radioYes.checked) {
+                        // If "Yes" is selected, clear the "No" dropdown
+                        reasonNo.selectedIndex = 0;
+                        console.log('Initialized: Yes radio selected, cleared No dropdown');
+                    }
+                }
+            }
+
+            // Call initialization function on page load
+            initializeDropdowns();
+
+            if (reasonNo && reasonYes && radioNo && radioYes) {
+                // When user selects from "No" dropdown, check "No" radio and clear "Yes" dropdown
+                reasonNo.addEventListener('change', () => {
+                    if (reasonNo.value !== '') {
+                        radioNo.checked = true;
+                        reasonYes.selectedIndex = 0;
+                        console.log('No dropdown changed, cleared Yes dropdown');
                     }
                 });
 
+                // When user selects from "Yes" dropdown, check "Yes" radio and clear "No" dropdown
+                reasonYes.addEventListener('change', () => {
+                    if (reasonYes.value !== '') {
+                        radioYes.checked = true;
+                        reasonNo.selectedIndex = 0;
+                        console.log('Yes dropdown changed, cleared No dropdown');
+                    }
+                });
+
+                // When user clicks "No" radio, clear "Yes" dropdown
+                radioNo.addEventListener('change', () => {
+                    if (radioNo.checked) {
+                        reasonYes.selectedIndex = 0;
+                        console.log('No radio selected, cleared Yes dropdown');
+                    }
+                });
+
+                // When user clicks "Yes" radio, clear "No" dropdown
                 radioYes.addEventListener('change', () => {
                     if (radioYes.checked) {
                         reasonNo.selectedIndex = 0;
+                        console.log('Yes radio selected, cleared No dropdown');
                     }
                 });
             }
