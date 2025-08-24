@@ -35,6 +35,28 @@ try {
 } catch (Exception $e) {
     $error_message = "Error fetching user details: " . $e->getMessage();
 }
+
+// Pagination settings for household accounts
+$entriesPerPage = 10;
+$currentPage = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+$currentPage = max(1, $currentPage); // Ensure page is at least 1
+
+// Calculate offset for SQL query
+$offset = ($currentPage - 1) * $entriesPerPage;
+
+// Get total count for pagination (all household accounts)
+$countSql = "SELECT COUNT(*) as total FROM household_accounts";
+$countResult = $conn->query($countSql);
+$totalEntries = $countResult->fetch_assoc()['total'];
+$totalPages = ceil($totalEntries / $entriesPerPage);
+
+// Get data for current page (household accounts)
+$sql = "SELECT household_id, first_name, middle_name, last_name, members, status, created_at 
+        FROM household_accounts 
+        ORDER BY created_at DESC
+        LIMIT $entriesPerPage OFFSET $offset";
+$result = $conn->query($sql);
+
 ?>
 
 <!DOCTYPE html>
@@ -234,69 +256,142 @@ try {
                         <span class="small">List of Household Accounts</span>
                         <a href="household/add_household.php" class="btn btn-primary btn-sm">+ Create New</a>
                     </div>
-                </div>
-                <!-- Table -->
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover">
-                        <thead class="bg-success text-white small">
-                            <tr>
-                                <th>#</th>
-                                <th>Date Created</th>
-                                <th>Full Name</th>
-                                <th>User Type</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="small align-middle">
-                            <?php
-                            $sql = "SELECT household_id, first_name, middle_name, last_name, members, status, created_at FROM household_accounts ORDER BY created_at DESC";
-                            $result = $conn->query($sql);
 
-                            if ($result->num_rows > 0) {
-                                while ($row = $result->fetch_assoc()) {
-                                    $household_id = $row['household_id'];
-                                    $fullName = $row['first_name'] . ' ' . substr($row['middle_name'], 0, 1) . '. ' . $row['last_name'];
-                                    $userType = "Resident";
-                                    $status = $row['status'] === 'Active' ? 'text-success' : 'text-danger';
-                                    $statusText = ucfirst($row['status']);
-                                    $created = date('Y-m-d H:i', strtotime($row['created_at']));
-                                    echo '
-                                            <tr>
-                                                <td>' . $household_id . '</td>
-                                                <td>' . $created . '</td>
-                                                <td>' . $fullName . '</td>
-                                                <td>' . $userType . '</td>
-                                                <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
-                                                <td>
-                                                    <div class="dropdown text-center">
-                                                        <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
-                                                        <ul class="dropdown-menu">
-                                                            <li><a class="dropdown-item" href="household/view_household.php?id=' . $household_id . '">View Details</a></li>
-                                                            <li><a class="dropdown-item" href="household/edit_household.php?id=' . $household_id . '">Edit Details</a></li>
-                                                            <li><a class="dropdown-item" href="household/archive_household.php?id=' . $household_id . '">Delete Account</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </td>
-                                            </tr>';
+                    <!-- Table with fixed minimum height -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="bg-success text-white small">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Date Created</th>
+                                    <th>Full Name</th>
+                                    <th>User Type</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="small align-middle" style="min-height: 520px; display: table-row-group;">
+                                <?php
+                                $rowCount = 0;
+                                if ($result->num_rows > 0) {
+                                    while ($row = $result->fetch_assoc()) {
+                                        $household_id = $row['household_id'];
+                                        $fullName = $row['first_name'] . ' ' . substr($row['middle_name'], 0, 1) . '. ' . $row['last_name'];
+                                        $userType = "Resident";
+                                        $status = $row['status'] === 'Active' ? 'text-success' : 'text-danger';
+                                        $statusText = ucfirst($row['status']);
+                                        $created = date('Y-m-d H:i', strtotime($row['created_at']));
+
+                                        echo '
+                            <tr>
+                                <td>' . $household_id . '</td>
+                                <td>' . $created . '</td>
+                                <td>' . $fullName . '</td>
+                                <td>' . $userType . '</td>
+                                <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
+                                <td>
+                                    <div class="dropdown text-center">
+                                        <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="household/view_household.php?id=' . $household_id . '">View Details</a></li>
+                                            <li><a class="dropdown-item" href="household/edit_household.php?id=' . $household_id . '">Edit Details</a></li>
+                                            <li><a class="dropdown-item" href="household/archive_household.php?id=' . $household_id . '">Delete Account</a></li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>';
+                                        $rowCount++;
+                                    }
                                 }
-                            } else {
-                                echo '<tr><td colspan="6" class="text-center text-muted">No admin accounts found.</td></tr>';
-                            }
+
+                                // Check if there are no rows and show appropriate message
+                                if ($rowCount === 0) {
+                                    echo '<tr><td colspan="6" class="text-center text-muted">No household accounts found.</td></tr>';
+                                    // Add empty rows after the "no data" message
+                                    $minRows = 10;
+                                    for ($i = 1; $i < $minRows; $i++) {
+                                        echo '<tr style="height: 52px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+                                    }
+                                } else {
+                                    // Add empty rows to maintain consistent height (minimum 10 rows)
+                                    $minRows = 10;
+                                    for ($i = $rowCount; $i < $minRows; $i++) {
+                                        echo '<tr style="height: 52px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+                                    }
+                                }
+                                ?>
+                            </tbody>
+                        </table>
+
+                        <!-- Pagination info and controls -->
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <?php
+                            $start = $totalEntries > 0 ? $offset + 1 : 0;
+                            $end = min($offset + $entriesPerPage, $totalEntries);
+                            echo "<span class='small'>Showing $start to $end of $totalEntries entries</span>";
                             ?>
-                        </tbody>
-                    </table>
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                        <?php $total = $result->num_rows;
-                        echo "<span class='small'>Showing 1 to {$total} of {$total} entries</span>";
-                        ?>
-                        <nav>
-                            <ul class="pagination pagination-sm m-0">
-                                <li class="page-item disabled"><a class="page-link">Previous</a></li>
-                                <li class="page-item active"><a class="page-link">1</a></li>
-                                <li class="page-item"><a class="page-link">Next</a></li>
-                            </ul>
-                        </nav>
+                            <nav>
+                                <ul class="pagination pagination-sm m-0">
+                                    <?php
+                                    // Only show pagination if there are entries
+                                    if ($totalEntries > 0) {
+                                        // Previous button
+                                        $prevDisabled = $currentPage <= 1 ? 'disabled' : '';
+                                        $prevPage = $currentPage - 1;
+                                        echo "<li class='page-item $prevDisabled'>";
+                                        if ($currentPage > 1) {
+                                            echo "<a class='page-link' href='?page=$prevPage'>Previous</a>";
+                                        } else {
+                                            echo "<a class='page-link'>Previous</a>";
+                                        }
+                                        echo "</li>";
+
+                                        // Page numbers
+                                        $startPage = max(1, $currentPage - 2);
+                                        $endPage = min($totalPages, $currentPage + 2);
+
+                                        // First page and ellipsis
+                                        if ($startPage > 1) {
+                                            echo "<li class='page-item'><a class='page-link' href='?page=1'>1</a></li>";
+                                            if ($startPage > 2) {
+                                                echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
+                                            }
+                                        }
+
+                                        // Page range
+                                        for ($i = $startPage; $i <= $endPage; $i++) {
+                                            $activeClass = $i == $currentPage ? 'active' : '';
+                                            echo "<li class='page-item $activeClass'><a class='page-link' href='?page=$i'>$i</a></li>";
+                                        }
+
+                                        // Last page and ellipsis
+                                        if ($endPage < $totalPages) {
+                                            if ($endPage < $totalPages - 1) {
+                                                echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
+                                            }
+                                            echo "<li class='page-item'><a class='page-link' href='?page=$totalPages'>$totalPages</a></li>";
+                                        }
+
+                                        // Next button
+                                        $nextDisabled = $currentPage >= $totalPages ? 'disabled' : '';
+                                        $nextPage = $currentPage + 1;
+                                        echo "<li class='page-item $nextDisabled'>";
+                                        if ($currentPage < $totalPages) {
+                                            echo "<a class='page-link' href='?page=$nextPage'>Next</a>";
+                                        } else {
+                                            echo "<a class='page-link'>Next</a>";
+                                        }
+                                        echo "</li>";
+                                    } else {
+                                        // Show disabled pagination when no entries
+                                        echo "<li class='page-item disabled'><a class='page-link'>Previous</a></li>";
+                                        echo "<li class='page-item active'><a class='page-link'>1</a></li>";
+                                        echo "<li class='page-item disabled'><a class='page-link'>Next</a></li>";
+                                    }
+                                    ?>
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
                 </div>
             </div>

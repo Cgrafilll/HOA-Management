@@ -51,11 +51,7 @@ $booking_sql = "SELECT * FROM amenity_bookings ORDER BY reservation_date DESC LI
 $bookings_result = $conn->query($booking_sql);
 
 // ✅ Fetch ALL records (for calendar JSON)
-$sql = "SELECT id, first_name, middle_name, last_name, amenity, reservation_code, 
-               reservation_date, status, total_amount, amount_paid, created_at 
-        FROM amenity_bookings 
-        ORDER BY reservation_date ASC";
-
+$sql = "SELECT id, first_name, middle_name, last_name, amenity, reservation_code, rate, reservation_date, status, total_amount, amount_paid, created_at FROM amenity_bookings ORDER BY reservation_date ASC";
 $result = $conn->query($sql);
 
 $bookings = [];
@@ -77,7 +73,7 @@ while ($row = $result->fetch_assoc()) {
         "amenity" => $row['amenity'],
         "reservationCode" => $row['reservation_code'],
         "paymentStatus" => ucfirst($row['status']), // pending → Pending
-        "amount" => "$" . number_format($row['amount_paid'], 2) .
+        "amount" => "₱" . number_format($row['amount_paid'], 2) .
             ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : ""),
         "time" => $timeSlot
     ];
@@ -696,10 +692,8 @@ while ($row = $result->fetch_assoc()) {
             for (let i = 0; i < 35; i++) {
                 const date = new Date(startDate);
                 date.setDate(startDate.getDate() + i);
-
                 const dayElement = document.createElement('div');
                 dayElement.className = 'calendar-day';
-
                 // Add classes for styling
                 if (date.getMonth() !== currentDate.getMonth()) {
                     dayElement.classList.add('other-month');
@@ -707,19 +701,23 @@ while ($row = $result->fetch_assoc()) {
                 if (date.toDateString() === today.toDateString()) {
                     dayElement.classList.add('today');
                 }
-
                 // Day number
                 const dayNumber = document.createElement('div');
                 dayNumber.className = 'day-number fw-medium';
                 dayNumber.style.fontSize = `0.875rem`;
                 dayNumber.textContent = date.getDate();
                 dayElement.appendChild(dayNumber);
-
                 // Add bookings for this date
                 const dateStr = date.toISOString().split('T')[0];
                 const dayBookings = bookings.filter(booking => booking.date === dateStr);
-
                 dayBookings.forEach(booking => {
+                    // Create container for booking with notification badge
+                    const bookingContainer = document.createElement('div');
+                    bookingContainer.className = 'position-relative';
+                    bookingContainer.style.display = 'inline-block';
+                    bookingContainer.style.width = '100%';
+                    bookingContainer.style.marginBottom = '4px';
+
                     const bookingElement = document.createElement('div');
                     let bgClass = 'bg-secondary'; // default for pending
                     if (booking.paymentStatus === 'Paid') {
@@ -727,12 +725,79 @@ while ($row = $result->fetch_assoc()) {
                     } else if (booking.paymentStatus === 'Partial') {
                         bgClass = 'bg-warning';
                     }
-                    bookingElement.className = `booking-item ${bgClass} text-white overflow-hidden text-nowrap mb-1 rounded-2`;
+                    bookingElement.className = `booking-item ${bgClass} text-white overflow-hidden text-nowrap rounded-2`;
                     bookingElement.style.fontSize = '0.75rem';
-                    bookingElement.style.padding = '0.125rem 0.25rem';
-                    bookingElement.textContent = `${booking.amenity} - ${booking.fullName}`;
-                    bookingElement.onclick = () => showBookingDetails(booking);
-                    dayElement.appendChild(bookingElement);
+                    bookingElement.style.padding = '0.25rem 0.5rem';
+                    bookingElement.style.cursor = 'pointer';
+                    bookingElement.textContent = booking.fullName;
+
+                    // Create notification badge with initials
+                    const amenityBadge = document.createElement('span');
+                    let amenityBgClass = 'bg-secondary'; // default
+                    const amenityLower = booking.amenity.toLowerCase();
+                    if (amenityLower === 'clubhouse') {
+                        amenityBadge.style.backgroundColor = '#dc3545'; // Bootstrap danger red
+                    } else if (amenityLower === 'swimming pool') {
+                        amenityBadge.style.backgroundColor = '#0d6efd'; // Bootstrap primary blue
+                    } else if (amenityLower === 'gazebo') {
+                        amenityBadge.style.backgroundColor = '#ffc107'; // Bootstrap warning yellow
+                    } else if (amenityLower === 'basketball court') {
+                        amenityBadge.style.backgroundColor = '#0dcaf0'; // Bootstrap info cyan
+                    } else {
+                        amenityBadge.style.backgroundColor = '#6c757d'; // Bootstrap secondary gray
+                    }
+
+                    // Get initials for badge
+                    let badgeInitials = '';
+                    if (amenityLower === 'clubhouse') badgeInitials = 'C';
+                    else if (amenityLower === 'swimming pool') badgeInitials = 'SP';
+                    else if (amenityLower === 'gazebo') badgeInitials = 'G';
+                    else if (amenityLower === 'basketball court') badgeInitials = 'BC';
+                    else badgeInitials = booking.amenity.charAt(0);
+
+                    amenityBadge.className = 'position-absolute d-flex align-items-center justify-content-center text-white fw-bold';
+                    amenityBadge.style.top = '-8px';
+                    amenityBadge.style.right = '-8px';
+                    amenityBadge.style.width = '24px';
+                    amenityBadge.style.height = '20px';
+                    amenityBadge.style.borderRadius = '10px';
+                    amenityBadge.style.fontSize = '0.6rem';
+                    amenityBadge.style.lineHeight = '1';
+                    amenityBadge.style.zIndex = '10';
+                    amenityBadge.style.border = '2px solid white';
+                    amenityBadge.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+                    amenityBadge.style.padding = '0 4px';
+                    amenityBadge.style.whiteSpace = 'nowrap';
+                    amenityBadge.style.overflow = 'hidden';
+                    amenityBadge.style.transition = 'all 0.3s ease';
+                    amenityBadge.style.cursor = 'pointer';
+                    amenityBadge.textContent = badgeInitials;
+
+                    // Store full text for hover effect
+                    const fullAmenityText = booking.amenity;
+
+                    // Add hover events
+                    amenityBadge.addEventListener('mouseenter', function () {
+                        this.style.width = 'max-content';
+                        this.style.minWidth = '60px';
+                        this.style.padding = '0 8px';
+                        this.textContent = fullAmenityText;
+                    });
+
+                    amenityBadge.addEventListener('mouseleave', function () {
+                        this.style.width = '24px';
+                        this.style.minWidth = 'auto';
+                        this.style.padding = '0 4px';
+                        this.textContent = badgeInitials;
+                    });
+
+                    bookingContainer.appendChild(bookingElement);
+                    bookingContainer.appendChild(amenityBadge);
+
+                    // Add click handler to the container
+                    bookingContainer.onclick = () => showBookingDetails(booking);
+
+                    dayElement.appendChild(bookingContainer);
                 });
                 grid.appendChild(dayElement);
             }
@@ -751,11 +816,13 @@ while ($row = $result->fetch_assoc()) {
                 </div>
                 <div class="booking-detail">
                     <strong>Amenity:</strong>
-                    <span>${booking.amenity}</span>
+                    <span class="badge bg-${booking.amenity.toLowerCase() === 'clubhouse' ? 'danger' :
+                    booking.amenity.toLowerCase() === 'swimming pool' ? 'primary' :
+                        booking.amenity.toLowerCase() === 'gazebo' ? 'warning' : booking.amenity.toLowerCase() === 'basketball court' ? 'info' : 'secondary'}">${booking.amenity}</span>
                 </div>
                 <div class="booking-detail">
                     <strong>Date:</strong>
-                    <span>${new Date(booking.date).toLocaleDateString()}</span>
+                    <span>${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 </div>
                 <div class="booking-detail">
                     <strong>Time:</strong>
