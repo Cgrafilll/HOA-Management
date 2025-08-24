@@ -54,68 +54,40 @@ try {
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NSSHAI HOA Management</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-  <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NSSHAI HOA Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
-    * {
-      font-family: "Montserrat", sans-serif;
-    }
+        * {
+            font-family: "Montserrat", sans-serif;
+        }
 
-    /* Header */
-    header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 72px; /* adjust if needed */
-        background-color: #1E40AF; /* darker blue */
-        color: white;
-        display: flex;
-        align-items: center;
-        padding: 0 20px;
-        z-index: 1000;
-    }
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
 
-    /* Sidebar */
-    .sidebar {
-        width: 250px;
-        height: calc(100vh - 72px); /* full height minus header */
-        position: fixed;
-        top: 72px; /* right below header */
-        left: 0;
-        background-color: #1E3A8A; /* slightly darker than header for contrast */
-        color: #fff;
-        overflow-y: auto;
-        padding: 20px 0;
-    }
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            position: fixed;
+            top: 20;
+            left: 0;
+            background-color: #1F2937;
+            overflow-y: auto;
+        }
 
-    /* Sidebar links */
-    .sidebar a {
-        display: block;
-        padding: 12px 20px;
-        color: #E0E7FF; /* soft light blue text */
-        text-decoration: none;
-        transition: background 0.3s, color 0.3s;
-    }
+        main {
+            margin-left: 250px;
+        }
 
-    .sidebar a:hover {
-        background-color: #2563EB; /* highlight on hover */
-        color: #fff;
-    }
-
-    /* Main Content */
-    main {
-        margin-left: 250px; /* space for sidebar */
-        margin-top: 72px;   /* space for header */
-        padding: 20px;
-    }
-
+        .sidebar a,
         .sidebar button {
             color: #ffffff;
             text-decoration: none;
@@ -123,21 +95,17 @@ try {
             align-items: center;
             justify-content: space-between;
         }
-        
 
-        /* Active Sidebar Link Inverse Colors */
-        .sidebar .nav-link.active {
-            background-color: #E0E7FF; /* light blue background */
-            color: #1E3A8A !important; /* dark blue text */
-            font-weight: 600;
+        .sidebar a:hover,
+        .sidebar button:hover,
+        .collapse ul li a:hover {
+            color: #80ed99;
         }
-        .sidebar .nav-link.active:hover {
-            background-color: #c7d2fe; /* slightly darker light blue on hover */
-            color: #1E3A8A !important;
-        }
+
+        .sidebar .nav-link.active,
         .sidebar .btn-toggle:not(.collapsed),
-        .sidebar .btn-toggle.active {
-            background-color: #0d47a1;
+        .sidebar .logout:hover {
+            background-color: #198754;
             border-radius: 0.375rem;
         }
 
@@ -168,43 +136,12 @@ try {
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
-
         }
-
-        /* Make Cancel button slightly darker on hover */
-        #confirmModal .btn-cancel:hover {
-            background-color: #d6d8db;
-            /* slightly darker gray */
-            color: #000;
-        }
-
-        /* Cancel hover */
-        .btn-cancel:hover {
-            background-color: #d6d8db;
-            color: #000;
-        }
-        /* Sidebar Logout Link */
-        .sidebar a.logout-link {
-            display: block;
-            padding: 12px 20px;
-            border-radius: 6px;
-            color: #ffffff; /* white text by default */
-            font-weight: 600;
-            text-decoration: none;
-            transition: background 0.3s, color 0.3s;
-        }
-
-        /* Hover Effect */
-        .sidebar a.logout-link:hover {
-            background-color: #DC2626; /* red background */
-            color: #ffffff;            /* white text */
-        }
-        
-  </style>
+    </style>
 </head>
 
 <body class="bg-light">
-     <!-- Header -->
+    <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
         <div class="me-4" style="width: 250px;">
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
@@ -225,37 +162,44 @@ try {
             </div>
         </div>
     </header>
-     <!-- Sidebar -->
-    <div class="flex min-h-screen">
-        <aside class="sidebar d-flex flex-column p-3">
-            <h1 class="h5 fw-bold mb-4 text-white">HOA Resident</h1>
-            <nav class="nav flex-column gap-2">
-                <!-- Dashboard link -->
-                <a href="#" 
-                class="nav-link px-3 py-2 rounded text-white <?php echo basename($_SERVER['PHP_SELF']) === 'dashboard.php' ? 'active' : ''; ?>">
-                    Dashboard
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <aside class="sidebar p-3">
+            <nav class="nav d-flex flex-column gap-1">
+                <a href="admin_dashboard.php"
+                    class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
+                    <i class="bi bi-house me-2"></i> Home
                 </a>
-
-                <a href="account.php" 
-                class="nav-link px-3 py-2 rounded text-white <?php echo basename($_SERVER['PHP_SELF']) === 'account.php' ? 'active' : ''; ?>">
-                    Statement of Account
+                <a href="amenity_booking/amenity_booking.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-book me-2"></i> Amenity Booking
                 </a>
-
-                <a href="records.php" 
-                class="nav-link px-3 py-2 rounded text-white <?php echo basename($_SERVER['PHP_SELF']) === 'records.php' ? 'active' : ''; ?>">
-                    Personal Records
+                <a href="#" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
-
-                <a href="amenity_booking/amenity_booking.php" 
-                class="nav-link px-3 py-2 rounded text-white <?php echo basename($_SERVER['PHP_SELF']) === 'amenities.php' ? 'active' : ''; ?>">
-                    Amenities Schedule
+                <!-- Accounting -->
+                <div>
+                    <button
+                        class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start"
+                        data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="false">
+                        <span class="d-flex align-items-center">
+                            <i class="bi bi-cash-coin me-2"></i> Accounting
+                        </span>
+                    </button>
+                    <div class="collapse" id="acctCollapse">
+                        <ul class="nav flex-column ms-3 mt-1">
+                            <li><a href="#" class="nav-link px-2">Payments</a></li>
+                            <li><a href="#" class="nav-link px-2">Invoices</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <a href="logout.php"
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
+                    <i class="bi bi-box-arrow-left me-2"></i> Logout
                 </a>
             </nav>
-            <hr class="border-light my-3">
-            <a href="logout.php" class="nav-link text-white fw-semibold mt-auto logout-btn">Logout</a>
         </aside>
-
-
         <!--Main Content-->
         <main class="flex-grow-1 p-4">
             <!-- Top Row: Announcements & Events -->
@@ -277,7 +221,6 @@ try {
                     </div>
                 </div>
             </div>
-
             <!-- Statement of Account -->
             <section class="card mb-4 shadow-sm">
                 <div class="card-body">
@@ -303,7 +246,6 @@ try {
                     </div>
                 </div>
             </section>
-
             <!-- Amenity Schedule -->
             <section class="card shadow-sm">
                 <div class="card-body">
@@ -341,10 +283,9 @@ try {
                 </div>
             </section>
         </main>
-
     </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

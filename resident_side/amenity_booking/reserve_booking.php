@@ -302,63 +302,23 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1">
-                <a href="../admin_dashboard.php"
+            <nav class="nav d-flex flex-column gap-1">
+                <a href="../dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                <!-- Accounts -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#accountsCollapse" aria-expanded="false">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-person-lines-fill me-2"></i> Accounts
-                        </span>
-                    </button>
-                    <div class="collapse" id="accountsCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../admin_accounts.php" class="nav-link px-2">Admin</a></li>
-                            <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
-                            <li><a href="../visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <!-- Record Keeping -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#recordCollapse" aria-expanded="true">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-book me-2"></i> Record Keeping
-                        </span>
-                    </button>
-                    <div class="collapse show" id="recordCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../amenity_booking.php" class="nav-link px-2 actived">Amenity Booking</a></li>
-                            <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
-                            <li><a href="../entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <!-- Communication -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#commCollapse" aria-expanded="false">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-chat-left-text me-2"></i> Communication
-                        </span>
-                    </button>
-                    <div class="collapse" id="commCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../announcements.php" class="nav-link px-2">Announcements</a></li>
-                            <li><a href="../events.php" class="nav-link px-2">Events</a></li>
-                            <li><a href="../phonebook.php" class="nav-link px-2">Phone Book</a></li>
-                        </ul>
-                    </div>
-                </div>
+                <a href="amenity_booking.php"
+                    class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
+                    <i class="bi bi-book me-2"></i> Amenity Booking
+                </a>
+                <a href="#" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
+                </a>
                 <!-- Accounting -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#acctCollapse" aria-expanded="false">
+                    <button
+                        class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start"
+                        data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-cash-coin me-2"></i> Accounting
                         </span>
@@ -370,6 +330,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         </ul>
                     </div>
                 </div>
+                <a href="logout.php"
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
+                    <i class="bi bi-box-arrow-left me-2"></i> Logout
+                </a>
             </nav>
         </aside>
         <!-- Main Content -->
@@ -400,8 +365,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <!-- User Type -->
                                 <div class="form-floating mb-3">
                                     <select class="form-select" id="userType" name="userType" required>
-                                        <option value="homeowner">Homeowner/Resident</option>
-                                        <option value="visitor">Visitor</option>
+                                        <option value="homeowner" selected>Homeowner/Resident</option>
                                     </select>
                                     <label for="userType">User Type<small class="fw-bold text-danger">*</small></label>
                                 </div>
@@ -901,6 +865,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             </div>
         </main>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // File upload functionality
@@ -1333,6 +1298,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 });
             }
         });
+        
     </script>
 
 </body>
