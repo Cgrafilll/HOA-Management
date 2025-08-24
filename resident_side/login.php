@@ -25,7 +25,7 @@
         <form action="resident_login.php" method="POST">
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" id="email" name="email" required class="form-control" />
+                <input type="email" id="email" name="email_address" required class="form-control" />
             </div>
 
             <div class="mb-3 position-relative">
