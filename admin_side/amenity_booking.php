@@ -657,7 +657,6 @@ while ($row = $result->fetch_assoc()) {
         });
 
         const bookings = <?php echo json_encode($bookings); ?>;
-
         let currentDate = new Date(2025, 7, 1); // August 2025
         let currentView = 'month';
 
@@ -708,7 +707,7 @@ while ($row = $result->fetch_assoc()) {
                 dayNumber.textContent = date.getDate();
                 dayElement.appendChild(dayNumber);
                 // Add bookings for this date
-                const dateStr = date.toISOString().split('T')[0];
+                const dateStr = date.toLocaleDateString('en-CA');
                 const dayBookings = bookings.filter(booking => booking.date === dateStr);
                 dayBookings.forEach(booking => {
                     // Create container for booking with notification badge
