@@ -328,7 +328,7 @@ try {
                                 <label class=" form-label mt-2">Other Parties/Witnesses <i>(optional)</i></label>
                             </div>
                         </div>
-                        <!-- Contact -->
+                        <!-- Evidence -->
                         <div class="row">
                             <span class="fw-bold mb-3">Evidence</span>
                             <div class="col-md-4 mb-3">

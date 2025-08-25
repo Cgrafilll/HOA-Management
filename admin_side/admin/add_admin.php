@@ -371,7 +371,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="row">
                             <span class="fw-bold mb-3">Contact Information</span>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="cellphone" class="form-control" />
+                                <input type="tel" name="cellphone" class="form-control" pattern="[0-9]+" maxlength="15"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                    placeholder="e.g., 09171234567" />
                                 <label class="form-label mt-2">Cellphone Number</label>
                             </div>
                             <div class="col-md-4 mb-3">
@@ -395,19 +397,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="city" class="form-control" required />
-                                <label class="form-label mt-2">City</label>
+                                <select name="region" class="form-select" required id="region">
+                                    <option value="">Select Region</option>
+                                </select>
+                                <input type="hidden" class="form-control form-control-md" name="region_text"
+                                    id="region-text" required>
+                                <label class="form-label mt-2">Region</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="state" class="form-control" required />
-                                <label class="form-label mt-2">State/Province</label>
+                                <select name="province" class="form-select" required id="province">
+                                    <option value="">Select Province</option>
+                                </select>
+                                <input type="hidden" class="form-control form-control-md" name="province_text"
+                                    id="province-text" required>
+                                <label class="form-label mt-2">Province</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="barangay" class="form-control" required />
+                                <select name="city" class="form-select" required id="city">
+                                    <option value="">Select City/Municipality</option>
+                                </select>
+                                <input type="hidden" class="form-control form-control-md" name="city_text"
+                                    id="city-text" required>
+                                <label class="form-label mt-2">City/Municipality</label>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <select name="barangay" class="form-select" required id="barangay">
+                                    <option value="">Select Barangay</option>
+                                </select>
+                                <input type="hidden" class="form-control form-control-md" name="barangay_text"
+                                    id="barangay-text" required>
                                 <label class="form-label mt-2">Barangay</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="postal" class="form-control" required />
+                                <input type="text" name="postal" class="form-control" required pattern="[0-9]{4}"
+                                    maxlength="4" />
                                 <label class="form-label mt-2">Postal/Zip Code</label>
                             </div>
                         </div>
@@ -464,6 +487,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </main>
     </div>
 
+    <!--JQuery-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+        integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="../../json/ph-address-selector.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Auto-calculate age from DOB
