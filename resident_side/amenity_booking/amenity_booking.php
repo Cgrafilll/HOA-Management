@@ -24,35 +24,83 @@ if ($user) {
     }
 }
 
-// Fetch bookings
-$booking_sql = "SELECT * FROM amenity_bookings WHERE homeowner_id = ? ORDER BY reservation_date DESC";
-$stmt = $conn->prepare($booking_sql);
-$stmt->bind_param("s", $homeowner_id);
-$stmt->execute();
-$bookings_result = $stmt->get_result();
+// How many records per page
+$limit = 10;
 
-// Calendar JSON
-$sql = "SELECT id, first_name, middle_name, last_name, amenity, reservation_code, reservation_date, status, total_amount, amount_paid, rate
-        FROM amenity_bookings WHERE homeowner_id = ? ORDER BY reservation_date ASC";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $homeowner_id);
-$stmt->execute();
-$result = $stmt->get_result();
+// Current page number (default 1 if not set)
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
+
+// Calculate offset for SQL query
+$offset = ($page - 1) * $limit;
+
+// Get total number of records from amenity_bookings for this homeowner
+if ($homeowner_id) {
+    $totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE homeowner_id = ?";
+    $totalStmt = $conn->prepare($totalQuery);
+    $totalStmt->bind_param("i", $homeowner_id);
+    $totalStmt->execute();
+    $totalResult = $totalStmt->get_result();
+    $totalRow = $totalResult->fetch_assoc();
+    $totalRecords = $totalRow['total'];
+} else {
+    // If no homeowner_id, get all records
+    $totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings";
+    $totalResult = $conn->query($totalQuery);
+    $totalRow = $totalResult->fetch_assoc();
+    $totalRecords = $totalRow['total'];
+}
+
+// Calculate total pages
+$totalPages = ceil($totalRecords / $limit);
+
+// ✅ Fetch only the records for THIS PAGE (table)
+if ($homeowner_id) {
+    $booking_sql = "SELECT * FROM amenity_bookings WHERE homeowner_id = ? ORDER BY reservation_date ASC LIMIT ? OFFSET ?";
+    $bookings_stmt = $conn->prepare($booking_sql);
+    $bookings_stmt->bind_param("iii", $homeowner_id, $limit, $offset);
+    $bookings_stmt->execute();
+    $bookings_result = $bookings_stmt->get_result();
+} else {
+    // If no homeowner_id, get all records for this page
+    $booking_sql = "SELECT * FROM amenity_bookings ORDER BY reservation_date ASC LIMIT ? OFFSET ?";
+    $bookings_stmt = $conn->prepare($booking_sql);
+    $bookings_stmt->bind_param("ii", $limit, $offset);
+    $bookings_stmt->execute();
+    $bookings_result = $bookings_stmt->get_result();
+}
+
+// ✅ Fetch ALL records (for calendar JSON) - if you need this for calendar
+$sql = "SELECT id, first_name, middle_name, last_name, homeowner_id, amenity, reservation_code, rate, reservation_date, status, total_amount, amount_paid, created_at FROM amenity_bookings ORDER BY reservation_date ASC";
+$result = $conn->query($sql);
 
 $bookings = [];
-while ($row = $result->fetch_assoc()) {
-    $timeSlot = $row['rate'] === "day" ? "9:00 AM - 5:00 PM" : "5:00 PM - 10:00 PM";
-    $bookings[] = [
-        "id" => $row['id'],
-        "date" => $row['reservation_date'],
-        "fullName" => trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']),
-        "amenity" => $row['amenity'],
-        "reservationCode" => $row['reservation_code'],
-        "paymentStatus" => ucfirst($row['status']),
-        "amount" => "$" . number_format($row['amount_paid'], 2) . ($row['status'] === 'partial' ? " / $" . number_format($row['total_amount'], 2) : ""),
-        "time" => $timeSlot
-    ];
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        // Determine time slot based on 'rate'
+        $timeSlot = "N/A";
+        if (isset($row['rate'])) {
+            if ($row['rate'] === "day") {
+                $timeSlot = "9:00 AM - 5:00 PM";
+            } elseif ($row['rate'] === "night") {
+                $timeSlot = "5:00 PM - 10:00 PM";
+            }
+        }
+
+        $bookings[] = [
+            "id" => $row['id'],
+            "date" => $row['reservation_date'],
+            "fullName" => trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']),
+            "amenity" => $row['amenity'],
+            "reservationCode" => $row['reservation_code'],
+            "paymentStatus" => ucfirst($row['status']), // pending → Pending
+            "amount" => "₱" . number_format($row['amount_paid'], 2) .
+                ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : ""),
+            "time" => $timeSlot,
+            "homeownerId" => $row['homeowner_id']
+        ];
+    }
 }
+
 ?>
 
 
@@ -144,31 +192,24 @@ while ($row = $result->fetch_assoc()) {
             transform: rotate(180deg);
         }
 
-        /* Calendar styles */
         .calendar-container {
             background: white;
             border-radius: 8px;
             overflow: hidden;
-            margin-top: 20px;
-        }
-
-        .calendar-header {
-            background: #2563EB;
-            color: white;
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
 
         .calendar-nav button {
             background: rgba(255, 255, 255, 0.2);
             border: none;
             color: white;
-            padding: 5px 10px;
-            margin: 0 2px;
+            padding: 0.5rem;
             border-radius: 4px;
             cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .calendar-nav button:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         .calendar-nav button.active {
@@ -184,24 +225,25 @@ while ($row = $result->fetch_assoc()) {
 
         .calendar-day-header {
             background: #f8f9fa;
-            padding: 5px;
+            padding: 0.75rem 0.5rem;
             font-weight: 600;
             text-align: center;
             border-right: 1px solid #dee2e6;
             border-bottom: 1px solid #dee2e6;
+            font-size: 0.875rem;
         }
 
         .calendar-day {
-            min-height: 100px;
+            min-height: 120px;
             border-right: 1px solid #dee2e6;
             border-bottom: 1px solid #dee2e6;
-            padding: 5px;
+            padding: 0.5rem;
             position: relative;
             background: white;
         }
 
         .calendar-day.other-month {
-            background: #f1f5f9;
+            background: #f8f9fa;
             color: #6c757d;
         }
 
@@ -209,16 +251,35 @@ while ($row = $result->fetch_assoc()) {
             background: #e3f2fd;
         }
 
-        .booking-item {
-            font-size: 0.75rem;
-            padding: 2px 4px;
-            margin-bottom: 2px;
-            border-radius: 3px;
-            color: white;
-            cursor: pointer;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .legend {
+            display: flex;
+            gap: 1rem;
+            padding: 0.75rem;
+            border-radius: 4px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 2px;
+        }
+
+        .booking-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .booking-detail:last-child {
+            border-bottom: none;
         }
     </style>
 </head>
@@ -257,7 +318,8 @@ while ($row = $result->fetch_assoc()) {
                     class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
                 </a>
-                <a href="../report.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                <a href="../report.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
                 <!-- Accounting -->
@@ -299,10 +361,6 @@ while ($row = $result->fetch_assoc()) {
                         <a class="nav-link link-secondary" id="calendar-tab" data-bs-toggle="tab" href="#calendar"
                             role="tab">Calendar View</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link link-secondary" id="reschedule-tab" data-bs-toggle="tab" href="#reschedule"
-                            role="tab">Reschedule Requests</a>
-                    </li>
                 </ul>
                 <!-- Tab Content -->
                 <div class="tab-content">
@@ -332,7 +390,7 @@ while ($row = $result->fetch_assoc()) {
                                             $id = $row['id'];
                                             $fullName = ucwords($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
                                             $amenity = $row['amenity'];
-                                            $bookingDate = $row['reservation_date'];
+                                            $bookingDate = date('F d, Y', strtotime($row['reservation_date']));
                                             $resCode = $row['reservation_code'];
                                             $statusClass = $row['status'] === 'Paid' ? 'text-success' : ($row['status'] === 'Partial' ? 'text-warning' : 'text-muted');
                                             echo "<tr>
@@ -427,7 +485,6 @@ while ($row = $result->fetch_assoc()) {
                                 <h4 class="mb-0" id="monthYear">August 2025</h4>
                                 <div class="calendar-nav d-flex gap-2">
                                     <button id="monthBtn" class="active" onclick="setView('month')">Month</button>
-                                    <button id="weekBtn" onclick="setView('week')">Week</button>
                                 </div>
                             </div>
                             <div class="calendar-grid" id="calendarGrid">
@@ -446,82 +503,7 @@ while ($row = $result->fetch_assoc()) {
                                     <div class="modal-body" id="modalContent">
                                         <!-- Booking details will be populated here -->
                                     </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-primary">Edit Booking</button>
-                                        <button type="button" class="btn btn-secondary"
-                                            data-bs-dismiss="modal">Close</button>
-                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Reschedule Requests -->
-                    <div class="tab-pane fade" id="reschedule" role="tabpanel">
-                        <!-- Bookings Table -->
-                        <div class="tab-pane fade show active" id="bookings" role="tabpanel">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="small">List of Amenity Bookings</span>
-                                <a href="amenity_booking/choose_booking.php" class="btn btn-primary btn-sm">+ Create New
-                                    Booking</a>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
-                                    <thead class="bg-success text-white small">
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Booking Date</th>
-                                            <th>Full Name</th>
-                                            <th>Amenity</th>
-                                            <th>Reservation Code</th>
-                                            <th>Payment Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="small align-middle">
-                                        <?php
-                                        if ($bookings_result->num_rows > 0) {
-                                            while ($row = $bookings_result->fetch_assoc()) {
-                                                $id = $row['booking_id'];
-                                                $fullName = $row['full_name'];
-                                                $amenity = $row['amenity'];
-                                                $bookingDate = $row['booking_date'];
-                                                $resCode = $row['reservation_code'];
-                                                $statusClass = $row['payment_status'] === 'Paid' ? 'text-success' : ($row['payment_status'] === 'Partial' ? 'text-warning' : 'text-muted');
-                                                echo "<tr>
-                                                <td>{$id}</td>
-                                                <td>{$bookingDate}</td>
-                                                <td>{$fullName}</td>
-                                                <td>{$amenity}</td>
-                                                <td>{$resCode}</td>
-                                                <td class='{$statusClass} fw-bold'>{$row['payment_status']}</td>
-                                                <td>
-                                                    <div class='dropdown'>
-                                                        <button class='btn btn-sm btn-secondary dropdown-toggle' data-bs-toggle='dropdown'>Action</button>
-                                                        <ul class='dropdown-menu'>
-                                                            <li><a class='dropdown-item' href='#'>View Details</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </td>
-                                            </tr>";
-                                            }
-                                        } else {
-                                            echo "<tr><td colspan='7' class='text-center text-muted'>No bookings found.</td></tr>";
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mt-2">
-                                <span class="small">Showing 1 to <?php echo $bookings_result->num_rows; ?>
-                                    entries</span>
-                                <nav>
-                                    <ul class="pagination pagination-sm m-0">
-                                        <li class="page-item disabled"><a class="page-link">Previous</a></li>
-                                        <li class="page-item active"><a class="page-link">1</a></li>
-                                        <li class="page-item"><a class="page-link">Next</a></li>
-                                    </ul>
-                                </nav>
                             </div>
                         </div>
                     </div>
@@ -533,15 +515,22 @@ while ($row = $result->fetch_assoc()) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const bookings = <?= json_encode($bookings) ?>;
-        let currentDate = new Date();
+        const loggedInHouseholdId = <?= json_encode($homeowner_id) ?>;
+        let currentDate = new Date(2025, 7, 1); // August 2025
+        let currentView = 'month';
+
         function renderCalendar() {
             const grid = document.getElementById('calendarGrid');
             const monthYear = document.getElementById('monthYear');
+
             grid.innerHTML = '';
 
-            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            // Update header
+            const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'];
             monthYear.textContent = `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
 
+            // Day headers
             const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             dayHeaders.forEach(day => {
                 const header = document.createElement('div');
@@ -550,38 +539,218 @@ while ($row = $result->fetch_assoc()) {
                 grid.appendChild(header);
             });
 
+            // Get first day of month and number of days
             const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
             const startDate = new Date(firstDay);
             startDate.setDate(startDate.getDate() - firstDay.getDay());
 
+            // Create calendar days
             const today = new Date();
-            for (let i = 0; i < 42; i++) {
+            for (let i = 0; i < 35; i++) {
                 const date = new Date(startDate);
                 date.setDate(startDate.getDate() + i);
                 const dayElement = document.createElement('div');
                 dayElement.className = 'calendar-day';
-                if (date.getMonth() !== currentDate.getMonth()) dayElement.classList.add('other-month');
-                if (date.toDateString() === today.toDateString()) dayElement.classList.add('today');
-
+                // Add classes for styling
+                if (date.getMonth() !== currentDate.getMonth()) {
+                    dayElement.classList.add('other-month');
+                }
+                if (date.toDateString() === today.toDateString()) {
+                    dayElement.classList.add('today');
+                }
+                // Day number
                 const dayNumber = document.createElement('div');
+                dayNumber.className = 'day-number fw-medium';
+                dayNumber.style.fontSize = `0.875rem`;
                 dayNumber.textContent = date.getDate();
                 dayElement.appendChild(dayNumber);
+                // Add bookings for this date
+                const dateStr = date.toLocaleDateString('en-CA');
+                const dayBookings = bookings.filter(booking => booking.date === dateStr);
+                dayBookings.forEach(booking => {
+                    const bookingContainer = document.createElement('div');
+                    bookingContainer.className = 'position-relative';
+                    bookingContainer.style.display = 'inline-block';
+                    bookingContainer.style.width = '100%';
+                    bookingContainer.style.marginBottom = '4px';
 
-                const dateStr = date.toISOString().split('T')[0];
-                const dayBookings = bookings.filter(b => b.date === dateStr);
-                dayBookings.forEach(b => {
-                    const div = document.createElement('div');
-                    div.className = 'booking-item ' + (b.paymentStatus === 'Paid' ? 'bg-success' : b.paymentStatus === 'Partial' ? 'bg-warning' : 'bg-secondary');
-                    div.textContent = `${b.amenity} - ${b.fullName}`;
-                    dayElement.appendChild(div);
+                    const bookingElement = document.createElement('div');
+
+                    // Determine background class based on payment
+                    let bgClass = 'bg-secondary';
+                    if (booking.paymentStatus === 'Paid') {
+                        bgClass = 'bg-success';
+                    } else if (booking.paymentStatus === 'Partial') {
+                        bgClass = 'bg-warning text-dark';
+                    }
+
+                    if (booking.homeownerId == loggedInHouseholdId) {
+                        // ✅ Your household
+                        bookingElement.className = `booking-item ${bgClass} text-white overflow-hidden text-nowrap rounded-2`;
+                        bookingElement.style.fontSize = '0.75rem';
+                        bookingElement.style.padding = '0.25rem 0.5rem';
+                        bookingElement.style.cursor = 'pointer';
+                        bookingElement.textContent = booking.fullName;
+
+                        // Badge (always shown for your bookings)
+                        const amenityBadge = createAmenityBadge(booking);
+                        bookingContainer.appendChild(bookingElement);
+                        bookingContainer.appendChild(amenityBadge);
+
+                        bookingContainer.onclick = () => showBookingDetails(booking);
+
+                    } else {
+                        // ✅ Other households
+                        bookingElement.className = `booking-item ${bgClass} overflow-hidden text-nowrap rounded-2`;
+                        bookingElement.style.fontSize = '0.75rem';
+                        bookingElement.style.padding = '0.25rem 0.5rem';
+                        bookingElement.style.cursor = 'not-allowed';
+                        bookingElement.textContent = `Booked - ${booking.time}`;
+
+                        // Badge only if payment is Paid or Partial
+                        if (booking.paymentStatus === 'Paid' || booking.paymentStatus === 'Partial') {
+                            const amenityBadge = createAmenityBadge(booking);
+                            bookingContainer.appendChild(bookingElement);
+                            bookingContainer.appendChild(amenityBadge);
+                        }
+                    }
+
+                    dayElement.appendChild(bookingContainer);
                 });
+
                 grid.appendChild(dayElement);
             }
         }
-        function previousMonth() { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); }
-        function nextMonth() { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); }
-        function setView(view) { renderCalendar(); }
 
+        function createAmenityBadge(booking) {
+            const amenityBadge = document.createElement('span');
+            const amenityLower = booking.amenity.toLowerCase();
+
+            if (amenityLower === 'clubhouse') {
+                amenityBadge.style.backgroundColor = '#dc3545'; // danger
+            } else if (amenityLower === 'swimming pool') {
+                amenityBadge.style.backgroundColor = '#0d6efd'; // primary
+            } else if (amenityLower === 'gazebo') {
+                amenityBadge.style.backgroundColor = '#ffc107'; // warning
+            } else if (amenityLower === 'basketball court') {
+                amenityBadge.style.backgroundColor = '#0dcaf0'; // info
+            } else {
+                amenityBadge.style.backgroundColor = '#6c757d'; // secondary
+            }
+
+            let badgeInitials = '';
+            if (amenityLower === 'clubhouse') badgeInitials = 'C';
+            else if (amenityLower === 'swimming pool') badgeInitials = 'SP';
+            else if (amenityLower === 'gazebo') badgeInitials = 'G';
+            else if (amenityLower === 'basketball court') badgeInitials = 'BC';
+            else badgeInitials = booking.amenity.charAt(0);
+
+            amenityBadge.className = 'position-absolute d-flex align-items-center justify-content-center text-white fw-bold';
+            amenityBadge.style.top = '-8px';
+            amenityBadge.style.right = '-8px';
+            amenityBadge.style.width = '24px';
+            amenityBadge.style.height = '20px';
+            amenityBadge.style.borderRadius = '10px';
+            amenityBadge.style.fontSize = '0.6rem';
+            amenityBadge.style.lineHeight = '1';
+            amenityBadge.style.zIndex = '10';
+            amenityBadge.style.border = '2px solid white';
+            amenityBadge.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+            amenityBadge.style.padding = '0 4px';
+            amenityBadge.style.whiteSpace = 'nowrap';
+            amenityBadge.style.overflow = 'hidden';
+            amenityBadge.style.transition = 'all 0.3s ease';
+            amenityBadge.style.cursor = 'pointer';
+            amenityBadge.textContent = badgeInitials;
+
+            const fullAmenityText = booking.amenity;
+            amenityBadge.addEventListener('mouseenter', function () {
+                this.style.width = 'max-content';
+                this.style.minWidth = '60px';
+                this.style.padding = '0 8px';
+                this.textContent = fullAmenityText;
+            });
+            amenityBadge.addEventListener('mouseleave', function () {
+                this.style.width = '24px';
+                this.style.minWidth = 'auto';
+                this.style.padding = '0 4px';
+                this.textContent = badgeInitials;
+            });
+
+            return amenityBadge;
+        }
+
+        function showBookingDetails(booking) {
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="booking-detail">
+                    <strong>Guest Name:</strong>
+                    <span>${booking.fullName}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Amenity:</strong>
+                    <span class="badge bg-${booking.amenity.toLowerCase() === 'clubhouse' ? 'danger' :
+                    booking.amenity.toLowerCase() === 'swimming pool' ? 'primary' :
+                        booking.amenity.toLowerCase() === 'gazebo' ? 'warning' : booking.amenity.toLowerCase() === 'basketball court' ? 'info' : 'secondary'}">${booking.amenity}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Date:</strong>
+                    <span>${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Time:</strong>
+                    <span>${booking.time}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Reservation Code:</strong>
+                    <span>${booking.reservationCode}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Payment Status:</strong>
+                    <span class="badge bg-${booking.paymentStatus === 'Paid' ? 'success' : booking.paymentStatus === 'Partial' ? 'warning' : 'secondary'}">${booking.paymentStatus}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Amount:</strong>
+                    <span>${booking.amount}</span>
+                </div>
+                <div class="booking-detail d-flex justify-content-end mt-3">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            `;
+
+            new bootstrap.Modal(document.getElementById('bookingModal')).show();
+        }
+
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        function goToToday() {
+            currentDate = new Date();
+            renderCalendar();
+        }
+
+        function setView(view) {
+            currentView = view;
+            document.getElementById('monthBtn').classList.toggle('active', view === 'month');
+            document.getElementById('weekBtn').classList.toggle('active', view === 'week');
+
+            if (view === 'week') {
+                // You can implement week view here
+                alert('Week view feature coming soon!');
+            } else {
+                renderCalendar();
+            }
+        }
+
+        // Initialize calendar
         renderCalendar();
     </script>
 </body>

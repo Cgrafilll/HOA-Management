@@ -208,7 +208,7 @@ if ($user) {
                 </div>
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <span class="mb-0">Select an Amenity</span>
-                    <a href="../amenity_booking.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                    <a href="amenity_booking.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                         <i class="bi bi-arrow-left-short me-1"></i>Back
                     </a>
                 </div>

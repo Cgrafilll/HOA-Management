@@ -23,8 +23,6 @@ try {
         $homeowner_involved = $_POST['homeowner_involved'] ?? null;
         $address_lot_number = $_POST['address_lot_number'] ?? null;
         $other_parties = $_POST['other_parties'] ?? null;
-        $action_taken = $_POST['action_taken'];
-        $remarks = $_POST['remarks'] ?? null;
 
         // Convert time to 12-hour format (if provided)
         if (!empty($time_incident)) {
@@ -50,14 +48,25 @@ try {
 
         // Insert into DB
         $stmt = $conn->prepare("INSERT INTO violations 
-            (first_name, middle_name, last_name, cellphone_number, date_incident, time_incident, location, violation_type, description_of_incident, homeowner_involved, address_lot_number, other_parties, evidence, action_taken, remarks, anonymous) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            (first_name, middle_name, last_name, cellphone_number, date_incident, time_incident, location, violation_type, description_of_incident, homeowner_involved, address_lot_number, other_parties, evidence, anonymous) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        $stmt->bind_param("ssssssssssssssss",
-            $first_name, $middle_name, $last_name, $cellphone_number,
-            $date_incident, $time_incident, $location, $violation_type,
-            $description_of_incident, $homeowner_involved, $address_lot_number,
-            $other_parties, $evidence_file, $action_taken, $remarks, $anonymous
+        $stmt->bind_param(
+            "ssssssssssssssss",
+            $first_name,
+            $middle_name,
+            $last_name,
+            $cellphone_number,
+            $date_incident,
+            $time_incident,
+            $location,
+            $violation_type,
+            $description_of_incident,
+            $homeowner_involved,
+            $address_lot_number,
+            $other_parties,
+            $evidence_file,
+            $anonymous
         );
 
         if ($stmt->execute()) {

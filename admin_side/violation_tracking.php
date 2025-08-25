@@ -277,14 +277,12 @@ try {
                 </div>
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="small">VIOLATIONS</span>
-                        <div class="d-flex gap-2">
+                        <span class="small">Violations</span>
+                        <div>
                             <a href="violations/archive_violations.php"
-                                class="btn btn-outline-secondary btn-sm">Archived Announcements</a>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <a href="violations/add_violations.php"
-                                class="btn btn-outline-secondary btn-sm">Create Violation Report</a>
+                                class="btn btn-outline-secondary btn-sm me-2">Archived Violation</a>
+                            <a href="violations/add_violations.php" class="btn btn-primary btn-sm">+ Create Violation
+                                Report</a>
                         </div>
                     </div>
                     <hr class="mb-3 mt-0">
@@ -309,7 +307,7 @@ try {
                                             CONCAT(h.first_name, ' ', h.last_name) AS resident_name,
                                             v.date_incident,
                                             v.violation_type,
-                                            v.description,
+                                            v.description_of_incident,
                                             v.action_taken
                                         FROM violations v
                                         INNER JOIN household_accounts h 
@@ -351,7 +349,12 @@ try {
                                 ?>
                             </tbody>
                         </table>
-</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

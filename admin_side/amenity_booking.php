@@ -471,7 +471,6 @@ while ($row = $result->fetch_assoc()) {
                                     </li>
                                 </ul>
                             </nav>
-
                         </div>
                     </div>
                     <!-- Calendar View -->
@@ -515,7 +514,6 @@ while ($row = $result->fetch_assoc()) {
                                 <h4 class="mb-0" id="monthYear">August 2025</h4>
                                 <div class="calendar-nav d-flex gap-2">
                                     <button id="monthBtn" class="active" onclick="setView('month')">Month</button>
-                                    <button id="weekBtn" onclick="setView('week')">Week</button>
                                 </div>
                             </div>
                             <div class="calendar-grid" id="calendarGrid">
@@ -718,13 +716,13 @@ while ($row = $result->fetch_assoc()) {
                     bookingContainer.style.marginBottom = '4px';
 
                     const bookingElement = document.createElement('div');
-                    let bgClass = 'bg-secondary'; // default for pending
+                    let bgClass = 'bg-secondary text-white'; // default for pending
                     if (booking.paymentStatus === 'Paid') {
-                        bgClass = 'bg-success';
+                        bgClass = 'bg-success text-white';
                     } else if (booking.paymentStatus === 'Partial') {
-                        bgClass = 'bg-warning';
+                        bgClass = 'bg-warning text-dark';
                     }
-                    bookingElement.className = `booking-item ${bgClass} text-white overflow-hidden text-nowrap rounded-2`;
+                    bookingElement.className = `booking-item ${bgClass} overflow-hidden text-nowrap rounded-2`;
                     bookingElement.style.fontSize = '0.75rem';
                     bookingElement.style.padding = '0.25rem 0.5rem';
                     bookingElement.style.cursor = 'pointer';
@@ -806,10 +804,6 @@ while ($row = $result->fetch_assoc()) {
             const modalContent = document.getElementById('modalContent');
             modalContent.innerHTML = `
                 <div class="booking-detail">
-                    <strong>Booking ID:</strong>
-                    <span>#${booking.id}</span>
-                </div>
-                <div class="booking-detail">
                     <strong>Guest Name:</strong>
                     <span>${booking.fullName}</span>
                 </div>
@@ -817,7 +811,7 @@ while ($row = $result->fetch_assoc()) {
                     <strong>Amenity:</strong>
                     <span class="badge bg-${booking.amenity.toLowerCase() === 'clubhouse' ? 'danger' :
                     booking.amenity.toLowerCase() === 'swimming pool' ? 'primary' :
-                        booking.amenity.toLowerCase() === 'gazebo' ? 'warning' : booking.amenity.toLowerCase() === 'basketball court' ? 'info' : 'secondary'}">${booking.amenity}</span>
+                        booking.amenity.toLowerCase() === 'gazebo' ? 'warning text-dark' : booking.amenity.toLowerCase() === 'basketball court' ? 'info' : 'secondary'}">${booking.amenity}</span>
                 </div>
                 <div class="booking-detail">
                     <strong>Date:</strong>
@@ -833,7 +827,7 @@ while ($row = $result->fetch_assoc()) {
                 </div>
                 <div class="booking-detail">
                     <strong>Payment Status:</strong>
-                    <span class="badge bg-${booking.paymentStatus === 'Paid' ? 'success' : booking.paymentStatus === 'Partial' ? 'warning' : 'secondary'}">${booking.paymentStatus}</span>
+                    <span class="badge bg-${booking.paymentStatus === 'Paid' ? 'success' : booking.paymentStatus === 'Partial' ? 'warning text-dark' : 'secondary'}">${booking.paymentStatus}</span>
                 </div>
                 <div class="booking-detail">
                     <strong>Amount:</strong>

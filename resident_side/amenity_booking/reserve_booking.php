@@ -314,7 +314,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
                 </a>
-                <a href="../report.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                <a href="../report.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
                 <!-- Accounting -->
@@ -376,28 +377,29 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="firstName" name="firstName"
                                         placeholder="First Name" value="<?php echo htmlspecialchars($first_name); ?>"
-                                        required>
+                                        required readonly>
                                     <label for="firstName">First Name<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
                                 <!-- Middle Name -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="middleName" name="middleName"
-                                        placeholder="Middle Name" value="<?php echo htmlspecialchars($middle_name); ?>">
+                                        placeholder="Middle Name"
+                                        value="<?php echo htmlspecialchars($middle_name); ?> " readonly>
                                     <label for="middleName">Middle Name</label>
                                 </div>
                                 <!-- Last Name -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="lastName" name="lastName"
                                         placeholder="Last Name" value="<?php echo htmlspecialchars($last_name); ?>"
-                                        required>
+                                        required readonly>
                                     <label for="lastName">Last Name<small class="fw-bold text-danger">*</small></label>
                                 </div>
                                 <!-- Email Address -->
                                 <div class="form-floating mb-3">
                                     <input type="email" class="form-control" id="emailAddress" name="emailAddress"
                                         placeholder="name@example.com"
-                                        value="<?php echo htmlspecialchars($email_address); ?>" required>
+                                        value="<?php echo htmlspecialchars($email_address); ?>" required readonly>
                                     <label for="emailAddress">Email Address<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
@@ -498,7 +500,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             Failure to do so will result in cancellation of your reservation.
                                         </div>
                                     </div>
-
                                     <!-- Cash Info -->
                                     <div id="cashInfo" class="d-none">
                                         <h6 class="fw-bold mb-3">Payment Method: Cash</h6>
