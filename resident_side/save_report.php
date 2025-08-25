@@ -1,6 +1,6 @@
 <?php
 session_start();
-require '../../rfid-api/db.php';
+require '../rfid-api/db.php';
 
 if (!isset($_SESSION['email_address'])) {
     echo "unauthorized";
@@ -37,7 +37,7 @@ try {
         // Handle evidence upload
         $evidence_file = null;
         if (isset($_FILES['evidence']) && $_FILES['evidence']['error'] == 0) {
-            $targetDir = "evidences/";
+            $targetDir = "../admin_side/violations/evidences/";
             if (!is_dir($targetDir)) {
                 mkdir($targetDir, 0777, true);
             }

@@ -181,7 +181,7 @@ try {
             <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">COMMUNICATION</h1>
+            <h1 class="h5 mb-0 fw-bold">VIOLATION TRACKING</h1>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
                 <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
@@ -323,7 +323,7 @@ try {
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Time of Incident<span class="text-danger">*</span></label>
-                            <input type="text" name="time_incident" class="form-control" placeholder="HH:MM" required>
+                            <input type="time" name="time_incident" class="form-control" placeholder="HH:MM" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Location<span class="text-danger">*</span></label>

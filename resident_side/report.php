@@ -2,32 +2,14 @@
 session_start();
 require '../rfid-api/db.php';
 
-if (!isset($_SESSION['household_id'])) {
-    header("Location: login.php?error=Please login first");
-    exit;
-}
-
-$resident_id = $_SESSION['household_id'];
-$sql = "SELECT * FROM household_accounts WHERE household_id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $resident_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$resident = $result->fetch_assoc();
-
-if (!$resident) {
-    echo "Resident not found.";
-    exit;
-}
-
 if (!isset($_SESSION['email_address'])) {
-    header("Location: login/login.php");
+    header("Location: login.php");
     exit;
 }
 
 // Initialize user details
 $email_address = $_SESSION['email_address'];
-$username = $photo = $first_name = $middle_name = $last_name = '';
+$username = $photo = ''; // Initialize user details
 
 // Fetch user details including profile photo
 try {
@@ -39,10 +21,6 @@ try {
 
     if ($user) {
         $username = $user['first_name'];
-        $first_name = $user['first_name'];
-        $middle_name = $user['middle_name'] ?? '';
-        $last_name = $user['last_name'];
-        $contact = $user['cellphone_number'];
 
         // Only set $photo if profile_pic exists and is not null
         if (!empty($user['profile_picture'])) {
@@ -57,7 +35,6 @@ try {
 } catch (Exception $e) {
     $error_message = "Error fetching user details: " . $e->getMessage();
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -85,7 +62,7 @@ try {
 
         .sidebar {
             width: 250px;
-            min-height: 100vh;
+            height: 100vh;
             position: fixed;
             top: 20;
             left: 0;
@@ -93,8 +70,36 @@ try {
             overflow-y: auto;
         }
 
+        .announcement-card {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            max-width: 100%;
+        }
+
+        .announcement-body {
+            font-size: 0.95rem;
+            margin: 0;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
         main {
             margin-left: 250px;
+            padding-bottom: 100px;
+            /* ✅ give breathing room at bottom */
+        }
+
+        .card-body p,
+        .card-body h6 {
+            word-wrap: break-word;
+            /* Old support */
+            overflow-wrap: break-word;
+            /* Modern support */
+            white-space: pre-wrap;
+            /* Keeps newlines */
         }
 
         .sidebar a,
@@ -108,13 +113,14 @@ try {
 
         .sidebar a:hover,
         .sidebar button:hover,
-        .collapse ul li a:hover {
+        .collapse ul li a:hover,
+        .collapse ul li a.actived {
             color: #80ed99;
         }
 
         .sidebar .nav-link.active,
         .sidebar .btn-toggle:not(.collapsed),
-        .sidebar .logout:hover {
+        .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
         }
@@ -148,29 +154,22 @@ try {
             transform: rotate(180deg);
         }
 
-        .file-drop-area {
-            border: 2px dashed #d1d5db;
-            border-radius: 8px;
-            padding: 40px;
-            text-align: center;
-            background-color: #f9fafb;
-            transition: all 0.3s ease;
+        /* Make Cancel button slightly darker on hover */
+        #confirmModal .btn-cancel:hover {
+            background-color: #d6d8db;
+            /* slightly darker gray */
+            color: #000;
         }
 
-        .file-drop-area:hover {
-            border-color: #6b7280;
-            background-color: #f3f4f6;
+        .form-control.border-danger {
+            border: 2px solid #dc3545 !important;
+            /* force red */
         }
 
-        .file-drop-area.dragover {
-            border-color: #3b82f6;
-            background-color: #eff6ff;
-        }
-
-        .cloud-icon {
-            font-size: 48px;
-            color: #9ca3af;
-            margin-bottom: 16px;
+        textarea {
+            min-height: 100px;
+            resize: none;
+            /* optional: prevent manual drag */
         }
     </style>
 </head>
@@ -182,7 +181,7 @@ try {
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold text-dark">REPORT VIOLATION</h1>
+            <h1 class="h5 mb-0 fw-bold">REPORT VIOLATION</h1>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
                 <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
@@ -236,226 +235,230 @@ try {
                 </a>
             </nav>
         </aside>
-        <!--Main Content-->
-        <main class="flex-grow-1 p-4">
+        <!-- Main Content -->
+        <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Report Violation</h5>
                 </div>
-                <div class="p-3 d-flex justify-content-between align-items-center">
-                    <span class="small mb-0">Violation Report Form</span>
-                </div>
-                <hr class="my-0">
                 <div class="p-3">
-                    <form action="add_admin.php" method="POST" enctype="multipart/form-data">
-                        <!-- Personal Info -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Reporter Information</span>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="first_name" class="form-control"
-                                    value="<?php echo htmlspecialchars($first_name); ?>" required />
-                                <label class=" form-label mt-2">First Name<small
-                                        class="fw-bold text-danger">*</small></label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="middle_name" class="form-control"
-                                    value="<?php echo htmlspecialchars($middle_name); ?>" required />
-                                <label class=" form-label mt-2">Middle Name<small
-                                        class="fw-bold text-danger">*</small></label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="last_name" class="form-control"
-                                    value="<?php echo htmlspecialchars($last_name); ?>" required />
-                                <label class=" form-label mt-2">Last Name<small
-                                        class="fw-bold text-danger">*</small></label>
-                            </div>
-                        </div>
-                        <!-- Contact -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Contact Information</span>
-                            <div class="col-md-4 mb-3">
-                                <input type="tel" name="cellphone" class="form-control"
-                                    value="<?php echo htmlspecialchars($contact); ?>" pattern="[0-9]+" maxlength="15"
-                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                                    placeholder="e.g., 09171234567" />
-                                <label class="form-label mt-2">Cellphone Number</label>
-                            </div>
-                        </div>
-                        <!-- Incident Details -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Incident Details</span>
-                            <div class="col-4 mb-3">
-                                <input type="date" name="incidnetDate" class="form-control" required />
-                                <label class="form-label mt-2">Date of Incident<small
-                                        class="fw-bold text-danger">*</small></label>
-                            </div>
-                            <div class="col-4 mb-3">
-                                <input type="time" name="incidnetTime" class="form-control" required />
-                                <label class="form-label mt-2">Time of Incident<small
-                                        class="fw-bold text-danger">*</small></label>
-                            </div>
-                            <div class="col-4 mb-3">
-                                <input type="text" name="location" class="form-control" required />
-                                <label class="form-label mt-2">Location<small
-                                        class="fw-bold text-danger">*</small></label>
-                            </div>
-                            <div class="col-4 mb-3">
-                                <select name="violation" class="form-select" required>
-                                    <option value="" selected disabled>Select Violation Type</option>
-                                    <option>Excessive Noise</option>
-                                    <option>Parking Violation</option>
-                                    <option>Pet-Related Complaint</option>
-                                    <option>Unapproved Construction</option>
-                                </select>
-                                <label class="form-label mt-2">Violation Type<small
-                                        class="fw-bold text-danger">*</small></label>
-                            </div>
-                        </div>
-                        <!-- Parties Involved Info -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Parties Involved</span>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="involvedResident" class="form-control" />
-                                <label class=" form-label mt-2">Name of Resident/Household Involved <i>(if
-                                        known)</i></label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="involvedAddress" class="form-control" />
-                                <label class=" form-label mt-2">Address/Lot Number <i>(if applicable)</i></label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="witness" class="form-control" />
-                                <label class=" form-label mt-2">Other Parties/Witnesses <i>(optional)</i></label>
-                            </div>
-                        </div>
-                        <!-- Evidence -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Evidence</span>
-                            <div class="col-md-4 mb-3">
-                                <!-- File Upload -->
-                                <div class="file-drop-area" id="fileDropArea" style="height: 250px;">
-                                    <div class="cloud-icon">
-                                        <i class="bi bi-cloud-upload"></i>
-                                    </div>
-                                    <div class="mb-2">
-                                        <strong>Drag & drop files or <a href="#" id="browseLink">Browse</a></strong>
-                                    </div>
-                                    <div class="small text-muted">
-                                        Supported formats: JPEG, PNG, GIF, PDF, TXT, XLS, AI, Word, PPT
-                                    </div>
-                                    <input type="file" id="fileInput" name="evidence" class="d-none"
-                                        accept=".jpeg,.jpg,.png,.gif,.pdf,.txt,.xls,.xlsx,.ai,.doc,.docx,.ppt,.pptx"
-                                        required>
-                                </div>
-                                <label class="form-label mt-2">Upload your Evidence<small
-                                        class="fw-bold text-danger">*</small></label>
-                                <div id="filePreview" class="mt-2"></div>
-                            </div>
-                            <div class="col-4">
-                                <textarea name="description" class="form-control" required
-                                    style="height: 250px; resize: none;"></textarea>
-                                <label class="form-label mt-2">Description of Incident<small
-                                        class="fw-bold text-danger">*</small></label>
-                            </div>
-                        </div>
-                        <hr class="mt-0">
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="anonymous" name="anonymous">
-                            <label class="form-check-label" for="anonymous">
-                                I want to remain anonymous to the reported party
-                            </label>
-                        </div>
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="accurate" name="accurate" required>
-                            <label class="form-check-label" for="accurate">
-                                I confirm that the information provided is accurate to the best of my knowledge
-                            </label>
-                        </div>
-                        <!-- Submit Buttons -->
-                        <div class="d-flex justify-content-end gap-2">
-                            <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="../admin_accounts.php" class="btn btn-danger">Cancel</a>
-                        </div>
-                    </form>
-                    <!-- Success Modal -->
-                    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel"
-                        aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content text-center">
-                                <div class="modal-header bg-success text-white">
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                                        aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
-                                    <p class="mb-2"><b>Success</b></p>
-                                    <p class="mb-3">User details have been successfully saved.</p>
-                                    <button type="button" class="btn btn-primary" id="doneButton">Done</button>
-                                </div>
-                            </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small">Violations</span>
+                        <div class="d-flex gap-2">
+                            <a href="../violation_tracking.php"
+                                class="btn btn-outline-secondary btn-sm">Back</a>
                         </div>
                     </div>
-                    <?php if (isset($success) && $success): ?>
-                        <script>
-                            window.addEventListener('DOMContentLoaded', () => {
-                                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                                successModal.show();
+                    <hr class="mb-3 mt-0">
+                    <!-- Violation Report Form -->
+                    <form action="save_violation.php" id="violationForm"method="POST" enctype="multipart/form-data" class="row g-3">
 
-                                const redirect = () => window.location.href = '../admin_accounts.php';
-                                document.getElementById('doneButton').addEventListener('click', redirect);
-                                document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
-                            });
-                        </script>
-                    <?php endif; ?>
+                        <!-- Reporter Information -->
+                        <div class="col-12">
+                            <h6 class="fw-bold">Reporter Information</h6>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">First Name<span class="text-danger">*</span></label>
+                            <input type="text" name="first_name" 
+                                class="form-control" 
+                                value="<?php echo htmlspecialchars($user['first_name'] ?? ''); ?>" 
+                                readonly>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Middle Name<span class="text-danger">*</span></label>
+                            <input type="text" name="middle_name" 
+                                class="form-control" 
+                                value="<?php echo htmlspecialchars($user['middle_name'] ?? ''); ?>" 
+                                readonly>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Last Name<span class="text-danger">*</span></label>
+                            <input type="text" name="last_name" 
+                                class="form-control" 
+                                value="<?php echo htmlspecialchars($user['last_name'] ?? ''); ?>" 
+                                readonly>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Cellphone Number<span class="text-danger">*</span></label>
+                            <input type="text" name="cellphone_number" 
+                                class="form-control" 
+                                value="<?php echo htmlspecialchars($user['cellphone_number'] ?? ''); ?>" 
+                                readonly>
+                        </div>
+
+                        <!-- Incident Details -->
+                        <div class="col-12">
+                            <h6 class="fw-bold mt-3">Incident Details</h6>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Date of Incident<span class="text-danger">*</span></label>
+                            <input type="date" name="date_incident" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Time of Incident<span class="text-danger">*</span></label>
+                            <input type="time" name="time_incident" class="form-control" placeholder="HH:MM" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Location<span class="text-danger">*</span></label>
+                            <input type="text" name="location" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Violation Type<span class="text-danger">*</span></label>
+                            <select name="violation_type" class="form-select" required>
+                                <option value="">-- Select Violation --</option>
+                                <option value="Unauthorized Amenity Use">Unauthorized Amenity Use</option>
+                                <option value="Noise Disturbance">Noise Disturbance</option>
+                                <option value="Property Damage">Property Damage</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Description of Incident<span class="text-danger">*</span></label>
+                            <textarea name="description_of_incident" class="form-control" required></textarea>
+                        </div>
+
+                        <!-- Parties Involved -->
+                        <div class="col-12">
+                            <h6 class="fw-bold mt-3">Parties Involved</h6>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Name of Resident/Household Involved (if known)</label>
+                            <input type="text" name="homeowner_involved" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Address / Lot Number (if applicable)</label>
+                            <input type="text" name="address_lot_number" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Other Parties / Witnesses (optional)</label>
+                            <input type="text" name="other_parties" class="form-control">
+                        </div>
+
+                        <!-- Evidence -->
+                        <div class="col-md-6">
+                            <label class="form-label">Evidence</label>
+                            <input type="file" name="evidence" class="form-control" accept=".jpg,.jpeg,.png,.gif,.mp4,.pdf,.doc,.docx,.ppt,.pptx">
+                            <div class="form-text">Supported formats: JPEG, PNG, GIF, MP4, PDF, DOC, PPT</div>
+                        </div>
+
+                        <!-- Action Taken -->
+                        <div class="col-md-6">
+                            <label class="form-label">Immediate Action</label>
+                            <input type="text" name="action_taken" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Remarks / Notes</label>
+                            <textarea name="remarks" class="form-control"></textarea>
+                        </div>
+
+                        <!-- Options -->
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="anonymous" value="1">
+                                <label class="form-check-label">I want to remain anonymous to the reported party</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="confirmation" value="1" required>
+                                <label class="form-check-label">I confirm that the information provided is accurate to the best of my knowledge</label>
+                            </div>
+                        </div>
+                        <!-- Buttons -->
+                        <div class="col-12 d-flex gap-2 mt-3">
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmModal">
+                                Save
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </main>
     </div>
+    <!-- Confirm Save Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Confirm Save</h5>
+        </div>
+        <div class="modal-body">
+            Are you sure you want to save this violation?
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="confirmSaveBtn">Save</button>
+        </div>
+        </div>
+    </div>
+    </div>
 
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold">Saved!</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
+                    <p class="mt-3 mb-2"><b>Violation report saved successfully.</b></p>
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal" onclick="window.location.href='report.php'">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="errorModalLabel">Error</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="errorMessage" class="text-dark">An error occurred while saving the violation.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Additional JavaScript validation (optional but recommended)
-        document.addEventListener('DOMContentLoaded', function () {
-            const cellphoneInput = document.querySelector('input[name="cellphone"]');
+       document.addEventListener("DOMContentLoaded", function () {
+            let confirmBtn = document.getElementById("confirmSaveBtn");
 
-            if (cellphoneInput) {
-                // Prevent non-numeric characters on keypress
-                cellphoneInput.addEventListener('keypress', function (e) {
-                    // Allow backspace, delete, tab, escape, enter
-                    if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
-                        // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-                        (e.keyCode === 65 && e.ctrlKey === true) ||
-                        (e.keyCode === 67 && e.ctrlKey === true) ||
-                        (e.keyCode === 86 && e.ctrlKey === true) ||
-                        (e.keyCode === 88 && e.ctrlKey === true)) {
-                        return;
-                    }
-                    // Ensure that it is a number and stop the keypress
-                    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
-                        e.preventDefault();
-                    }
-                });
+            confirmBtn.addEventListener("click", function () {
+                let formData = new FormData(document.getElementById("violationForm"));
 
-                // Clean up any pasted content
-                cellphoneInput.addEventListener('paste', function (e) {
-                    setTimeout(() => {
-                        this.value = this.value.replace(/[^0-9]/g, '');
-                    }, 10);
-                });
-
-                // Validate on form submit (add this to your form's onsubmit or validation function)
-                cellphoneInput.addEventListener('blur', function () {
-                    if (this.value && !/^[0-9]+$/.test(this.value)) {
-                        this.setCustomValidity('Please enter numbers only');
-                        this.reportValidity();
+                fetch("save_report.php", {
+                    method: "POST",
+                    body: formData
+                })
+                .then(res => res.text())
+                .then(data => {
+                    if (data.trim() === "success") {
+                        new bootstrap.Modal(document.getElementById("successModal")).show();
+                        document.getElementById("violationForm").reset();
                     } else {
-                        this.setCustomValidity('');
+                        document.getElementById("errorMessage").innerText = data;
+                        new bootstrap.Modal(document.getElementById("errorModal")).show();
                     }
+                })
+                .catch(err => {
+                    document.getElementById("errorMessage").innerText = "Network error: " + err;
+                    new bootstrap.Modal(document.getElementById("errorModal")).show();
                 });
-            }
+
+                // Close confirm modal after saving
+                let confirmModal = bootstrap.Modal.getInstance(document.getElementById("confirmModal"));
+                confirmModal.hide();
+            });
         });
     </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
