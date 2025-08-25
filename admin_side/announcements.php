@@ -284,7 +284,7 @@ try {
                     <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
-                            <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
+                            <li><a href="violation_tracking.php" class="nav-link px-2">Violation Tracking</a></li>
                             <li><a href="entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
                         </ul>
                     </div>
@@ -315,8 +315,8 @@ try {
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2">Payments</a></li>
-                            <li><a href="#" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="payment.php" class="nav-link px-2">Payments</a></li>
+                            <li><a href="invoice.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>

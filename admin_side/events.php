@@ -95,7 +95,7 @@ try {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NSSHAI HOA Management - Events</title>
+    <title>NSSHAI HOA Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
@@ -230,7 +230,7 @@ try {
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">EVENTS</h1>
+            <h1 class="h5 mb-0 fw-bold">COMMUNICATION</h1>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
                 <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
