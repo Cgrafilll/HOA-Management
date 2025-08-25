@@ -201,7 +201,7 @@ try {
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav d-flex flex-column gap-1">
-                <a href="admin_dashboard.php"
+                <a href="dashboard.php"
                     class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
@@ -209,7 +209,7 @@ try {
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
                 </a>
-                <a href="#" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                <a href="report.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
                 <!-- Accounting -->

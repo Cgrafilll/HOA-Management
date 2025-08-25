@@ -314,7 +314,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
                 </a>
-                <a href="#" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                <a href="../report.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
                 <!-- Accounting -->
@@ -375,28 +375,31 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <!-- First Name -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="firstName" name="firstName"
-                                        placeholder="First Name" value="<?php echo htmlspecialchars($first_name); ?>" readonly required>
-                                    <label for="firstName">First Name<small class="fw-bold text-danger">*</small></label>
+                                        placeholder="First Name" value="<?php echo htmlspecialchars($first_name); ?>"
+                                        required>
+                                    <label for="firstName">First Name<small
+                                            class="fw-bold text-danger">*</small></label>
                                 </div>
                                 <!-- Middle Name -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="middleName" name="middleName"
-                                        placeholder="Middle Name" value="<?php echo htmlspecialchars($middle_name); ?>" readonly>
+                                        placeholder="Middle Name" value="<?php echo htmlspecialchars($middle_name); ?>">
                                     <label for="middleName">Middle Name</label>
                                 </div>
-
                                 <!-- Last Name -->
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="lastName" name="lastName"
-                                        placeholder="Last Name" value="<?php echo htmlspecialchars($last_name); ?>" readonly required>
+                                        placeholder="Last Name" value="<?php echo htmlspecialchars($last_name); ?>"
+                                        required>
                                     <label for="lastName">Last Name<small class="fw-bold text-danger">*</small></label>
                                 </div>
-
                                 <!-- Email Address -->
                                 <div class="form-floating mb-3">
                                     <input type="email" class="form-control" id="emailAddress" name="emailAddress"
-                                        placeholder="name@example.com" value="<?php echo htmlspecialchars($email_address); ?>" readonly required>
-                                    <label for="emailAddress">Email Address<small class="fw-bold text-danger">*</small></label>
+                                        placeholder="name@example.com"
+                                        value="<?php echo htmlspecialchars($email_address); ?>" required>
+                                    <label for="emailAddress">Email Address<small
+                                            class="fw-bold text-danger">*</small></label>
                                 </div>
                                 <!-- Date -->
                                 <div class="form-floating mb-3">
@@ -521,7 +524,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <div class="input-group">
                                         <span class="input-group-text">₱</span>
                                         <input type="text" class="form-control" id="total" name="total"
-                                            placeholder="0.00" readonly>
+                                            placeholder="0.00">
                                     </div>
                                 </div>
                                 <!-- Amount Paid -->
@@ -1300,7 +1303,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 });
             }
         });
-        
+
     </script>
 
 </body>
