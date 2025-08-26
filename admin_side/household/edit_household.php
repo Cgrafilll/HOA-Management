@@ -9,6 +9,7 @@ if (!isset($_SESSION['email_address'])) {
 
 // Initialize user details
 $email_address = $_SESSION['email_address'];
+$admin_id = $_SESSION['admin_id'];
 $username = $photo = '';// Initialize user details
 
 // Fetch user details including profile photo
@@ -80,7 +81,7 @@ if ($edit_household) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 1. Sanitize and collect input
+    // 1. Collect input
     $first_name = $_POST['first_name'];
     $middle_name = $_POST['middle_name'];
     $last_name = $_POST['last_name'];
@@ -90,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cellphone = $_POST['cellphone'];
     $landline = $_POST['landline'];
     $email = $_POST['email'];
+    $password = $_POST['password'] ?? '';
     $street = $_POST['street'];
     $street2 = $_POST['street2'];
     $city = $_POST['city'];
@@ -99,9 +101,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $members = $_POST['members'];
     $rfid = $_POST['rfid'];
 
-    // 2. Check if RFID already exists (excluding current household)
     try {
-        $rfid_check_stmt = $conn->prepare("SELECT household_id FROM household_accounts WHERE rfid = ? AND household_id != ?");
+        // 2. Check RFID uniqueness
+        $rfid_check_stmt = $conn->prepare(
+            "SELECT household_id FROM household_accounts WHERE rfid = ? AND household_id != ?"
+        );
         $rfid_check_stmt->bind_param("ss", $rfid, $edit_household);
         $rfid_check_stmt->execute();
         $rfid_result = $rfid_check_stmt->get_result();
@@ -109,78 +113,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($rfid_result->num_rows > 0) {
             $error = "RFID card is already registered to another household/visitor. Please use a different RFID card.";
         } else {
-            // 3. Check if profile picture was uploaded
+            // 3. Prepare password update conditionally
+            $password_sql = '';
+            $params = [
+                $first_name,
+                $middle_name,
+                $last_name,
+                $dob,
+                $age,
+                $sex,
+                $cellphone,
+                $landline,
+                $email,
+                $street,
+                $street2,
+                $city,
+                $state,
+                $barangay,
+                $postal,
+                $members,
+                $rfid
+            ];
+            $types = "ssssissssssssssis"; // matches the params above
+
+            if (!empty($password)) {
+                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+                $password_sql = ", password=?";
+                $params[] = $hashedPassword;
+                $types .= "s";
+            }
+
+            // 4. Handle profile picture
             $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
 
             if ($has_photo) {
                 $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
-
                 $sql = "UPDATE household_accounts SET 
                     first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
                     cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-                    city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, rfid=?, profile_picture=?
+                    city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, rfid=? 
+                    $password_sql, profile_picture=? 
                     WHERE household_id=?";
-
-                $stmt = $conn->prepare($sql);
-
-                $stmt->bind_param(
-                    "ssssissssssssssisbs",
-                    $first_name,
-                    $middle_name,
-                    $last_name,
-                    $dob,
-                    $age,
-                    $sex,
-                    $cellphone,
-                    $landline,
-                    $email,
-                    $street,
-                    $street2,
-                    $city,
-                    $state,
-                    $barangay,
-                    $postal,
-                    $members,
-                    $rfid,
-                    $null_blob, // temporary bind, will overwrite with send_long_data
-                    $edit_household
-                );
-
-                $stmt->send_long_data(16, $profile_pic); // 17th param (index 16)
+                $params[] = $profile_pic;
+                $params[] = $edit_household;
+                $types .= "bs"; // b = blob, s = household_id
             } else {
-                // No photo uploaded, don't update profile_pic
                 $sql = "UPDATE household_accounts SET 
                     first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
                     cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-                    city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, rfid=?
+                    city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, rfid=? 
+                    $password_sql
                     WHERE household_id=?";
-
-                $stmt = $conn->prepare($sql);
-
-                $stmt->bind_param(
-                    "ssssissssssssssiss", // no 'b' here
-                    $first_name,
-                    $middle_name,
-                    $last_name,
-                    $dob,
-                    $age,
-                    $sex,
-                    $cellphone,
-                    $landline,
-                    $email,
-                    $street,
-                    $street2,
-                    $city,
-                    $state,
-                    $barangay,
-                    $postal,
-                    $members,
-                    $rfid,
-                    $edit_household
-                );
+                $params[] = $edit_household;
+                $types .= "s"; // household_id
             }
 
-            // 4. Execute and check success
+            // 5. Execute
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param($types, ...$params);
+
+            if ($has_photo) {
+                // blob is always second-to-last param
+                $stmt->send_long_data(count($params) - 2, $profile_pic);
+            }
+
             if ($stmt->execute()) {
                 $success = true;
             } else {
@@ -299,17 +295,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
-            <div class="d-flex align-items-center gap-2">
-                <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
-                <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
-                    style="height: 40px; width: 40px; color: #aaa;">
-                    <?php if (!empty($photo)): ?>
-                        <img src="<?php echo htmlspecialchars($photo); ?>"
-                            style="width: 40px; height: 40px; object-fit: cover;">
-                    <?php else: ?>
-                        <i class="bi bi-person-circle" style="font-size: 32px;"></i>
-                    <?php endif; ?>
+            <div class="dropdown">
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
+                    aria-expanded="false" role="button" style="cursor: pointer;">
+                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                        style="height: 40px; width: 40px; color: #aaa;">
+                        <?php if (!empty($photo)): ?>
+                            <img src="<?php echo htmlspecialchars($photo); ?>"
+                                style="width: 40px; height: 40px; object-fit: cover;">
+                        <?php else: ?>
+                            <i class="bi bi-person-circle" style="font-size: 32px;"></i>
+                        <?php endif; ?>
+                    </div>
                 </div>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li><a class="dropdown-item" href="../admin/view_admin.php?id=<?php echo $admin_id; ?>"><i
+                                class="bi bi-person me-2"></i>Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="../login/logout.php"><i
+                                class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                </ul>
             </div>
         </div>
     </header>
@@ -387,7 +395,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <a href="../login/logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
                     style="position: fixed; bottom: 0; width: 220px;">
-                    <i class="bi bi-box-arrow-left me-2"></i> Logout
+                    <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
@@ -521,22 +529,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Postal/Zip Code</label>
                             </div>
                         </div>
-                        <!-- Household Members -->
                         <div class="row">
+                            <!-- Household Members -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label mt-2 fw-bold">Household Members</label>
                                 <input type="number" name="members" class="form-control" min="1"
                                     value="<?= number_format($members) ?>" required />
                                 <label class="form-label mt-2">How many members in the household</label>
                             </div>
-                        </div>
-                        <!-- Resident RFID -->
-                        <div class="row">
+                            <!-- Resident RFID -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label mt-2 fw-bold">Resident RFID</label>
-                                <input type="text" name="rfid" id="rfidInput" class="form-control"
+                                <input type="text" name="rfid" class="form-control" id="rfidInput"
                                     value="<?php echo htmlspecialchars($rfid) ?>" required />
                                 <label class="form-label mt-2">Tap your RFID card</label>
+                            </div>
+                        </div>
+                        <!-- Account Password -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold">Password</label>
+                                <div class="input-group">
+                                    <input type="password" id="password" name="password" class="form-control"
+                                        minlength="6" />
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
+                                        tabindex="-1">
+                                        <i class="bi bi-eye" id="toggleIcon1"></i>
+                                    </button>
+                                </div>
+                                <label class="form-label mt-2">Set a password for this account (min. 6
+                                    characters)</label>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold invisible">Confirm Password</label>
+                                <div class="input-group">
+                                    <input type="password" id="confirmPassword" name="confirmPassword"
+                                        class="form-control" minlength="6" />
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword2"
+                                        tabindex="-1">
+                                        <i class="bi bi-eye" id="toggleIcon2"></i>
+                                    </button>
+                                </div>
+                                <label class="form-label mt-2">Confirm password</label>
                             </div>
                         </div>
                         <!-- Submit Buttons -->
@@ -613,51 +647,160 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.addEventListener('DOMContentLoaded', function () {
             const rfidInput = document.getElementById('rfidInput');
             const form = document.getElementById('householdForm');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
 
-            // Prevent RFID input from submitting the form
-            rfidInput.addEventListener('keydown', function (event) {
-                if (event.key === 'Enter' || event.keyCode === 13) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    event.stopImmediatePropagation();
+            function toggleRequired() {
+                if (passwordInput.value.length > 0) {
+                    confirmPasswordInput.required = true;
+                } else {
+                    confirmPasswordInput.required = false;
+                }
 
-                    // Blur the input to remove focus after RFID scan
-                    this.blur();
+                if (confirmPasswordInput.value.length > 0) {
+                    passwordInput.required = true;
+                } else {
+                    passwordInput.required = false;
+                }
+            }
 
-                    // Optional: Show confirmation that RFID was captured
-                    console.log('RFID captured:', this.value);
+            passwordInput.addEventListener('input', toggleRequired);
+            confirmPasswordInput.addEventListener('input', toggleRequired);
+
+            // Password Toggle Functionality
+            function setupPasswordToggle(inputId, toggleButtonId, iconId) {
+                const input = document.getElementById(inputId);
+                const toggleButton = document.getElementById(toggleButtonId);
+                const icon = document.getElementById(iconId);
+
+                if (input && toggleButton && icon) {
+                    toggleButton.addEventListener('click', function () {
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            icon.classList.remove('bi-eye');
+                            icon.classList.add('bi-eye-slash');
+                        } else {
+                            input.type = 'password';
+                            icon.classList.remove('bi-eye-slash');
+                            icon.classList.add('bi-eye');
+                        }
+                    });
+                }
+            }
+
+            // Setup password toggle for both password fields
+            setupPasswordToggle('password', 'togglePassword1', 'toggleIcon1');
+            setupPasswordToggle('confirmPassword', 'togglePassword2', 'toggleIcon2');
+
+            // Password Matching Validation
+            function validatePasswords() {
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+                const passwordError = document.getElementById('passwordError');
+
+                // Remove existing error styling
+                passwordInput.classList.remove('is-invalid');
+                confirmPasswordInput.classList.remove('is-invalid');
+                if (passwordError) {
+                    passwordError.remove();
+                }
+
+                if (password !== confirmPassword && confirmPassword !== '') {
+                    // Add error styling
+                    confirmPasswordInput.classList.add('is-invalid');
+
+                    // Add error message
+                    const errorDiv = document.createElement('div');
+                    errorDiv.id = 'passwordError';
+                    errorDiv.className = 'invalid-feedback';
+                    errorDiv.textContent = 'Passwords do not match';
+                    confirmPasswordInput.parentNode.appendChild(errorDiv);
 
                     return false;
                 }
-            });
 
-            // Additional prevention using keypress event
-            rfidInput.addEventListener('keypress', function (event) {
-                if (event.key === 'Enter' || event.keyCode === 13) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    event.stopImmediatePropagation();
-                    return false;
-                }
-            });
+                return true;
+            }
 
-            // Prevent any form submission triggered by the RFID input
-            rfidInput.addEventListener('input', function (event) {
-                // If the input was filled quickly (typical of RFID readers), prevent form submission
-                if (this.value.length > 0) {
-                    // Remove any pending form submissions
-                    clearTimeout(window.rfidSubmitTimeout);
-                }
-            });
+            // Real-time password validation
+            if (confirmPasswordInput) {
+                confirmPasswordInput.addEventListener('input', validatePasswords);
+                passwordInput.addEventListener('input', function () {
+                    if (confirmPasswordInput.value !== '') {
+                        validatePasswords();
+                    }
+                });
+            }
 
-            // Handle actual form submission only when Save button is clicked
+            // Form submission validation
             form.addEventListener('submit', function (event) {
-                // Allow normal form submission when Save button is clicked
-                // This will process the form normally
+                // Check RFID field
+                if (!rfidInput.value.trim()) {
+                    event.preventDefault();
+                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                    document.getElementById('errorMessage').textContent = 'RFID is required. Please tap your RFID card.';
+                    errorModal.show();
+                    return false;
+                }
+
+                if (!validatePasswords()) {
+                    event.preventDefault();
+                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                    document.getElementById('errorMessage').textContent = 'Passwords do not match. Please ensure both password fields are identical.';
+                    errorModal.show();
+                    return false;
+                }
+
+                // Additional validation for password strength
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+
+                if (password !== '' || confirmPassword !== '') {
+                    if (password.length < 6) {
+                        event.preventDefault();
+                        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                        document.getElementById('errorMessage').textContent = 'Password must be at least 6 characters long.';
+                        errorModal.show();
+                        return false;
+                    }
+                
+
                 console.log('Form is being submitted via Save button');
+                console.log('RFID Value:', rfidInput.value);
             });
 
-            // Optional: Auto-calculate age when date of birth changes
+            // RFID Input Handling - SIMPLIFIED VERSION
+            if (rfidInput) {
+                // Only prevent Enter key from submitting the form prematurely
+                // But still allow the RFID value to be captured
+                rfidInput.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' || event.keyCode === 13) {
+                        event.preventDefault(); // Prevent form submission
+                        this.blur(); // Remove focus from RFID input
+                        console.log('RFID captured:', this.value);
+
+                        // Optional: Add visual feedback that RFID was captured
+                        this.style.backgroundColor = '#d4edda'; // Light green background
+                        setTimeout(() => {
+                            this.style.backgroundColor = ''; // Reset after 1 second
+                        }, 1000);
+
+                        return false;
+                    }
+                });
+
+                // Add visual feedback when RFID is entered
+                rfidInput.addEventListener('input', function () {
+                    if (this.value.length > 0) {
+                        this.classList.add('is-valid');
+                        this.classList.remove('is-invalid');
+                    } else {
+                        this.classList.remove('is-valid');
+                    }
+                });
+            }
+
+            // Auto-calculate age when date of birth changes
             const dobInput = document.querySelector('input[name="dob"]');
             const ageInput = document.querySelector('input[name="age"]');
 
@@ -676,7 +819,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             }
 
-            // Profile picture preview
+            // Profile picture preview - ENHANCED VERSION
             const profilePicInput = document.getElementById('profile_pic');
             const preview = document.getElementById('preview');
 
@@ -684,15 +827,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 profilePicInput.addEventListener('change', function (event) {
                     const file = event.target.files[0];
                     if (file) {
+                        // Validate file size (5MB limit)
+                        if (file.size > 5000000) {
+                            alert('File size too large. Please select an image smaller than 5MB.');
+                            this.value = ''; // Clear the input
+                            preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
+                            return;
+                        }
+
+                        // Validate file type
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                        if (!allowedTypes.includes(file.type)) {
+                            alert('Invalid file type. Please select a JPEG, PNG, or GIF image.');
+                            this.value = ''; // Clear the input
+                            preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
+                            return;
+                        }
+
                         const reader = new FileReader();
                         reader.onload = function (e) {
-                            preview.innerHTML = `<img src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover;">`;
+                            preview.innerHTML = `<img src="${e.target.result}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px;">`;
                         };
                         reader.readAsDataURL(file);
+                    } else {
+                        // Reset to default icon if no file selected
+                        preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
                     }
                 });
             }
         });
+
     </script>
 </body>
 

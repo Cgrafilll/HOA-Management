@@ -31,6 +31,7 @@ if (!password_verify($password, $user['password'])) {
 
 // Success — set session
 $_SESSION['email_address'] = $user['email_address'];
+$_SESSION['admin_id'] = $user['admin_id'];
 header("Location: ../admin_dashboard.php");
 exit;
 ?>

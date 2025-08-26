@@ -9,11 +9,12 @@ if (!isset($_SESSION['email_address'])) {
 
 // Initialize user details
 $email_address = $_SESSION['email_address'];
-$username = $photo = $admin_id = '';// Initialize user details
+$household_id = $_SESSION['household_id'];
+$username = $photo = '';// Initialize user details
 
 // Fetch user details including profile photo
 try {
-    $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE email_address = ?");
+    $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE email_address = ?");
     $stmt->bind_param("s", $email_address);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -21,7 +22,6 @@ try {
 
     if ($user) {
         $username = $user['first_name'];
-        $admin_id = $user['admin_id'];
 
         // Only set $photo if profile_pic exists and is not null
         if (!empty($user['profile_picture'])) {
@@ -38,13 +38,13 @@ try {
 }
 
 // Initialize admin details
-$edit_admin = $_GET['id'] ?? null;
-$prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $landline = $email = $password = $street = $street2 = $city = $state = $brgy = $postal = $roles = $status = '';
+$edit_household = $_GET['id'] ?? null;
+$prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $landline = $email = $password = $street = $street2 = $city = $state = $brgy = $postal = $members = $status = '';
 
-if ($edit_admin) {
+if ($edit_household) {
     try {
-        $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE admin_id = ?");
-        $stmt->bind_param("s", $edit_admin);
+        $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE household_id = ?");
+        $stmt->bind_param("s", $edit_household);
         $stmt->execute();
         $result = $stmt->get_result();
         $admin = $result->fetch_assoc();
@@ -67,10 +67,10 @@ if ($edit_admin) {
             $state = $admin['state_province'];
             $brgy = $admin['barangay'];
             $postal = $admin['postal_zip_code'];
-            $roles = $admin['roles'];
+            $members = $admin['members'];
             $status = $admin['status'];
         } else {
-            $error_message = "Admin not found!";
+            $error_message = "Household Account not found!";
         }
     } catch (Exception $e) {
         $error_message = "Error fetching admin: " . $e->getMessage();
@@ -185,7 +185,7 @@ if ($edit_admin) {
             <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">ADMIN DASHBOARD</h1>
+            <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
@@ -201,12 +201,12 @@ if ($edit_admin) {
                     </div>
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="view_admin.php?id=<?php echo $admin_id; ?>"><i
+                    <li><a class="dropdown-item" href="view_resident.php?id=<?php echo $household_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    <li><a class="dropdown-item" href="login/logout.php"><i
+                    <li><a class="dropdown-item" href="../logout.php"><i
                                 class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                 </ul>
             </div>
@@ -215,78 +215,39 @@ if ($edit_admin) {
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1">
-                <a href="../admin_dashboard.php"
+            <nav class="nav d-flex flex-column gap-1">
+                <a href="dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                <!-- Accounts -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#accountsCollapse" aria-expanded="true">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-person-lines-fill me-2"></i> Accounts
-                        </span>
-                    </button>
-                    <div class="collapse show" id="accountsCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../admin_accounts.php" class="nav-link px-2 actived">Admin</a></li>
-                            <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
-                            <li><a href="../visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <!-- Record Keeping -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#recordCollapse" aria-expanded="false">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-book me-2"></i> Record Keeping
-                        </span>
-                    </button>
-                    <div class="collapse" id="recordCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
-                            <li><a href="../violation_tracking.php" class="nav-link px-2">Violation Tracking</a></li>
-                            <li><a href="../entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <!-- Communication -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#commCollapse" aria-expanded="false">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-chat-left-text me-2"></i> Communication
-                        </span>
-                    </button>
-                    <div class="collapse" id="commCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../announcements.php" class="nav-link px-2">Announcements</a></li>
-                            <li><a href="../events.php" class="nav-link px-2">Events</a></li>
-                            <li><a href="../phonebook.php" class="nav-link px-2">Phone Book</a></li>
-                        </ul>
-                    </div>
-                </div>
+                <a href="amenity_booking/amenity_booking.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-book me-2"></i> Amenity Booking
+                </a>
+                <a href="report.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
+                </a>
                 <!-- Accounting -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#acctCollapse" aria-expanded="false">
+                    <button
+                        class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start"
+                        data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-cash-coin me-2"></i> Accounting
                         </span>
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../payment.php" class="nav-link px-2">Payments</a></li>
-                            <li><a href="../invoice.php" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="#" class="nav-link px-2">Payments</a></li>
+                            <li><a href="#" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
-                <a href="../login/logout.php"
+                <a href="logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
                     style="position: fixed; bottom: 0; width: 220px;">
-                    <i class="bi bi-box-arrow-left me-2"></i> Logout
+                    <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
@@ -295,7 +256,7 @@ if ($edit_admin) {
             <div class="bg-white shadow rounded p-3">
                 <!-- Header -->
                 <div class="bg-success text-white rounded-top p-3">
-                    <h5 class="mb-0 fw-bold">Admin Account Management</h5>
+                    <h5 class="mb-0 fw-bold">Household Account Management</h5>
                 </div>
                 <!-- Subheader + Back -->
                 <div class="p-3 d-flex justify-content-between align-items-center">
@@ -304,7 +265,7 @@ if ($edit_admin) {
                         <button onclick="history.back()" class="btn btn-outline-secondary btn-sm">
                             <i class="bi bi-arrow-left me-1"></i>Back
                         </button>
-                        <a class="btn btn-primary btn-sm" href="edit_admin.php?id=<?php echo $edit_admin; ?>">Edit
+                        <a class="btn btn-primary btn-sm" href="edit_resident.php?id=<?php echo $household_id; ?>">Edit
                             Details</a>
                     </div>
                 </div>
@@ -324,7 +285,7 @@ if ($edit_admin) {
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <div class="mt-2 fw-semibold"><?php echo htmlspecialchars($roles); ?></div>
+                        <div class="mt-2 fw-semibold">Resident</div>
                     </div>
                     <!-- Centered Grid for Labels + Values -->
                     <div class="d-flex justify-content-center">
