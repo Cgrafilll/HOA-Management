@@ -78,23 +78,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($rfid_result->num_rows > 0) {
                 $error = "RFID card is already registered to another household/visitor. Please use a different RFID card.";
             } else {
-                // 4. Check if profile picture uploaded
+                // 4. Generate new household_id (HOU-0001, HOU-0002...)
+                $result = $conn->query("SELECT household_id FROM household_accounts ORDER BY household_id DESC LIMIT 1");
+                if ($result && $row = $result->fetch_assoc()) {
+                    $last_id = intval(substr($row['household_id'], 4)); // extract numeric part
+                    $new_id_number = $last_id + 1;
+                } else {
+                    $new_id_number = 1; // first household
+                }
+                $household_id = 'HOU-' . str_pad($new_id_number, 4, '0', STR_PAD_LEFT);
+                // 5. Check if profile picture uploaded
                 $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
 
                 if ($has_photo) {
                     $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
 
                     $sql = "INSERT INTO household_accounts 
-                        (first_name, middle_name, last_name, date_of_birth, age, sex, cellphone_number, landline, 
+                        (household_id, first_name, middle_name, last_name, date_of_birth, age, sex, cellphone_number, landline, 
                         email_address, password, street_address, street_address_2, city, state_province, barangay, 
                         postal_zip_code, members, rfid, profile_picture)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                     $stmt = $conn->prepare($sql);
 
                     $null_blob = NULL;
                     $stmt->bind_param(
-                        "ssssissssssssssssbs",
+                        "sssssisssssssssssssb",
+                        $household_id,
                         $first_name,
                         $middle_name,
                         $last_name,
@@ -116,18 +126,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $null_blob // temp bind
                     );
 
-                    $stmt->send_long_data(18, $profile_pic); // 19th param
+                    $stmt->send_long_data(19, $profile_pic); // 19th param
                 } else {
                     // No photo uploaded
                     $sql = "INSERT INTO household_accounts 
-                        (first_name, middle_name, last_name, date_of_birth, age, sex, cellphone_number, landline, 
+                        (household_id, first_name, middle_name, last_name, date_of_birth, age, sex, cellphone_number, landline, 
                         email_address, password, street_address, street_address_2, city, state_province, barangay, 
                         postal_zip_code, members, rfid)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                     $stmt = $conn->prepare($sql);
                     $stmt->bind_param(
-                        "ssssisssssssssssss",
+                        "sssssisssssssssssss",
+                        $household_id,
                         $first_name,
                         $middle_name,
                         $last_name,
@@ -276,10 +287,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
-                                <img src="<?php echo htmlspecialchars($photo); ?>"
-                                    style="width: 40px; height: 40px; object-fit: cover;">
+                            <img src="<?php echo htmlspecialchars($photo); ?>"
+                                style="width: 40px; height: 40px; object-fit: cover;">
                         <?php else: ?>
-                                <i class="bi bi-person-circle" style="font-size: 32px;"></i>
+                            <i class="bi bi-person-circle" style="font-size: 32px;"></i>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -571,24 +582,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
                     <?php if (isset($success) && $success): ?>
-                            <script>
-                                window.addEventListener('DOMContentLoaded', () => {
-                                    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                                    successModal.show();
+                        <script>
+                            window.addEventListener('DOMContentLoaded', () => {
+                                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                                successModal.show();
 
-                                    const redirect = () => window.location.href = '../household_accounts.php';
-                                    document.getElementById('doneButton').addEventListener('click', redirect);
-                                    document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
-                                });
-                            </script>
+                                const redirect = () => window.location.href = '../household_accounts.php';
+                                document.getElementById('doneButton').addEventListener('click', redirect);
+                                document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
+                            });
+                        </script>
                     <?php endif; ?>
                     <?php if (isset($error) && $error): ?>
-                            <script>
-                                window.addEventListener('DOMContentLoaded', () => {
-                                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                                    errorModal.show();
-                                });
-                            </script>
+                        <script>
+                            window.addEventListener('DOMContentLoaded', () => {
+                                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                                errorModal.show();
+                            });
+                        </script>
                     <?php endif; ?>
                 </div>
             </div>
