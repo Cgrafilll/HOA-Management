@@ -23,6 +23,7 @@ if (!$resident) {
 // Initialize user details
 $username = $resident['first_name']; // <- Set username directly from household query
 $photo = ''; // Initialize photo; your existing profile photo block will set this later
+$email_address = $resident['email_address']; // ✅ FIX: set email_address before using it
 
 // Fetch user details including profile photo
 try {
@@ -49,15 +50,14 @@ try {
     $error_message = "Error fetching user details: " . $e->getMessage();
 }
 
-// Fetch announcements from database
-$sql = "SELECT a.id, a.title, a.body, a.status, a.created_at, 
-               ad.first_name, ad.last_name 
-        FROM announcements a 
-        LEFT JOIN admin_accounts ad ON a.admin_id = ad.admin_id 
-        WHERE a.status = 'published' 
-        ORDER BY a.created_at DESC";
-
-$result = $conn->query($sql);
+// Fetch announcements
+$announcements_sql = "SELECT a.id, a.title, a.body, a.status, a.created_at, 
+                             ad.first_name, ad.last_name 
+                      FROM announcements a 
+                      LEFT JOIN admin_accounts ad ON a.admin_id = ad.admin_id 
+                      WHERE a.status = 'published' 
+                      ORDER BY a.created_at DESC";
+$announcements_result = $conn->query($announcements_sql);
 
 // Fetch events from database
 $events_sql = "SELECT e.id, e.title, e.body, e.status, e.event_date, e.created_at, 
@@ -69,18 +69,131 @@ $events_sql = "SELECT e.id, e.title, e.body, e.status, e.event_date, e.created_a
 
 $events_result = $conn->query($events_sql);
 
-// Fetch household count
-$household_count = 0;
-try {
-    $household_stmt = $conn->prepare("SELECT COUNT(*) as total_households FROM household_accounts");
-    $household_stmt->execute();
-    $household_result = $household_stmt->get_result();
-    $household_data = $household_result->fetch_assoc();
-    $household_count = $household_data['total_households'];
-    $household_stmt->close();
-} catch (Exception $e) {
-    $household_count = 0;
-    error_log("Error fetching household count: " . $e->getMessage());
+// How many records per page
+$limit = 10;
+// Current page number (default 1 if not set)
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
+// Calculate offset for SQL query
+$offset = ($page - 1) * $limit;
+// Get total number of records from amenity_bookings for this homeowner
+if ($household_id) {
+    $totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE homeowner_id = ?";
+    $totalStmt = $conn->prepare($totalQuery);
+    $totalStmt->bind_param("i", $household_id);
+    $totalStmt->execute();
+    $totalResult = $totalStmt->get_result();
+    $totalRow = $totalResult->fetch_assoc();
+    $totalRecords = $totalRow['total'];
+} else {
+    // If no homeowner_id, get all records
+    $totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings";
+    $totalResult = $conn->query($totalQuery);
+    $totalRow = $totalResult->fetch_assoc();
+    $totalRecords = $totalRow['total'];
+}
+// Calculate total pages
+$totalPages = ceil($totalRecords / $limit);
+// ✅ Fetch only the records for THIS PAGE (table)
+if ($household_id) {
+    $booking_sql = "SELECT 
+        ab.id,
+        ab.reservation_code,
+        ab.amenity,
+        ab.user_type,
+        ab.reservation_date,
+        ab.rate,
+        ab.total_amount,
+        ab.amount_paid,
+        ab.status,
+        ab.created_at,
+        ab.homeowner_id,
+        CASE 
+            WHEN ab.user_type = 'homeowner' THEN ha.first_name
+            WHEN ab.user_type = 'visitor' THEN vd.first_name
+            ELSE NULL
+        END as first_name,
+        CASE 
+            WHEN ab.user_type = 'homeowner' THEN ha.middle_name
+            WHEN ab.user_type = 'visitor' THEN vd.middle_name
+            ELSE NULL
+        END as middle_name,
+        CASE 
+            WHEN ab.user_type = 'homeowner' THEN ha.last_name
+            WHEN ab.user_type = 'visitor' THEN vd.last_name
+            ELSE NULL
+        END as last_name
+    FROM amenity_bookings ab
+    LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+    LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+    WHERE ab.homeowner_id = ? ORDER BY ab.reservation_date ASC LIMIT ? OFFSET ?";
+    $bookings_stmt = $conn->prepare($booking_sql);
+    $bookings_stmt->bind_param("iii", $household_id, $limit, $offset);
+    $bookings_stmt->execute();
+    $bookings_result = $bookings_stmt->get_result();
+} else {
+    // If no homeowner_id, get all records for this page
+    $booking_sql = "SELECT 
+        ab.id,
+        ab.reservation_code,
+        ab.amenity,
+        ab.user_type,
+        ab.reservation_date,
+        ab.rate,
+        ab.total_amount,
+        ab.amount_paid,
+        ab.status,
+        ab.created_at,
+        ab.homeowner_id,
+        CASE 
+            WHEN ab.user_type = 'homeowner' THEN ha.first_name
+            WHEN ab.user_type = 'visitor' THEN vd.first_name
+            ELSE NULL
+        END as first_name,
+        CASE 
+            WHEN ab.user_type = 'homeowner' THEN ha.middle_name
+            WHEN ab.user_type = 'visitor' THEN vd.middle_name
+            ELSE NULL
+        END as middle_name,
+        CASE 
+            WHEN ab.user_type = 'homeowner' THEN ha.last_name
+            WHEN ab.user_type = 'visitor' THEN vd.last_name
+            ELSE NULL
+        END as last_name
+    FROM amenity_bookings ab
+    LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+    LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+    ORDER BY ab.reservation_date ASC LIMIT ? OFFSET ?";
+    $bookings_stmt = $conn->prepare($booking_sql);
+    $bookings_stmt->bind_param("ii", $limit, $offset);
+    $bookings_stmt->execute();
+    $bookings_result = $bookings_stmt->get_result();
+}
+
+$bookings = [];
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        // Determine time slot based on 'rate'
+        $timeSlot = "N/A";
+        if (isset($row['rate'])) {
+            if ($row['rate'] === "day") {
+                $timeSlot = "9:00 AM - 5:00 PM";
+            } elseif ($row['rate'] === "night") {
+                $timeSlot = "5:00 PM - 10:00 PM";
+            }
+        }
+        $bookings[] = [
+            "id" => $row['id'],
+            "date" => $row['reservation_date'],
+            "fullName" => trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']),
+            "amenity" => $row['amenity'],
+            "reservationCode" => $row['reservation_code'],
+            "paymentStatus" => ucfirst($row['status']), // pending → Pending
+            "amount" => "₱" . number_format($row['amount_paid'], 2) .
+                ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : ""),
+            "time" => $timeSlot,
+            "homeownerId" => $row['homeowner_id']
+        ];
+    }
 }
 
 ?>
@@ -198,13 +311,14 @@ try {
                     </div>
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="resident_details/view_resident.php?id=<?php echo $household_id; ?>"><i
+                    <li><a class="dropdown-item"
+                            href="resident_details/view_resident.php?id=<?php echo $household_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    <li><a class="dropdown-item" href="logout.php"><i
-                                class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                    <li><a class="dropdown-item" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -248,15 +362,15 @@ try {
             </nav>
         </aside>
         <!--Main Content-->
-        <main class="flex-grow-1 p-4">
+        <main class="flex-fill p-4">
             <!-- Announcements and Events -->
             <div class="row g-4 mb-3">
                 <div class="col-6">
                     <div class="card shadow-sm h-100 d-flex flex-column">
                         <div class="card-header bg-success text-white fw-semibold">Announcements</div>
                         <div class="card-body flex-grow-1 overflow-auto" style="max-height: 400px;">
-                            <?php if ($result && $result->num_rows > 0): ?>
-                                <?php while ($row = $result->fetch_assoc()): ?>
+                            <?php if ($announcements_result && $announcements_result->num_rows > 0): ?>
+                                <?php while ($row = $announcements_result->fetch_assoc()): ?>
                                     <div class="card mb-3 shadow-sm announcement-card">
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between align-items-start">
@@ -281,9 +395,6 @@ try {
                                     <p class="mt-2">No announcements available</p>
                                 </div>
                             <?php endif; ?>
-                        </div>
-                        <div class="card-footer bg-light text-end">
-                            <a href="announcements.php" class="btn btn-success btn-sm">View Announcements</a>
                         </div>
                     </div>
                 </div>
@@ -327,9 +438,6 @@ try {
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <div class="card-footer bg-light text-end d-flex justify-content-end gap-2">
-                            <a href="events.php" class="btn btn-success btn-sm">View Events</a>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -359,41 +467,77 @@ try {
                 </div>
             </section>
             <!-- Amenity Schedule -->
-            <section class="card shadow-sm">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white fw-semibold">Amenity Schedule</div>
                 <div class="card-body">
-                    <h5 class="fw-bold mb-3 text-primary">Amenity Schedule</h5>
-                    <table class="table table-hover">
-                        <thead class="table-primary">
-                            <tr>
-                                <th>#</th>
-                                <th>Amenity</th>
-                                <th>Date</th>
-                                <th>Reservation Code</th>
-                                <th>Rescheduled</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td>Clubhouse</td>
-                                <td>2025-07-31</td>
-                                <td>CLB00001</td>
-                                <td>No</td>
-                                <td class="text-success fw-semibold">Approved</td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>Basketball Court</td>
-                                <td>2025-07-25</td>
-                                <td>BBC00001</td>
-                                <td>No</td>
-                                <td class="text-success fw-semibold">Approved</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small">List of Amenity Bookings</span>
+                        <a href="amenity_booking/choose_booking.php" class="btn btn-primary btn-sm">+ Create New
+                            Booking</a>
+                    </div>
+                    <hr>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="bg-success text-white small">
+                                <tr>
+                                    <th>Booking Date</th>
+                                    <th>Full Name</th>
+                                    <th>Amenity</th>
+                                    <th>Reservation Code</th>
+                                    <th>Payment Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="small align-middle">
+                                <?php
+                                if ($bookings_result->num_rows > 0) {
+                                    while ($row = $bookings_result->fetch_assoc()) {
+                                        $id = $row['id'];
+                                        $fullName = ucwords($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
+                                        $amenity = $row['amenity'];
+                                        $bookingDate = date('F d, Y', strtotime($row['reservation_date']));
+                                        $resCode = $row['reservation_code'];
+                                        $statusClass = $row['status'] === 'Paid' ? 'text-success' : ($row['status'] === 'Partial' ? 'text-warning' : 'text-muted');
+                                        echo "<tr>
+                                                    <td>{$bookingDate}</td>
+                                                    <td>{$fullName}</td>
+                                                    <td>{$amenity}</td>
+                                                    <td>{$resCode}</td>
+                                                    <td class='{$statusClass} fw-bold'>" . ucfirst($row['status']) . "</td>
+                                                </tr>";
+                                    }
+                                } else {
+                                    echo "<tr><td colspan='6' class='text-center text-muted'>No bookings found.</td></tr>";
+                                }
+                                ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span class="small">Showing 1 to <?php echo $bookings_result->num_rows; ?> entries</span>
+                        <nav>
+                            <ul class="pagination justify-content-center">
+                                <!-- Previous button -->
+                                <li class="page-item <?php if ($page <= 1)
+                                    echo 'disabled'; ?>">
+                                    <a class="page-link" href="?page=<?php echo $page - 1; ?>">Previous</a>
+                                </li>
+                                <!-- Page numbers -->
+                                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                    <li class="page-item <?php if ($page == $i)
+                                        echo 'active'; ?>">
+                                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                                    </li>
+                                <?php endfor; ?>
+                                <!-- Next button -->
+                                <li class="page-item <?php if ($page >= $totalPages)
+                                    echo 'disabled'; ?>">
+                                    <a class="page-link" href="?page=<?php echo $page + 1; ?>">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
-            </section>
+            </div>
         </main>
     </div>
 

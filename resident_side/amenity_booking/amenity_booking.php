@@ -3,7 +3,7 @@ session_start();
 require '../../rfid-api/db.php';
 
 if (!isset($_SESSION['household_id'])) {
-    header("Location: login.php");
+    header("Location: ../login.php");
     exit;
 }
 
@@ -372,18 +372,30 @@ if ($result) {
             <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold text-dark">AMENITY BOOKING</h1>
-            <div class="d-flex align-items-center gap-2">
-                <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
-                <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
-                    style="height: 40px; width: 40px; color: #aaa;">
-                    <?php if (!empty($photo)): ?>
-                        <img src="<?php echo htmlspecialchars($photo); ?>"
-                            style="width: 40px; height: 40px; object-fit: cover;">
-                    <?php else: ?>
-                        <i class="bi bi-person-circle" style="font-size: 32px;"></i>
-                    <?php endif; ?>
+            <h1 class="h5 mb-0 fw-bold">AMENITY BOOKING</h1>
+            <div class="dropdown">
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
+                    aria-expanded="false" role="button" style="cursor: pointer;">
+                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                        style="height: 40px; width: 40px; color: #aaa;">
+                        <?php if (!empty($photo)): ?>
+                            <img src="<?php echo htmlspecialchars($photo); ?>"
+                                style="width: 40px; height: 40px; object-fit: cover;">
+                        <?php else: ?>
+                            <i class="bi bi-person-circle" style="font-size: 32px;"></i>
+                        <?php endif; ?>
+                    </div>
                 </div>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li><a class="dropdown-item" href="../resident_details/view_resident.php?id=<?php echo $homeowner_id; ?>"><i
+                                class="bi bi-person me-2"></i>Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="../logout.php"><i
+                                class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                </ul>
             </div>
         </div>
     </header>
@@ -419,7 +431,7 @@ if ($result) {
                         </ul>
                     </div>
                 </div>
-                <a href="logout.php"
+                <a href="../logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
                     style="position: fixed; bottom: 0; width: 220px;">
                     <i class="bi bi-box-arrow-left me-2"></i> Logout
@@ -506,7 +518,6 @@ if ($result) {
                                         echo 'disabled'; ?>">
                                         <a class="page-link" href="?page=<?php echo $page - 1; ?>">Previous</a>
                                     </li>
-
                                     <!-- Page numbers -->
                                     <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                                         <li class="page-item <?php if ($page == $i)
@@ -514,7 +525,6 @@ if ($result) {
                                             <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
                                         </li>
                                     <?php endfor; ?>
-
                                     <!-- Next button -->
                                     <li class="page-item <?php if ($page >= $totalPages)
                                         echo 'disabled'; ?>">
@@ -522,7 +532,6 @@ if ($result) {
                                     </li>
                                 </ul>
                             </nav>
-
                         </div>
                     </div>
                     <!-- Calendar View -->
