@@ -37,6 +37,7 @@ try {
 }
 
 // Handle AJAX requests for dynamic dropdowns
+// Handle AJAX requests for dynamic dropdowns
 if (isset($_GET['action'])) {
     header('Content-Type: application/json');
 
@@ -79,6 +80,80 @@ if (isset($_GET['action'])) {
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         }
+        exit;
+    }
+
+    if ($_GET['action'] === 'get_amenity_booking_by_invoice') {
+    if (!isset($_GET['invoice_number']) || empty($_GET['invoice_number']) || 
+        !isset($_GET['user_id']) || empty($_GET['user_id']) || 
+        !isset($_GET['user_type']) || empty($_GET['user_type'])) {
+        echo json_encode(['success' => false, 'error' => 'Invoice number, User ID and User Type are required']);
+        exit;
+    }
+
+    $invoice_number = $_GET['invoice_number'];
+    $user_id = $_GET['user_id'];
+    $user_type = $_GET['user_type'];
+
+    try {
+        $user_data = null;
+        $booking = null;
+
+        if ($user_type === 'Homeowner/Resident') {
+            $stmt = $conn->prepare("SELECT first_name, middle_name, last_name FROM household_accounts WHERE household_id = ?");
+            $stmt->bind_param("s", $user_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $user_data = $result->fetch_assoc();
+
+            $stmt = $conn->prepare("
+                SELECT reference_number, created_at 
+                FROM amenity_bookings 
+                WHERE homeowner_id = ? AND invoice_number = ?
+                LIMIT 1
+            ");
+            $stmt->bind_param("ss", $user_id, $invoice_number);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $booking = $result->fetch_assoc();
+
+        } else if ($user_type === 'Visitor') {
+            $stmt = $conn->prepare("SELECT first_name, middle_name, last_name FROM visitor_details WHERE visitor_id = ?");
+            $stmt->bind_param("s", $user_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $user_data = $result->fetch_assoc();
+
+            $stmt = $conn->prepare("
+                SELECT reference_number, created_at 
+                FROM amenity_bookings 
+                WHERE visitor_id = ? AND invoice_number = ?
+                LIMIT 1
+            ");
+            $stmt->bind_param("ss", $user_id, $invoice_number);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $booking = $result->fetch_assoc();
+        }
+
+        if ($booking && $user_data) {
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'reference_number' => $booking['reference_number'],
+                    'first_name' => $user_data['first_name'],
+                    'middle_name' => $user_data['middle_name'],
+                    'last_name' => $user_data['last_name'],
+                    'created_at' => $booking['created_at']
+                ]
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'No amenity booking found with that invoice']);
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    
         exit;
     }
 }
@@ -414,18 +489,18 @@ if (isset($_GET['action'])) {
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Category<small
-                                                class="fw-bold text-danger">*</small></label>
-                                        <select class="form-select">
-                                            <option>Monthly Dues</option>
-                                            <option>Amenity Fee</option>
-                                            <option>Other</option>
+                                        <label class="form-label">Category<small class="fw-bold text-danger">*</small></label>
+                                        <select class="form-select" id="categorySelect">
+                                            <option value="" selected disabled>Select Category</option>
+                                            <option value="Monthly Dues">Monthly Dues</option>
+                                            <option value="Amenity Fee">Amenity Fee</option>
+                                            <option value="Other">Other</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Reference Number<small
+                                        <label class="form-label">Invoice Number<small
                                                 class="fw-bold text-danger">*</small></label>
-                                        <input type="text" class="form-control" placeholder="Enter Reference Number">
+                                        <input type="text" class="form-control" placeholder="Enter Invoice Number">
                                     </div>
                                 </div>
                                 <div class="mb-3">
@@ -438,11 +513,10 @@ if (isset($_GET['action'])) {
                                     </div>
                                 </div>
                                 <div class="bg-light rounded p-3 mb-3">
-                                    <p class="mb-1"><strong>Invoice No.:</strong> 0451</p>
-                                    <p class="mb-1"><strong>Name:</strong> Abby Sungwon C. Saja</p>
-                                    <p class="mb-1"><strong>Issue Date:</strong> 2025-08-23</p>
-                                    <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank
-                                            Transfer</span></p>
+                                    <p class="mb-1"><strong>Reference No.:</strong> <span id="refNo"></span></p>
+                                    <p class="mb-1"><strong>Name:</strong> <span id="residentName"></span></p>
+                                    <p class="mb-1"><strong>Issue Date:</strong> <span id="issueDate"></span></p>
+                                    <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank Transfer</span></p>
                                 </div>
                                 <!-- Table -->
                                 <table class="table table-bordered">
@@ -457,34 +531,41 @@ if (isset($_GET['action'])) {
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>Amenity</td>
-                                            <td>Clubhouse</td>
-                                            <td>₱ 12,000.00</td>
-                                            <td>1</td>
-                                            <td>₱ 12,000.00</td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
                                         </tr>
                                         <tr>
-                                            <td>Add-On</td>
-                                            <td>Chairs</td>
-                                            <td>₱ 12.00</td>
-                                            <td>48</td>
-                                            <td>₱ 576.00</td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
                                         </tr>
                                         <tr>
-                                            <td>Add-On</td>
-                                            <td>Tables</td>
-                                            <td>₱ 15.00</td>
-                                            <td>6</td>
-                                            <td>₱ 90.00</td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
                                         </tr>
                                     </tbody>
                                 </table>
 
                                 <div class="d-flex justify-content-end">
                                     <div>
-                                        <p class="mb-1"><strong>Subtotal:</strong> ₱ 12,666.00</p>
-                                        <p class="mb-1"><strong>Previously Paid:</strong> ₱ 6,333.00</p>
-                                        <p class="fw-bold text-success">Balance Due: ₱ 6,333.00</p>
+                                        <p class="mb-1"><strong>Subtotal:</strong> </p>
+                                        <p class="mb-1"><strong>Previously Paid:</strong></p>
+                                        <p class="fw-bold text-success">Balance Due:</p>
                                     </div>
                                 </div>
 
@@ -562,62 +643,128 @@ if (isset($_GET['action'])) {
         const userIdSelect = document.getElementById('userIdSelect');
         const idLabel = document.getElementById('idLabel');
         const loadingIndicator = document.getElementById('loadingIndicator');
+        const categorySelect = document.getElementById('categorySelect');
+        const monthlyOption = [...categorySelect.options].find(opt => opt.value === "Monthly Dues");
+
+        // Elements for displaying details
+        const refNo = document.getElementById('refNo');
+        const residentName = document.getElementById('residentName');
+        const issueDate = document.getElementById('issueDate');
+
+       const invoiceInput = document.querySelector('input[placeholder="Enter Invoice Number"]');
+
+        invoiceInput.addEventListener('blur', async function () {
+            const invoiceNumber = this.value.trim();
+            const selectedCategory = categorySelect.value;
+            const userId = userIdSelect.value;
+            const userType = userTypeSelect.value;
+
+
+            // Reset fields
+            refNo.textContent = "";
+            residentName.textContent = "";
+            issueDate.textContent = "";
+
+            // Only fetch details if category is Amenity Fee and all required fields are filled
+            if (selectedCategory === "Amenity Fee" && invoiceNumber && userId && userType) {
+                try {
+                    const response = await fetch(`?action=get_amenity_booking_by_invoice&invoice_number=${encodeURIComponent(invoiceNumber)}&user_id=${userId}&user_type=${encodeURIComponent(userType)}`);
+                    const result = await response.json();
+
+                    if (result.success) {
+                        const data = result.data;
+                        refNo.textContent = data.reference_number;
+                        residentName.textContent = `${data.first_name} ${data.middle_name} ${data.last_name}`;
+                        issueDate.textContent = new Date(data.created_at).toLocaleDateString();
+                        
+                        // Optionally show success feedback
+                        this.style.borderColor = '#198754';
+                        this.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+                    } else {
+                        console.error(result.error);
+                        // Show error feedback
+                        refNo.textContent = "Invoice not found";
+                        residentName.textContent = "";
+                        issueDate.textContent = "";
+                        
+                        this.style.borderColor = '#dc3545';
+                        this.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+                    }
+                } catch (error) {
+                    console.error('Error fetching amenity booking:', error);
+                    refNo.textContent = "Error loading";
+                    residentName.textContent = "";
+                    issueDate.textContent = "";
+                    
+                    this.style.borderColor = '#dc3545';
+                    this.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+                }
+            }
+        });
+        invoiceInput.addEventListener('input', function() {
+            this.style.borderColor = '#dee2e6';
+            this.style.boxShadow = 'none';
+        });
 
         userTypeSelect.addEventListener('change', async function () {
             const selectedType = this.value;
+
+            // Hide/Show Monthly Dues option
+            if (selectedType === 'Visitor') {
+                monthlyOption.style.display = "none";
+                if (categorySelect.value === "Monthly Dues") {
+                    categorySelect.value = ""; // reset to default
+                }
+            } else if (selectedType === 'Homeowner/Resident') {
+                monthlyOption.style.display = "block";
+            } else {
+                categorySelect.value = ""; // reset if no user type
+            }
 
             // Reset the ID dropdown
             userIdSelect.innerHTML = '<option value="">Loading...</option>';
             userIdSelect.disabled = true;
             loadingIndicator.classList.remove('d-none');
 
+            // Fetch data based on user type
             if (selectedType === 'Homeowner/Resident') {
                 idLabel.innerHTML = 'Resident ID<span class="text-danger">*</span>';
-
                 try {
                     const response = await fetch(`?action=get_households`);
                     const result = await response.json();
-
                     if (result.success) {
                         userIdSelect.innerHTML = '<option value="" selected disabled>Select Resident ID</option>';
                         result.data.forEach(household => {
                             const option = document.createElement('option');
                             option.value = household.household_id;
                             option.textContent = `${household.household_id} - ${household.name}`;
-                            option.setAttribute('data-address', household.address);
                             userIdSelect.appendChild(option);
                         });
                     } else {
                         userIdSelect.innerHTML = '<option value="">Error loading data</option>';
                         console.error('Error:', result.error);
                     }
-
                 } catch (error) {
                     console.error('Error fetching household data:', error);
                     userIdSelect.innerHTML = '<option value="">Error loading data</option>';
                 }
-
             } else if (selectedType === 'Visitor') {
                 idLabel.innerHTML = 'Visitor ID<span class="text-danger">*</span>';
-
                 try {
                     const response = await fetch(`?action=get_visitors`);
                     const result = await response.json();
-
                     if (result.success) {
                         userIdSelect.innerHTML = '<option value="" selected disabled>Select Visitor ID</option>';
                         result.data.forEach(visitor => {
                             const option = document.createElement('option');
                             option.value = visitor.visitor_id;
                             option.textContent = `${visitor.visitor_id} - ${visitor.name}`;
-                            option.setAttribute('data-purpose', visitor.purpose);
                             userIdSelect.appendChild(option);
                         });
                     } else {
                         userIdSelect.innerHTML = '<option value="">Error loading data</option>';
                         console.error('Error:', result.error);
                     }
-
                 } catch (error) {
                     console.error('Error fetching visitor data:', error);
                     userIdSelect.innerHTML = '<option value="">Error loading data</option>';
@@ -630,8 +777,6 @@ if (isset($_GET['action'])) {
             loadingIndicator.classList.add('d-none');
             userIdSelect.disabled = false;
             userIdSelect.classList.add('fade-in');
-
-            // Remove animation class after animation completes
             setTimeout(() => {
                 userIdSelect.classList.remove('fade-in');
             }, 300);
@@ -647,6 +792,55 @@ if (isset($_GET['action'])) {
                 this.style.boxShadow = 'none';
             }
         });
+    
+    // Clear all form fields
+        function clearFormFields() {
+            // Reset dropdowns
+            document.getElementById('userTypeSelect').value = "";
+            document.getElementById('userIdSelect').innerHTML = '<option value="" selected disabled>First select user type</option>';
+            document.getElementById('userIdSelect').disabled = true;
+            document.getElementById('categorySelect').value = "";
+
+            // Reset text/number inputs
+            document.querySelector('input[placeholder="Enter Invoice Number"]').value = "";
+            document.getElementById('amountPaid').value = "";
+
+            // Reset display fields
+            document.getElementById('refNo').textContent = "";
+            document.getElementById('residentName').textContent = "";
+            document.getElementById('issueDate').textContent = "";
+
+            // Reset input borders
+            const invoiceInput = document.querySelector('input[placeholder="Enter Invoice Number"]');
+            invoiceInput.style.borderColor = '#dee2e6';
+            invoiceInput.style.boxShadow = 'none';
+
+            const userIdSelect = document.getElementById('userIdSelect');
+            userIdSelect.style.borderColor = '#dee2e6';
+            userIdSelect.style.boxShadow = 'none';
+
+            // ✅ Reset file upload input and preview
+            const proofInput = document.getElementById('proofOfPayment');
+            const previewArea = document.getElementById('imagePreview');
+            if (proofInput) proofInput.value = ""; // clears file input
+            if (previewArea) previewArea.innerHTML = ""; // clears preview
+        }
+
+        // Toggle Payment Method
+        bankTransfer.addEventListener('click', () => {
+            bankTransfer.classList.add('active');
+            inOffice.classList.remove('active');
+            selectedMethod.textContent = "Bank Transfer";
+            clearFormFields(); // ✅ Now resets
+        });
+
+        inOffice.addEventListener('click', () => {
+            inOffice.classList.add('active');
+            bankTransfer.classList.remove('active');
+            selectedMethod.textContent = "In-Office Payment";
+            clearFormFields(); // ✅ Now resets
+        });
+
 
     </script>
 
