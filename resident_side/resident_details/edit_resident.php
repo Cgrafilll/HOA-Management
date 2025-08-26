@@ -3,13 +3,13 @@ session_start();
 require '../../rfid-api/db.php';
 
 if (!isset($_SESSION['email_address'])) {
-    header("Location: ../login/login.php");
+    header("Location: ../login.php");
     exit;
 }
 
 // Initialize user details
 $email_address = $_SESSION['email_address'];
-$hosuehold_id = $_SESSION['household_id'];
+$household_id = $_SESSION['household_id'];
 $username = $photo = '';// Initialize user details
 
 // Fetch user details including profile photo
@@ -315,12 +315,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="../admin/view_admin.php?id=<?php echo $admin_id; ?>"><i
+                    <li><a class="dropdown-item" href="view_resident.php?id=<?php echo $household_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    <li><a class="dropdown-item" href="../login/logout.php"><i
+                    <li><a class="dropdown-item" href="../logout.php"><i
                                 class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                 </ul>
             </div>
@@ -329,75 +329,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1">
-                <a href="../admin_dashboard.php"
+            <nav class="nav d-flex flex-column gap-1">
+                <a href="../dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                <!-- Accounts -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#accountsCollapse" aria-expanded="true">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-person-lines-fill me-2"></i> Accounts
-                        </span>
-                    </button>
-                    <div class="collapse show" id="accountsCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../admin_accounts.php" class="nav-link px-2">Admin</a></li>
-                            <li><a href="../household_accounts.php" class="nav-link px-2 actived">Household</a></li>
-                            <li><a href="../visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <!-- Record Keeping -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#recordCollapse" aria-expanded="false">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-book me-2"></i> Record Keeping
-                        </span>
-                    </button>
-                    <div class="collapse" id="recordCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
-                            <li><a href="../violation_tracking.php" class="nav-link px-2">Violation Tracking</a></li>
-                            <li><a href="../entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <!-- Communication -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#commCollapse" aria-expanded="false">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-chat-left-text me-2"></i> Communication
-                        </span>
-                    </button>
-                    <div class="collapse" id="commCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../announcements.php" class="nav-link px-2">Announcements</a></li>
-                            <li><a href="../events.php" class="nav-link px-2">Events</a></li>
-                            <li><a href="../phonebook.php" class="nav-link px-2">Phone Book</a></li>
-                        </ul>
-                    </div>
-                </div>
+                <a href="../amenity_booking/amenity_booking.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-book me-2"></i> Amenity Booking
+                </a>
+                <a href="../report.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
+                </a>
                 <!-- Accounting -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#acctCollapse" aria-expanded="false">
+                    <button
+                        class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start"
+                        data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-cash-coin me-2"></i> Accounting
                         </span>
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../payment.php" class="nav-link px-2">Payments</a></li>
-                            <li><a href="../invoice.php" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="../#" class="nav-link px-2">Payments</a></li>
+                            <li><a href="../#" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
-                <a href="../login/logout.php"
+                <a href="../logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
                     style="position: fixed; bottom: 0; width: 220px;">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
@@ -412,10 +373,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <span class="small mb-0">Edit User Details</span>
-                    <a href="../household_accounts.php"
-                        class="btn btn-outline-secondary btn-sm d-flex align-items-center">
-                        <i class="bi bi-arrow-left-short me-1"></i>Back
-                    </a>
+                    <button onclick="history.back()" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i>Back
+                    </button>
                 </div>
                 <hr class="my-0">
                 <div class="p-3">
@@ -534,22 +494,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Postal/Zip Code</label>
                             </div>
                         </div>
-                        <!-- Household Members -->
                         <div class="row">
+                            <!-- Household Members -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label mt-2 fw-bold">Household Members</label>
                                 <input type="number" name="members" class="form-control" min="1"
                                     value="<?= number_format($members) ?>" required />
                                 <label class="form-label mt-2">How many members in the household</label>
                             </div>
-                        </div>
-                        <!-- Resident RFID -->
-                        <div class="row">
+                            <!-- Resident RFID -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label mt-2 fw-bold">Resident RFID</label>
-                                <input type="text" name="rfid" id="rfidInput" class="form-control"
+                                <input type="text" name="rfid" class="form-control" id="rfidInput"
                                     value="<?php echo htmlspecialchars($rfid) ?>" required />
                                 <label class="form-label mt-2">Tap your RFID card</label>
+                            </div>
+                        </div>
+                        <!-- Account Password -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold">Password</label>
+                                <div class="input-group">
+                                    <input type="password" id="password" name="password" class="form-control"
+                                        minlength="6" />
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
+                                        tabindex="-1">
+                                        <i class="bi bi-eye" id="toggleIcon1"></i>
+                                    </button>
+                                </div>
+                                <label class="form-label mt-2">Set a password for this account (min. 6
+                                    characters)</label>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold invisible">Confirm Password</label>
+                                <div class="input-group">
+                                    <input type="password" id="confirmPassword" name="confirmPassword"
+                                        class="form-control" minlength="6" />
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword2"
+                                        tabindex="-1">
+                                        <i class="bi bi-eye" id="toggleIcon2"></i>
+                                    </button>
+                                </div>
+                                <label class="form-label mt-2">Confirm password</label>
                             </div>
                         </div>
                         <!-- Submit Buttons -->
@@ -626,51 +612,160 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.addEventListener('DOMContentLoaded', function () {
             const rfidInput = document.getElementById('rfidInput');
             const form = document.getElementById('householdForm');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
 
-            // Prevent RFID input from submitting the form
-            rfidInput.addEventListener('keydown', function (event) {
-                if (event.key === 'Enter' || event.keyCode === 13) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    event.stopImmediatePropagation();
+            function toggleRequired() {
+                if (passwordInput.value.length > 0) {
+                    confirmPasswordInput.required = true;
+                } else {
+                    confirmPasswordInput.required = false;
+                }
 
-                    // Blur the input to remove focus after RFID scan
-                    this.blur();
+                if (confirmPasswordInput.value.length > 0) {
+                    passwordInput.required = true;
+                } else {
+                    passwordInput.required = false;
+                }
+            }
 
-                    // Optional: Show confirmation that RFID was captured
-                    console.log('RFID captured:', this.value);
+            passwordInput.addEventListener('input', toggleRequired);
+            confirmPasswordInput.addEventListener('input', toggleRequired);
+
+            // Password Toggle Functionality
+            function setupPasswordToggle(inputId, toggleButtonId, iconId) {
+                const input = document.getElementById(inputId);
+                const toggleButton = document.getElementById(toggleButtonId);
+                const icon = document.getElementById(iconId);
+
+                if (input && toggleButton && icon) {
+                    toggleButton.addEventListener('click', function () {
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            icon.classList.remove('bi-eye');
+                            icon.classList.add('bi-eye-slash');
+                        } else {
+                            input.type = 'password';
+                            icon.classList.remove('bi-eye-slash');
+                            icon.classList.add('bi-eye');
+                        }
+                    });
+                }
+            }
+
+            // Setup password toggle for both password fields
+            setupPasswordToggle('password', 'togglePassword1', 'toggleIcon1');
+            setupPasswordToggle('confirmPassword', 'togglePassword2', 'toggleIcon2');
+
+            // Password Matching Validation
+            function validatePasswords() {
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+                const passwordError = document.getElementById('passwordError');
+
+                // Remove existing error styling
+                passwordInput.classList.remove('is-invalid');
+                confirmPasswordInput.classList.remove('is-invalid');
+                if (passwordError) {
+                    passwordError.remove();
+                }
+
+                if (password !== confirmPassword && confirmPassword !== '') {
+                    // Add error styling
+                    confirmPasswordInput.classList.add('is-invalid');
+
+                    // Add error message
+                    const errorDiv = document.createElement('div');
+                    errorDiv.id = 'passwordError';
+                    errorDiv.className = 'invalid-feedback';
+                    errorDiv.textContent = 'Passwords do not match';
+                    confirmPasswordInput.parentNode.appendChild(errorDiv);
 
                     return false;
                 }
-            });
 
-            // Additional prevention using keypress event
-            rfidInput.addEventListener('keypress', function (event) {
-                if (event.key === 'Enter' || event.keyCode === 13) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    event.stopImmediatePropagation();
-                    return false;
-                }
-            });
+                return true;
+            }
 
-            // Prevent any form submission triggered by the RFID input
-            rfidInput.addEventListener('input', function (event) {
-                // If the input was filled quickly (typical of RFID readers), prevent form submission
-                if (this.value.length > 0) {
-                    // Remove any pending form submissions
-                    clearTimeout(window.rfidSubmitTimeout);
-                }
-            });
+            // Real-time password validation
+            if (confirmPasswordInput) {
+                confirmPasswordInput.addEventListener('input', validatePasswords);
+                passwordInput.addEventListener('input', function () {
+                    if (confirmPasswordInput.value !== '') {
+                        validatePasswords();
+                    }
+                });
+            }
 
-            // Handle actual form submission only when Save button is clicked
+            // Form submission validation
             form.addEventListener('submit', function (event) {
-                // Allow normal form submission when Save button is clicked
-                // This will process the form normally
-                console.log('Form is being submitted via Save button');
-            });
+                // Check RFID field
+                if (!rfidInput.value.trim()) {
+                    event.preventDefault();
+                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                    document.getElementById('errorMessage').textContent = 'RFID is required. Please tap your RFID card.';
+                    errorModal.show();
+                    return false;
+                }
 
-            // Optional: Auto-calculate age when date of birth changes
+                if (!validatePasswords()) {
+                    event.preventDefault();
+                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                    document.getElementById('errorMessage').textContent = 'Passwords do not match. Please ensure both password fields are identical.';
+                    errorModal.show();
+                    return false;
+                }
+
+                // Additional validation for password strength
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+
+                if (password !== '' || confirmPassword !== '') {
+                    if (password.length < 6) {
+                        event.preventDefault();
+                        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                        document.getElementById('errorMessage').textContent = 'Password must be at least 6 characters long.';
+                        errorModal.show();
+                        return false;
+                    }
+
+
+                    console.log('Form is being submitted via Save button');
+                    console.log('RFID Value:', rfidInput.value);
+                });
+
+            // RFID Input Handling - SIMPLIFIED VERSION
+            if (rfidInput) {
+                // Only prevent Enter key from submitting the form prematurely
+                // But still allow the RFID value to be captured
+                rfidInput.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' || event.keyCode === 13) {
+                        event.preventDefault(); // Prevent form submission
+                        this.blur(); // Remove focus from RFID input
+                        console.log('RFID captured:', this.value);
+
+                        // Optional: Add visual feedback that RFID was captured
+                        this.style.backgroundColor = '#d4edda'; // Light green background
+                        setTimeout(() => {
+                            this.style.backgroundColor = ''; // Reset after 1 second
+                        }, 1000);
+
+                        return false;
+                    }
+                });
+
+                // Add visual feedback when RFID is entered
+                rfidInput.addEventListener('input', function () {
+                    if (this.value.length > 0) {
+                        this.classList.add('is-valid');
+                        this.classList.remove('is-invalid');
+                    } else {
+                        this.classList.remove('is-valid');
+                    }
+                });
+            }
+
+            // Auto-calculate age when date of birth changes
             const dobInput = document.querySelector('input[name="dob"]');
             const ageInput = document.querySelector('input[name="age"]');
 
@@ -689,7 +784,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             }
 
-            // Profile picture preview
+            // Profile picture preview - ENHANCED VERSION
             const profilePicInput = document.getElementById('profile_pic');
             const preview = document.getElementById('preview');
 
@@ -697,16 +792,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 profilePicInput.addEventListener('change', function (event) {
                     const file = event.target.files[0];
                     if (file) {
+                        // Validate file size (5MB limit)
+                        if (file.size > 5000000) {
+                            alert('File size too large. Please select an image smaller than 5MB.');
+                            this.value = ''; // Clear the input
+                            preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
+                            return;
+                        }
+
+                        // Validate file type
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                        if (!allowedTypes.includes(file.type)) {
+                            alert('Invalid file type. Please select a JPEG, PNG, or GIF image.');
+                            this.value = ''; // Clear the input
+                            preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
+                            return;
+                        }
+
                         const reader = new FileReader();
                         reader.onload = function (e) {
-                            preview.innerHTML = `<img src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover;">`;
+                            preview.innerHTML = `<img src="${e.target.result}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px;">`;
                         };
                         reader.readAsDataURL(file);
+                    } else {
+                        // Reset to default icon if no file selected
+                        preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
                     }
                 });
             }
         });
+
     </script>
+    
 </body>
 
 </html>

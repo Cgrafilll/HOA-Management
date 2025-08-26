@@ -81,7 +81,7 @@ if ($edit_household) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 1. Collect input
+    // 1. Sanitize and collect input
     $first_name = $_POST['first_name'];
     $middle_name = $_POST['middle_name'];
     $last_name = $_POST['last_name'];
@@ -91,7 +91,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cellphone = $_POST['cellphone'];
     $landline = $_POST['landline'];
     $email = $_POST['email'];
-    $password = $_POST['password'] ?? '';
     $street = $_POST['street'];
     $street2 = $_POST['street2'];
     $city = $_POST['city'];
@@ -101,11 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $members = $_POST['members'];
     $rfid = $_POST['rfid'];
 
+    // 2. Check if RFID already exists (excluding current household)
     try {
-        // 2. Check RFID uniqueness
-        $rfid_check_stmt = $conn->prepare(
-            "SELECT household_id FROM household_accounts WHERE rfid = ? AND household_id != ?"
-        );
+        $rfid_check_stmt = $conn->prepare("SELECT household_id FROM household_accounts WHERE rfid = ? AND household_id != ?");
         $rfid_check_stmt->bind_param("ss", $rfid, $edit_household);
         $rfid_check_stmt->execute();
         $rfid_result = $rfid_check_stmt->get_result();
@@ -113,70 +110,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($rfid_result->num_rows > 0) {
             $error = "RFID card is already registered to another household/visitor. Please use a different RFID card.";
         } else {
-            // 3. Prepare password update conditionally
-            $password_sql = '';
-            $params = [
-                $first_name,
-                $middle_name,
-                $last_name,
-                $dob,
-                $age,
-                $sex,
-                $cellphone,
-                $landline,
-                $email,
-                $street,
-                $street2,
-                $city,
-                $state,
-                $barangay,
-                $postal,
-                $members,
-                $rfid
-            ];
-            $types = "ssssissssssssssis"; // matches the params above
-
-            if (!empty($password)) {
-                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                $password_sql = ", password=?";
-                $params[] = $hashedPassword;
-                $types .= "s";
-            }
-
-            // 4. Handle profile picture
+            // 3. Check if profile picture was uploaded
             $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
 
             if ($has_photo) {
                 $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
+
                 $sql = "UPDATE household_accounts SET 
                     first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
                     cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-                    city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, rfid=? 
-                    $password_sql, profile_picture=? 
+                    city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, rfid=?, profile_picture=?
                     WHERE household_id=?";
-                $params[] = $profile_pic;
-                $params[] = $edit_household;
-                $types .= "bs"; // b = blob, s = household_id
+
+                $stmt = $conn->prepare($sql);
+
+                $stmt->bind_param(
+                    "ssssissssssssssisbs",
+                    $first_name,
+                    $middle_name,
+                    $last_name,
+                    $dob,
+                    $age,
+                    $sex,
+                    $cellphone,
+                    $landline,
+                    $email,
+                    $street,
+                    $street2,
+                    $city,
+                    $state,
+                    $barangay,
+                    $postal,
+                    $members,
+                    $rfid,
+                    $null_blob, // temporary bind, will overwrite with send_long_data
+                    $edit_household
+                );
+
+                $stmt->send_long_data(16, $profile_pic); // 17th param (index 16)
             } else {
+                // No photo uploaded, don't update profile_pic
                 $sql = "UPDATE household_accounts SET 
                     first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
                     cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-                    city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, rfid=? 
-                    $password_sql
+                    city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, rfid=?
                     WHERE household_id=?";
-                $params[] = $edit_household;
-                $types .= "s"; // household_id
+
+                $stmt = $conn->prepare($sql);
+
+                $stmt->bind_param(
+                    "ssssissssssssssiss", // no 'b' here
+                    $first_name,
+                    $middle_name,
+                    $last_name,
+                    $dob,
+                    $age,
+                    $sex,
+                    $cellphone,
+                    $landline,
+                    $email,
+                    $street,
+                    $street2,
+                    $city,
+                    $state,
+                    $barangay,
+                    $postal,
+                    $members,
+                    $rfid,
+                    $edit_household
+                );
             }
 
-            // 5. Execute
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param($types, ...$params);
-
-            if ($has_photo) {
-                // blob is always second-to-last param
-                $stmt->send_long_data(count($params) - 2, $profile_pic);
-            }
-
+            // 4. Execute and check success
             if ($stmt->execute()) {
                 $success = true;
             } else {
@@ -763,11 +768,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         errorModal.show();
                         return false;
                     }
-                
 
-                console.log('Form is being submitted via Save button');
-                console.log('RFID Value:', rfidInput.value);
-            });
+
+                    console.log('Form is being submitted via Save button');
+                    console.log('RFID Value:', rfidInput.value);
+                });
 
             // RFID Input Handling - SIMPLIFIED VERSION
             if (rfidInput) {

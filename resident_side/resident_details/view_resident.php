@@ -3,7 +3,7 @@ session_start();
 require '../../rfid-api/db.php';
 
 if (!isset($_SESSION['email_address'])) {
-    header("Location: ../login/login.php");
+    header("Location: ../login.php");
     exit;
 }
 
@@ -216,15 +216,15 @@ if ($edit_household) {
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav d-flex flex-column gap-1">
-                <a href="dashboard.php"
+                <a href="../dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                <a href="amenity_booking/amenity_booking.php"
+                <a href="../amenity_booking/amenity_booking.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
                 </a>
-                <a href="report.php"
+                <a href="../report.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
@@ -239,12 +239,12 @@ if ($edit_household) {
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2">Payments</a></li>
-                            <li><a href="#" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="../#" class="nav-link px-2">Payments</a></li>
+                            <li><a href="../#" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
-                <a href="logout.php"
+                <a href="../logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
                     style="position: fixed; bottom: 0; width: 220px;">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout

@@ -9,7 +9,7 @@ if (!isset($_SESSION['email_address'])) {
 
 // Initialize user details
 $email_address = $_SESSION['email_address'];
-$hosuehold_id = $_SESSION['household_id'];
+$household_id = $_SESSION['household_id'];
 $username = $photo = ''; // Initialize user details
 
 // Fetch user details including profile photo
