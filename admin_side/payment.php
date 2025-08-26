@@ -32,9 +32,56 @@ try {
         $error_message = "Failed to fetch user details.";
     }
 
-    } catch (Exception $e) {
-        $error_message = "Error fetching user details: " . $e->getMessage();
+} catch (Exception $e) {
+    $error_message = "Error fetching user details: " . $e->getMessage();
+}
+
+// Handle AJAX requests for dynamic dropdowns
+if (isset($_GET['action'])) {
+    header('Content-Type: application/json');
+
+    if ($_GET['action'] === 'get_households') {
+        try {
+            $stmt = $conn->prepare("SELECT household_id, first_name, middle_name, last_name FROM household_accounts WHERE status = 'active' ORDER BY household_id");
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            $households = [];
+            while ($row = $result->fetch_assoc()) {
+                $households[] = [
+                    'household_id' => $row['household_id'],
+                    'name' => $row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name'],
+                ];
+            }
+
+            echo json_encode(['success' => true, 'data' => $households]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+        exit;
     }
+
+    if ($_GET['action'] === 'get_visitors') {
+        try {
+            $stmt = $conn->prepare("SELECT visitor_id, first_name, middle_name, last_name FROM visitor_details WHERE status = 'active' ORDER BY visitor_id");
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            $visitors = [];
+            while ($row = $result->fetch_assoc()) {
+                $visitors[] = [
+                    'visitor_id' => $row['visitor_id'],
+                    'name' => $row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name'],
+                ];
+            }
+
+            echo json_encode(['success' => true, 'data' => $visitors]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+        exit;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -70,26 +117,8 @@ try {
             overflow-y: auto;
         }
 
-        .announcement-card {
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            white-space: normal;
-            max-width: 100%;
-        }
-
-        .announcement-body {
-            font-size: 0.95rem;
-            margin: 0;
-            margin-bottom: 8px;
-            line-height: 1.4;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-
         main {
             margin-left: 250px;
-            padding-bottom: 100px;
-            /* ✅ give breathing room at bottom */
         }
 
         .card-body p,
@@ -166,10 +195,71 @@ try {
             /* force red */
         }
 
-        textarea {
-            min-height: 100px;
-            resize: none;
-            /* optional: prevent manual drag */
+        .file-drop-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background-color: #f9fafb;
+            transition: all 0.3s ease;
+        }
+
+        .file-drop-area:hover {
+            border-color: #6b7280;
+            background-color: #f3f4f6;
+        }
+
+        .file-drop-area.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        .cloud-icon {
+            font-size: 48px;
+            color: #9ca3af;
+            margin-bottom: 16px;
+        }
+
+        .method-card {
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .method-card.active {
+            border: 2px solid #007bff;
+            background-color: #e9f2ff;
+        }
+
+        .method-card:hover {
+            border-color: #007bff;
+        }
+
+        /* Loading indicator styles */
+        .loading {
+            color: #6c757d;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .form-select:disabled {
+            background-color: #f8f9fa;
+            opacity: 0.8;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
@@ -231,7 +321,7 @@ try {
                     <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
-                            <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
+                            <li><a href="violation_tracking.php" class="nav-link px-2">Violation Tracking</a></li>
                             <li><a href="entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
                         </ul>
                     </div>
@@ -262,7 +352,7 @@ try {
                     </button>
                     <div class="collapse show" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2 actived">Payments</a></li>
+                            <li><a href="payment.php" class="nav-link px-2 actived">Payments</a></li>
                             <li><a href="#" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
@@ -275,182 +365,286 @@ try {
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Payments</h4>
                 </div>
-                <p class="text-muted">Payment Management</p>
-
-                <div class="row">
-                    <!-- Left Side -->
-                    <div class="col-md-8">
-                        <!-- Payment Method Toggle -->
-                        <div class="d-flex gap-3 mb-3">
-                            <div class="card method-card flex-fill text-center p-3 border active" id="bankTransfer">
-                                <div><i class="bi bi-bank" style="font-size: 2rem;"></i></div>
-                                <h6 class="mt-2">EastWest Bank Transfer</h6>
-                            </div>
-                            <div class="card method-card flex-fill text-center p-3 border" id="inOffice">
-                                <div><i class="bi bi-building" style="font-size: 2rem;"></i></div>
-                                <h6 class="mt-2">In-Office Payment</h6>
-                            </div>
-                        </div>
-
-                        <!-- Form -->
-                        <form>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">User Type*</label>
-                                    <select class="form-select">
-                                        <option value="Homeowner/Resident">Homeowner/Resident</option>
-                                        <option value="Visitor">Visitor</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Resident ID*</label>
-                                    <input type="text" class="form-control" placeholder="Enter Resident ID">
-                                </div>
-                            </div>
-
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Category*</label>
-                                    <select class="form-select">
-                                        <option>Monthly Dues</option>
-                                        <option>Amenity Fee</option>
-                                        <option>Other</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Reference Number*</label>
-                                    <input type="text" class="form-control" placeholder="Enter Reference Number">
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Amount Paid*</label>
-                                <input type="text" class="form-control" placeholder="Enter Amount">
-                            </div>
-
-                            <div class="bg-light rounded p-3 mb-3">
-                                <p class="mb-1"><strong>Name:</strong> Abby Sungwon C. Saja</p>
-                                <p class="mb-1"><strong>Invoice No.:</strong> 0451</p>
-                                <p class="mb-1"><strong>Issue Date:</strong> 2025-08-23</p>
-                                <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank Transfer</span></p>
-                            </div>
-
-                            <!-- Table -->
-                            <table class="table table-bordered">
-                                <thead class="table-success">
-                                    <tr>
-                                        <th>Category</th>
-                                        <th>Item</th>
-                                        <th>Rate</th>
-                                        <th>Qty</th>
-                                        <th>Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Amenity</td>
-                                        <td>Clubhouse</td>
-                                        <td>₱ 12,000.00</td>
-                                        <td>1</td>
-                                        <td>₱ 12,000.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Add-On</td>
-                                        <td>Chairs</td>
-                                        <td>₱ 12.00</td>
-                                        <td>48</td>
-                                        <td>₱ 576.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Add-On</td>
-                                        <td>Tables</td>
-                                        <td>₱ 15.00</td>
-                                        <td>6</td>
-                                        <td>₱ 90.00</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-
-                            <div class="d-flex justify-content-end">
-                                <div>
-                                    <p class="mb-1"><strong>Subtotal:</strong> ₱ 12,666.00</p>
-                                    <p class="mb-1"><strong>Previously Paid:</strong> ₱ 6,333.00</p>
-                                    <p class="fw-bold text-success">Balance Due: ₱ 6,333.00</p>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary w-100">Make Payment</button>
-                        </form>
+                <div class="p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small">Payment Management</span>
                     </div>
-
-                    <!-- Right Side -->
-                    <div class="col-md-4">
-                        <!-- Payment Methods Info -->
-                        <div class="card border mb-3">
-                            <div class="card-body">
-                                <h6 class="fw-bold">PAYMENT METHODS</h6>
-                                <p class="mb-1"><strong>Bank Transfer Details</strong></p>
-                                <ul class="mb-3">
-                                    <li><strong>Bank:</strong> EastWest Bank</li>
-                                    <li><strong>Account Name:</strong> Neopolitan Sitio Seville</li>
-                                    <li><strong>Account Number:</strong> 200049887271</li>
-                                </ul>
-
-                                <p class="mb-1"><strong>In-Office Payment</strong></p>
-                                <ul>
-                                    <li><strong>Address:</strong> NSSHAI Clubhouse Narra St., Quezon City</li>
-                                    <li><strong>Office Hours:</strong> Mon–Fri, 8AM–5PM</li>
-                                    <li><strong>Accepted:</strong> Cash</li>
-                                </ul>
+                    <hr class="mb-3 mt-0">
+                    <div class="row">
+                        <!-- Left Side -->
+                        <div class="col-md-8">
+                            <!-- Payment Method Toggle -->
+                            <div class="d-flex gap-3 mb-3">
+                                <div class="card method-card flex-fill text-center p-3 border active" id="bankTransfer">
+                                    <div><i class="bi bi-bank" style="font-size: 2rem;"></i></div>
+                                    <h6 class="mt-2">EastWest Bank Transfer</h6>
+                                </div>
+                                <div class="card method-card flex-fill text-center p-3 border" id="inOffice">
+                                    <div><i class="bi bi-building" style="font-size: 2rem;"></i></div>
+                                    <h6 class="mt-2">In-Office Payment</h6>
+                                </div>
                             </div>
-                        </div>
+                            <!-- Form -->
+                            <form>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">User Type<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <select class="form-select" id="userTypeSelect">
+                                            <option value="" selected disabled>Select User Type</option>
+                                            <option value="Homeowner/Resident">Homeowner/Resident</option>
+                                            <option value="Visitor">Visitor</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" id="idLabel">Select ID<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <select class="form-select" id="userIdSelect" disabled>
+                                            <option value="" selected disabled>First select user type</option>
+                                        </select>
+                                        <div class="loading d-none" id="loadingIndicator">
+                                            <i class="bi bi-arrow-clockwise"></i> Loading available IDs...
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Category<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <select class="form-select">
+                                            <option>Monthly Dues</option>
+                                            <option>Amenity Fee</option>
+                                            <option>Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Reference Number<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <input type="text" class="form-control" placeholder="Enter Reference Number">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Amount Paid<small
+                                            class="fw-bold text-danger">*</small></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₱</span>
+                                        <input type="number" class="form-control" id="amountPaid" name="amountPaid"
+                                            placeholder="0.00" min="0" step="0.25" required>
+                                    </div>
+                                </div>
+                                <div class="bg-light rounded p-3 mb-3">
+                                    <p class="mb-1"><strong>Invoice No.:</strong> 0451</p>
+                                    <p class="mb-1"><strong>Name:</strong> Abby Sungwon C. Saja</p>
+                                    <p class="mb-1"><strong>Issue Date:</strong> 2025-08-23</p>
+                                    <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank
+                                            Transfer</span></p>
+                                </div>
+                                <!-- Table -->
+                                <table class="table table-bordered">
+                                    <thead class="table-success">
+                                        <tr>
+                                            <th>Category</th>
+                                            <th>Item</th>
+                                            <th>Rate</th>
+                                            <th>Qty</th>
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Amenity</td>
+                                            <td>Clubhouse</td>
+                                            <td>₱ 12,000.00</td>
+                                            <td>1</td>
+                                            <td>₱ 12,000.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Add-On</td>
+                                            <td>Chairs</td>
+                                            <td>₱ 12.00</td>
+                                            <td>48</td>
+                                            <td>₱ 576.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Add-On</td>
+                                            <td>Tables</td>
+                                            <td>₱ 15.00</td>
+                                            <td>6</td>
+                                            <td>₱ 90.00</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
 
-                        <!-- Upload Proof -->
-                        <div class="border rounded p-3 text-center">
-                            <h6 class="fw-bold">Upload Proof of Payment</h6>
-                            <div class="border rounded p-4 bg-light text-muted">
-                                <p class="mb-1">Drag & drop files or <a href="#">Browse</a></p>
-                                <small>Supported formats: JPEG, PNG, GIF, MP4, PDF, DOC, DOCX</small>
+                                <div class="d-flex justify-content-end">
+                                    <div>
+                                        <p class="mb-1"><strong>Subtotal:</strong> ₱ 12,666.00</p>
+                                        <p class="mb-1"><strong>Previously Paid:</strong> ₱ 6,333.00</p>
+                                        <p class="fw-bold text-success">Balance Due: ₱ 6,333.00</p>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-100">Make Payment</button>
+                            </form>
+                        </div>
+                        <!-- Right Side -->
+                        <div class="col-md-4">
+                            <!-- Payment Methods Info -->
+                            <div class="card border mb-3">
+                                <div class="card-body">
+                                    <h6 class="fw-bold">PAYMENT METHODS</h6>
+                                    <p class="mb-1"><strong>Bank Transfer Details</strong></p>
+                                    <ul class="mb-3">
+                                        <li><strong>Bank:</strong> EastWest Bank</li>
+                                        <li><strong>Account Name:</strong> Neopolitan Sitio Seville</li>
+                                        <li><strong>Account Number:</strong> 200049887271</li>
+                                    </ul>
+
+                                    <p class="mb-1"><strong>In-Office Payment</strong></p>
+                                    <ul>
+                                        <li><strong>Address:</strong> NSSHAI Clubhouse Narra St., Quezon City</li>
+                                        <li><strong>Office Hours:</strong> Mon–Fri, 8AM–5PM</li>
+                                        <li><strong>Accepted:</strong> Cash</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <!-- Upload Proof -->
+                            <div class="border rounded p-3 text-center">
+                                <h6 class="fw-bold">Upload Proof of Payment</h6>
+                                <!-- File Upload -->
+                                <div class="file-drop-area" id="fileDropArea" style="height: 250px;">
+                                    <div class="cloud-icon">
+                                        <i class="bi bi-cloud-upload"></i>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Drag & drop files or <a href="#" id="browseLink">Browse</a></strong>
+                                    </div>
+                                    <div class="small text-muted">
+                                        Supported formats: JPEG, PNG, GIF, PDF, TXT, XLS, AI, Word, PPT
+                                    </div>
+                                    <input type="file" id="fileInput" name="evidence" class="d-none"
+                                        accept="JPEG, PNG, GIF, MP4, PDF, DOC, DOCX" required>
+                                </div>
+                                <div id="filePreview" class="mt-2"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
-
-        <style>
-            .method-card {
-                cursor: pointer;
-                transition: 0.3s;
-            }
-            .method-card.active {
-                border: 2px solid #007bff;
-                background-color: #e9f2ff;
-            }
-            .method-card:hover {
-                border-color: #007bff;
-            }
-        </style>
-
-        <script>
-            // Toggle Payment Method
-            const bankTransfer = document.getElementById('bankTransfer');
-            const inOffice = document.getElementById('inOffice');
-            const selectedMethod = document.getElementById('selectedMethod');
-
-            bankTransfer.addEventListener('click', () => {
-                bankTransfer.classList.add('active');
-                inOffice.classList.remove('active');
-                selectedMethod.textContent = "Bank Transfer";
-            });
-
-            inOffice.addEventListener('click', () => {
-                inOffice.classList.add('active');
-                bankTransfer.classList.remove('active');
-                selectedMethod.textContent = "In-Office Payment";
-            });
-        </script>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle Payment Method
+        const bankTransfer = document.getElementById('bankTransfer');
+        const inOffice = document.getElementById('inOffice');
+        const selectedMethod = document.getElementById('selectedMethod');
+
+        bankTransfer.addEventListener('click', () => {
+            bankTransfer.classList.add('active');
+            inOffice.classList.remove('active');
+            selectedMethod.textContent = "Bank Transfer";
+        });
+
+        inOffice.addEventListener('click', () => {
+            inOffice.classList.add('active');
+            bankTransfer.classList.remove('active');
+            selectedMethod.textContent = "In-Office Payment";
+        });
+
+        // Dynamic Dropdown Functionality
+        const userTypeSelect = document.getElementById('userTypeSelect');
+        const userIdSelect = document.getElementById('userIdSelect');
+        const idLabel = document.getElementById('idLabel');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        userTypeSelect.addEventListener('change', async function () {
+            const selectedType = this.value;
+
+            // Reset the ID dropdown
+            userIdSelect.innerHTML = '<option value="">Loading...</option>';
+            userIdSelect.disabled = true;
+            loadingIndicator.classList.remove('d-none');
+
+            if (selectedType === 'Homeowner/Resident') {
+                idLabel.innerHTML = 'Resident ID<span class="text-danger">*</span>';
+
+                try {
+                    const response = await fetch(`?action=get_households`);
+                    const result = await response.json();
+
+                    if (result.success) {
+                        userIdSelect.innerHTML = '<option value="" selected disabled>Select Resident ID</option>';
+                        result.data.forEach(household => {
+                            const option = document.createElement('option');
+                            option.value = household.household_id;
+                            option.textContent = `${household.household_id} - ${household.name}`;
+                            option.setAttribute('data-address', household.address);
+                            userIdSelect.appendChild(option);
+                        });
+                    } else {
+                        userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                        console.error('Error:', result.error);
+                    }
+
+                } catch (error) {
+                    console.error('Error fetching household data:', error);
+                    userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                }
+
+            } else if (selectedType === 'Visitor') {
+                idLabel.innerHTML = 'Visitor ID<span class="text-danger">*</span>';
+
+                try {
+                    const response = await fetch(`?action=get_visitors`);
+                    const result = await response.json();
+
+                    if (result.success) {
+                        userIdSelect.innerHTML = '<option value="" selected disabled>Select Visitor ID</option>';
+                        result.data.forEach(visitor => {
+                            const option = document.createElement('option');
+                            option.value = visitor.visitor_id;
+                            option.textContent = `${visitor.visitor_id} - ${visitor.name}`;
+                            option.setAttribute('data-purpose', visitor.purpose);
+                            userIdSelect.appendChild(option);
+                        });
+                    } else {
+                        userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                        console.error('Error:', result.error);
+                    }
+
+                } catch (error) {
+                    console.error('Error fetching visitor data:', error);
+                    userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                }
+            } else {
+                idLabel.innerHTML = 'Select ID<span class="text-danger">*</span>';
+                userIdSelect.innerHTML = '<option value="">First select user type</option>';
+            }
+
+            loadingIndicator.classList.add('d-none');
+            userIdSelect.disabled = false;
+            userIdSelect.classList.add('fade-in');
+
+            // Remove animation class after animation completes
+            setTimeout(() => {
+                userIdSelect.classList.remove('fade-in');
+            }, 300);
+        });
+
+        // Add visual feedback for ID selection
+        userIdSelect.addEventListener('change', function () {
+            if (this.value) {
+                this.style.borderColor = '#198754';
+                this.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+            } else {
+                this.style.borderColor = '#dee2e6';
+                this.style.boxShadow = 'none';
+            }
+        });
+
+    </script>
+
 </body>
+
 </html>

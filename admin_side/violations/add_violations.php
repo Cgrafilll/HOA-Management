@@ -293,7 +293,7 @@ try {
         <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
-                    <h5 class="mb-0 fw-bold">Announcements</h5>
+                    <h5 class="mb-0 fw-bold">Violation Management</h5>
                 </div>
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">

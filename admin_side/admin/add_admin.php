@@ -412,7 +412,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     id="province-text" required>
                                 <label class="form-label mt-2">Province</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4 mb-3"> 
                                 <select name="city" class="form-select" required id="city">
                                     <option value="">Select City/Municipality</option>
                                 </select>

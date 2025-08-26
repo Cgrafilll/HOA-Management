@@ -46,6 +46,7 @@ try {
     <title>NSSHAI HOA Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
@@ -70,26 +71,8 @@ try {
             overflow-y: auto;
         }
 
-        .announcement-card {
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            white-space: normal;
-            max-width: 100%;
-        }
-
-        .announcement-body {
-            font-size: 0.95rem;
-            margin: 0;
-            margin-bottom: 8px;
-            line-height: 1.4;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-
         main {
             margin-left: 250px;
-            padding-bottom: 100px;
-            /* ✅ give breathing room at bottom */
         }
 
         .card-body p,
@@ -355,7 +338,6 @@ try {
         </main>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
