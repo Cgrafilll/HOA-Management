@@ -1,0 +1,351 @@
+<?php
+session_start();
+require '../../rfid-api/db.php';
+
+if (!isset($_SESSION['email_address'])) {
+    header("Location: ../login/login.php");
+    exit;
+}
+
+// Initialize user details
+$email_address = $_SESSION['email_address'];
+$household_id = $_SESSION['household_id'];
+$username = $photo = '';// Initialize user details
+
+// Fetch user details including profile photo
+try {
+    $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE email_address = ?");
+    $stmt->bind_param("s", $email_address);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+
+    if ($user) {
+        $username = $user['first_name'];
+
+        // Only set $photo if profile_pic exists and is not null
+        if (!empty($user['profile_picture'])) {
+            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']);
+        } else {
+            $photo = ''; // Explicitly empty if no image is saved
+        }
+    } else {
+        $error_message = "Failed to fetch user details.";
+    }
+
+} catch (Exception $e) {
+    $error_message = "Error fetching user details: " . $e->getMessage();
+}
+
+// Initialize admin details
+$edit_household = $_GET['id'] ?? null;
+$prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $landline = $email = $password = $street = $street2 = $city = $state = $brgy = $postal = $members = $status = '';
+
+if ($edit_household) {
+    try {
+        $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE household_id = ?");
+        $stmt->bind_param("s", $edit_household);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $admin = $result->fetch_assoc();
+
+        if ($admin) {
+            $prof = !empty($admin['profile_picture']) ? 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']) : '';
+            $first_name = $admin['first_name'];
+            $middle_name = $admin['middle_name'];
+            $last_name = $admin['last_name'];
+            $dob = $admin['date_of_birth'];
+            $sex = $admin['sex'];
+            $age = $admin['age'];
+            $cellphone = $admin['cellphone_number'];
+            $landline = $admin['landline'];
+            $email = $admin['email_address'];
+            $password = $admin['password'];
+            $street = $admin['street_address'];
+            $street2 = $admin['street_address_2'];
+            $city = $admin['city'];
+            $state = $admin['state_province'];
+            $brgy = $admin['barangay'];
+            $postal = $admin['postal_zip_code'];
+            $members = $admin['members'];
+            $status = $admin['status'];
+        } else {
+            $error_message = "Household Account not found!";
+        }
+    } catch (Exception $e) {
+        $error_message = "Error fetching admin: " . $e->getMessage();
+    }
+} else {
+    $error_message = "Invalid admin ID.";
+}
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NSSHAI HOA Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+        * {
+            font-family: "Montserrat", sans-serif;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            top: 20;
+            left: 0;
+            background-color: #1F2937;
+            overflow-y: auto;
+        }
+
+        main {
+            margin-left: 250px;
+        }
+
+        .sidebar a,
+        .sidebar button {
+            color: #ffffff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar a:hover,
+        .sidebar button:hover,
+        .collapse ul li a:hover,
+        .collapse ul li a.actived {
+            color: #80ed99;
+        }
+
+        .sidebar .nav-link.active,
+        .sidebar .btn-toggle:not(.collapsed),
+        .sidebar .btn-toggle.active {
+            background-color: #198754;
+            border-radius: 0.375rem;
+        }
+
+        .sidebar .btn-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            color: #ffffff;
+            background: none;
+            border: none;
+        }
+
+        .sidebar .btn-toggle i {
+            margin-right: 8px;
+        }
+
+        .sidebar .btn-toggle::after {
+            content: "▼";
+            font-size: 10px;
+            transition: transform 0.3s;
+            margin-left: auto;
+        }
+
+        .sidebar .btn-toggle.collapsed::after {
+            transform: rotate(0deg);
+        }
+
+        .sidebar .btn-toggle:not(.collapsed)::after {
+            transform: rotate(180deg);
+        }
+
+        #preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <!-- Header -->
+    <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
+        <div class="me-4" style="width: 250px;">
+            <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
+        </div>
+        <div class="d-flex justify-content-between align-items-center flex-grow-1">
+            <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
+            <div class="dropdown">
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
+                    aria-expanded="false" role="button" style="cursor: pointer;">
+                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                        style="height: 40px; width: 40px; color: #aaa;">
+                        <?php if (!empty($photo)): ?>
+                            <img src="<?php echo htmlspecialchars($photo); ?>"
+                                style="width: 40px; height: 40px; object-fit: cover;">
+                        <?php else: ?>
+                            <i class="bi bi-person-circle" style="font-size: 32px;"></i>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li><a class="dropdown-item" href="view_resident.php?id=<?php echo $household_id; ?>"><i
+                                class="bi bi-person me-2"></i>Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="../logout.php"><i
+                                class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <aside class="sidebar p-3">
+            <nav class="nav d-flex flex-column gap-1">
+                <a href="dashboard.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-house me-2"></i> Home
+                </a>
+                <a href="amenity_booking/amenity_booking.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-book me-2"></i> Amenity Booking
+                </a>
+                <a href="report.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
+                </a>
+                <!-- Accounting -->
+                <div>
+                    <button
+                        class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start"
+                        data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="false">
+                        <span class="d-flex align-items-center">
+                            <i class="bi bi-cash-coin me-2"></i> Accounting
+                        </span>
+                    </button>
+                    <div class="collapse" id="acctCollapse">
+                        <ul class="nav flex-column ms-3 mt-1">
+                            <li><a href="#" class="nav-link px-2">Payments</a></li>
+                            <li><a href="#" class="nav-link px-2">Invoices</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <a href="logout.php"
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
+                    <i class="bi bi-box-arrow-right me-2"></i> Logout
+                </a>
+            </nav>
+        </aside>
+        <!-- Main Content -->
+        <main class="flex-fill p-4">
+            <div class="bg-white shadow rounded p-3">
+                <!-- Header -->
+                <div class="bg-success text-white rounded-top p-3">
+                    <h5 class="mb-0 fw-bold">Household Account Management</h5>
+                </div>
+                <!-- Subheader + Back -->
+                <div class="p-3 d-flex justify-content-between align-items-center">
+                    <span class="small">User Details</span>
+                    <div>
+                        <button onclick="history.back()" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>Back
+                        </button>
+                        <a class="btn btn-primary btn-sm" href="edit_resident.php?id=<?php echo $household_id; ?>">Edit
+                            Details</a>
+                    </div>
+                </div>
+                <hr class="my-0">
+                <!-- Content -->
+                <div class="p-4 text-center">
+                    <!-- Profile Picture + Role -->
+                    <div class="mb-4">
+                        <div class="mx-auto rounded overflow-hidden" style="width: 200px; height: 200px;">
+                            <?php if (!empty($prof)): ?>
+                                <img src="<?php echo htmlspecialchars($prof) ?>" class="img-fluid rounded"
+                                    style="object-fit: cover; width: 100%; height: 100%;">
+                            <?php else: ?>
+                                <div class="d-flex justify-content-center align-items-center border border-2 rounded"
+                                    style="width: 200px; height: 200px;">
+                                    <i class="bi bi-person-fill" style="font-size: 64px; color: #ccc;"></i>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="mt-2 fw-semibold">Resident</div>
+                    </div>
+                    <!-- Centered Grid for Labels + Values -->
+                    <div class="d-flex justify-content-center">
+                        <div class="w-100" style="max-width: 600px;">
+                            <?php
+                            $details = [
+                                'Full Name' => htmlspecialchars("$first_name $middle_name $last_name"),
+                                'Date of Birth' => date("F j, Y", strtotime($dob)),
+                                'Age' => htmlspecialchars($age),
+                                'Sex' => htmlspecialchars($sex),
+                                'Cellphone Number' => !empty($cellphone) ? htmlspecialchars($cellphone) : 'N/A',
+                                'Landline' => !empty($landline) ? htmlspecialchars($landline) : 'N/A',
+                                'Email' => htmlspecialchars($email),
+                                'Address' => htmlspecialchars(
+                                    $street .
+                                    (!empty($street2) ? ', ' . $street2 : '') .
+                                    ', ' . $brgy . ', ' . $city . ', ' . $state . ', ' . $postal
+                                )
+                            ];
+                            foreach ($details as $label => $value): ?>
+                                <div class="row mb-2">
+                                    <div class="col-4 text-start fw-bold"><?php echo $label ?>:</div>
+                                    <div class="col-8 text-start"><?php echo $value ?></div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-calculate age from DOB
+        document.querySelector('input[name="dob"]').addEventListener('change', function () {
+            const dob = new Date(this.value);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+            document.querySelector('input[name="age"]').value = age;
+        });
+
+        // Image preview for profile picture
+        document.getElementById('profile_pic').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('preview');
+
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" />`;
+                }
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = '<i class="bi bi-person-fill"></i>';
+            }
+        });
+    </script>
+</body>
+
+</html>
