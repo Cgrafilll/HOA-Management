@@ -7,11 +7,18 @@ if (!isset($_SESSION['email_address'])) {
     exit;
 }
 
+// Check if household_id exists in session
+if (!isset($_SESSION['household_id'])) {
+    echo "error: household_id not found in session";
+    exit;
+}
+
+$household_id = $_SESSION['household_id'];
+
 try {
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Collect form values
-        $household_id = $_POST['household_id'];
         $date_incident = $_POST['date_incident'];
         $time_incident = $_POST['time_incident'];
         $location = $_POST['location'];
@@ -43,10 +50,18 @@ try {
             }
         }
 
+        // Debug: Log the household_id being inserted (remove in production)
+        error_log("Inserting violation for household_id: " . $household_id);
+
         // Insert into DB
         $stmt = $conn->prepare("INSERT INTO violations 
             (household_id, date_incident, time_incident, location, violation_type, description_of_incident, homeowner_involved, address_lot_number, other_parties, evidence, anonymous) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        if (!$stmt) {
+            echo "error: Failed to prepare statement - " . $conn->error;
+            exit;
+        }
 
         $stmt->bind_param(
             "sssssssssss",

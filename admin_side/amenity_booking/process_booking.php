@@ -13,20 +13,83 @@ require_once 'PHPMailer/src/PHPMailer.php';
 require_once 'PHPMailer/src/SMTP.php';
 
 // Email configuration - UPDATE THESE WITH YOUR DETAILS
-class EmailConfig {
-    const SMTP_HOST = 'smtp.gmail.com';           // Gmail SMTP
-    const SMTP_PORT = 587;                        // Gmail SMTP port
-    const SMTP_USERNAME = 'lukemia19@gmail.com'; // Your Gmail address
-    const SMTP_PASSWORD = 'uezbntejweozhniv';    // Gmail App Password
-    const FROM_EMAIL = 'noreply@nsshai.com';     // From email address
-    const FROM_NAME = 'NSSHAI HOA Management';    // From name
-    const REPLY_TO = 'admin@nsshai.com';         // Reply-to email
+class EmailConfig
+{
+    const SMTP_HOST = 'smtp.gmail.com';
+    const SMTP_PORT = 587;
+    const SMTP_USERNAME = 'lukemia19@gmail.com';
+    const SMTP_PASSWORD = 'uezbntejweozhniv';
+    const FROM_EMAIL = 'noreply@nsshai.com';
+    const FROM_NAME = 'NSSHAI HOA Management';
+    const REPLY_TO = 'admin@nsshai.com';
+}
+
+// Generate auto-incrementing invoice number in format: YYYYMMDD-000n
+function generateInvoiceNumber($conn)
+{
+    $today = date('Ymd'); // YYYYMMDD format
+    $pattern = $today . '-%';
+
+    try {
+        $stmt = $conn->prepare("SELECT invoice_number FROM amenity_bookings WHERE invoice_number LIKE ? ORDER BY invoice_number DESC LIMIT 1");
+        $stmt->bind_param("s", $pattern);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($row = $result->fetch_assoc()) {
+            // Extract the last 4 digits and increment
+            $lastInvoice = $row['invoice_number'];
+            $lastNumber = (int) substr($lastInvoice, -4);
+            $nextNumber = $lastNumber + 1;
+        } else {
+            // First invoice for this date
+            $nextNumber = 1;
+        }
+
+        // Format: YYYYMMDD-0001, YYYYMMDD-0002, etc.
+        $invoiceNumber = $today . '-' . sprintf('%04d', $nextNumber);
+        $stmt->close();
+
+        return $invoiceNumber;
+
+    } catch (Exception $e) {
+        // Fallback if there's an error
+        return $today . '-' . sprintf('%04d', rand(1, 9999));
+    }
+}
+
+// Function to get homeowner_id or visitor_id based on user type and email
+function getUserId($conn, $userType, $emailAddress)
+{
+    if ($userType === 'homeowner') {
+        $stmt = $conn->prepare("SELECT household_id FROM household_accounts WHERE email_address = ?");
+        $stmt->bind_param("s", $emailAddress);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $stmt->close();
+            return $row['household_id'];
+        }
+        $stmt->close();
+    } elseif ($userType === 'visitor') {
+        $stmt = $conn->prepare("SELECT visitor_id FROM visitor_details WHERE email_address = ?");
+        $stmt->bind_param("s", $emailAddress);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $stmt->close();
+            return $row['visitor_id'];
+        }
+        $stmt->close();
+    }
+    return null;
 }
 
 // Robust email sending function using PHPMailer
-function sendBookingReceipt($recipientEmail, $recipientName, $bookingDetails) {
+function sendBookingReceipt($recipientEmail, $recipientName, $bookingDetails)
+{
     $mail = new PHPMailer(true);
-    
+
     try {
         // Server settings
         $mail->isSMTP();
@@ -36,38 +99,29 @@ function sendBookingReceipt($recipientEmail, $recipientName, $bookingDetails) {
         $mail->Password = EmailConfig::SMTP_PASSWORD;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = EmailConfig::SMTP_PORT;
-        
-        // Optional: Disable SSL verification for development (remove in production)
-        // $mail->SMTPOptions = array(
-        //     'ssl' => array(
-        //         'verify_peer' => false,
-        //         'verify_peer_name' => false,
-        //         'allow_self_signed' => true
-        //     )
-        // );
-        
+
         // Recipients
         $mail->setFrom(EmailConfig::FROM_EMAIL, EmailConfig::FROM_NAME);
         $mail->addAddress($recipientEmail, $recipientName);
         $mail->addReplyTo(EmailConfig::REPLY_TO, 'NSSHAI Admin');
-        
+
         // Content
         $mail->isHTML(true);
         $mail->Subject = 'Amenity Booking Confirmation - NSSHAI [' . $bookingDetails['reservation_code'] . ']';
-        
+
         // Create beautiful HTML email content
         $mail->Body = generateEmailTemplate($recipientName, $bookingDetails);
-        
+
         // Alternative plain text version
         $mail->AltBody = generatePlainTextEmail($recipientName, $bookingDetails);
-        
+
         // Send the email
         $result = $mail->send();
-        
+
         // Log success
         error_log("✅ PHPMailer: Email sent successfully to " . $recipientEmail);
         return true;
-        
+
     } catch (Exception $e) {
         // Log the error
         error_log("❌ PHPMailer Error: {$mail->ErrorInfo}");
@@ -76,12 +130,13 @@ function sendBookingReceipt($recipientEmail, $recipientName, $bookingDetails) {
     }
 }
 
-// Generate HTML email template
-function generateEmailTemplate($recipientName, $bookingDetails) {
+// Generate HTML email template (keeping your existing function)
+function generateEmailTemplate($recipientName, $bookingDetails)
+{
     $reservationCode = htmlspecialchars($bookingDetails['reservation_code']);
     $amenity = htmlspecialchars($bookingDetails['amenity']);
     $reservationDate = date('F j, Y', strtotime($bookingDetails['reservation_date']));
-    
+
     $html = '
     <!DOCTYPE html>
     <html lang="en">
@@ -155,7 +210,7 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
             
             <!-- Content -->
             <div class="content">
-                <div class="greeting">Hello ' . htmlspecialchars($recipientName) . '! 👋</div>
+                <div class="greeting">Hello ' . htmlspecialchars($recipientName) . '!</div>
                 
                 <div class="intro-text">
                     Thank you for your amenity reservation! Your booking has been successfully submitted and is currently <span class="status-badge">Pending Approval</span>.
@@ -171,7 +226,7 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
                 <!-- Booking Details -->
                 <div class="booking-details">
                     <h3>Booking Summary</h3>';
-    
+
     // Add all booking details
     $html .= '
                     <div class="detail-row">
@@ -186,7 +241,7 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
                         <span class="detail-label">⏰ Time Slot</span>
                         <span class="detail-value">' . ucfirst($bookingDetails['rate']) . ' Session</span>
                     </div>';
-    
+
     // Add guests if applicable
     if ($bookingDetails['guests'] > 0) {
         $html .= '
@@ -195,14 +250,14 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
                         <span class="detail-value">' . $bookingDetails['guests'] . ' person(s)</span>
                     </div>';
     }
-    
+
     // Add exclusive booking
     $html .= '
                     <div class="detail-row">
                         <span class="detail-label">⭐ Exclusive Booking</span>
                         <span class="detail-value">' . ucfirst($bookingDetails['exclusive_booking']) . '</span>
                     </div>';
-    
+
     // Add add-ons if any
     if ($bookingDetails['chairs'] > 0 || $bookingDetails['tables'] > 0) {
         $addOns = [];
@@ -218,7 +273,7 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
                         <span class="detail-value">' . implode('<br>', $addOns) . '</span>
                     </div>';
     }
-    
+
     // Payment information
     $html .= '
                     <div class="detail-row">
@@ -233,7 +288,7 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
                         <span class="detail-label">💵 Amount Paid</span>
                         <span class="detail-value">₱' . number_format($bookingDetails['amount_paid'], 2) . '</span>
                     </div>';
-    
+
     // Add reference number if provided
     if (!empty($bookingDetails['reference_number'])) {
         $html .= '
@@ -242,7 +297,16 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
                         <span class="detail-value">' . htmlspecialchars($bookingDetails['reference_number']) . '</span>
                     </div>';
     }
-    
+
+    // Add invoice number
+    if (!empty($bookingDetails['invoice_number'])) {
+        $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">📋 Invoice Number</span>
+                        <span class="detail-value">' . htmlspecialchars($bookingDetails['invoice_number']) . '</span>
+                    </div>';
+    }
+
     $html .= '
                 </div>
                 
@@ -250,17 +314,17 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
                 <div class="important-section">
                     <h4>Important Reminders</h4>
                     <ul>
-                        <li>• Your booking status is currently <strong>PENDING</strong> and requires HOA approval.</li>
-                        <li>• Please save your reservation code <strong>' . $reservationCode . '</strong> for future reference.</li>
-                        <li>• You will receive another email once your booking is approved or if additional information is needed.</li>
-                        <li>• Minimum 50% down payment is required. Payment must be received before your scheduled date.</li>
-                        <li>• Rescheduling is allowed but must be requested at least 24 hours in advance.</li>
+                        <li>Your booking status is currently <strong>PENDING</strong> and requires HOA approval.</li>
+                        <li>Please save your reservation code <strong>' . $reservationCode . '</strong> for future reference.</li>
+                        <li>You will receive another email once your booking is approved or if additional information is needed.</li>
+                        <li>Minimum 50% down payment is required. Payment must be received before your scheduled date.</li>
+                        <li>Rescheduling is allowed but must be requested at least 24 hours in advance.</li>
                     </ul>
                 </div>
                 
                 <!-- Contact Information -->
                 <div class="contact-section">
-                    <h4>Need Help? 🤝</h4>
+                    <h4>Need Help?</h4>
                     <p>For questions or concerns about your booking:</p>
                     <p class="phone">📞 8-2457647</p>
                     <p>📧 admin@nsshai.com</p>
@@ -268,13 +332,13 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
                 
                 <div style="text-align: center; margin-top: 30px; color: #666;">
                     <p>Thank you for choosing NSSHAI amenities!</p>
-                    <p style="margin-top: 15px;"><strong>Best regards,<br>NSSHAI Administration Team</strong> 🏢</p>
+                    <p style="margin-top: 15px;"><strong>Best regards,<br>NSSHAI Administration Team</strong></p>
                 </div>
             </div>
             
             <!-- Footer -->
             <div class="footer">
-                <h4>🏘️ Neopolitan Sitio Seville Homeowners Association, Inc.</h4>
+                <h4>Neopolitan Sitio Seville Homeowners Association, Inc.</h4>
                 <p>This is an automated confirmation email. Please do not reply directly to this message.</p>
                 <p>For support and inquiries, please contact our office at 8-2457647</p>
                 <p style="margin-top: 15px; font-size: 12px;">© 2025 NSSHAI. All rights reserved.</p>
@@ -282,60 +346,66 @@ function generateEmailTemplate($recipientName, $bookingDetails) {
         </div>
     </body>
     </html>';
-    
+
     return $html;
 }
 
 // Generate plain text version for email clients that don't support HTML
-function generatePlainTextEmail($recipientName, $bookingDetails) {
+function generatePlainTextEmail($recipientName, $bookingDetails)
+{
     $text = "AMENITY BOOKING CONFIRMATION - NSSHAI\n";
     $text .= "=====================================\n\n";
     $text .= "Hello " . $recipientName . "!\n\n";
     $text .= "Thank you for your amenity reservation. Your booking has been successfully submitted and is currently pending approval.\n\n";
-    $text .= "RESERVATION CODE: " . $bookingDetails['reservation_code'] . "\n\n";
-    $text .= "BOOKING DETAILS:\n";
+    $text .= "RESERVATION CODE: " . $bookingDetails['reservation_code'] . "\n";
+
+    if (!empty($bookingDetails['invoice_number'])) {
+        $text .= "INVOICE NUMBER: " . $bookingDetails['invoice_number'] . "\n";
+    }
+
+    $text .= "\nBOOKING DETAILS:\n";
     $text .= "- Amenity: " . $bookingDetails['amenity'] . "\n";
     $text .= "- Date: " . date('F j, Y', strtotime($bookingDetails['reservation_date'])) . "\n";
     $text .= "- Time Slot: " . ucfirst($bookingDetails['rate']) . "\n";
-    
+
     if ($bookingDetails['guests'] > 0) {
         $text .= "- Guests: " . $bookingDetails['guests'] . "\n";
     }
-    
+
     $text .= "- Exclusive Booking: " . ucfirst($bookingDetails['exclusive_booking']) . "\n";
     $text .= "- Payment Method: " . ucfirst($bookingDetails['payment_method']) . "\n";
     $text .= "- Total Amount: ₱" . number_format($bookingDetails['total_amount'], 2) . "\n";
     $text .= "- Amount Paid: ₱" . number_format($bookingDetails['amount_paid'], 2) . "\n";
-    
+
     if (!empty($bookingDetails['reference_number'])) {
         $text .= "- Reference Number: " . $bookingDetails['reference_number'] . "\n";
     }
-    
+
     $text .= "\nIMPORTANT REMINDERS:\n";
     $text .= "- Your booking is currently PENDING approval\n";
     $text .= "- Keep your reservation code safe\n";
     $text .= "- You will receive updates via email\n";
     $text .= "- Contact us at 8-2457647 for questions\n\n";
     $text .= "Best regards,\nNSSHAI Administration Team";
-    
+
     return $text;
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Generate amenity-specific reservation code with auto-increment
     $amenity = $_GET['reserve'] ?? '';
-    
+
     // Define amenity prefixes
     $amenityPrefixes = [
         'Gazebo' => 'GZB',
-        'Swimming Pool' => 'SWP', 
+        'Swimming Pool' => 'SWP',
         'Basketball Court' => 'BBC',
         'Clubhouse' => 'CLB'
     ];
-    
+
     // Get the prefix for the current amenity
     $prefix = $amenityPrefixes[$amenity] ?? 'RSV'; // Default fallback
-    
+
     // Get the next sequential number for this amenity
     try {
         $stmt = $conn->prepare("SELECT reservation_code FROM amenity_bookings WHERE amenity = ? AND reservation_code LIKE ? ORDER BY reservation_code DESC LIMIT 1");
@@ -343,68 +413,84 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $stmt->bind_param("ss", $amenity, $likePattern);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         if ($row = $result->fetch_assoc()) {
             // Extract the numeric part and increment
             $lastCode = $row['reservation_code'];
-            $numericPart = (int)substr($lastCode, strlen($prefix));
+            $numericPart = (int) substr($lastCode, strlen($prefix));
             $nextNumber = $numericPart + 1;
         } else {
             // First booking for this amenity
             $nextNumber = 1;
         }
-        
+
         // Format with leading zeros (5 digits)
         $reservation_code = $prefix . sprintf('%05d', $nextNumber);
-        
+
         $stmt->close();
     } catch (Exception $e) {
         // Fallback to random if there's an error
         $reservation_code = $prefix . rand(10000, 99999);
     }
 
+    // Generate invoice number
+    $invoice_number = generateInvoiceNumber($conn);
+
     // Get admin_id from session
     $admin_id = $_SESSION['admin_id'] ?? "system";
 
     // Convert and assign all form fields to variables
     $userType = $_POST['userType'] ?? '';
-    $firstName = $_POST['firstName'] ?? '';
-    $middleName = $_POST['middleName'] ?? '';
-    $lastName = $_POST['lastName'] ?? '';
     $emailAddress = $_POST['emailAddress'] ?? '';
     $reservationDate = $_POST['reservationDate'] ?? '';
     $rate = $_POST['rate'] ?? '';
     $payment = $_POST['payment'] ?? '';
     $exclusiveBooking = $_POST['exclusiveBooking'] ?? '';
     $referenceNumber = $_POST['referenceNumber'] ?? '';
-    
+
     // Convert numeric fields safely
     $guests = isset($_POST['guests']) ? (int) $_POST['guests'] : 0;
     $chairs = isset($_POST['chairs']) ? (int) $_POST['chairs'] : 0;
     $tables = isset($_POST['tables']) ? (int) $_POST['tables'] : 0;
-    
+
     // Handle total amount - remove commas and convert to float
     $total = 0.0;
     if (isset($_POST['total']) && !empty($_POST['total'])) {
         $totalStr = str_replace(',', '', $_POST['total']); // Remove commas
         $total = (float) $totalStr;
     }
-    
+
     $amountPaid = isset($_POST['amountPaid']) ? (float) $_POST['amountPaid'] : 0.0;
 
     // Always default to pending
     $status = "pending";
 
+    // Get the appropriate user ID based on user type
+    $homeowner_id = null;
+    $visitor_id = null;
+
+    if ($userType === 'homeowner') {
+        $homeowner_id = getUserId($conn, 'homeowner', $emailAddress);
+        if (!$homeowner_id) {
+            die("❌ Error: Homeowner not found with email: " . $emailAddress);
+        }
+    } elseif ($userType === 'visitor') {
+        $visitor_id = getUserId($conn, 'visitor', $emailAddress);
+        if (!$visitor_id) {
+            die("❌ Error: Visitor not found with email: " . $emailAddress);
+        }
+    }
+
     // Validate required fields
-    $requiredFields = ['userType', 'firstName', 'lastName', 'emailAddress', 'reservationDate', 'rate', 'payment'];
+    $requiredFields = ['userType', 'emailAddress', 'reservationDate', 'rate', 'payment'];
     $missingFields = [];
-    
+
     foreach ($requiredFields as $field) {
         if (empty($_POST[$field])) {
             $missingFields[] = $field;
         }
     }
-    
+
     if (!empty($missingFields)) {
         die("❌ Missing required fields: " . implode(', ', $missingFields) . "<br>Received POST data: " . print_r(array_keys($_POST), true));
     }
@@ -423,32 +509,68 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
-    // Prepare database statement
+    // Prepare database statement - updated to match your actual table structure
     $stmt = $conn->prepare("
         INSERT INTO amenity_bookings 
-        (reservation_code, admin_id, amenity, user_type, first_name, middle_name, last_name, email_address, reservation_date, guests, rate, payment_method, exclusive_booking, chairs, tables, reference_number, total_amount, amount_paid, proof_of_payment, status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (reservation_code, admin_id, homeowner_id, visitor_id, amenity, user_type, reservation_date, guests, rate, payment_method, exclusive_booking, chairs, tables, reference_number, total_amount, amount_paid, proof_of_payment, invoice_number, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
     if (!$stmt) {
         die("Prepare failed: " . $conn->error);
     }
 
-    // Bind parameters
+    // Bind parameters - updated parameter types
     $stmt->bind_param(
-        "sssssssssisssisddsss",
-        $reservation_code, $admin_id, $amenity, $userType, $firstName, $middleName, $lastName, 
-        $emailAddress, $reservationDate, $guests, $rate, $payment, $exclusiveBooking, 
-        $chairs, $tables, $referenceNumber, $total, $amountPaid, $proof_of_payment, $status
+        "ssssssssissiissdsss",
+        $reservation_code,   // s
+        $admin_id,          // s                
+        $homeowner_id,             // s
+        $visitor_id,               // s
+        $amenity,                  // s
+        $userType,                 // s
+        $reservationDate,          // s 
+        $guests,                   // i
+        $rate,                     // s
+        $payment,                  // s
+        $exclusiveBooking,         // s 
+        $chairs,                   // i
+        $tables,                   // i
+        $referenceNumber,          // s     
+        $total,                    // d
+        $amountPaid,               // d 
+        $proof_of_payment,         // s 
+        $invoice_number,           // s 
+        $status                    // s
     );
 
     if ($stmt->execute()) {
-        // 🎯 Send email receipt using PHPMailer
-        $recipientName = trim($firstName . ' ' . $lastName);
-        
+        // Get recipient name from the appropriate table
+        $recipientName = '';
+        if ($userType === 'homeowner' && $homeowner_id) {
+            $nameStmt = $conn->prepare("SELECT first_name, last_name FROM household_accounts WHERE household_id = ?");
+            $nameStmt->bind_param("s", $homeowner_id);
+            $nameStmt->execute();
+            $nameResult = $nameStmt->get_result();
+            if ($nameRow = $nameResult->fetch_assoc()) {
+                $recipientName = trim($nameRow['first_name'] . ' ' . $nameRow['last_name']);
+            }
+            $nameStmt->close();
+        } elseif ($userType === 'visitor' && $visitor_id) {
+            $nameStmt = $conn->prepare("SELECT first_name, last_name FROM visitor_details WHERE visitor_id = ?");
+            $nameStmt->bind_param("s", $visitor_id);
+            $nameStmt->execute();
+            $nameResult = $nameStmt->get_result();
+            if ($nameRow = $nameResult->fetch_assoc()) {
+                $recipientName = trim($nameRow['first_name'] . ' ' . $nameRow['last_name']);
+            }
+            $nameStmt->close();
+        }
+
         // Prepare booking details for email
         $bookingDetails = [
             'reservation_code' => $reservation_code,
+            'invoice_number' => $invoice_number,
             'amenity' => $amenity,
             'reservation_date' => $reservationDate,
             'rate' => $rate,
@@ -461,19 +583,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             'amount_paid' => $amountPaid,
             'reference_number' => $referenceNumber
         ];
-        
+
         // Send the email receipt with PHPMailer
         $emailSent = sendBookingReceipt($emailAddress, $recipientName, $bookingDetails);
-        
+
         // Log email status
         if ($emailSent) {
-            error_log("✅ PHPMailer: Email receipt sent successfully to: " . $emailAddress . " [Code: " . $reservation_code . "]");
+            error_log("✅ PHPMailer: Email receipt sent successfully to: " . $emailAddress . " [Code: " . $reservation_code . ", Invoice: " . $invoice_number . "]");
         } else {
-            error_log("❌ PHPMailer: Failed to send email receipt to: " . $emailAddress . " [Code: " . $reservation_code . "]");
+            error_log("❌ PHPMailer: Failed to send email receipt to: " . $emailAddress . " [Code: " . $reservation_code . ", Invoice: " . $invoice_number . "]");
         }
-        
+
         // Success - redirect regardless of email status
-        header("Location: reserve_booking.php?reserve=" . urlencode($amenity) . "&success=1&code=" . urlencode($reservation_code));
+        header("Location: reserve_booking.php?reserve=" . urlencode($amenity) . "&success=1&code=" . urlencode($reservation_code) . "&invoice=" . urlencode($invoice_number));
         $stmt->close();
         $conn->close();
         exit();

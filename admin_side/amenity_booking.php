@@ -46,16 +46,77 @@ $totalRecords = $totalRow['total'];
 // Calculate total pages
 $totalPages = ceil($totalRecords / $limit);
 
-// ✅ Fetch only the records for THIS PAGE (table)
-$booking_sql = "SELECT * FROM amenity_bookings ORDER BY reservation_date DESC LIMIT $limit OFFSET $offset";
+// ✅ Updated query with JOINs for table data
+$booking_sql = "SELECT 
+    ab.id,
+    ab.reservation_code,
+    ab.amenity,
+    ab.user_type,
+    ab.reservation_date,
+    ab.rate,
+    ab.total_amount,
+    ab.amount_paid,
+    ab.status,
+    ab.created_at,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.first_name
+        WHEN ab.user_type = 'visitor' THEN vd.first_name
+        ELSE NULL
+    END as first_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.middle_name
+        WHEN ab.user_type = 'visitor' THEN vd.middle_name
+        ELSE NULL
+    END as middle_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.last_name
+        WHEN ab.user_type = 'visitor' THEN vd.last_name
+        ELSE NULL
+    END as last_name
+FROM amenity_bookings ab
+LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+ORDER BY ab.reservation_date DESC 
+LIMIT $limit OFFSET $offset";
+
 $bookings_result = $conn->query($booking_sql);
 
-// ✅ Fetch ALL records (for calendar JSON)
-$sql = "SELECT id, first_name, middle_name, last_name, amenity, reservation_code, rate, reservation_date, status, total_amount, amount_paid, created_at FROM amenity_bookings ORDER BY reservation_date ASC";
-$result = $conn->query($sql);
+// ✅ Updated query for calendar data with JOINs
+$calendar_sql = "SELECT 
+    ab.id,
+    ab.reservation_code,
+    ab.amenity,
+    ab.user_type,
+    ab.reservation_date,
+    ab.rate,
+    ab.total_amount,
+    ab.amount_paid,
+    ab.status,
+    ab.created_at,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.first_name
+        WHEN ab.user_type = 'visitor' THEN vd.first_name
+        ELSE NULL
+    END as first_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.middle_name
+        WHEN ab.user_type = 'visitor' THEN vd.middle_name
+        ELSE NULL
+    END as middle_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.last_name
+        WHEN ab.user_type = 'visitor' THEN vd.last_name
+        ELSE NULL
+    END as last_name
+FROM amenity_bookings ab
+LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+ORDER BY ab.reservation_date ASC";
+
+$calendar_result = $conn->query($calendar_sql);
 
 $bookings = [];
-while ($row = $result->fetch_assoc()) {
+while ($row = $calendar_result->fetch_assoc()) {
     // Determine time slot based on 'rate'
     $timeSlot = "N/A";
     if (isset($row['rate'])) {
@@ -66,16 +127,20 @@ while ($row = $result->fetch_assoc()) {
         }
     }
 
+    // Construct full name from the joined data
+    $fullName = trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
+
     $bookings[] = [
         "id" => $row['id'],
         "date" => $row['reservation_date'],
-        "fullName" => trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']),
+        "fullName" => $fullName,
         "amenity" => $row['amenity'],
         "reservationCode" => $row['reservation_code'],
         "paymentStatus" => ucfirst($row['status']), // pending → Pending
         "amount" => "₱" . number_format($row['amount_paid'], 2) .
             ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : ""),
-        "time" => $timeSlot
+        "time" => $timeSlot,
+        "userType" => $row['user_type']
     ];
 }
 
@@ -423,11 +488,15 @@ while ($row = $result->fetch_assoc()) {
                                     if ($bookings_result->num_rows > 0) {
                                         while ($row = $bookings_result->fetch_assoc()) {
                                             $id = $row['id'];
-                                            $fullName = ucwords($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
+
+                                            // Construct full name from joined data
+                                            $fullName = ucwords(trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']));
+
                                             $amenity = $row['amenity'];
                                             $bookingDate = $row['reservation_date'];
                                             $resCode = $row['reservation_code'];
-                                            $statusClass = $row['status'] === 'Paid' ? 'text-success' : ($row['status'] === 'Partial' ? 'text-warning' : 'text-muted');
+                                            $statusClass = $row['status'] === 'paid' ? 'text-success' : ($row['status'] === 'partial' ? 'text-warning' : 'text-muted');
+
                                             echo "<tr>
                                                     <td>{$bookingDate}</td>
                                                     <td>{$fullName}</td>
@@ -439,6 +508,7 @@ while ($row = $result->fetch_assoc()) {
                                                             <button class='btn btn-sm btn-secondary dropdown-toggle' data-bs-toggle='dropdown'>Action</button>
                                                             <ul class='dropdown-menu'>
                                                                 <li><a class='dropdown-item' href='#'>View Details</a></li>
+                                                                <li><a class='dropdown-item' href='#'>Edit Booking</a></li>
                                                             </ul>
                                                         </div>
                                                     </td>

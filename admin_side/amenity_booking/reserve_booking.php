@@ -21,6 +21,7 @@ try {
 
     if ($user) {
         $username = $user['first_name'];
+        $_SESSION['admin_id'] = $user['admin_id'];
 
         // Only set $photo if profile_pic exists and is not null
         if (!empty($user['profile_picture'])) {
@@ -34,6 +35,60 @@ try {
 
 } catch (Exception $e) {
     $error_message = "Error fetching user details: " . $e->getMessage();
+}
+
+if (isset($_GET['action']) && $_GET['action'] === 'get_households') {
+    try {
+        // Include cellphone_number in the query
+        $stmt = $conn->prepare("SELECT household_id, first_name, middle_name, last_name, email_address, cellphone_number FROM household_accounts WHERE status = 'active' ORDER BY household_id");
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $households = [];
+        while ($row = $result->fetch_assoc()) {
+            $households[] = [
+                'household_id' => $row['household_id'],
+                'name' => trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']),
+                'email' => $row['email_address'],
+                'first_name' => $row['first_name'],
+                'middle_name' => $row['middle_name'],
+                'last_name' => $row['last_name'],
+                'cellphone_number' => $row['cellphone_number']
+            ];
+        }
+
+        echo json_encode(['success' => true, 'data' => $households]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if (isset($_GET['action']) && $_GET['action'] === 'get_visitors') {
+    try {
+        // Include cellphone_number in the query
+        $stmt = $conn->prepare("SELECT visitor_id, first_name, middle_name, last_name, email_address, cellphone_number FROM visitor_details WHERE status = 'active' ORDER BY visitor_id");
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $visitors = [];
+        while ($row = $result->fetch_assoc()) {
+            $visitors[] = [
+                'visitor_id' => $row['visitor_id'],
+                'name' => trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']),
+                'email' => $row['email_address'],
+                'first_name' => $row['first_name'],
+                'middle_name' => $row['middle_name'],
+                'last_name' => $row['last_name'],
+                'cellphone_number' => $row['cellphone_number']
+            ];
+        }
+
+        echo json_encode(['success' => true, 'data' => $visitors]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
 }
 
 // Initialize amenity details (make sure case & spacing match keys)
@@ -274,6 +329,33 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             left: 50%;
             transform: translate(-50%, -50%);
         }
+
+        .loading {
+            color: #6c757d;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .form-select:disabled {
+            background-color: #f8f9fa;
+            opacity: 0.8;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
@@ -402,33 +484,68 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         <div class="row">
                             <!-- Left Column -->
                             <div class="col-lg-6">
-                                <!-- User Type -->
-                                <div class="form-floating mb-3">
-                                    <select class="form-select" id="userType" name="userType" required>
-                                        <option value="homeowner">Homeowner/Resident</option>
-                                        <option value="visitor">Visitor</option>
-                                    </select>
-                                    <label for="userType">User Type<small class="fw-bold text-danger">*</small></label>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <!-- User Type -->
+                                        <div class="form-floating mb-3">
+                                            <select class="form-select" id="userType" name="userType" required>
+                                                <option value="" selected disabled>Select User Type</option>
+                                                <option value="homeowner">Homeowner/Resident</option>
+                                                <option value="visitor">Visitor</option>
+                                            </select>
+                                            <label for="userType">User Type<small
+                                                    class="fw-bold text-danger">*</small></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <!-- User ID -->
+                                        <div class="form-floating mb-3">
+                                            <select class="form-select" id="userId" name="userId" disabled required>
+                                                <option value="" selected disabled>First select user type</option>
+                                            </select>
+                                            <label for="userId" id="userIdLabel">Select ID<small
+                                                    class="fw-bold text-danger">*</small></label>
+                                            <div class="loading d-none" id="loadingIndicator">
+                                                <i class="bi bi-arrow-clockwise"></i> Loading available IDs...
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <!-- First Name -->
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control" id="firstName" name="firstName"
-                                        placeholder="First Name" required>
-                                    <label for="firstName">First Name<small
-                                            class="fw-bold text-danger">*</small></label>
+                                <div class="row">
+                                    <div class="col-4">
+                                        <!-- First Name -->
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control" id="firstName" name="firstName"
+                                                placeholder="First Name" required>
+                                            <label for="firstName">First Name<small
+                                                    class="fw-bold text-danger">*</small></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <!-- Middle Name -->
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control" id="middleName" name="middleName"
+                                                placeholder="Middle Name">
+                                            <label for="middleName">Middle Name<small
+                                                    class="fw-bold text-danger">*</small></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <!-- Last Name -->
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control" id="lastName" name="lastName"
+                                                placeholder="Last Name" required>
+                                            <label for="lastName">Last Name<small
+                                                    class="fw-bold text-danger">*</small></label>
+                                        </div>
+                                    </div>
                                 </div>
-                                <!-- Middle Name -->
+                                <!-- Contact Number -->
                                 <div class="form-floating mb-3">
-                                    <input type="text" class="form-control" id="middleName" name="middleName"
-                                        placeholder="Middle Name">
-                                    <label for="middleName">Middle Name<small
-                                            class="fw-bold text-danger">*</small></label>
-                                </div>
-                                <!-- Last Name -->
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control" id="lastName" name="lastName"
-                                        placeholder="Last Name" required>
-                                    <label for="lastName">Last Name<small class="fw-bold text-danger">*</small></label>
+                                    <input type="tel" name="cellphone_number" class="form-control" pattern="[0-9]+"
+                                        maxlength="15" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                        placeholder="e.g., 09171234567" readonly />
+                                    <label class="form-label ">Cellphone Number</label>
                                 </div>
                                 <!-- Email Address -->
                                 <div class="form-floating mb-3">
@@ -991,8 +1108,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         const amenityRates = <?php echo json_encode($amenityRates); ?>;
         const currentAmenity = "<?php echo $amenity; ?>";
 
+        // Store user data for auto-population
+        let userData = {};
+
         // Listen for userType change
-        document.getElementById('userType').addEventListener('change', function () {
+        document.getElementById('userType').addEventListener('change', async function () {
             const userType = this.value;
 
             // ✅ Keep previously selected rate (default to 'day' if none)
@@ -1001,6 +1121,108 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             // ✅ For Clubhouse, always default to 'day' since night option won't exist
             if (currentAmenity === "Clubhouse") {
                 prevSelectedRate = 'day';
+            }
+
+            // Dynamic Dropdown Functionality
+            const userIdSelect = document.getElementById('userId');
+            const idLabel = document.getElementById('userIdLabel');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+
+            // Reset the ID dropdown and user data
+            userData = {}; // Clear previous user data
+            clearUserFields(); // Clear form fields
+
+            if (userIdSelect) {
+                userIdSelect.innerHTML = '<option value="">Loading...</option>';
+                userIdSelect.disabled = true;
+                if (loadingIndicator) {
+                    loadingIndicator.classList.remove('d-none');
+                }
+
+                if (userType === 'homeowner') {
+                    if (idLabel) {
+                        idLabel.innerHTML = 'Resident ID<span class="text-danger">*</span>';
+                    }
+
+                    try {
+                        const response = await fetch(`?action=get_households`);
+                        const result = await response.json();
+
+                        if (result.success) {
+                            userIdSelect.innerHTML = '<option value="" selected disabled>Select Resident ID</option>';
+                            result.data.forEach(household => {
+                                // Store user data for later use
+                                userData[household.household_id] = {
+                                    first_name: household.first_name,
+                                    middle_name: household.middle_name,
+                                    last_name: household.last_name,
+                                    email: household.email,
+                                    cellphone_number: household.cellphone_number || '' // Add if available in your data
+                                };
+
+                                const option = document.createElement('option');
+                                option.value = household.household_id;
+                                option.textContent = `${household.household_id} - ${household.name}`;
+                                option.setAttribute('data-address', household.address);
+                                userIdSelect.appendChild(option);
+                            });
+                        } else {
+                            userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                            console.error('Error:', result.error);
+                        }
+
+                    } catch (error) {
+                        console.error('Error fetching household data:', error);
+                        userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                    }
+
+                } else if (userType === 'visitor') {
+                    if (idLabel) {
+                        idLabel.innerHTML = 'Visitor ID<span class="text-danger">*</span>';
+                    }
+
+                    try {
+                        const response = await fetch(`?action=get_visitors`);
+                        const result = await response.json();
+
+                        if (result.success) {
+                            userIdSelect.innerHTML = '<option value="" selected disabled>Select Visitor ID</option>';
+                            result.data.forEach(visitor => {
+                                // Store user data for later use
+                                userData[visitor.visitor_id] = {
+                                    first_name: visitor.first_name,
+                                    middle_name: visitor.middle_name,
+                                    last_name: visitor.last_name,
+                                    email: visitor.email,
+                                    cellphone_number: visitor.cellphone_number || '' // Add if available in your data
+                                };
+
+                                const option = document.createElement('option');
+                                option.value = visitor.visitor_id;
+                                option.textContent = `${visitor.visitor_id} - ${visitor.name}`;
+                                option.setAttribute('data-purpose', visitor.purpose);
+                                userIdSelect.appendChild(option);
+                            });
+                        } else {
+                            userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                            console.error('Error:', result.error);
+                        }
+
+                    } catch (error) {
+                        console.error('Error fetching visitor data:', error);
+                        userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                    }
+                }
+
+                if (loadingIndicator) {
+                    loadingIndicator.classList.add('d-none');
+                }
+                userIdSelect.disabled = false;
+                userIdSelect.classList.add('fade-in');
+
+                setTimeout(() => {
+                    userIdSelect.classList.remove('fade-in');
+                }, 300);
             }
 
             if (amenityRates[currentAmenity] && amenityRates[currentAmenity][userType]) {
@@ -1044,6 +1266,92 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             calculateTotal();
         });
+
+        // Add visual feedback for ID selection
+        const userIdSelect = document.getElementById('userId'); // Changed from 'userIdSelect' to 'userId'
+        if (userIdSelect) {
+            userIdSelect.addEventListener('change', function () {
+                if (this.value) {
+                    this.style.borderColor = '#198754';
+                    this.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+                } else {
+                    this.style.borderColor = '#dee2e6';
+                    this.style.boxShadow = 'none';
+                }
+            });
+        }
+
+        // Add event listener for user ID selection
+        document.getElementById('userId').addEventListener('change', function () {
+            const selectedUserId = this.value;
+
+            if (selectedUserId && userData[selectedUserId]) {
+                // Populate form fields with user data
+                populateUserFields(userData[selectedUserId]);
+                // Visual feedback
+                this.style.borderColor = '#198754';
+                this.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+            } else {
+                // Clear form fields if no valid selection
+                clearUserFields();
+                this.style.borderColor = '#dee2e6';
+                this.style.boxShadow = 'none';
+            }
+        });
+
+        // Function to populate user fields
+        function populateUserFields(user) {
+            const fields = [
+                { id: 'firstName', value: user.first_name || '' },
+                { id: 'middleName', value: user.middle_name || '' },
+                { id: 'lastName', value: user.last_name || '' },
+                { id: 'emailAddress', value: user.email || '' },
+                { id: 'cellphone_number', value: user.cellphone_number || '' }
+            ];
+
+            fields.forEach(field => {
+                const element = document.querySelector(`[name="${field.id}"]`) || document.getElementById(field.id);
+                if (element) {
+                    element.value = field.value;
+                    element.readOnly = true;
+                    element.style.backgroundColor = '#f8f9fa'; // Light gray background to indicate readonly
+                    element.style.opacity = '0.8';
+                }
+            });
+
+            // Special handling for cellphone_number field (it might have a different name attribute)
+            const cellphoneField = document.querySelector('[name="cellphone_number"]');
+            if (cellphoneField) {
+                cellphoneField.value = user.cellphone_number || '';
+                cellphoneField.readOnly = true;
+                cellphoneField.style.backgroundColor = '#f8f9fa';
+                cellphoneField.style.opacity = '0.8';
+            }
+        }
+
+        // Function to clear and enable user fields
+        function clearUserFields() {
+            const fieldNames = ['firstName', 'middleName', 'lastName', 'emailAddress', 'cellphone_number'];
+
+            fieldNames.forEach(fieldName => {
+                const element = document.querySelector(`[name="${fieldName}"]`) || document.getElementById(fieldName);
+                if (element) {
+                    element.value = '';
+                    element.readOnly = false;
+                    element.style.backgroundColor = '';
+                    element.style.opacity = '';
+                }
+            });
+
+            // Special handling for cellphone_number field
+            const cellphoneField = document.querySelector('[name="cellphone_number"]');
+            if (cellphoneField) {
+                cellphoneField.value = '';
+                cellphoneField.readOnly = false;
+                cellphoneField.style.backgroundColor = '';
+                cellphoneField.style.opacity = '';
+            }
+        }
 
         function selectRate(option, value) {
             const container = document.getElementById('ratesContainer');
