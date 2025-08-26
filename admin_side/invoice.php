@@ -9,7 +9,6 @@ if (!isset($_SESSION['email_address'])) {
 
 // Initialize user details
 $email_address = $_SESSION['email_address'];
-$admin_id = $_SESSION['admin_id'];
 $username = $photo = ''; // Initialize user details
 
 // Fetch user details including profile photo
@@ -31,10 +30,97 @@ try {
         }
     } else {
         $error_message = "Failed to fetch user details.";
+    }// Fetch invoices from amenity_bookings
+    try {
+        $stmt = $conn->prepare("
+            SELECT 
+                ab.invoice_number,
+                ab.reservation_code,
+                ab.reservation_date,
+                ab.created_at,
+                ab.total_amount,
+                ab.amount_paid,
+                (ab.total_amount - ab.amount_paid) AS balance_remaining,
+                ab.payment_method,
+                ab.reference_number,
+                ab.status,
+                ab.amenity,
+                ab.chairs,
+                ab.tables,
+                ab.rate,
+                ab.user_type,
+                ab.guests,
+                CASE 
+                    WHEN ab.user_type = 'homeowner' 
+                        THEN CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name)
+                    WHEN ab.user_type = 'visitor' 
+                        THEN CONCAT(v.first_name, ' ', v.middle_name, ' ', v.last_name)
+                    ELSE 'Unknown'
+                END AS full_name
+            FROM amenity_bookings ab
+            LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
+            LEFT JOIN visitor_details v ON ab.visitor_id = v.visitor_id
+            ORDER BY ab.created_at DESC
+        ");
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $invoices = $result->fetch_all(MYSQLI_ASSOC);
+    } catch (Exception $e) {
+        $invoices = [];
+        $error_message = "Error fetching invoices: " . $e->getMessage();
     }
 
 } catch (Exception $e) {
     $error_message = "Error fetching user details: " . $e->getMessage();
+}
+// Define rates
+$amenityRates = [
+    "Swimming Pool" => [
+        "homeowner" => [
+            "day" => "₱100.00 / per person",
+            "night" => "₱200.00 / per person"
+        ],
+        "visitor" => [
+            "day" => "₱200.00 / per person",
+            "night" => "₱300.00 / per person"
+        ]
+    ],
+    "Clubhouse" => [
+        "homeowner" => [
+            "day" => "₱12,000.00",
+            "night" => "₱12,000.00"
+        ],
+        "visitor" => [
+            "day" => "₱15,000.00",
+            "night" => "₱15,000.00"
+        ]
+    ],
+    "Basketball Court" => [
+        "homeowner" => [
+            "day" => "₱200.00 / per person",
+            "night" => "₱300.00 / per person"
+        ],
+        "visitor" => [
+            "day" => "₱300.00 / per person",
+            "night" => "₱400.00 / per person"
+        ]
+    ],
+    "Gazebo" => [
+        "homeowner" => [
+            "day" => "₱1,000.00",
+            "night" => "₱2,000.00"
+        ],
+        "visitor" => [
+            "day" => "₱2,000.00",
+            "night" => "₱3,000.00"
+        ]
+    ]
+];
+
+// Get numeric amount from formatted string (removes ₱ and commas)
+function getNumericAmount($amountStr) {
+    $amountStr = preg_replace('/[^\d.]/', '', $amountStr);
+    return floatval($amountStr);
 }
 ?>
 
@@ -182,30 +268,18 @@ try {
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">ACCOUNTING</h1>
-            <div class="dropdown">
-                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
-                    aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
-                    <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
-                        style="height: 40px; width: 40px; color: #aaa;">
-                        <?php if (!empty($photo)): ?>
-                            <img src="<?php echo htmlspecialchars($photo); ?>"
-                                style="width: 40px; height: 40px; object-fit: cover;">
-                        <?php else: ?>
-                            <i class="bi bi-person-circle" style="font-size: 32px;"></i>
-                        <?php endif; ?>
-                    </div>
+            <h1 class="h5 mb-0 fw-bold">COMMUNICATION</h1>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
+                <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                    style="height: 40px; width: 40px; color: #aaa;">
+                    <?php if (!empty($photo)): ?>
+                        <img src="<?php echo htmlspecialchars($photo); ?>"
+                            style="width: 40px; height: 40px; object-fit: cover;">
+                    <?php else: ?>
+                        <i class="bi bi-person-circle" style="font-size: 32px;"></i>
+                    <?php endif; ?>
                 </div>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="admin/view_admin.php?id=<?php echo $admin_id; ?>"><i
-                                class="bi bi-person me-2"></i>Profile</a></li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li><a class="dropdown-item" href="login/logout.php"><i
-                                class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
-                </ul>
             </div>
         </div>
     </header>
@@ -283,7 +357,7 @@ try {
                 <a href="login/logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
                     style="position: fixed; bottom: 0; width: 220px;">
-                    <i class="bi bi-box-arrow-right me-2"></i> Logout
+                    <i class="bi bi-box-arrow-left me-2"></i> Logout
                 </a>
             </nav>
         </aside>
@@ -307,156 +381,164 @@ try {
                         <div class="col-md-4">
                             <div class="border rounded-3">
                                 <div class="list-group list-group-flush">
-                                    <a href="#" class="list-group-item list-group-item-action border-0">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <div class="fw-semibold">Abby Sungwon C. Saja</div>
-                                                <small class="text-muted">INV-0451 | 2025-08-24</small>
-                                            </div>
-                                            <div class="text-end">
-                                                <div class="fw-semibold">₱ 1,200.00</div>
-                                                <small class="text-success fw-semibold">SENT</small>
-                                            </div>
-                                        </div>
-                                    </a>
-                                    <a href="#" class="list-group-item list-group-item-action border-0 bg-light">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <div class="fw-semibold">Abby Sungwon C. Saja</div>
-                                                <small class="text-muted">INV-0450 | 2025-07-24</small>
-                                            </div>
-                                            <div class="text-end">
-                                                <div class="fw-semibold">₱ 12,666.00</div>
-                                                <small class="text-success fw-semibold">SENT</small>
-                                            </div>
-                                        </div>
-                                    </a>
-                                    <a href="#" class="list-group-item list-group-item-action border-0">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <div class="fw-semibold">Abby Sungwon C. Saja</div>
-                                                <small class="text-muted">INV-0449 | 2025-07-22</small>
-                                            </div>
-                                            <div class="text-end">
-                                                <div class="fw-semibold">₱ 1,200.00</div>
-                                                <small class="text-success fw-semibold">SENT</small>
-                                            </div>
-                                        </div>
-                                    </a>
-                                    <a href="#" class="list-group-item list-group-item-action border-0">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <div class="fw-semibold">Abby Sungwon C. Saja</div>
-                                                <small class="text-muted">INV-0448 | 2025-06-24</small>
-                                            </div>
-                                            <div class="text-end">
-                                                <div class="fw-semibold">₱ 1,200.00</div>
-                                                <small class="text-success fw-semibold">SENT</small>
-                                            </div>
-                                        </div>
-                                    </a>
+                                    <?php if (!empty($invoices)): ?>
+                                        <?php foreach ($invoices as $index => $inv): ?>
+                                            <a href="?invoice=<?= urlencode($inv['invoice_number']); ?>" 
+                                            class="list-group-item list-group-item-action border-0 <?= (isset($_GET['invoice']) && $_GET['invoice'] == $inv['invoice_number']) ? 'bg-light' : '' ?>">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <div class="fw-semibold"><?= htmlspecialchars($inv['full_name']); ?></div>
+                                                        <small class="text-muted"><?= htmlspecialchars($inv['invoice_number']); ?> | <?= htmlspecialchars($inv['reservation_date']); ?></small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <div class="fw-semibold">₱ <?= number_format($inv['total_amount'], 2); ?></div>
+                                                        <small class="text-success fw-semibold"><?= strtoupper($inv['status']); ?></small>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="list-group-item text-center text-muted">No invoices found</div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
-
                         <!-- RIGHT: Invoice detail -->
+                        <?php
+                        $selectedInvoice = null;
+                        if (isset($_GET['invoice'])) {
+                            foreach ($invoices as $inv) {
+                                if ($inv['invoice_number'] === $_GET['invoice']) {
+                                    $selectedInvoice = $inv;
+                                    break;
+                                }
+                            }
+                        }
+                        ?>
                         <div class="col-md-8">
                             <div class="border rounded-3">
-                                <!-- Status and Export header -->
-                                <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
-                                    <div class="fw-bold text-uppercase small">
-                                        STATUS: <span class="text-success">SENT</span>
-                                    </div>
-                                    <button class="btn btn-primary btn-sm">Export</button>
-                                </div>
-
-                                <div class="p-3">
-                                    <!-- Company Header -->
-                                    <div class="row mb-3">
-                                        <div class="col-8">
-                                            <div class="fw-bold mb-1">NEOPOLITAN SITIO SEVILLE HOMEOWNERS INC.</div>
-                                            <div class="small text-muted mb-3">
-                                                NON VAT REG. TIN: 404-587-404-0000<br>
-                                                NSSHAI Clubhouse Narra St. Neopolitan Sitio Seville<br>
-                                                North Fairview III-B Quezon City NCR, Second District Philippines
-                                            </div>
-
-                                            <div class="small">
-                                                <div class="mb-1"><span class="fw-semibold">Name:</span> Abby Sungwon C.
-                                                    Saja</div>
-                                                <div class="mb-1"><span class="fw-semibold">Reservation Date:</span>
-                                                    2025-07-24</div>
-                                                <div><span class="fw-semibold">Reservation Code:</span> CLB00001</div>
-                                            </div>
+                                <?php if ($selectedInvoice): ?>
+                                    <!-- Status and Export header -->
+                                    <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
+                                        <div class="fw-bold text-uppercase small">
+                                            STATUS: <span class="text-success"><?= strtoupper($selectedInvoice['status']); ?></span>
                                         </div>
-                                        <div class="col-4">
-                                            <div class="text-end small">
-                                                <div class="fw-bold mb-2 fs-6">Invoice No. 0451</div>
-                                                <div class="mb-1"><span class="fw-semibold">Reservation Status:</span>
-                                                    Verified</div>
-                                                <div class="mb-1"><span class="fw-semibold">Payment Method:</span> Cash
+                                        <button class="btn btn-primary btn-sm">Export</button>
+                                    </div>
+
+                                    <div class="p-3">
+                                        <!-- Company Header -->
+                                        <div class="row mb-3">
+                                            <div class="col-8">
+                                                <div class="fw-bold mb-1">NEOPOLITAN SITIO SEVILLE HOMEOWNERS INC.</div>
+                                                <div class="small text-muted mb-3">
+                                                    NON VAT REG. TIN: 404-587-404-0000<br>
+                                                    NSSHAI Clubhouse Narra St. Neopolitan Sitio Seville<br>
+                                                    North Fairview III-B Quezon City NCR, Second District Philippines
                                                 </div>
-                                                <div><span class="fw-semibold">Reference Number:</span> 714377</div>
+
+                                                <div class="small">
+                                                    <div class="mb-1"><span class="fw-semibold">Name:</span> <?= htmlspecialchars($selectedInvoice['full_name']); ?></div>
+                                                    <div class="mb-1"><span class="fw-semibold">Reservation Date:</span> <?= htmlspecialchars($selectedInvoice['reservation_date']); ?></div>
+                                                    <div><span class="fw-semibold">Reservation Code:</span> <?= htmlspecialchars($selectedInvoice['reservation_code']); ?></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="text-end small">
+                                                    <div class="fw-bold mb-2 fs-6">Invoice No. <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
+                                                    <div class="mb-1"><span class="fw-semibold">Payment Method:</span> <?= htmlspecialchars(ucfirst($selectedInvoice['payment_method'])); ?></div>
+                                                    <div><span class="fw-semibold">Reference Number:</span> <?= htmlspecialchars($selectedInvoice['reference_number']); ?></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Items table -->
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered mb-3">
+                                                <thead class="table-success">
+                                                    <tr class="small">
+                                                        <th>Category</th>
+                                                        <th>Item</th>
+                                                        <th class="text-end">Rate</th>
+                                                        <th class="text-center">Qty</th>
+                                                        <th class="text-end">Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="small">
+                                                    <?php
+                                                    $amenity = $selectedInvoice['amenity'];
+                                                    $userType = $selectedInvoice['user_type'];
+                                                    $dayOrNight = $selectedInvoice['rate']; // "day" or "night"
+                                                    $numGuests = $selectedInvoice['guests'] ?? 1; // fallback 1 just in case
+
+                                                    $rateStr = $amenityRates[$amenity][$userType][$dayOrNight] ?? "₱0.00";
+                                                    $numericRate = getNumericAmount($rateStr);
+
+                                                    // Determine total based on amenity type
+                                                    if (in_array($amenity, ['Swimming Pool', 'Basketball Court'])) {
+                                                        $qty = $numGuests;
+                                                        $totalAmount = $numericRate * $qty;
+                                                    } else {
+                                                        $qty = 1;
+                                                        $totalAmount = $numericRate;
+                                                    }
+                                                    ?>
+                                                    <tr>
+                                                        <td>Amenity</td>
+                                                        <td><?= htmlspecialchars($amenity); ?></td>
+                                                        <td class="text-end"><?= $rateStr; ?></td>
+                                                        <td class="text-center"><?= $qty; ?></td>
+                                                        <td class="text-end">₱ <?= number_format($totalAmount, 2); ?></td>
+                                                    </tr>
+                                                    <?php if ($selectedInvoice['chairs'] > 0): ?>
+                                                    <tr>
+                                                        <td>Add-On</td>
+                                                        <td>Chairs</td>
+                                                        <td class="text-end">₱ 12.00</td>
+                                                        <td class="text-center"><?= $selectedInvoice['chairs']; ?></td>
+                                                        <td class="text-end">₱ <?= number_format($selectedInvoice['chairs'] * 12, 2); ?></td>
+                                                    </tr>
+                                                    <?php endif; ?>
+                                                    <?php if ($selectedInvoice['tables'] > 0): ?>
+                                                    <tr>
+                                                        <td>Add-On</td>
+                                                        <td>Tables</td>
+                                                        <td class="text-end">₱ 15.00</td>
+                                                        <td class="text-center"><?= $selectedInvoice['tables']; ?></td>
+                                                        <td class="text-end">₱ <?= number_format($selectedInvoice['tables'] * 15, 2); ?></td>
+                                                    </tr>
+                                                    <?php endif; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <!-- Summary -->
+                                        <div class="d-flex justify-content-end">
+                                            <div class="text-end small" style="min-width: 200px;">
+                                                <?php
+                                                    $chairsTotal = $selectedInvoice['chairs'] * 12;
+                                                    $tablesTotal = $selectedInvoice['tables'] * 15;
+                                                    $subtotal = $totalAmount + $chairsTotal + $tablesTotal;
+                                                    $amountPaid = $selectedInvoice['amount_paid'];
+                                                    $balanceRemaining = $subtotal - $amountPaid;
+                                                ?>
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <span class="fw-semibold">Subtotal</span>
+                                                    <span>₱ <?= number_format($subtotal, 2); ?></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <span class="fw-semibold">Previously Paid</span>
+                                                    <span>₱ <?= number_format($amountPaid, 2); ?></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between fw-bold border-top pt-1">
+                                                    <span>Balance Due</span>
+                                                    <span>₱ <?= number_format($balanceRemaining, 2); ?></span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-
-                                    <!-- Items table -->
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered mb-3">
-                                            <thead class="table-success">
-                                                <tr class="small">
-                                                    <th>Category</th>
-                                                    <th>Item</th>
-                                                    <th class="text-end">Rate</th>
-                                                    <th class="text-center">Qty</th>
-                                                    <th class="text-end">Amount</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="small">
-                                                <tr>
-                                                    <td>Amenity</td>
-                                                    <td>Clubhouse</td>
-                                                    <td class="text-end">₱ 12,000.00</td>
-                                                    <td class="text-center">1</td>
-                                                    <td class="text-end">₱ 12,000.00</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Add-On</td>
-                                                    <td>Chairs</td>
-                                                    <td class="text-end">₱ 12.00</td>
-                                                    <td class="text-center">48</td>
-                                                    <td class="text-end">₱ 576.00</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Add-On</td>
-                                                    <td>Tables</td>
-                                                    <td class="text-end">₱ 15.00</td>
-                                                    <td class="text-center">6</td>
-                                                    <td class="text-end">₱ 90.00</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    <!-- Summary -->
-                                    <div class="d-flex justify-content-end">
-                                        <div class="text-end small" style="min-width: 200px;">
-                                            <div class="d-flex justify-content-between mb-1">
-                                                <span class="fw-semibold">Subtotal</span>
-                                                <span>₱ 12,666.00</span>
-                                            </div>
-                                            <div class="d-flex justify-content-between mb-1">
-                                                <span class="fw-semibold">Previously Paid</span>
-                                                <span>₱ 12,666.00</span>
-                                            </div>
-                                            <div class="d-flex justify-content-between fw-bold border-top pt-1">
-                                                <span>Balance Due</span>
-                                                <span>₱ 0.00</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <?php else: ?>
+                                    <div class="p-5 text-center text-muted">Select an invoice from the left to view details.</div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>

@@ -509,7 +509,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
-    // Prepare database statement - updated to match your actual table structure
+    /// Prepare database statement - updated to match your actual table structure
     $stmt = $conn->prepare("
         INSERT INTO amenity_bookings 
         (reservation_code, admin_id, homeowner_id, visitor_id, amenity, user_type, reservation_date, guests, rate, payment_method, exclusive_booking, chairs, tables, reference_number, total_amount, amount_paid, proof_of_payment, invoice_number, status) 
@@ -520,29 +520,30 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         die("Prepare failed: " . $conn->error);
     }
 
-    // Bind parameters - updated parameter types
+    // Bind parameters - corrected type string
     $stmt->bind_param(
-        "ssssssssissiissdsss",
+        "sssssssisssiissdsss",
         $reservation_code,   // s
-        $admin_id,          // s                
-        $homeowner_id,             // s
-        $visitor_id,               // s
-        $amenity,                  // s
-        $userType,                 // s
-        $reservationDate,          // s 
-        $guests,                   // i
-        $rate,                     // s
-        $payment,                  // s
-        $exclusiveBooking,         // s 
-        $chairs,                   // i
-        $tables,                   // i
-        $referenceNumber,          // s     
-        $total,                    // d
-        $amountPaid,               // d 
-        $proof_of_payment,         // s 
-        $invoice_number,           // s 
-        $status                    // s
+        $admin_id,           // s                
+        $homeowner_id,       // s
+        $visitor_id,         // s
+        $amenity,            // s
+        $userType,           // s
+        $reservationDate,    // s 
+        $guests,             // i
+        $rate,               // s
+        $payment,            // s
+        $exclusiveBooking,   // s 
+        $chairs,             // i
+        $tables,             // i
+        $referenceNumber,    // s     
+        $total,              // d
+        $amountPaid,         // d 
+        $proof_of_payment,   // s 
+        $invoice_number,     // s 
+        $status              // s
     );
+// s
 
     if ($stmt->execute()) {
         // Get recipient name from the appropriate table
