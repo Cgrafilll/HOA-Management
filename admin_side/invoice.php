@@ -231,7 +231,7 @@ try {
                     <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
-                            <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
+                            <li><a href="violation_tracking.php" class="nav-link px-2">Violation Tracking</a></li>
                             <li><a href="entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
                         </ul>
                     </div>
@@ -262,11 +262,16 @@ try {
                     </button>
                     <div class="collapse show" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2">Payments</a></li>
-                            <li><a href="#" class="nav-link px-2 actived">Invoices</a></li>
+                            <li><a href="payment.php" class="nav-link px-2">Payments</a></li>
+                            <li><a href="invoice.php" class="nav-link px-2 actived">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
+                <a href="login/logout.php"
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
+                    <i class="bi bi-box-arrow-left me-2"></i> Logout
+                </a>
             </nav>
         </aside>
         <!-- Main Content -->
@@ -276,7 +281,6 @@ try {
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Payments</h5>
                 </div>
-
                 <div class="p-3">
                     <!-- Button row -->
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -285,7 +289,6 @@ try {
                             <i class="bi bi-plus-lg me-1"></i> New Invoice
                         </button>
                     </div>
-
                     <div class="row g-3">
                         <!-- LEFT: List of invoices -->
                         <div class="col-md-4">
@@ -366,16 +369,20 @@ try {
                                             </div>
 
                                             <div class="small">
-                                                <div class="mb-1"><span class="fw-semibold">Name:</span> Abby Sungwon C. Saja</div>
-                                                <div class="mb-1"><span class="fw-semibold">Reservation Date:</span> 2025-07-24</div>
+                                                <div class="mb-1"><span class="fw-semibold">Name:</span> Abby Sungwon C.
+                                                    Saja</div>
+                                                <div class="mb-1"><span class="fw-semibold">Reservation Date:</span>
+                                                    2025-07-24</div>
                                                 <div><span class="fw-semibold">Reservation Code:</span> CLB00001</div>
                                             </div>
                                         </div>
                                         <div class="col-4">
                                             <div class="text-end small">
                                                 <div class="fw-bold mb-2 fs-6">Invoice No. 0451</div>
-                                                <div class="mb-1"><span class="fw-semibold">Reservation Status:</span> Verified</div>
-                                                <div class="mb-1"><span class="fw-semibold">Payment Method:</span> Cash</div>
+                                                <div class="mb-1"><span class="fw-semibold">Reservation Status:</span>
+                                                    Verified</div>
+                                                <div class="mb-1"><span class="fw-semibold">Payment Method:</span> Cash
+                                                </div>
                                                 <div><span class="fw-semibold">Reference Number:</span> 714377</div>
                                             </div>
                                         </div>
@@ -446,4 +453,5 @@ try {
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

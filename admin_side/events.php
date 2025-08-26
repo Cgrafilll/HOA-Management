@@ -281,7 +281,7 @@ try {
                     <div class="collapse" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
-                            <li><a href="#" class="nav-link px-2">Violation Tracking</a></li>
+                            <li><a href="violation_tracking.php" class="nav-link px-2">Violation Tracking</a></li>
                             <li><a href="entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
                         </ul>
                     </div>
@@ -312,11 +312,16 @@ try {
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2">Payments</a></li>
-                            <li><a href="#" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="payment.php" class="nav-link px-2">Payments</a></li>
+                            <li><a href="invoice.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
+                <a href="login/logout.php"
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
+                    <i class="bi bi-box-arrow-left me-2"></i> Logout
+                </a>
             </nav>
         </aside>
         <!-- Main Content -->
@@ -329,7 +334,8 @@ try {
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">Event Form</span>
                         <div class="d-flex gap-2">
-                            <a href="events/archive_events.php" class="btn btn-outline-secondary btn-sm">Archived Events</a>
+                            <a href="events/archive_events.php" class="btn btn-outline-secondary btn-sm">Archived
+                                Events</a>
                         </div>
                     </div>
                     <hr class="mb-3 mt-0">

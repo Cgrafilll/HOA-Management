@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($has_photo) {
                 $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
 
-               $sql = "INSERT INTO household_accounts (
+                $sql = "INSERT INTO household_accounts (
                     household_id, first_name, middle_name, last_name, date_of_birth, age, sex,
                     cellphone_number, landline, email_address, street_address, street_address_2, city,
                     state_province, barangay, postal_zip_code, members, rfid, profile_picture, password
@@ -360,6 +360,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </ul>
                     </div>
                 </div>
+                <a href="login/logout.php"
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
+                    <i class="bi bi-box-arrow-left me-2"></i> Logout
+                </a>
             </nav>
         </aside>
         <!-- Main Content -->

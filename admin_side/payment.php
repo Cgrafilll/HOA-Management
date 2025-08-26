@@ -353,10 +353,15 @@ if (isset($_GET['action'])) {
                     <div class="collapse show" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="payment.php" class="nav-link px-2 actived">Payments</a></li>
-                            <li><a href="#" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="invoice.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
+                <a href="login/logout.php"
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
+                    <i class="bi bi-box-arrow-left me-2"></i> Logout
+                </a>
             </nav>
         </aside>
         <!-- Main Content -->

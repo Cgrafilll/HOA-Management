@@ -366,6 +366,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </ul>
                     </div>
                 </div>
+                <a href="../login/logout.php"
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
+                    <i class="bi bi-box-arrow-left me-2"></i> Logout
+                </a>
             </nav>
         </aside>
         <!-- Main Content -->
