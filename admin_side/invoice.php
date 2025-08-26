@@ -372,9 +372,9 @@ function getNumericAmount($amountStr) {
                     <!-- Button row -->
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="fw-semibold">List of Invoices</div>
-                        <button class="btn btn-primary btn-sm d-flex align-items-center">
+                        <a href="invoice/add_invoice.php" class="btn btn-primary btn-sm d-flex align-items-center">
                             <i class="bi bi-plus-lg me-1"></i> New Invoice
-                        </button>
+                        </a>
                     </div>
                     <div class="row g-3">
                         <!-- LEFT: List of invoices -->

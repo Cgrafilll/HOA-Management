@@ -1,0 +1,341 @@
+<?php
+session_start();
+require '../../rfid-api/db.php';
+
+if (!isset($_SESSION['email_address'])) {
+    header("Location: ../login/login.php");
+    exit;
+}
+
+// Initialize user details
+$email_address = $_SESSION['email_address'];
+$admin_id = $_SESSION['admin_id'];
+$username = $photo = '';// Initialize user details
+
+// Fetch user details including profile photo
+try {
+    $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE email_address = ?");
+    $stmt->bind_param("s", $email_address);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+
+    if ($user) {
+        $username = $user['first_name'];
+
+        // Only set $photo if profile_pic exists and is not null
+        if (!empty($user['profile_picture'])) {
+            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']);
+        } else {
+            $photo = ''; // Explicitly empty if no image is saved
+        }
+    } else {
+        $error_message = "Failed to fetch user details.";
+    }
+
+} catch (Exception $e) {
+    $error_message = "Error fetching user details: " . $e->getMessage();
+}
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NSSHAI HOA Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+        * {
+            font-family: "Montserrat", sans-serif;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            top: 20;
+            left: 0;
+            background-color: #1F2937;
+            overflow-y: auto;
+        }
+
+        main {
+            margin-left: 250px;
+        }
+
+        .sidebar a,
+        .sidebar button {
+            color: #ffffff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar a:hover,
+        .sidebar button:hover,
+        .collapse ul li a:hover,
+        .collapse ul li a.actived {
+            color: #80ed99;
+        }
+
+        .sidebar .nav-link.active,
+        .sidebar .btn-toggle:not(.collapsed),
+        .sidebar .btn-toggle.active {
+            background-color: #198754;
+            border-radius: 0.375rem;
+        }
+
+        .sidebar .btn-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            color: #ffffff;
+            background: none;
+            border: none;
+        }
+
+        .sidebar .btn-toggle i {
+            margin-right: 8px;
+        }
+
+        .sidebar .btn-toggle::after {
+            content: "▼";
+            font-size: 10px;
+            transition: transform 0.3s;
+            margin-left: auto;
+        }
+
+        .sidebar .btn-toggle.collapsed::after {
+            transform: rotate(0deg);
+        }
+
+        .sidebar .btn-toggle:not(.collapsed)::after {
+            transform: rotate(180deg);
+        }
+
+        #preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <!-- Header -->
+    <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
+        <div class="me-4" style="width: 250px;">
+            <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
+        </div>
+        <div class="d-flex justify-content-between align-items-center flex-grow-1">
+            <h1 class="h5 mb-0 fw-bold">ACCOUNTING</h1>
+            <div class="dropdown">
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
+                    aria-expanded="false" role="button" style="cursor: pointer;">
+                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                        style="height: 40px; width: 40px; color: #aaa;">
+                        <?php if (!empty($photo)): ?>
+                                <img src="<?php echo htmlspecialchars($photo); ?>"
+                                    style="width: 40px; height: 40px; object-fit: cover;">
+                        <?php else: ?>
+                                <i class="bi bi-person-circle" style="font-size: 32px;"></i>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li><a class="dropdown-item" href="../admin/view_admin.php?id=<?php echo $admin_id; ?>"><i
+                                class="bi bi-person me-2"></i>Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="../login/logout.php"><i
+                                class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <aside class="sidebar p-3">
+            <nav class="nav flex-column gap-1">
+                <a href="../admin_dashboard.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-house me-2"></i> Home
+                </a>
+                <!-- Accounts -->
+                <div>
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#accountsCollapse" aria-expanded="true">
+                        <span class="d-flex align-items-center">
+                            <i class="bi bi-person-lines-fill me-2"></i> Accounts
+                        </span>
+                    </button>
+                    <div class="collapse" id="accountsCollapse">
+                        <ul class="nav flex-column ms-3 mt-1">
+                            <li><a href="../admin_accounts.php" class="nav-link px-2">Admin</a></li>
+                            <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
+                            <li><a href="../visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Record Keeping -->
+                <div>
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#recordCollapse" aria-expanded="false">
+                        <span class="d-flex align-items-center">
+                            <i class="bi bi-book me-2"></i> Record Keeping
+                        </span>
+                    </button>
+                    <div class="collapse" id="recordCollapse">
+                        <ul class="nav flex-column ms-3 mt-1">
+                            <li><a href="../amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
+                            <li><a href="../violation_tracking.php" class="nav-link px-2">Violation Tracking</a></li>
+                            <li><a href="../entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Communication -->
+                <div>
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#commCollapse" aria-expanded="false">
+                        <span class="d-flex align-items-center">
+                            <i class="bi bi-chat-left-text me-2"></i> Communication
+                        </span>
+                    </button>
+                    <div class="collapse" id="commCollapse">
+                        <ul class="nav flex-column ms-3 mt-1">
+                            <li><a href="../announcements.php" class="nav-link px-2">Announcements</a></li>
+                            <li><a href="../events.php" class="nav-link px-2">Events</a></li>
+                            <li><a href="../phonebook.php" class="nav-link px-2">Phone Book</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Accounting -->
+                <div>
+                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
+                        data-bs-target="#acctCollapse" aria-expanded="false">
+                        <span class="d-flex align-items-center">
+                            <i class="bi bi-cash-coin me-2"></i> Accounting
+                        </span>
+                    </button>
+                    <div class="collapse show" id="acctCollapse">
+                        <ul class="nav flex-column ms-3 mt-1">
+                            <li><a href="../payment.php" class="nav-link px-2">Payments</a></li>
+                            <li><a href="../invoice.php" class="nav-link px-2 actived">Invoices</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <a href="../login/logout.php"
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
+                    <i class="bi bi-box-arrow-right me-2"></i> Logout
+                </a>
+            </nav>
+        </aside>
+        <!-- Main Content -->
+        <main class="flex-fill p-4">
+            <div class="bg-white shadow rounded p-3">
+                <!-- Header -->
+                <div class="bg-success text-white rounded-top p-3">
+                    <h5 class="mb-0 fw-bold">New Invoice</h5>
+                </div>
+
+                <!-- Back Button -->
+                <div class="p-3 d-flex justify-content-between align-items-center">
+                    <span class="small mb-0">Fill out the form below to issue a new invoice</span>
+                    <a href="../invoice.php"
+                    class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                        <i class="bi bi-arrow-left-short me-1"></i>Back
+                    </a>
+                </div>
+                <hr class="my-0">
+
+                <!-- Form -->
+                <form action="process_add_invoice.php" method="POST" enctype="multipart/form-data" class="p-4">
+                    <div class="row g-3">
+                        <!-- Invoice Number -->
+                        <div class="col-md-6">
+                            <label for="invoice_number" class="form-label fw-semibold">Invoice Number</label>
+                            <input type="text" class="form-control" id="invoice_number" name="invoice_number" required>
+                        </div>
+
+                        <!-- Household ID (FK) -->
+                        <div class="col-md-6">
+                            <label for="household_id" class="form-label fw-semibold">Household</label>
+                            <select class="form-select" id="household_id" name="household_id" required>
+                                <option value="" selected disabled>Select Household</option>
+                                <?php
+                                // Populate dropdown with household_accounts
+                                $households = $conn->query("SELECT household_id, CONCAT(first_name, ' ', last_name) AS name FROM household_accounts");
+                                while ($row = $households->fetch_assoc()) {
+                                    echo "<option value='{$row['household_id']}'>{$row['household_id']} - {$row['name']}</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+
+                        <!-- Billing Month -->
+                        <div class="col-md-6">
+                            <label for="billing_month" class="form-label fw-semibold">Billing Month</label>
+                            <input type="month" class="form-control" id="billing_month" name="billing_month" required>
+                        </div>
+
+                        <!-- Amount Paid -->
+                        <div class="col-md-6">
+                            <label for="amount_paid" class="form-label fw-semibold">Amount Paid</label>
+                            <input type="number" step="0.01" class="form-control" id="amount_paid" name="amount_paid" required>
+                        </div>
+
+                        <!-- Balance Remaining -->
+                        <div class="col-md-6">
+                            <label for="balance_remaining" class="form-label fw-semibold">Balance Remaining</label>
+                            <input type="number" step="0.01" class="form-control" id="balance_remaining" name="balance_remaining" required>
+                        </div>
+
+                        <!-- Reference Number -->
+                        <div class="col-md-6">
+                            <label for="reference_number" class="form-label fw-semibold">Reference Number</label>
+                            <input type="text" class="form-control" id="reference_number" name="reference_number" required>
+                        </div>
+
+                        <!-- Proof of Payment -->
+                        <div class="col-md-6">
+                            <label for="proof_of_payment" class="form-label fw-semibold">Proof of Payment (optional)</label>
+                            <input type="file" class="form-control" id="proof_of_payment" name="proof_of_payment" accept="image/*">
+                        </div>
+
+                        <!-- Payment Date -->
+                        <div class="col-md-6">
+                            <label for="payment_date" class="form-label fw-semibold">Payment Date</label>
+                            <input type="date" class="form-control" id="payment_date" name="payment_date" value="<?php echo date('Y-m-d'); ?>" required>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="mt-4 text-end">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-save me-1"></i> Save Invoice
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
