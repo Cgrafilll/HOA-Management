@@ -9,7 +9,7 @@ if (!isset($_SESSION['email_address'])) {
 
 // Initialize user details
 $email_address = $_SESSION['email_address'];
-$username = $photo = '';// Initialize user details
+$username = $photo = $admin_id = '';// Initialize user details
 
 // Fetch user details including profile photo
 try {
@@ -21,6 +21,7 @@ try {
 
     if ($user) {
         $username = $user['first_name'];
+        $admin_id = $user['admin_id'];
 
         // Only set $photo if profile_pic exists and is not null
         if (!empty($user['profile_picture'])) {
@@ -184,18 +185,30 @@ if ($edit_admin) {
             <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
-            <div class="d-flex align-items-center gap-2">
-                <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
-                <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
-                    style="height: 40px; width: 40px; color: #aaa;">
-                    <?php if (!empty($photo)): ?>
-                        <img src="<?php echo htmlspecialchars($photo); ?>"
-                            style="width: 40px; height: 40px; object-fit: cover;">
-                    <?php else: ?>
-                        <i class="bi bi-person-circle" style="font-size: 32px;"></i>
-                    <?php endif; ?>
+            <h1 class="h5 mb-0 fw-bold">ADMIN DASHBOARD</h1>
+            <div class="dropdown">
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
+                    aria-expanded="false" role="button" style="cursor: pointer;">
+                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                        style="height: 40px; width: 40px; color: #aaa;">
+                        <?php if (!empty($photo)): ?>
+                            <img src="<?php echo htmlspecialchars($photo); ?>"
+                                style="width: 40px; height: 40px; object-fit: cover;">
+                        <?php else: ?>
+                            <i class="bi bi-person-circle" style="font-size: 32px;"></i>
+                        <?php endif; ?>
+                    </div>
                 </div>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li><a class="dropdown-item" href="view_admin.php?id=<?php echo $admin_id; ?>"><i
+                                class="bi bi-person me-2"></i>Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="login/logout.php"><i
+                                class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                </ul>
             </div>
         </div>
     </header>
@@ -287,9 +300,13 @@ if ($edit_admin) {
                 <!-- Subheader + Back -->
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <span class="small">User Details</span>
-                    <a href="../admin_accounts.php" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-arrow-left me-1"></i>Back
-                    </a>
+                    <div>
+                        <button onclick="history.back()" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>Back
+                        </button>
+                        <a class="btn btn-primary btn-sm" href="edit_admin.php?id=<?php echo $edit_admin; ?>">Edit
+                            Details</a>
+                    </div>
                 </div>
                 <hr class="my-0">
                 <!-- Content -->

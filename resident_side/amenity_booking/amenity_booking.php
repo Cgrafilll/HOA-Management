@@ -26,13 +26,10 @@ if ($user) {
 
 // How many records per page
 $limit = 10;
-
 // Current page number (default 1 if not set)
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
-
 // Calculate offset for SQL query
 $offset = ($page - 1) * $limit;
-
 // Get total number of records from amenity_bookings for this homeowner
 if ($homeowner_id) {
     $totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE homeowner_id = ?";
@@ -49,30 +46,116 @@ if ($homeowner_id) {
     $totalRow = $totalResult->fetch_assoc();
     $totalRecords = $totalRow['total'];
 }
-
 // Calculate total pages
 $totalPages = ceil($totalRecords / $limit);
-
 // ✅ Fetch only the records for THIS PAGE (table)
 if ($homeowner_id) {
-    $booking_sql = "SELECT * FROM amenity_bookings WHERE homeowner_id = ? ORDER BY reservation_date ASC LIMIT ? OFFSET ?";
+    $booking_sql = "SELECT 
+        ab.id,
+        ab.reservation_code,
+        ab.amenity,
+        ab.user_type,
+        ab.reservation_date,
+        ab.rate,
+        ab.total_amount,
+        ab.amount_paid,
+        ab.status,
+        ab.created_at,
+        ab.homeowner_id,
+        CASE 
+            WHEN ab.user_type = 'homeowner' THEN ha.first_name
+            WHEN ab.user_type = 'visitor' THEN vd.first_name
+            ELSE NULL
+        END as first_name,
+        CASE 
+            WHEN ab.user_type = 'homeowner' THEN ha.middle_name
+            WHEN ab.user_type = 'visitor' THEN vd.middle_name
+            ELSE NULL
+        END as middle_name,
+        CASE 
+            WHEN ab.user_type = 'homeowner' THEN ha.last_name
+            WHEN ab.user_type = 'visitor' THEN vd.last_name
+            ELSE NULL
+        END as last_name
+    FROM amenity_bookings ab
+    LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+    LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+    WHERE ab.homeowner_id = ? ORDER BY ab.reservation_date ASC LIMIT ? OFFSET ?";
     $bookings_stmt = $conn->prepare($booking_sql);
     $bookings_stmt->bind_param("iii", $homeowner_id, $limit, $offset);
     $bookings_stmt->execute();
     $bookings_result = $bookings_stmt->get_result();
 } else {
     // If no homeowner_id, get all records for this page
-    $booking_sql = "SELECT * FROM amenity_bookings ORDER BY reservation_date ASC LIMIT ? OFFSET ?";
+    $booking_sql = "SELECT 
+        ab.id,
+        ab.reservation_code,
+        ab.amenity,
+        ab.user_type,
+        ab.reservation_date,
+        ab.rate,
+        ab.total_amount,
+        ab.amount_paid,
+        ab.status,
+        ab.created_at,
+        ab.homeowner_id,
+        CASE 
+            WHEN ab.user_type = 'homeowner' THEN ha.first_name
+            WHEN ab.user_type = 'visitor' THEN vd.first_name
+            ELSE NULL
+        END as first_name,
+        CASE 
+            WHEN ab.user_type = 'homeowner' THEN ha.middle_name
+            WHEN ab.user_type = 'visitor' THEN vd.middle_name
+            ELSE NULL
+        END as middle_name,
+        CASE 
+            WHEN ab.user_type = 'homeowner' THEN ha.last_name
+            WHEN ab.user_type = 'visitor' THEN vd.last_name
+            ELSE NULL
+        END as last_name
+    FROM amenity_bookings ab
+    LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+    LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+    ORDER BY ab.reservation_date ASC LIMIT ? OFFSET ?";
     $bookings_stmt = $conn->prepare($booking_sql);
     $bookings_stmt->bind_param("ii", $limit, $offset);
     $bookings_stmt->execute();
     $bookings_result = $bookings_stmt->get_result();
 }
-
 // ✅ Fetch ALL records (for calendar JSON) - if you need this for calendar
-$sql = "SELECT id, first_name, middle_name, last_name, homeowner_id, amenity, reservation_code, rate, reservation_date, status, total_amount, amount_paid, created_at FROM amenity_bookings ORDER BY reservation_date ASC";
+$sql = "SELECT 
+    ab.id,
+    ab.reservation_code,
+    ab.amenity,
+    ab.user_type,
+    ab.reservation_date,
+    ab.rate,
+    ab.total_amount,
+    ab.amount_paid,
+    ab.status,
+    ab.created_at,
+    ab.homeowner_id,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.first_name
+        WHEN ab.user_type = 'visitor' THEN vd.first_name
+        ELSE NULL
+    END as first_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.middle_name
+        WHEN ab.user_type = 'visitor' THEN vd.middle_name
+        ELSE NULL
+    END as middle_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.last_name
+        WHEN ab.user_type = 'visitor' THEN vd.last_name
+        ELSE NULL
+    END as last_name
+FROM amenity_bookings ab
+LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+ORDER BY ab.reservation_date ASC";
 $result = $conn->query($sql);
-
 $bookings = [];
 if ($result) {
     while ($row = $result->fetch_assoc()) {
@@ -85,7 +168,6 @@ if ($result) {
                 $timeSlot = "5:00 PM - 10:00 PM";
             }
         }
-
         $bookings[] = [
             "id" => $row['id'],
             "date" => $row['reservation_date'],
@@ -100,7 +182,6 @@ if ($result) {
         ];
     }
 }
-
 ?>
 
 
@@ -578,9 +659,9 @@ if ($result) {
                     const bookingElement = document.createElement('div');
 
                     // Determine background class based on payment
-                    let bgClass = 'bg-secondary';
+                    let bgClass = 'bg-secondary text-white';
                     if (booking.paymentStatus === 'Paid') {
-                        bgClass = 'bg-success';
+                        bgClass = 'bg-success text-white';
                     } else if (booking.paymentStatus === 'Partial') {
                         bgClass = 'bg-warning text-dark';
                     }
