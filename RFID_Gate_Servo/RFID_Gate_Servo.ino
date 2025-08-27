@@ -4,7 +4,6 @@ Servo myservo;
 
 #define trigPin 2
 #define echoPin 3
-#define statusLED 13  // Built-in LED for status indication
 
 const int objectThreshold = 20;          // cm - distance to detect object
 const unsigned long openDuration = 5000; // ms
@@ -21,13 +20,10 @@ bool waitingForClear = false;
 void setup() {
   Serial.begin(9600);
   myservo.attach(9);
-  myservo.write(20); // closed position (avoids twitch)
+  myservo.write(140); // closed position (avoids twitch)
 
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
-  pinMode(statusLED, OUTPUT);
-  
-  digitalWrite(statusLED, LOW); // Gate closed indicator
 
   Serial.println("READY"); // Signal to PHP that Arduino is ready
   Serial.println("Gate initialized in CLOSED position");
@@ -35,7 +31,8 @@ void setup() {
 }
 
 void loop() {
-  // 🔹 Listen for Serial commands from PHP
+  // 🔹 Listen for Serial commands from PHP3870960596
+
   if (Serial.available() > 0) {
     String command = Serial.readStringUntil('\n');
     command.trim();
@@ -116,7 +113,7 @@ void loop() {
 
 void openGate() {
   if (!gateOpen) {
-    myservo.write(160); // open position
+    myservo.write(50); // open position
     gateOpen = true;
     gateOpenTime = millis();
     objectDetected = false;
@@ -129,7 +126,7 @@ void openGate() {
 
 void closeGate() {
   if (gateOpen) {
-    myservo.write(20); // closed position
+    myservo.write(140); // closed position
     gateOpen = false;
     objectDetected = false;
     waitingForClear = false;

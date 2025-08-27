@@ -11,7 +11,7 @@ $uid = strtoupper(trim($_POST['uid'])); // normalize UID
 
 try {
     // ✅ Check household_accounts
-    $stmt1 = $conn->prepare("SELECT first_name, middle_name, last_name, rfid 
+    $stmt1 = $conn->prepare("SELECT first_name, middle_name, last_name, rfid, profile_picture 
                              FROM household_accounts WHERE rfid = ?");
     $stmt1->bind_param("s", $uid);
     $stmt1->execute();
@@ -23,6 +23,11 @@ try {
         $mname = $row['middle_name'];
         $lname = $row['last_name'];
         $full_name = trim($fname . ' ' . $mname . ' ' . $lname);
+        // Convert LONGBLOB to base64 data URL
+        $profile_picture = '';
+        if (!empty($row['profile_picture'])) {
+            $profile_picture = 'data:image/jpeg;base64,' . base64_encode($row['profile_picture']);
+        }
 
         // ✅ Generate new entry_id for logging
         $result = $conn->query("SELECT entry_id FROM entry_logs WHERE entry_id LIKE 'ENT-%' ORDER BY entry_id DESC LIMIT 1");
@@ -46,13 +51,14 @@ try {
             "first_name" => $row['first_name'],
             "middle_name" => $row['middle_name'],
             "last_name" => $row['last_name'],
-            "full_name" => $full_name
+            "full_name" => $full_name,
+            "profile_picture" => $profile_picture
         ]);
         exit;
     }
 
     // ✅ Check visitor_details
-    $stmt2 = $conn->prepare("SELECT first_name, middle_name, last_name, rfid 
+    $stmt2 = $conn->prepare("SELECT first_name, middle_name, last_name, rfid, profile_picture 
                              FROM visitor_details WHERE rfid = ?");
     $stmt2->bind_param("s", $uid);
     $stmt2->execute();
@@ -64,6 +70,11 @@ try {
         $mname = $row['middle_name'];
         $lname = $row['last_name'];
         $full_name = trim($fname . ' ' . $mname . ' ' . $lname);
+        // Convert LONGBLOB to base64 data URL
+        $profile_picture = '';
+        if (!empty($row['profile_picture'])) {
+            $profile_picture = 'data:image/jpeg;base64,' . base64_encode($row['profile_picture']);
+        }
 
         // ✅ Generate new entry_id for logging
         $result = $conn->query("SELECT entry_id FROM entry_logs WHERE entry_id LIKE 'ENT-%' ORDER BY entry_id DESC LIMIT 1");
@@ -87,7 +98,8 @@ try {
             "first_name" => $row['first_name'],
             "middle_name" => $row['middle_name'],
             "last_name" => $row['last_name'],
-            "full_name" => $full_name
+            "full_name" => $full_name,
+            "profile_picture" => $profile_picture
         ]);
         exit;
     }
@@ -104,3 +116,4 @@ try {
         "message" => $e->getMessage()
     ]);
 }
+?>
