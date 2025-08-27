@@ -7,13 +7,14 @@ Servo myservo;
 
 const int objectThreshold = 20;          // cm - distance to detect object
 const unsigned long autoCloseTimeout = 15000; // 15 seconds max open time
-const unsigned long detectDelay = 2000;  // 2 seconds wait before closing
+const unsigned long detectDelay = 5000;  // 5 seconds wait before closing
 
 bool gateOpen = false;
 unsigned long gateOpenTime = 0;
 unsigned long lastHeartbeat = 0;
 unsigned long detectStartTime = 0;
 bool closingScheduled = false;
+bool objectDetected = false;  // track if object ever passed
 
 void setup() {
   Serial.begin(9600);
@@ -67,25 +68,26 @@ void loop() {
       lastDebug = millis();
     }
 
+    // Detect object
     if (distance <= objectThreshold && distance > 0) {
-      if (!closingScheduled) {
-        closingScheduled = true;
+      if (!objectDetected) {
+        objectDetected = true;
         detectStartTime = millis();
-        Serial.println("DETECT: Object detected at " + String(distance) + "cm → Closing in 2s...");
+        Serial.println("DETECT: Object detected at " + String(distance) + "cm → Closing in 5s...");
       }
     }
 
-    // Check if delay passed and close gate
-    if (closingScheduled && (millis() - detectStartTime >= detectDelay)) {
+    // Close 5s after object detected
+    if (objectDetected && (millis() - detectStartTime >= detectDelay)) {
       closeGate();
+      objectDetected = false;
       closingScheduled = false;
     }
 
-    // 🔹 Auto-close timeout (safety feature)
-    if ((millis() - gateOpenTime) > autoCloseTimeout && gateOpen) {
-      Serial.println("TIMEOUT: Force closing gate after " + String(autoCloseTimeout/1000) + " seconds");
+    // 🔹 Auto-close after 15s only if no object was detected
+    if (!objectDetected && (millis() - gateOpenTime > autoCloseTimeout) && gateOpen) {
+      Serial.println("TIMEOUT: No object detected → Closing after 15s");
       closeGate();
-      closingScheduled = false;
     }
   }
 
@@ -103,7 +105,7 @@ void openGate() {
     myservo.write(50); // open position
     gateOpen = true;
     gateOpenTime = millis();
-    closingScheduled = false;
+    objectDetected = false; // reset
     Serial.println("SUCCESS: Gate opened");
   } else {
     Serial.println("INFO: Gate already open");
@@ -114,6 +116,7 @@ void closeGate() {
   if (gateOpen) {
     myservo.write(140); // closed position
     gateOpen = false;
+    objectDetected = false;
     closingScheduled = false;
     Serial.println("SUCCESS: Gate closed");
   } else {

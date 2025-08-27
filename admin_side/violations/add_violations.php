@@ -36,6 +36,20 @@ try {
 } catch (Exception $e) {
     $error_message = "Error fetching user details: " . $e->getMessage();
 }
+
+// Fetch all household accounts for dropdown
+$households = [];
+try {
+    $stmt = $conn->prepare("SELECT household_id, first_name, middle_name, last_name, cellphone_number FROM household_accounts ORDER BY first_name, last_name");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $households[] = $row;
+    }
+} catch (Exception $e) {
+    $error_message = "Error fetching households: " . $e->getMessage();
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -323,22 +337,42 @@ try {
                     <hr class="mb-3 mt-0">
                     <!-- Violation Report Form -->
                     <form action="save_violation.php" id="violationForm" method="POST" enctype="multipart/form-data">
+                        <!-- Household Selection -->
+                        <div class="row">
+                            <span class="fw-bold mb-3">Select Household Account</span>
+                            <div class="col-md-4 mb-3">
+                                <select id="householdSelect" class="form-select" required>
+                                    <option value="" selected disabled>Select a Household</option>
+                                    <?php foreach ($households as $household): ?>
+                                        <option value="<?php echo htmlspecialchars($household['household_id']); ?>"
+                                            data-firstname="<?php echo htmlspecialchars($household['first_name']); ?>"
+                                            data-middlename="<?php echo htmlspecialchars($household['middle_name']); ?>"
+                                            data-lastname="<?php echo htmlspecialchars($household['last_name']); ?>"
+                                            data-cellphone="<?php echo htmlspecialchars($household['cellphone_number']); ?>">
+                                            <?php echo htmlspecialchars($household['household_id'] . ' - ' . $household['first_name'] . ' ' . $household['middle_name'] . ' ' . $household['last_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <label class="form-label mt-2">Household<small
+                                        class="fw-bold text-danger">*</small></label>
+                            </div>
+                        </div>
                         <!-- Personal Info -->
                         <div class="row">
                             <span class="fw-bold mb-3">Reporter Information</span>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="first_name" class="form-control" required />
-                                <label class=" form-label mt-2">First Name<small
+                                <input type="text" id="first_name" name="first_name" class="form-control" readonly />
+                                <label class="form-label mt-2">First Name<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="middle_name" class="form-control" required />
-                                <label class=" form-label mt-2">Middle Name<small
+                                <input type="text" id="middle_name" name="middle_name" class="form-control" readonly />
+                                <label class="form-label mt-2">Middle Name<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="last_name" class="form-control" required />
-                                <label class=" form-label mt-2">Last Name<small
+                                <input type="text" id="last_name" name="last_name" class="form-control" readonly />
+                                <label class="form-label mt-2">Last Name<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
                         </div>
@@ -346,12 +380,13 @@ try {
                         <div class="row">
                             <span class="fw-bold mb-3">Contact Information</span>
                             <div class="col-md-4 mb-3">
-                                <input type="tel" name="cellphone_number" class="form-control" pattern="[0-9]+"
-                                    maxlength="15" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                                    placeholder="e.g., 09171234567" />
+                                <input type="tel" id="cellphone_number" name="cellphone_number" class="form-control"
+                                    readonly />
                                 <label class="form-label mt-2">Cellphone Number</label>
                             </div>
                         </div>
+                        <!-- Hidden field to store household_id -->
+                        <input type="hidden" id="household_id" name="household_id" />
                         <!-- Incident Details -->
                         <div class="row">
                             <span class="fw-bold mb-3">Incident Details</span>
@@ -452,6 +487,25 @@ try {
             </div>
         </main>
     </div>
+    <!-- Confirm Save Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Confirm Save</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <i class="bi bi-question-circle text-primary" style="font-size: 64px;"></i>
+                    <p class="mb-2">Are you sure you want to save this violation?</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-primary" id="confirmSaveBtn">Save</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Success Modal -->
     <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -463,7 +517,7 @@ try {
                     <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
                     <p class="mt-3 mb-2"><b>Violation report saved successfully.</b></p>
                     <button type="button" class="btn btn-success" data-bs-dismiss="modal"
-                        onclick="window.location.href='report.php'">OK</button>
+                        onclick="window.location.href='../violation_tracking.php'">OK</button>
                 </div>
             </div>
         </div>
@@ -492,7 +546,7 @@ try {
                 const successModal = new bootstrap.Modal(document.getElementById('successModal'));
                 successModal.show();
 
-                const redirect = () => window.location.href = '../admin_accounts.php';
+                const redirect = () => window.location.href = '../violation_tracking.php';
                 document.getElementById('doneButton').addEventListener('click', redirect);
                 document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
             });
@@ -502,10 +556,55 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            const householdSelect = document.getElementById('householdSelect');
+            const firstNameInput = document.getElementById('first_name');
+            const middleNameInput = document.getElementById('middle_name');
+            const lastNameInput = document.getElementById('last_name');
+            const cellphoneInput = document.getElementById('cellphone_number');
+            const householdIdInput = document.getElementById('household_id');
+
+            // Handle household selection change
+            householdSelect.addEventListener('change', function () {
+                const selectedOption = this.options[this.selectedIndex];
+
+                if (selectedOption.value) {
+                    // Populate the form fields with selected household data
+                    firstNameInput.value = selectedOption.dataset.firstname;
+                    middleNameInput.value = selectedOption.dataset.middlename;
+                    lastNameInput.value = selectedOption.dataset.lastname;
+                    cellphoneInput.value = selectedOption.dataset.cellphone;
+                    householdIdInput.value = selectedOption.value;
+                } else {
+                    // Clear the form fields if no household is selected
+                    firstNameInput.value = '';
+                    middleNameInput.value = '';
+                    lastNameInput.value = '';
+                    cellphoneInput.value = '';
+                    householdIdInput.value = '';
+                }
+            });
+
             let confirmBtn = document.getElementById("confirmSaveBtn");
+            let violationForm = document.getElementById("violationForm");
+
+            // Add form submission handler to add validation classes
+            violationForm.addEventListener("submit", function (event) {
+                event.preventDefault(); // Prevent default submission
+
+                // Add Bootstrap validation class
+                violationForm.classList.add("was-validated");
+
+                // Check if form is valid
+                if (violationForm.checkValidity()) {
+                    // Show confirmation modal if form is valid
+                    let confirmModal = new bootstrap.Modal(document.getElementById("confirmModal"));
+                    confirmModal.show();
+                }
+                // If form is invalid, the was-validated class will show the validation errors
+            });
 
             confirmBtn.addEventListener("click", function () {
-                let formData = new FormData(document.getElementById("violationForm"));
+                let formData = new FormData(violationForm);
 
                 fetch("save_violation.php", {
                     method: "POST",
@@ -515,7 +614,9 @@ try {
                     .then(data => {
                         if (data.trim() === "success") {
                             new bootstrap.Modal(document.getElementById("successModal")).show();
-                            document.getElementById("violationForm").reset();
+                            violationForm.reset();
+                            // Remove validation class after successful reset
+                            violationForm.classList.remove("was-validated");
                         } else {
                             document.getElementById("errorMessage").innerText = data;
                             new bootstrap.Modal(document.getElementById("errorModal")).show();
@@ -530,6 +631,71 @@ try {
                 let confirmModal = bootstrap.Modal.getInstance(document.getElementById("confirmModal"));
                 confirmModal.hide();
             });
+
+            // File upload functionality
+            const fileDropArea = document.getElementById('fileDropArea');
+            const fileInput = document.getElementById('fileInput');
+            const browseLink = document.getElementById('browseLink');
+            const filePreview = document.getElementById('filePreview');
+
+            // Browse link click handler
+            browseLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                fileInput.click();
+            });
+
+            // Drag and drop handlers
+            fileDropArea.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                fileDropArea.classList.add('dragover');
+            });
+
+            fileDropArea.addEventListener('dragleave', function (e) {
+                e.preventDefault();
+                fileDropArea.classList.remove('dragover');
+            });
+
+            fileDropArea.addEventListener('drop', function (e) {
+                e.preventDefault();
+                fileDropArea.classList.remove('dragover');
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    displayFilePreview(files[0]);
+                }
+            });
+
+            // File input change handler
+            fileInput.addEventListener('change', function () {
+                if (this.files.length > 0) {
+                    displayFilePreview(this.files[0]);
+                }
+            });
+
+            // Function to display file preview
+            function displayFilePreview(file) {
+                const fileName = file.name;
+                const fileSize = (file.size / 1024 / 1024).toFixed(2); // Convert to MB
+
+                filePreview.innerHTML = `
+            <div class="alert alert-success d-flex align-items-center" role="alert">
+                <i class="bi bi-file-earmark-check me-2"></i>
+                <div>
+                    <strong>${fileName}</strong> (${fileSize} MB)
+                    <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeFile()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+            }
+
+            // Function to remove selected file
+            window.removeFile = function () {
+                fileInput.value = '';
+                filePreview.innerHTML = '';
+            };
         });
     </script>
 </body>

@@ -9,6 +9,7 @@ if (!isset($_SESSION['email_address'])) {
 
 // Initialize user details
 $email_address = $_SESSION['email_address'];
+$admin_id = $_SESSION['admin_id'];
 $username = $photo = ''; // Initialize user details
 
 // Fetch user details including profile photo
@@ -84,76 +85,78 @@ if (isset($_GET['action'])) {
     }
 
     if ($_GET['action'] === 'get_amenity_booking_by_invoice') {
-    if (!isset($_GET['invoice_number']) || empty($_GET['invoice_number']) || 
-        !isset($_GET['user_id']) || empty($_GET['user_id']) || 
-        !isset($_GET['user_type']) || empty($_GET['user_type'])) {
-        echo json_encode(['success' => false, 'error' => 'Invoice number, User ID and User Type are required']);
-        exit;
-    }
+        if (
+            !isset($_GET['invoice_number']) || empty($_GET['invoice_number']) ||
+            !isset($_GET['user_id']) || empty($_GET['user_id']) ||
+            !isset($_GET['user_type']) || empty($_GET['user_type'])
+        ) {
+            echo json_encode(['success' => false, 'error' => 'Invoice number, User ID and User Type are required']);
+            exit;
+        }
 
-    $invoice_number = $_GET['invoice_number'];
-    $user_id = $_GET['user_id'];
-    $user_type = $_GET['user_type'];
+        $invoice_number = $_GET['invoice_number'];
+        $user_id = $_GET['user_id'];
+        $user_type = $_GET['user_type'];
 
-    try {
-        $user_data = null;
-        $booking = null;
+        try {
+            $user_data = null;
+            $booking = null;
 
-        if ($user_type === 'Homeowner/Resident') {
-            $stmt = $conn->prepare("SELECT first_name, middle_name, last_name FROM household_accounts WHERE household_id = ?");
-            $stmt->bind_param("s", $user_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $user_data = $result->fetch_assoc();
+            if ($user_type === 'Homeowner/Resident') {
+                $stmt = $conn->prepare("SELECT first_name, middle_name, last_name FROM household_accounts WHERE household_id = ?");
+                $stmt->bind_param("s", $user_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $user_data = $result->fetch_assoc();
 
-            $stmt = $conn->prepare("
+                $stmt = $conn->prepare("
                 SELECT reference_number, created_at 
                 FROM amenity_bookings 
                 WHERE homeowner_id = ? AND invoice_number = ?
                 LIMIT 1
             ");
-            $stmt->bind_param("ss", $user_id, $invoice_number);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $booking = $result->fetch_assoc();
+                $stmt->bind_param("ss", $user_id, $invoice_number);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $booking = $result->fetch_assoc();
 
-        } else if ($user_type === 'Visitor') {
-            $stmt = $conn->prepare("SELECT first_name, middle_name, last_name FROM visitor_details WHERE visitor_id = ?");
-            $stmt->bind_param("s", $user_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $user_data = $result->fetch_assoc();
+            } else if ($user_type === 'Visitor') {
+                $stmt = $conn->prepare("SELECT first_name, middle_name, last_name FROM visitor_details WHERE visitor_id = ?");
+                $stmt->bind_param("s", $user_id);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $user_data = $result->fetch_assoc();
 
-            $stmt = $conn->prepare("
+                $stmt = $conn->prepare("
                 SELECT reference_number, created_at 
                 FROM amenity_bookings 
                 WHERE visitor_id = ? AND invoice_number = ?
                 LIMIT 1
             ");
-            $stmt->bind_param("ss", $user_id, $invoice_number);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $booking = $result->fetch_assoc();
+                $stmt->bind_param("ss", $user_id, $invoice_number);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $booking = $result->fetch_assoc();
+            }
+
+            if ($booking && $user_data) {
+                echo json_encode([
+                    'success' => true,
+                    'data' => [
+                        'reference_number' => $booking['reference_number'],
+                        'first_name' => $user_data['first_name'],
+                        'middle_name' => $user_data['middle_name'],
+                        'last_name' => $user_data['last_name'],
+                        'created_at' => $booking['created_at']
+                    ]
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'No amenity booking found with that invoice']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         }
 
-        if ($booking && $user_data) {
-            echo json_encode([
-                'success' => true,
-                'data' => [
-                    'reference_number' => $booking['reference_number'],
-                    'first_name' => $user_data['first_name'],
-                    'middle_name' => $user_data['middle_name'],
-                    'last_name' => $user_data['last_name'],
-                    'created_at' => $booking['created_at']
-                ]
-            ]);
-        } else {
-            echo json_encode(['success' => false, 'error' => 'No amenity booking found with that invoice']);
-        }
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-    }
-    
         exit;
     }
 }
@@ -347,17 +350,29 @@ if (isset($_GET['action'])) {
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">ACCOUNTING</h1>
-            <div class="d-flex align-items-center gap-2">
-                <span class="text-secondary">Hello, <?php echo htmlspecialchars($username); ?></span>
-                <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
-                    style="height: 40px; width: 40px; color: #aaa;">
-                    <?php if (!empty($photo)): ?>
-                        <img src="<?php echo htmlspecialchars($photo); ?>"
-                            style="width: 40px; height: 40px; object-fit: cover;">
-                    <?php else: ?>
-                        <i class="bi bi-person-circle" style="font-size: 32px;"></i>
-                    <?php endif; ?>
+            <div class="dropdown">
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
+                    aria-expanded="false" role="button" style="cursor: pointer;">
+                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                        style="height: 40px; width: 40px; color: #aaa;">
+                        <?php if (!empty($photo)): ?>
+                            <img src="<?php echo htmlspecialchars($photo); ?>"
+                                style="width: 40px; height: 40px; object-fit: cover;">
+                        <?php else: ?>
+                            <i class="bi bi-person-circle" style="font-size: 32px;"></i>
+                        <?php endif; ?>
+                    </div>
                 </div>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li><a class="dropdown-item" href="admin/view_admin.php?id=<?php echo $admin_id; ?>"><i
+                                class="bi bi-person me-2"></i>Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="login/logout.php"><i
+                                class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                </ul>
             </div>
         </div>
     </header>
@@ -435,7 +450,7 @@ if (isset($_GET['action'])) {
                 <a href="login/logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
                     style="position: fixed; bottom: 0; width: 220px;">
-                    <i class="bi bi-box-arrow-left me-2"></i> Logout
+                    <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
@@ -489,7 +504,8 @@ if (isset($_GET['action'])) {
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Category<small class="fw-bold text-danger">*</small></label>
+                                        <label class="form-label">Category<small
+                                                class="fw-bold text-danger">*</small></label>
                                         <select class="form-select" id="categorySelect">
                                             <option value="" selected disabled>Select Category</option>
                                             <option value="Monthly Dues">Monthly Dues</option>
@@ -516,7 +532,8 @@ if (isset($_GET['action'])) {
                                     <p class="mb-1"><strong>Reference No.:</strong> <span id="refNo"></span></p>
                                     <p class="mb-1"><strong>Name:</strong> <span id="residentName"></span></p>
                                     <p class="mb-1"><strong>Issue Date:</strong> <span id="issueDate"></span></p>
-                                    <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank Transfer</span></p>
+                                    <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank
+                                            Transfer</span></p>
                                 </div>
                                 <!-- Table -->
                                 <table class="table table-bordered">
@@ -531,32 +548,25 @@ if (isset($_GET['action'])) {
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
                                         </tr>
                                         <tr>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
                                         </tr>
                                         <tr>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                        </tr>
-                                        <tr>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
+                                            <td>&nbsp;</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -651,7 +661,7 @@ if (isset($_GET['action'])) {
         const residentName = document.getElementById('residentName');
         const issueDate = document.getElementById('issueDate');
 
-       const invoiceInput = document.querySelector('input[placeholder="Enter Invoice Number"]');
+        const invoiceInput = document.querySelector('input[placeholder="Enter Invoice Number"]');
 
         invoiceInput.addEventListener('blur', async function () {
             const invoiceNumber = this.value.trim();
@@ -676,7 +686,7 @@ if (isset($_GET['action'])) {
                         refNo.textContent = data.reference_number;
                         residentName.textContent = `${data.first_name} ${data.middle_name} ${data.last_name}`;
                         issueDate.textContent = new Date(data.created_at).toLocaleDateString();
-                        
+
                         // Optionally show success feedback
                         this.style.borderColor = '#198754';
                         this.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
@@ -686,7 +696,7 @@ if (isset($_GET['action'])) {
                         refNo.textContent = "Invoice not found";
                         residentName.textContent = "";
                         issueDate.textContent = "";
-                        
+
                         this.style.borderColor = '#dc3545';
                         this.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
                     }
@@ -695,13 +705,13 @@ if (isset($_GET['action'])) {
                     refNo.textContent = "Error loading";
                     residentName.textContent = "";
                     issueDate.textContent = "";
-                    
+
                     this.style.borderColor = '#dc3545';
                     this.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
                 }
             }
         });
-        invoiceInput.addEventListener('input', function() {
+        invoiceInput.addEventListener('input', function () {
             this.style.borderColor = '#dee2e6';
             this.style.boxShadow = 'none';
         });
@@ -792,8 +802,8 @@ if (isset($_GET['action'])) {
                 this.style.boxShadow = 'none';
             }
         });
-    
-    // Clear all form fields
+
+        // Clear all form fields
         function clearFormFields() {
             // Reset dropdowns
             document.getElementById('userTypeSelect').value = "";

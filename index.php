@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RFID Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" href="images/SitioSeville_Logo.png" type="image/x-icon">
 
     <style>
@@ -164,7 +164,11 @@
             <nav class="nav d-flex flex-column gap-1">
                 <a href="index.php"
                     class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
-                    <i class="bi bi-house me-2"></i> Home / Scanner
+                    <i class="bi bi-house me-2"></i>Home / Scanner
+                </a>
+                <a href="amenity.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-book me-2"></i>Amenity Booking
                 </a>
             </nav>
         </aside>
@@ -178,7 +182,7 @@
             <div class="col-6">
                 <div class="card shadow-sm h-100 d-flex flex-column">
                     <div class="card-header bg-success text-white fw-semibold">
-                        <i class="bx bx-scan me-2"></i>RFID Scanner
+                        <i class="bi bi-upc-scan me-2"></i>RFID Scanner
                     </div>
                     <div class="card-body flex-grow-1">
                         <!-- RFID Input Field -->
@@ -191,13 +195,14 @@
 
                         <!-- Gate Status -->
                         <div id="gateStatus" class="alert alert-secondary border mt-3" role="alert">
-                            <i class="bx bx-door-closed me-2"></i>Gate Status: <strong>CLOSED</strong>
+                            <i class="bi bi-door-closed me-2"></i>Gate Status: <strong>CLOSED</strong>
                         </div>
 
                         <!-- Gate Status Info -->
                         <div class="alert alert-info border-0 mt-2">
-                            <i class="bx bx-info-circle me-2"></i>
-                            <small>Gate opens automatically for registered users and closes after 15 seconds</small>
+                            <i class="bi bi-info-circle me-2"></i>
+                            <small>Gate opens automatically for registered users and closes after the vehicle has
+                                passed.</small>
                         </div>
                     </div>
                 </div>
@@ -208,20 +213,20 @@
                 <div class="card shadow-sm h-100 d-flex flex-column">
                     <div
                         class="card-header bg-success text-white fw-semibold d-flex justify-content-between align-items-center">
-                        <span><i class="bx bx-history me-2"></i>Recent Scan Logs</span>
+                        <span><i class="bi bi-clock-history me-2"></i>Recent Scan Logs</span>
                         <small class="opacity-75">Auto-scroll enabled</small>
                     </div>
                     <div class="card-body flex-grow-1 p-0 logs-container">
                         <div class="scan-logs p-3" id="scanLogsContainer">
                             <div id="scanEntries">
                                 <div class="text-muted text-center py-4">
-                                    <i class="bx bx-scan" style="font-size: 2rem;"></i>
+                                    <i class="bi bi-upc-scan" style="font-size: 2rem;"></i>
                                     <div>No scans yet. Scan an RFID card to begin.</div>
                                 </div>
                             </div>
                         </div>
                         <div class="scroll-indicator" id="scrollIndicator">
-                            <i class="bx bx-down-arrow-alt me-1"></i>Auto-scrolling
+                            <i class="bi bi-arrow-down me-1"></i>Auto-scrolling
                         </div>
                     </div>
                 </div>
@@ -231,11 +236,11 @@
         <!-- User Details Section -->
         <div class="card shadow-sm">
             <div class="card-header bg-success text-white fw-semibold">
-                <i class="bx bx-user me-2"></i>User Details
+                <i class="bi bi-person me-2"></i>User Details
             </div>
             <div class="card-body user-details" id="userDetailsSection">
                 <div class="text-center text-muted py-5">
-                    <i class="bx bx-user-circle" style="font-size: 4rem;"></i>
+                    <i class="bi bi-person-circle" style="font-size: 4rem;"></i>
                     <div class="mt-3">Scan an RFID card to view user details</div>
                 </div>
             </div>
@@ -421,14 +426,14 @@
                          alt="Profile Picture">
                     <div class="d-none justify-content-center align-items-center border border-2 rounded mb-3" 
                          style="width: 150px; height: 150px; margin: 0 auto;">
-                        <i class="bx bx-user" style="font-size: 4rem; color: #ccc;"></i>
+                        <i class="bi bi-person" style="font-size: 4rem; color: #ccc;"></i>
                     </div>
                 `;
             } else {
                 profileImageHtml = `
                     <div class="d-flex justify-content-center align-items-center border border-2 rounded mb-3" 
                          style="width: 150px; height: 150px; margin: 0 auto;">
-                        <i class="bx bx-user" style="font-size: 4rem; color: #ccc;"></i>
+                        <i class="bi bi-person" style="font-size: 4rem; color: #ccc;"></i>
                     </div>
                 `;
             }
@@ -474,7 +479,7 @@
         function clearUserDetails() {
             document.getElementById('userDetailsSection').innerHTML = `
                 <div class="text-center text-muted py-5">
-                    <i class="bx bx-user-circle" style="font-size: 4rem;"></i>
+                    <i class="bi bi-person-circle" style="font-size: 4rem;"></i>
                     <div class="mt-3">User not found in database</div>
                 </div>
             `;
@@ -491,13 +496,13 @@
                     const gateStatus = document.getElementById('gateStatus');
                     if (data.status === 'success') {
                         const isOpen = data.gate === 'OPEN';
-                        const icon = isOpen ? 'bx-door-open' : 'bx-door-closed';
+                        const icon = isOpen ? 'bi-door-open' : 'bi-door-closed';
                         const alertClass = isOpen ? 'alert-success' : 'alert-secondary';
 
-                        gateStatus.innerHTML = `<i class="bx ${icon} me-2"></i>Gate Status: <strong>${data.gate}</strong>`;
+                        gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate Status: <strong>${data.gate}</strong>`;
                         gateStatus.className = `alert ${alertClass} border mt-3`;
                     } else {
-                        gateStatus.innerHTML = `<i class="bx bx-error me-2"></i>Gate Status: <strong>Error</strong>`;
+                        gateStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>Gate Status: <strong>Error</strong>`;
                         gateStatus.className = 'alert alert-danger border mt-3';
                     }
                 })
@@ -510,10 +515,10 @@
         function updateGateDisplay(status) {
             const gateStatus = document.getElementById('gateStatus');
             const isOpen = status === 'OPEN';
-            const icon = isOpen ? 'bx-door-open' : 'bx-door-closed';
+            const icon = isOpen ? 'bi-door-open' : 'bi-door-closed';
             const alertClass = isOpen ? 'alert-success' : 'alert-secondary';
 
-            gateStatus.innerHTML = `<i class="bx ${icon} me-2"></i>Gate Status: <strong>${status}</strong>`;
+            gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate Status: <strong>${status}</strong>`;
             gateStatus.className = `alert ${alertClass} border mt-3`;
         }
 
@@ -521,7 +526,7 @@
             if (autoCloseTimer) clearTimeout(autoCloseTimer);
             autoCloseTimer = setTimeout(() => {
                 triggerGate('close');
-            }, 15000); // 15 seconds
+            }, 5000); // 5 seconds
         }
 
         function loadScanLogs() {

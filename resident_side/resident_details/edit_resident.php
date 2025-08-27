@@ -100,6 +100,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $members = $_POST['members'];
     $rfid = $_POST['rfid'];
 
+    // Handle password fields
+    $new_password = trim($_POST['passWord'] ?? '');
+    $confirm_password = trim($_POST['confirmPassword'] ?? '');
+
     // 2. Check if RFID already exists (excluding current household)
     try {
         $rfid_check_stmt = $conn->prepare("SELECT household_id FROM household_accounts WHERE rfid = ? AND household_id != ?");
@@ -113,83 +117,120 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // 3. Check if profile picture was uploaded
             $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
 
-            if ($has_photo) {
-                $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
-
-                $sql = "UPDATE household_accounts SET 
-                    first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-                    cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-                    city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, rfid=?, profile_picture=?
-                    WHERE household_id=?";
-
-                $stmt = $conn->prepare($sql);
-
-                $stmt->bind_param(
-                    "ssssissssssssssisbs",
-                    $first_name,
-                    $middle_name,
-                    $last_name,
-                    $dob,
-                    $age,
-                    $sex,
-                    $cellphone,
-                    $landline,
-                    $email,
-                    $street,
-                    $street2,
-                    $city,
-                    $state,
-                    $barangay,
-                    $postal,
-                    $members,
-                    $rfid,
-                    $null_blob, // temporary bind, will overwrite with send_long_data
-                    $edit_household
-                );
-
-                $stmt->send_long_data(16, $profile_pic); // 17th param (index 16)
-            } else {
-                // No photo uploaded, don't update profile_pic
-                $sql = "UPDATE household_accounts SET 
-                    first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-                    cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-                    city=?, state_province=?, barangay=?, postal_zip_code=?, members=?, rfid=?
-                    WHERE household_id=?";
-
-                $stmt = $conn->prepare($sql);
-
-                $stmt->bind_param(
-                    "ssssissssssssssiss", // no 'b' here
-                    $first_name,
-                    $middle_name,
-                    $last_name,
-                    $dob,
-                    $age,
-                    $sex,
-                    $cellphone,
-                    $landline,
-                    $email,
-                    $street,
-                    $street2,
-                    $city,
-                    $state,
-                    $barangay,
-                    $postal,
-                    $members,
-                    $rfid,
-                    $edit_household
-                );
+            // 4. Check password update requirements
+            $update_password = false;
+            if (!empty($new_password) || !empty($confirm_password)) {
+                if ($new_password !== $confirm_password) {
+                    $error = "Passwords do not match.";
+                } elseif (strlen($new_password) < 6) {
+                    $error = "Password must be at least 6 characters long.";
+                } else {
+                    $update_password = true;
+                }
             }
 
-            // 4. Execute and check success
-            if ($stmt->execute()) {
-                $success = true;
-            } else {
-                $error = "Update failed: " . $stmt->error;
+            if (!isset($error)) {
+                // Build SQL query based on what needs to be updated
+                $sql_parts = [
+                    "first_name=?",
+                    "middle_name=?",
+                    "last_name=?",
+                    "date_of_birth=?",
+                    "age=?",
+                    "sex=?",
+                    "cellphone_number=?",
+                    "landline=?",
+                    "email_address=?",
+                    "street_address=?",
+                    "street_address_2=?",
+                    "city=?",
+                    "state_province=?",
+                    "barangay=?",
+                    "postal_zip_code=?",
+                    "members=?",
+                    "rfid=?"
+                ];
+
+                $bind_types = "ssssissssssssssis";
+                $bind_values = [
+                    $first_name,
+                    $middle_name,
+                    $last_name,
+                    $dob,
+                    $age,
+                    $sex,
+                    $cellphone,
+                    $landline,
+                    $email,
+                    $street,
+                    $street2,
+                    $city,
+                    $state,
+                    $barangay,
+                    $postal,
+                    $members,
+                    $rfid
+                ];
+
+                // Add password to update if needed
+                if ($update_password) {
+                    $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                    $sql_parts[] = "password=?";
+                    $bind_types .= "s";
+                    $bind_values[] = $hashed_password;
+                }
+
+                // Add profile picture to update if needed
+                $profile_pic_data = null;
+                if ($has_photo) {
+                    $sql_parts[] = "profile_picture=?";
+                    $bind_types .= "b";
+                    $profile_pic_data = file_get_contents($_FILES['profile_pic']['tmp_name']);
+                    $bind_values[] = null; // Placeholder for BLOB data
+                }
+
+                // Add household_id for WHERE clause
+                $bind_types .= "s";
+                $bind_values[] = $edit_household;
+
+                $sql = "UPDATE household_accounts SET " . implode(", ", $sql_parts) . " WHERE household_id=?";
+
+                $stmt = $conn->prepare($sql);
+
+                if ($has_photo) {
+                    // Handle BLOB data with send_long_data for profile picture
+                    $profile_pic_index = count($bind_values) - 2; // -2 because household_id is last
+
+                    // Create refs array for bind_param
+                    $bind_refs = [];
+                    for ($i = 0; $i < count($bind_values); $i++) {
+                        if ($i === $profile_pic_index) {
+                            $bind_refs[] = null; // Will be set with send_long_data
+                        } else {
+                            $bind_refs[] = &$bind_values[$i];
+                        }
+                    }
+
+                    // Bind parameters
+                    $stmt->bind_param($bind_types, ...$bind_refs);
+
+                    // Send BLOB data
+                    $stmt->send_long_data($profile_pic_index, $profile_pic_data);
+                } else {
+                    // Regular bind for all parameters
+                    $stmt->bind_param($bind_types, ...$bind_values);
+                }
+
+                // 5. Execute and check success
+                if ($stmt->execute()) {
+                    $success = true;
+                } else {
+                    $error = "Update failed: " . $stmt->error;
+                }
             }
         }
     } catch (Exception $e) {
-        $error = "Error checking RFID: " . $e->getMessage();
+        $error = "Error updating record: " . $e->getMessage();
     }
 }
 
@@ -379,7 +420,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <hr class="my-0">
                 <div class="p-3">
-                    <form action="edit_household.php?id=<?= $edit_household ?>" id="householdForm" method="POST"
+                    <form action="edit_resident.php?id=<?= $edit_household ?>" id="householdForm" method="POST"
                         enctype="multipart/form-data">
                         <div class="row mb-3">
                             <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
@@ -513,17 +554,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <!-- Account Password -->
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold">Password</label>
+                                <label class="form-label mt-2 fw-bold">New Password</label>
                                 <div class="input-group">
-                                    <input type="password" id="password" name="password" class="form-control"
+                                    <input type="password" id="passWord" name="passWord" class="form-control"
                                         minlength="6" />
                                     <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon1"></i>
                                     </button>
                                 </div>
-                                <label class="form-label mt-2">Set a password for this account (min. 6
-                                    characters)</label>
+                                <label class="form-label mt-2">Enter new password to change (min. 6 characters)</label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label mt-2 fw-bold invisible">Confirm Password</label>
@@ -535,7 +575,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <i class="bi bi-eye" id="toggleIcon2"></i>
                                     </button>
                                 </div>
-                                <label class="form-label mt-2">Confirm password</label>
+                                <label class="form-label mt-2">Confirm new password</label>
+                                <div id="passwordError" class="invalid-feedback"></div>
                             </div>
                         </div>
                         <!-- Submit Buttons -->
@@ -588,7 +629,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 const successModal = new bootstrap.Modal(document.getElementById('successModal'));
                                 successModal.show();
 
-                                const redirect = () => window.location.href = '../household_accounts.php';
+                                const redirect = () => window.location.href = 'view_resident.php?id=<?php echo htmlspecialchars($household_id) ?>';
                                 document.getElementById('doneButton').addEventListener('click', redirect);
                                 document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
                             });
@@ -612,7 +653,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.addEventListener('DOMContentLoaded', function () {
             const rfidInput = document.getElementById('rfidInput');
             const form = document.getElementById('householdForm');
-            const passwordInput = document.getElementById('password');
+            const passwordInput = document.getElementById('passWord');
             const confirmPasswordInput = document.getElementById('confirmPassword');
 
             function toggleRequired() {
@@ -654,14 +695,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Setup password toggle for both password fields
-            setupPasswordToggle('password', 'togglePassword1', 'toggleIcon1');
+            setupPasswordToggle('passWord', 'togglePassword1', 'toggleIcon1');
             setupPasswordToggle('confirmPassword', 'togglePassword2', 'toggleIcon2');
 
             // Password Matching Validation
             function validatePasswords() {
                 const password = passwordInput.value;
                 const confirmPassword = confirmPasswordInput.value;
-                const passwordError = document.getElementById('passwordError');
+                let passwordError = document.getElementById('passwordError');
 
                 // Remove existing error styling
                 passwordInput.classList.remove('is-invalid');
@@ -728,11 +769,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         errorModal.show();
                         return false;
                     }
+                }
 
-
-                    console.log('Form is being submitted via Save button');
-                    console.log('RFID Value:', rfidInput.value);
-                });
+                console.log('Form is being submitted via Save button');
+                console.log('RFID Value:', rfidInput.value);
+            });
 
             // RFID Input Handling - SIMPLIFIED VERSION
             if (rfidInput) {
@@ -823,7 +864,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
 
     </script>
-    
+
 </body>
 
 </html>

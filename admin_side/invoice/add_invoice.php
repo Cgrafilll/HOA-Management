@@ -11,6 +11,7 @@ if (!isset($_SESSION['email_address'])) {
 $email_address = $_SESSION['email_address'];
 $admin_id = $_SESSION['admin_id'];
 $username = $photo = '';// Initialize user details
+// $payment_date_value = date('Y-m-28');
 
 // Fetch user details including profile photo
 try {
@@ -270,10 +271,10 @@ try {
                 <form action="process_add_invoice.php" method="POST" enctype="multipart/form-data" class="p-4">
                     <div class="row g-3">
                         <!-- Invoice Number -->
-                        <div class="col-md-6">
+                        <!-- <div class="col-md-6">
                             <label for="invoice_number" class="form-label fw-semibold">Invoice Number</label>
                             <input type="text" class="form-control" id="invoice_number" name="invoice_number" required>
-                        </div>
+                        </div> -->
 
                         <!-- Household ID (FK) -->
                         <div class="col-md-6">
@@ -297,10 +298,10 @@ try {
                         </div>
 
                         <!-- Amount Paid -->
-                        <div class="col-md-6">
+                        <!-- <div class="col-md-6">
                             <label for="amount_paid" class="form-label fw-semibold">Amount Paid</label>
                             <input type="number" step="0.01" class="form-control" id="amount_paid" name="amount_paid" required>
-                        </div>
+                        </div> -->
 
                         <!-- Balance Remaining -->
                         <div class="col-md-6">
@@ -309,10 +310,10 @@ try {
                         </div>
 
                         <!-- Reference Number -->
-                        <div class="col-md-6">
+                        <!-- <div class="col-md-6">
                             <label for="reference_number" class="form-label fw-semibold">Reference Number</label>
                             <input type="text" class="form-control" id="reference_number" name="reference_number" required>
-                        </div>
+                        </div> -->
 
                         <!-- Proof of Payment -->
                         <div class="col-md-6">
@@ -323,7 +324,7 @@ try {
                         <!-- Payment Date -->
                         <div class="col-md-6">
                             <label for="payment_date" class="form-label fw-semibold">Payment Date</label>
-                            <input type="date" class="form-control" id="payment_date" name="payment_date" value="<?php echo date('Y-m-d'); ?>" required>
+                            <input type="date" class="form-control" id="payment_date" name="payment_date" readonly>
                         </div>
                     </div>
 
@@ -333,9 +334,130 @@ try {
                             <i class="bi bi-save me-1"></i> Save Invoice
                         </button>
                     </div>
+                    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content text-center">
+                                    <div class="modal-header bg-primary text-white">
+                                        <h5 class="modal-title fw-bold">Confirm Publish</h5>
+                                        <button type="button" class="btn-close btn-close-white"
+                                            data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <i class="bi bi-question-circle text-primary" style="font-size: 64px;"></i>
+                                        <p class="mb-2"><b>Are you sure?</b></p>
+                                        <p class="mb-3">Do you really want to publish this event?</p>
+                                        <button type="button" class="btn btn-primary" id="confirmPublish">Yes,
+                                            Publish</button>
+                                        <button type="button" class="btn btn-light"
+                                            data-bs-dismiss="modal">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Default Publish Success Modal -->
+                        <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content text-center">
+                                    <div class="modal-header bg-success text-white">
+                                        <h5 class="modal-title fw-bold">Published!</h5>
+                                        <button type="button" class="btn-close btn-close-white"
+                                            data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
+                                        <p class="mt-3 mb-2"><b>Event published successfully.</b></p>
+                                        <button type="button" class="btn btn-success"
+                                            data-bs-dismiss="modal">OK</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Error Modal -->
+                        <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content text-center">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title fw-bold">Error</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <i class="bi bi-x-circle-fill text-danger" style="font-size: 64px;"></i>
+                                        <p class="mt-3 mb-2"><b>Something went wrong.</b></p>
+                                        <p id="errorMessage">Please try again later.</p>
+                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
         </main>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+    const form = document.querySelector("form");
+    const requiredFields = Array.from(form.querySelectorAll("input:not([type='file']), select"));
+
+    form.addEventListener("submit", function(e) {
+        let valid = true;
+
+        requiredFields.forEach(field => {
+            if (!field.value) {
+                field.classList.add("border", "border-danger");
+                valid = false;
+            } else {
+                field.classList.remove("border", "border-danger");
+            }
+        });
+
+        if (!valid) {
+            e.preventDefault(); // Stop form submission
+            alert("Please fill in all required fields.");
+        }
+    });
+
+    // Remove red border when user types or selects
+    requiredFields.forEach(field => {
+        field.addEventListener("input", () => field.classList.remove("border", "border-danger"));
+        field.addEventListener("change", () => field.classList.remove("border", "border-danger"));
+    });
+});
+    document.addEventListener("DOMContentLoaded", function () {
+        <?php if (isset($_SESSION['modal'])): ?>
+            var modalId = "<?php echo $_SESSION['modal']; ?>Modal";
+            <?php if ($_SESSION['modal'] === 'error' && isset($_SESSION['error_message'])): ?>
+                document.getElementById("errorMessage").innerText = "<?php echo addslashes($_SESSION['error_message']); ?>";
+            <?php endif; ?>
+            var myModal = new bootstrap.Modal(document.getElementById(modalId));
+            myModal.show();
+            <?php unset($_SESSION['modal']); unset($_SESSION['error_message']); ?>
+        <?php endif; ?>
+    });
+    document.addEventListener("DOMContentLoaded", function() {
+    const billingMonth = document.getElementById('billing_month');
+    const paymentDate = document.getElementById('payment_date');
+
+    // Function to set payment date to 28th of the selected month
+    function updatePaymentDate() {
+        if (billingMonth.value) {
+            // billingMonth.value format: YYYY-MM
+            const [year, month] = billingMonth.value.split('-');
+            paymentDate.value = `${year}-${month}-28`;
+        } else {
+            // If no month selected, leave payment_date empty
+            paymentDate.value = '';
+        }
+    }
+
+    // Set default on page load
+    updatePaymentDate();
+
+    // Update payment_date whenever billing_month changes
+    billingMonth.addEventListener('change', updatePaymentDate);
+});
+</script>
 </body>
 </html>
