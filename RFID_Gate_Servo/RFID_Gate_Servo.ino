@@ -6,16 +6,14 @@ Servo myservo;
 #define echoPin 3
 
 const int objectThreshold = 20;          // cm - distance to detect object
-const unsigned long openDuration = 5000; // ms
 const unsigned long autoCloseTimeout = 15000; // 15 seconds max open time
-const unsigned long objectClearDelay = 2000;  // Wait 2 seconds after object clears
+const unsigned long detectDelay = 2000;  // 2 seconds wait before closing
 
 bool gateOpen = false;
 unsigned long gateOpenTime = 0;
 unsigned long lastHeartbeat = 0;
-unsigned long objectClearTime = 0;
-bool objectDetected = false;
-bool waitingForClear = false;
+unsigned long detectStartTime = 0;
+bool closingScheduled = false;
 
 void setup() {
   Serial.begin(9600);
@@ -31,8 +29,7 @@ void setup() {
 }
 
 void loop() {
-  // 🔹 Listen for Serial commands from PHP3870960596
-
+  // 🔹 Listen for Serial commands from PHP
   if (Serial.available() > 0) {
     String command = Serial.readStringUntil('\n');
     command.trim();
@@ -58,47 +55,37 @@ void loop() {
     }
   }
 
-  // 🔹 Ultrasonic sensor logic (improved)
+  // 🔹 Ultrasonic sensor logic
   if (gateOpen) {
     int distance = getDistance();
-    
-    // Debug output every few readings
+
+    // Debug output every second
     static unsigned long lastDebug = 0;
     if (millis() - lastDebug > 1000) {
       Serial.println("DEBUG: Distance = " + String(distance) + "cm, Gate open for " + 
                      String((millis() - gateOpenTime)/1000) + "s");
       lastDebug = millis();
     }
-    
+
     if (distance <= objectThreshold && distance > 0) {
-      // Object detected
-      if (!objectDetected) {
-        objectDetected = true;
-        waitingForClear = false;
-        Serial.println("DETECT: Object detected at " + String(distance) + "cm");
-      }
-    } else {
-      // No object detected
-      if (objectDetected && !waitingForClear) {
-        // Object just cleared, start timer
-        objectClearTime = millis();
-        waitingForClear = true;
-        objectDetected = false;
-        Serial.println("CLEAR: Object cleared, starting close timer");
-      }
-      
-      // Close gate after object has been clear for specified time
-      if (waitingForClear && (millis() - objectClearTime) > objectClearDelay) {
-        Serial.println("AUTO: Closing gate after object cleared");
-        closeGate();
-        waitingForClear = false;
+      if (!closingScheduled) {
+        closingScheduled = true;
+        detectStartTime = millis();
+        Serial.println("DETECT: Object detected at " + String(distance) + "cm → Closing in 2s...");
       }
     }
 
+    // Check if delay passed and close gate
+    if (closingScheduled && (millis() - detectStartTime >= detectDelay)) {
+      closeGate();
+      closingScheduled = false;
+    }
+
     // 🔹 Auto-close timeout (safety feature)
-    if ((millis() - gateOpenTime) > autoCloseTimeout) {
+    if ((millis() - gateOpenTime) > autoCloseTimeout && gateOpen) {
       Serial.println("TIMEOUT: Force closing gate after " + String(autoCloseTimeout/1000) + " seconds");
       closeGate();
+      closingScheduled = false;
     }
   }
 
@@ -116,8 +103,7 @@ void openGate() {
     myservo.write(50); // open position
     gateOpen = true;
     gateOpenTime = millis();
-    objectDetected = false;
-    waitingForClear = false;
+    closingScheduled = false;
     Serial.println("SUCCESS: Gate opened");
   } else {
     Serial.println("INFO: Gate already open");
@@ -128,8 +114,7 @@ void closeGate() {
   if (gateOpen) {
     myservo.write(140); // closed position
     gateOpen = false;
-    objectDetected = false;
-    waitingForClear = false;
+    closingScheduled = false;
     Serial.println("SUCCESS: Gate closed");
   } else {
     Serial.println("INFO: Gate already closed");
@@ -139,8 +124,7 @@ void closeGate() {
 void reportStatus() {
   String status = gateOpen ? "OPEN" : "CLOSED";
   int distance = getDistance();
-  String objStatus = objectDetected ? "DETECTED" : "CLEAR";
-  Serial.println("STATUS: Gate=" + status + ", Distance=" + String(distance) + "cm, Object=" + objStatus);
+  Serial.println("STATUS: Gate=" + status + ", Distance=" + String(distance) + "cm");
 }
 
 void debugSensor() {

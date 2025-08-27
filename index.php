@@ -361,13 +361,13 @@
             logEntry.dataset.timestamp = Date.now();
 
             logEntry.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="fw-bold">UID: ${uid}</div>
                         <div class="scan-name text-muted">Name: Checking...</div>
                     </div>
-                    <div>
-                        <span class="badge scan-status ${statusClass.replace('text-', 'bg-')}">${status}</span>
+                    <div class="text-end">
+                        <div><span class="badge scan-status ${statusClass.replace('text-', 'bg-')}">${status}</span></div>
                         <div class="text-muted small mt-1">${new Date().toLocaleTimeString()}</div>
                     </div>
                 </div>
@@ -636,13 +636,13 @@
             const badgeClass = statusClass.replace('text-', 'bg-');
 
             logEntry.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="fw-bold">UID: ${uid}</div>
                         <div class="text-dark">Name: ${fullName}</div>
                     </div>
-                    <div>
-                        <span class="badge ${badgeClass}">${status}</span>
+                    <div class="text-end">
+                        <div><span class="badge ${badgeClass}">${status}</span></div>
                         <div class="text-muted small mt-1">${timestamp.toLocaleTimeString()}</div>
                     </div>
                 </div>
