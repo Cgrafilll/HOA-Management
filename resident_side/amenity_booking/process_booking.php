@@ -1,10 +1,21 @@
 <?php
+// ✅ FIX: Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
 
-// ini_set('display_errors', 1);
-// ini_set('display_startup_errors', 1);
-// error_reporting(E_ALL);
+// Set session cookie parameters before starting session
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
 
+// NOW start the session
 session_start();
+
 require '../../rfid-api/db.php';
 
 // Include PHPMailer
@@ -16,8 +27,6 @@ use PHPMailer\PHPMailer\Exception;
 require_once __DIR__ . '/../../admin_side/amenity_booking/PHPMailer/src/Exception.php';
 require_once __DIR__ . '/../../admin_side/amenity_booking/PHPMailer/src/PHPMailer.php';
 require_once __DIR__ . '/../../admin_side/amenity_booking/PHPMailer/src/SMTP.php';
-
-
 
 // Email configuration - UPDATE THESE WITH YOUR DETAILS
 class EmailConfig {

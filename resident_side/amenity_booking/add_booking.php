@@ -1,36 +1,62 @@
 <?php
+// ✅ FIX: Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
+
+// Set session cookie parameters before starting session
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
 session_start();
+
 require '../../rfid-api/db.php';
 
+// Check if user is logged in
 if (!isset($_SESSION['household_id'])) {
-    header("Location: ../login.php");
+    header("Location: login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
 
-$homeowner_id = $_SESSION['household_id'];
-$email_address = $_SESSION['email_address'];
-$username = $photo = '';
+// Check session timeout (2 hours = 7200 seconds)
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
+    // Session expired
+    session_unset();
+    session_destroy();
+    header("Location: login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    exit;
+}
 
-// Fetch resident details
-try {
-    $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE household_id = ?");
-    $stmt->bind_param("s", $homeowner_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
+// Update last activity time
+$_SESSION['last_activity'] = time();
 
-    if ($user) {
-        $username = $user['first_name'];
-        if (!empty($user['profile_picture'])) {
-            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']);
-        } else {
-            $photo = '';
-        }
-    } else {
-        $error_message = "Failed to fetch user details.";
-    }
-} catch (Exception $e) {
-    $error_message = "Error fetching user details: " . $e->getMessage();
+$household_id = $_SESSION['household_id'];
+$sql = "SELECT * FROM household_accounts WHERE household_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $household_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$resident = $result->fetch_assoc();
+
+if (!$resident) {
+    echo "Resident not found.";
+    exit;
+}
+
+// Initialize user details
+$username = $resident['first_name']; // <- Set username directly from household query
+$photo = ''; // Initialize photo; your existing profile photo block will set this later
+// Only set $photo if profile_pic exists and is not null
+if (!empty($resident['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($resident['profile_picture']);
+} else {
+    $photo = ''; // Explicitly empty if no image is saved
 }
 
 // Initialize amenity details
@@ -177,7 +203,7 @@ $amenities = [
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                     <li><a class="dropdown-item"
-                            href="../resident_details/view_resident.php?id=<?php echo $homeowner_id; ?>"><i
+                            href="../resident_details/view_resident.php?id=<?php echo $household_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">

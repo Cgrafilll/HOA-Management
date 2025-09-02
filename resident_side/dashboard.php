@@ -1,11 +1,40 @@
 <?php
+// ✅ FIX: Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
+
+// Set session cookie parameters before starting session
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
 session_start();
+
 require '../rfid-api/db.php';
 
+// Check if user is logged in
 if (!isset($_SESSION['household_id'])) {
-    header("Location: login.php?error=Please login first");
+    header("Location: login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
+
+// Check session timeout (2 hours = 7200 seconds)
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
+    // Session expired
+    session_unset();
+    session_destroy();
+    header("Location: login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    exit;
+}
+
+// Update last activity time
+$_SESSION['last_activity'] = time();
 
 $household_id = $_SESSION['household_id'];
 $sql = "SELECT * FROM household_accounts WHERE household_id = ?";
@@ -23,31 +52,11 @@ if (!$resident) {
 // Initialize user details
 $username = $resident['first_name']; // <- Set username directly from household query
 $photo = ''; // Initialize photo; your existing profile photo block will set this later
-$email_address = $resident['email_address']; // ✅ FIX: set email_address before using it
-
-// Fetch user details including profile photo
-try {
-    $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE email_address = ?");
-    $stmt->bind_param("s", $email_address);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-
-    if ($user) {
-        $username = $user['first_name'];
-
-        // Only set $photo if profile_pic exists and is not null
-        if (!empty($user['profile_picture'])) {
-            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']);
-        } else {
-            $photo = ''; // Explicitly empty if no image is saved
-        }
-    } else {
-        $error_message = "Failed to fetch user details.";
-    }
-
-} catch (Exception $e) {
-    $error_message = "Error fetching user details: " . $e->getMessage();
+// Only set $photo if profile_pic exists and is not null
+if (!empty($resident['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($resident['profile_picture']);
+} else {
+    $photo = ''; // Explicitly empty if no image is saved
 }
 
 // Fetch announcements
@@ -69,132 +78,56 @@ $events_sql = "SELECT e.id, e.title, e.body, e.status, e.event_date, e.created_a
 
 $events_result = $conn->query($events_sql);
 
-// How many records per page
+// ✅ SIMPLIFIED BOOKING PAGINATION - Only for this household
 $limit = 10;
-// Current page number (default 1 if not set)
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
-// Calculate offset for SQL query
 $offset = ($page - 1) * $limit;
-// Get total number of records from amenity_bookings for this homeowner
-if ($household_id) {
-    $totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE homeowner_id = ?";
-    $totalStmt = $conn->prepare($totalQuery);
-    $totalStmt->bind_param("i", $household_id);
-    $totalStmt->execute();
-    $totalResult = $totalStmt->get_result();
-    $totalRow = $totalResult->fetch_assoc();
-    $totalRecords = $totalRow['total'];
-} else {
-    // If no homeowner_id, get all records
-    $totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings";
-    $totalResult = $conn->query($totalQuery);
-    $totalRow = $totalResult->fetch_assoc();
-    $totalRecords = $totalRow['total'];
-}
-// Calculate total pages
-$totalPages = ceil($totalRecords / $limit);
-// ✅ Fetch only the records for THIS PAGE (table)
-if ($household_id) {
-    $booking_sql = "SELECT 
-        ab.id,
-        ab.reservation_code,
-        ab.amenity,
-        ab.user_type,
-        ab.reservation_date,
-        ab.rate,
-        ab.total_amount,
-        ab.amount_paid,
-        ab.status,
-        ab.created_at,
-        ab.homeowner_id,
-        CASE 
-            WHEN ab.user_type = 'homeowner' THEN ha.first_name
-            WHEN ab.user_type = 'visitor' THEN vd.first_name
-            ELSE NULL
-        END as first_name,
-        CASE 
-            WHEN ab.user_type = 'homeowner' THEN ha.middle_name
-            WHEN ab.user_type = 'visitor' THEN vd.middle_name
-            ELSE NULL
-        END as middle_name,
-        CASE 
-            WHEN ab.user_type = 'homeowner' THEN ha.last_name
-            WHEN ab.user_type = 'visitor' THEN vd.last_name
-            ELSE NULL
-        END as last_name
-    FROM amenity_bookings ab
-    LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
-    LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
-    WHERE ab.homeowner_id = ? ORDER BY ab.reservation_date ASC LIMIT ? OFFSET ?";
-    $bookings_stmt = $conn->prepare($booking_sql);
-    $bookings_stmt->bind_param("iii", $household_id, $limit, $offset);
-    $bookings_stmt->execute();
-    $bookings_result = $bookings_stmt->get_result();
-} else {
-    // If no homeowner_id, get all records for this page
-    $booking_sql = "SELECT 
-        ab.id,
-        ab.reservation_code,
-        ab.amenity,
-        ab.user_type,
-        ab.reservation_date,
-        ab.rate,
-        ab.total_amount,
-        ab.amount_paid,
-        ab.status,
-        ab.created_at,
-        ab.homeowner_id,
-        CASE 
-            WHEN ab.user_type = 'homeowner' THEN ha.first_name
-            WHEN ab.user_type = 'visitor' THEN vd.first_name
-            ELSE NULL
-        END as first_name,
-        CASE 
-            WHEN ab.user_type = 'homeowner' THEN ha.middle_name
-            WHEN ab.user_type = 'visitor' THEN vd.middle_name
-            ELSE NULL
-        END as middle_name,
-        CASE 
-            WHEN ab.user_type = 'homeowner' THEN ha.last_name
-            WHEN ab.user_type = 'visitor' THEN vd.last_name
-            ELSE NULL
-        END as last_name
-    FROM amenity_bookings ab
-    LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
-    LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
-    ORDER BY ab.reservation_date ASC LIMIT ? OFFSET ?";
-    $bookings_stmt = $conn->prepare($booking_sql);
-    $bookings_stmt->bind_param("ii", $limit, $offset);
-    $bookings_stmt->execute();
-    $bookings_result = $bookings_stmt->get_result();
-}
 
-$bookings = [];
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        // Determine time slot based on 'rate'
-        $timeSlot = "N/A";
-        if (isset($row['rate'])) {
-            if ($row['rate'] === "day") {
-                $timeSlot = "9:00 AM - 5:00 PM";
-            } elseif ($row['rate'] === "night") {
-                $timeSlot = "5:00 PM - 10:00 PM";
-            }
-        }
-        $bookings[] = [
-            "id" => $row['id'],
-            "date" => $row['reservation_date'],
-            "fullName" => trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']),
-            "amenity" => $row['amenity'],
-            "reservationCode" => $row['reservation_code'],
-            "paymentStatus" => ucfirst($row['status']), // pending → Pending
-            "amount" => "₱" . number_format($row['amount_paid'], 2) .
-                ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : ""),
-            "time" => $timeSlot,
-            "homeownerId" => $row['homeowner_id']
-        ];
-    }
-}
+// Get total records count for this homeowner
+$totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE homeowner_id = ?";
+$totalStmt = $conn->prepare($totalQuery);
+$totalStmt->bind_param("s", $household_id);
+$totalStmt->execute();
+$totalResult = $totalStmt->get_result();
+$totalRow = $totalResult->fetch_assoc();
+$totalRecords = $totalRow['total'];
+$totalPages = ceil($totalRecords / $limit);
+
+// ✅ SIMPLIFIED BOOKING QUERY - Only fetch what we need for this homeowner
+$booking_sql = "SELECT 
+    ab.id,
+    ab.reservation_code,
+    ab.amenity,
+    ab.user_type,
+    ab.reservation_date,
+    ab.status,
+    ab.created_at,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.first_name
+        WHEN ab.user_type = 'visitor' THEN vd.first_name
+        ELSE NULL
+    END as first_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.middle_name
+        WHEN ab.user_type = 'visitor' THEN vd.middle_name
+        ELSE NULL
+    END as middle_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.last_name
+        WHEN ab.user_type = 'visitor' THEN vd.last_name
+        ELSE NULL
+    END as last_name
+FROM amenity_bookings ab
+LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+WHERE ab.homeowner_id = ? 
+ORDER BY ab.reservation_date DESC 
+LIMIT ? OFFSET ?";
+
+$bookings_stmt = $conn->prepare($booking_sql);
+$bookings_stmt->bind_param("sii", $household_id, $limit, $offset);
+$bookings_stmt->execute();
+$bookings_result = $bookings_stmt->get_result();
 
 ?>
 
@@ -441,31 +374,6 @@ if ($result) {
                     </div>
                 </div>
             </div>
-            <!-- Statement of Account -->
-            <section class="card mb-4 shadow-sm">
-                <div class="card-body">
-                    <h5 class="fw-bold mb-3 text-primary">Statement of Account</h5>
-                    <table class="table table-borderless mb-0">
-                        <tbody>
-                            <tr>
-                                <td>August 2025</td>
-                                <td class="text-end">₱1,500.00</td>
-                            </tr>
-                            <tr>
-                                <td>Late Fees</td>
-                                <td class="text-end">₱0.00</td>
-                            </tr>
-                            <tr class="fw-bold text-primary">
-                                <td>Total Due</td>
-                                <td class="text-end">₱1,500.00</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div class="text-end mt-3">
-                        <button class="btn btn-primary">Pay Now</button>
-                    </div>
-                </div>
-            </section>
             <!-- Amenity Schedule -->
             <div class="card shadow-sm">
                 <div class="card-header bg-success text-white fw-semibold">Amenity Schedule</div>
@@ -489,53 +397,79 @@ if ($result) {
                             </thead>
                             <tbody class="small align-middle">
                                 <?php
-                                if ($bookings_result->num_rows > 0) {
+                                if ($bookings_result && $bookings_result->num_rows > 0) {
                                     while ($row = $bookings_result->fetch_assoc()) {
-                                        $id = $row['id'];
-                                        $fullName = ucwords($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
-                                        $amenity = $row['amenity'];
+                                        $fullName = trim(ucwords($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']));
+                                        $amenity = htmlspecialchars($row['amenity']);
                                         $bookingDate = date('F d, Y', strtotime($row['reservation_date']));
-                                        $resCode = $row['reservation_code'];
-                                        $statusClass = $row['status'] === 'Paid' ? 'text-success' : ($row['status'] === 'Partial' ? 'text-warning' : 'text-muted');
+                                        $resCode = htmlspecialchars($row['reservation_code']);
+                                        // Status styling
+                                        $status = ucfirst($row['status']);
+                                        $statusClass = '';
+                                        switch (strtolower($row['status'])) {
+                                            case 'paid':
+                                                $statusClass = 'text-success';
+                                                break;
+                                            case 'partial':
+                                                $statusClass = 'text-warning';
+                                                break;
+                                            case 'pending':
+                                                $statusClass = 'text-secondary';
+                                                break;
+                                            default:
+                                                $statusClass = 'text-muted';
+                                        }
                                         echo "<tr>
-                                                    <td>{$bookingDate}</td>
-                                                    <td>{$fullName}</td>
-                                                    <td>{$amenity}</td>
-                                                    <td>{$resCode}</td>
-                                                    <td class='{$statusClass} fw-bold'>" . ucfirst($row['status']) . "</td>
-                                                </tr>";
+                                    <td>{$bookingDate}</td>
+                                    <td>{$fullName}</td>
+                                    <td>{$amenity}</td>
+                                    <td>{$resCode}</td>
+                                    <td class='{$statusClass} fw-bold'>{$status}</td>
+                                  </tr>";
                                     }
                                 } else {
-                                    echo "<tr><td colspan='6' class='text-center text-muted'>No bookings found.</td></tr>";
+                                    echo "<tr><td colspan='5' class='text-center text-muted'>No bookings found.</td></tr>";
                                 }
                                 ?>
                             </tbody>
                         </table>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                        <span class="small">Showing 1 to <?php echo $bookings_result->num_rows; ?> entries</span>
-                        <nav>
-                            <ul class="pagination justify-content-center">
-                                <!-- Previous button -->
-                                <li class="page-item <?php if ($page <= 1)
-                                    echo 'disabled'; ?>">
-                                    <a class="page-link" href="?page=<?php echo $page - 1; ?>">Previous</a>
-                                </li>
-                                <!-- Page numbers -->
-                                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                    <li class="page-item <?php if ($page == $i)
-                                        echo 'active'; ?>">
-                                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                                    </li>
-                                <?php endfor; ?>
-                                <!-- Next button -->
-                                <li class="page-item <?php if ($page >= $totalPages)
-                                    echo 'disabled'; ?>">
-                                    <a class="page-link" href="?page=<?php echo $page + 1; ?>">Next</a>
-                                </li>
-                            </ul>
-                        </nav>
-                    </div>
+                    <?php if ($totalRecords > 0): ?>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="small">
+                                Showing <?php echo ($offset + 1); ?> to <?php echo min($offset + $limit, $totalRecords); ?>
+                                of <?php echo $totalRecords; ?> entries
+                            </span>
+                            <?php if ($totalPages > 1): ?>
+                                <nav>
+                                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                                        <!-- Previous button -->
+                                        <li class="page-item <?php if ($page <= 1)
+                                            echo 'disabled'; ?>">
+                                            <a class="page-link" href="?page=<?php echo max(1, $page - 1); ?>">Previous</a>
+                                        </li>
+                                        <!-- Page numbers -->
+                                        <?php
+                                        $start_page = max(1, $page - 2);
+                                        $end_page = min($totalPages, $page + 2);
+
+                                        for ($i = $start_page; $i <= $end_page; $i++): ?>
+                                            <li class="page-item <?php if ($page == $i)
+                                                echo 'active'; ?>">
+                                                <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                                            </li>
+                                        <?php endfor; ?>
+                                        <!-- Next button -->
+                                        <li class="page-item <?php if ($page >= $totalPages)
+                                            echo 'disabled'; ?>">
+                                            <a class="page-link"
+                                                href="?page=<?php echo min($totalPages, $page + 1); ?>">Next</a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>

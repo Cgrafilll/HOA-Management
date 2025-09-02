@@ -1,27 +1,62 @@
 <?php
+// ✅ FIX: Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
+
+// Set session cookie parameters before starting session
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
 session_start();
+
 require '../../rfid-api/db.php';
 
+// Check if user is logged in
 if (!isset($_SESSION['household_id'])) {
-    header("Location: ../login.php");
+    header("Location: login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
 
-$homeowner_id = $_SESSION['household_id'];
-$email_address = $_SESSION['email_address'];
-$username = $photo = '';
+// Check session timeout (2 hours = 7200 seconds)
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
+    // Session expired
+    session_unset();
+    session_destroy();
+    header("Location: login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    exit;
+}
 
-// Fetch resident details
-$stmt = $conn->prepare("SELECT * FROM household_accounts WHERE household_id = ?");
-$stmt->bind_param("s", $homeowner_id);
+// Update last activity time
+$_SESSION['last_activity'] = time();
+
+$household_id = $_SESSION['household_id'];
+$sql = "SELECT * FROM household_accounts WHERE household_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $household_id);
 $stmt->execute();
-$userResult = $stmt->get_result();
-$user = $userResult->fetch_assoc();
-if ($user) {
-    $username = $user['first_name'];
-    if (!empty($user['profile_picture'])) {
-        $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']);
-    }
+$result = $stmt->get_result();
+$resident = $result->fetch_assoc();
+
+if (!$resident) {
+    echo "Resident not found.";
+    exit;
+}
+
+// Initialize user details
+$username = $resident['first_name']; // <- Set username directly from household query
+$photo = ''; // Initialize photo; your existing profile photo block will set this later
+// Only set $photo if profile_pic exists and is not null
+if (!empty($resident['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($resident['profile_picture']);
+} else {
+    $photo = ''; // Explicitly empty if no image is saved
 }
 
 // How many records per page
@@ -31,16 +66,16 @@ $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] 
 // Calculate offset for SQL query
 $offset = ($page - 1) * $limit;
 // Get total number of records from amenity_bookings for this homeowner
-if ($homeowner_id) {
+if ($household_id) {
     $totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE homeowner_id = ?";
     $totalStmt = $conn->prepare($totalQuery);
-    $totalStmt->bind_param("i", $homeowner_id);
+    $totalStmt->bind_param("i", $household_id);
     $totalStmt->execute();
     $totalResult = $totalStmt->get_result();
     $totalRow = $totalResult->fetch_assoc();
     $totalRecords = $totalRow['total'];
 } else {
-    // If no homeowner_id, get all records
+    // If no household_id, get all records
     $totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings";
     $totalResult = $conn->query($totalQuery);
     $totalRow = $totalResult->fetch_assoc();
@@ -49,7 +84,7 @@ if ($homeowner_id) {
 // Calculate total pages
 $totalPages = ceil($totalRecords / $limit);
 // ✅ Fetch only the records for THIS PAGE (table)
-if ($homeowner_id) {
+if ($household_id) {
     $booking_sql = "SELECT 
         ab.id,
         ab.reservation_code,
@@ -82,7 +117,7 @@ if ($homeowner_id) {
     LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
     WHERE ab.homeowner_id = ? ORDER BY ab.reservation_date ASC LIMIT ? OFFSET ?";
     $bookings_stmt = $conn->prepare($booking_sql);
-    $bookings_stmt->bind_param("iii", $homeowner_id, $limit, $offset);
+    $bookings_stmt->bind_param("iii", $household_id, $limit, $offset);
     $bookings_stmt->execute();
     $bookings_result = $bookings_stmt->get_result();
 } else {
@@ -388,7 +423,8 @@ if ($result) {
                     </div>
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="../resident_details/view_resident.php?id=<?php echo $homeowner_id; ?>"><i
+                    <li><a class="dropdown-item"
+                            href="../resident_details/view_resident.php?id=<?php echo $household_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
@@ -605,7 +641,7 @@ if ($result) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const bookings = <?= json_encode($bookings) ?>;
-        const loggedInHouseholdId = <?= json_encode($homeowner_id) ?>;
+        const loggedInHouseholdId = <?= json_encode($household_id) ?>;
         let currentDate = new Date(2025, 7, 1); // August 2025
         let currentView = 'month';
 

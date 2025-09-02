@@ -1,41 +1,64 @@
 <?php
+// ✅ FIX: Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
+
+// Set session cookie parameters before starting session
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
 session_start();
+
 require '../rfid-api/db.php';
 
-if (!isset($_SESSION['email_address'])) {
-    header("Location: login.php");
+// Check if resident is logged in
+if (!isset($_SESSION['household_id'])) {
+    header("Location: login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
 
-// Initialize user details
-$email_address = $_SESSION['email_address'];
-$household_id = $_SESSION['household_id'];
-$username = $photo = ''; // Initialize user details
-
-// Fetch user details including profile photo
-try {
-    $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE email_address = ?");
-    $stmt->bind_param("s", $email_address);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-
-    if ($user) {
-        $username = $user['first_name'];
-
-        // Only set $photo if profile_pic exists and is not null
-        if (!empty($user['profile_picture'])) {
-            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']);
-        } else {
-            $photo = ''; // Explicitly empty if no image is saved
-        }
-    } else {
-        $error_message = "Failed to fetch user details.";
-    }
-
-} catch (Exception $e) {
-    $error_message = "Error fetching user details: " . $e->getMessage();
+// Check session timeout (2 hours = 7200 seconds)
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
+    // Session expired
+    session_unset();
+    session_destroy();
+    header("Location: login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    exit;
 }
+
+// Update last activity time
+$_SESSION['last_activity'] = time();
+
+$household_id = $_SESSION['household_id'];
+$sql = "SELECT * FROM household_accounts WHERE household_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $household_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$resident = $result->fetch_assoc();
+
+if (!$resident) {
+    echo "Resident not found.";
+    exit;
+}
+
+// Initialize resident details
+$residentname = $resident['first_name']; // <- Set residentname directly from household query
+$photo = ''; // Initialize photo; your existing profile photo block will set this later
+// Only set $photo if profile_pic exists and is not null
+if (!empty($resident['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($resident['profile_picture']);
+} else {
+    $photo = ''; // Explicitly empty if no image is saved
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -175,9 +198,9 @@ try {
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">REPORT VIOLATION</h1>
             <div class="dropdown">
-                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="residentDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <span>Hello, <?php echo htmlspecialchars($residentname); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -188,14 +211,15 @@ try {
                         <?php endif; ?>
                     </div>
                 </div>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="resident_details/view_resident.php?id=<?php echo $household_id; ?>"><i
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="residentDropdown">
+                    <li><a class="dropdown-item"
+                            href="resident_details/view_resident.php?id=<?php echo $household_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    <li><a class="dropdown-item" href="logout.php"><i
-                                class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                    <li><a class="dropdown-item" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -256,19 +280,19 @@ try {
                             <span class="fw-bold mb-3">Reporter Information</span>
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="first_name" class="form-control"
-                                    value="<?php echo htmlspecialchars($user['first_name']); ?>" readonly />
+                                    value="<?php echo htmlspecialchars($resident['first_name']); ?>" readonly />
                                 <label class=" form-label mt-2">First Name<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="middle_name" class="form-control"
-                                    value="<?php echo htmlspecialchars($user['middle_name']); ?>" readonly />
+                                    value="<?php echo htmlspecialchars($resident['middle_name']); ?>" readonly />
                                 <label class=" form-label mt-2">Middle Name<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="last_name" class="form-control"
-                                    value="<?php echo htmlspecialchars($user['last_name']); ?>" readonly />
+                                    value="<?php echo htmlspecialchars($resident['last_name']); ?>" readonly />
                                 <label class=" form-label mt-2">Last Name<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
@@ -278,7 +302,7 @@ try {
                             <span class="fw-bold mb-3">Contact Information</span>
                             <div class="col-md-4 mb-3">
                                 <input type="tel" name="cellphone_number" class="form-control"
-                                    value="<?php echo htmlspecialchars($user['cellphone_number']); ?>" pattern="[0-9]+"
+                                    value="<?php echo htmlspecialchars($resident['cellphone_number']); ?>" pattern="[0-9]+"
                                     maxlength="15" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                     placeholder="e.g., 09171234567" readonly />
                                 <label class="form-label mt-2">Cellphone Number</label>
@@ -380,7 +404,7 @@ try {
                             <button type="submit" class="btn btn-primary">Report Violation</button>
                         </div>
                         <input type="hidden" name="household_id"
-                            value="<?php echo htmlspecialchars($user['household_id']); ?>">
+                            value="<?php echo htmlspecialchars($resident['household_id']); ?>">
                     </form>
                     <!-- Confirm Save Modal -->
                     <div class="modal fade" id="confirmModal" tabindex="-1">

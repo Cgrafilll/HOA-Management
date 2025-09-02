@@ -1,5 +1,21 @@
 <?php
+// ✅ FIX: Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
+
+// Set session cookie parameters before starting session
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
 session_start();
+
 require '../../rfid-api/db.php';
 
 if (!isset($_SESSION['email_address'])) {
@@ -7,37 +23,49 @@ if (!isset($_SESSION['email_address'])) {
     exit;
 }
 
+// Check if user is logged in
+if (!isset($_SESSION['household_id'])) {
+    header("Location: login.php?error=" . urlencode("Please log in to access this page."));
+    exit;
+}
+
+// Check session timeout (2 hours = 7200 seconds)
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
+    // Session expired
+    session_unset();
+    session_destroy();
+    header("Location: login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    exit;
+}
+
+// Update last activity time
+$_SESSION['last_activity'] = time();
+
+$household_id = $_SESSION['household_id'];
+$sql = "SELECT * FROM household_accounts WHERE household_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $household_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$resident = $result->fetch_assoc();
+
+if (!$resident) {
+    echo "Resident not found.";
+    exit;
+}
+
 // Initialize user details
-$email_address = $_SESSION['email_address'];
-$homeowner_id = $_SESSION['household_id'];
-$username = $photo = $first_name = $middle_name = $last_name = '';
-
-// Fetch user details including profile photo
-try {
-    $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE email_address = ?");
-    $stmt->bind_param("s", $email_address);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-
-    if ($user) {
-        $username = $user['first_name'];
-        $first_name = $user['first_name'];
-        $middle_name = $user['middle_name'] ?? ''; // Use null coalescing in case field is null
-        $last_name = $user['last_name'];
-
-        // Only set $photo if profile_pic exists and is not null
-        if (!empty($user['profile_picture'])) {
-            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']);
-        } else {
-            $photo = ''; // Explicitly empty if no image is saved
-        }
-    } else {
-        $error_message = "Failed to fetch user details.";
-    }
-
-} catch (Exception $e) {
-    $error_message = "Error fetching user details: " . $e->getMessage();
+$username = $resident['first_name']; // <- Set username directly from household query
+$middle_name = $resident['middle_name'];
+$last_name = $resident['last_name'];
+$email_address = $resident['email_address'];
+$contact = $resident['cellphone_number'];
+$photo = ''; // Initialize photo; your existing profile photo block will set this later
+// Only set $photo if profile_pic exists and is not null
+if (!empty($resident['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($resident['profile_picture']);
+} else {
+    $photo = ''; // Explicitly empty if no image is saved
 }
 
 // Initialize amenity details (make sure case & spacing match keys)
@@ -305,7 +333,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                     <li><a class="dropdown-item"
-                            href="../resident_details/view_resident.php?id=<?php echo $homeowner_id; ?>"><i
+                            href="../resident_details/view_resident.php?id=<?php echo $household_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
@@ -387,27 +415,44 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     </select>
                                     <label for="userType">User Type<small class="fw-bold text-danger">*</small></label>
                                 </div>
-                                <!-- First Name -->
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control" id="firstName" name="firstName"
-                                        placeholder="First Name" value="<?php echo htmlspecialchars($first_name); ?>"
-                                        required readonly>
-                                    <label for="firstName">First Name<small
-                                            class="fw-bold text-danger">*</small></label>
+                                <div class="row">
+                                    <div class="col-4">
+                                        <!-- First Name -->
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control" id="firstName" name="firstName"
+                                                placeholder="First Name"
+                                                value="<?php echo htmlspecialchars($username); ?>" required readonly>
+                                            <label for="firstName">First Name<small
+                                                    class="fw-bold text-danger">*</small></label>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <!-- Middle Name -->
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control" id="middleName" name="middleName"
+                                                placeholder="Middle Name"
+                                                value="<?php echo htmlspecialchars($middle_name); ?> " readonly>
+                                            <label for="middleName">Middle Name</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <!-- Last Name -->
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control" id="lastName" name="lastName"
+                                                placeholder="Last Name"
+                                                value="<?php echo htmlspecialchars($last_name); ?>" required readonly>
+                                            <label for="lastName">Last Name<small
+                                                    class="fw-bold text-danger">*</small></label>
+                                        </div>
+                                    </div>
                                 </div>
-                                <!-- Middle Name -->
+                                <!-- Cellphone Number -->
                                 <div class="form-floating mb-3">
-                                    <input type="text" class="form-control" id="middleName" name="middleName"
-                                        placeholder="Middle Name" value="<?php echo htmlspecialchars($middle_name); ?> "
-                                        readonly>
-                                    <label for="middleName">Middle Name</label>
-                                </div>
-                                <!-- Last Name -->
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control" id="lastName" name="lastName"
-                                        placeholder="Last Name" value="<?php echo htmlspecialchars($last_name); ?>"
-                                        required readonly>
-                                    <label for="lastName">Last Name<small class="fw-bold text-danger">*</small></label>
+                                    <input type="tel" name="cellphone_number" class="form-control" pattern="[0-9]+"
+                                        maxlength="15" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                        placeholder="e.g., 09171234567"
+                                        value="<?php echo htmlspecialchars($contact); ?>" readonly />
+                                    <label class="form-label ">Cellphone Number</label>
                                 </div>
                                 <!-- Email Address -->
                                 <div class="form-floating mb-3">

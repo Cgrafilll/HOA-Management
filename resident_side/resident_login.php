@@ -1,5 +1,21 @@
 <?php
+// ✅ Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
+
+// Set session cookie parameters for better longevity and security
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
 session_start();
+
 require '../rfid-api/db.php'; // adjust path if needed
 
 // Collect form data
@@ -32,10 +48,12 @@ if (!password_verify($password, $user['password'])) {
     exit;
 }
 
-// ✅ Login success: store session
-$_SESSION['household_id']   = $user['household_id'];
-$_SESSION['resident_name']  = $user['first_name'] . ' ' . $user['last_name'];
-$_SESSION['email_address']  = $user['email_address'];
+// ✅ Login success: store session with timestamps
+$_SESSION['household_id'] = $user['household_id'];
+$_SESSION['resident_name'] = $user['first_name'] . ' ' . $user['last_name'];
+$_SESSION['email_address'] = $user['email_address'];
+$_SESSION['login_time'] = time(); // Store login timestamp
+$_SESSION['last_activity'] = time(); // Store last activity timestamp
 
 // Redirect to dashboard
 header("Location: dashboard.php");

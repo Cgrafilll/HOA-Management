@@ -1,75 +1,96 @@
 <?php
+// ✅ FIX: Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
+
+// Set session cookie parameters before starting session
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
 session_start();
+
 require '../../rfid-api/db.php';
 
-if (!isset($_SESSION['email_address'])) {
-    header("Location: ../login.php");
+// Check if user is logged in
+if (!isset($_SESSION['household_id'])) {
+    header("Location: login.php?error=" . urlencode("Please log in to access this page."));
+    exit;
+}
+
+// Check session timeout (2 hours = 7200 seconds)
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
+    // Session expired
+    session_unset();
+    session_destroy();
+    header("Location: login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    exit;
+}
+
+// Update last activity time
+$_SESSION['last_activity'] = time();
+
+$household_id = $_SESSION['household_id'];
+$sql = "SELECT * FROM household_accounts WHERE household_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $household_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$resident = $result->fetch_assoc();
+
+if (!$resident) {
+    echo "Resident not found.";
     exit;
 }
 
 // Initialize user details
-$email_address = $_SESSION['email_address'];
-$household_id = $_SESSION['household_id'];
-$username = $photo = '';// Initialize user details
-
-// Fetch user details including profile photo
-try {
-    $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE email_address = ?");
-    $stmt->bind_param("s", $email_address);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-
-    if ($user) {
-        $username = $user['first_name'];
-
-        // Only set $photo if profile_pic exists and is not null
-        if (!empty($user['profile_picture'])) {
-            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']);
-        } else {
-            $photo = ''; // Explicitly empty if no image is saved
-        }
-    } else {
-        $error_message = "Failed to fetch user details.";
-    }
-
-} catch (Exception $e) {
-    $error_message = "Error fetching user details: " . $e->getMessage();
+$username = $resident['first_name']; // <- Set username directly from household query
+$photo = ''; // Initialize photo; your existing profile photo block will set this later
+// Only set $photo if profile_pic exists and is not null
+if (!empty($resident['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($resident['profile_picture']);
+} else {
+    $photo = ''; // Explicitly empty if no image is saved
 }
 
-// Initialize admin details
-$edit_household = $_GET['id'] ?? null;
+// Initialize user details
 $prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $landline = $email = $password = $street = $street2 = $city = $state = $brgy = $postal = $members = $rfid = $status = '';
 
-if ($edit_household) {
+if ($household_id) {
     try {
         $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE household_id = ?");
-        $stmt->bind_param("s", $edit_household);
+        $stmt->bind_param("s", $household_id);
         $stmt->execute();
         $result = $stmt->get_result();
-        $admin = $result->fetch_assoc();
+        $user = $result->fetch_assoc();
 
-        if ($admin) {
-            $prof = !empty($admin['profile_picture']) ? 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']) : '';
-            $first_name = $admin['first_name'];
-            $middle_name = $admin['middle_name'];
-            $last_name = $admin['last_name'];
-            $dob = $admin['date_of_birth'];
-            $sex = $admin['sex'];
-            $age = $admin['age'];
-            $cellphone = $admin['cellphone_number'];
-            $landline = $admin['landline'];
-            $email = $admin['email_address'];
-            $password = $admin['password'];
-            $street = $admin['street_address'];
-            $street2 = $admin['street_address_2'];
-            $city = $admin['city'];
-            $state = $admin['state_province'];
-            $brgy = $admin['barangay'];
-            $postal = $admin['postal_zip_code'];
-            $members = $admin['members'];
-            $rfid = $admin['rfid'];
-            $status = $admin['status'];
+        if ($user) {
+            $prof = !empty($user['profile_picture']) ? 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']) : '';
+            $first_name = $user['first_name'];
+            $middle_name = $user['middle_name'];
+            $last_name = $user['last_name'];
+            $dob = $user['date_of_birth'];
+            $sex = $user['sex'];
+            $age = $user['age'];
+            $cellphone = $user['cellphone_number'];
+            $landline = $user['landline'];
+            $email = $user['email_address'];
+            $password = $user['password'];
+            $street = $user['street_address'];
+            $street2 = $user['street_address_2'];
+            $city = $user['city'];
+            $state = $user['state_province'];
+            $brgy = $user['barangay'];
+            $postal = $user['postal_zip_code'];
+            $members = $user['members'];
+            $rfid = $user['rfid'];
+            $status = $user['status'];
         } else {
             $error_message = "Resident not found!";
         }
@@ -107,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 2. Check if RFID already exists (excluding current household)
     try {
         $rfid_check_stmt = $conn->prepare("SELECT household_id FROM household_accounts WHERE rfid = ? AND household_id != ?");
-        $rfid_check_stmt->bind_param("ss", $rfid, $edit_household);
+        $rfid_check_stmt->bind_param("ss", $rfid, $household_id);
         $rfid_check_stmt->execute();
         $rfid_result = $rfid_check_stmt->get_result();
 
@@ -191,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Add household_id for WHERE clause
                 $bind_types .= "s";
-                $bind_values[] = $edit_household;
+                $bind_values[] = $household_id;
 
                 $sql = "UPDATE household_accounts SET " . implode(", ", $sql_parts) . " WHERE household_id=?";
 
@@ -420,7 +441,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <hr class="my-0">
                 <div class="p-3">
-                    <form action="edit_resident.php?id=<?= $edit_household ?>" id="householdForm" method="POST"
+                    <form action="edit_resident.php?id=<?= $household_id ?>" id="householdForm" method="POST"
                         enctype="multipart/form-data">
                         <div class="row mb-3">
                             <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
