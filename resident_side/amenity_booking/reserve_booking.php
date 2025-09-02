@@ -25,7 +25,7 @@ if (!isset($_SESSION['email_address'])) {
 
 // Check if user is logged in
 if (!isset($_SESSION['household_id'])) {
-    header("Location: login.php?error=" . urlencode("Please log in to access this page."));
+    header("Location: ../login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
 
@@ -34,7 +34,7 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
     // Session expired
     session_unset();
     session_destroy();
-    header("Location: login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    header("Location: ../login.php?error=" . urlencode("Your session has expired. Please log in again."));
     exit;
 }
 
