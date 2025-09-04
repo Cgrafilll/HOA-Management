@@ -57,64 +57,6 @@ if (!empty($admin['profile_picture'])) {
     $photo = 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']);
 } else {
     $photo = ''; // Explicitly empty if no image is saved
-}// ✅ Set session configuration BEFORE session_start()
-ini_set('session.gc_maxlifetime', 7200); // 2 hours
-ini_set('session.cookie_lifetime', 7200); // 2 hours
-
-// Set session cookie parameters before starting session
-session_set_cookie_params([
-    'lifetime' => 7200, // 2 hours
-    'path' => '/',
-    'domain' => '',
-    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
-    'httponly' => true, // Prevent JavaScript access
-    'samesite' => 'Strict' // CSRF protection
-]);
-
-// NOW start the session
-session_start();
-
-require '../../rfid-api/db.php'; // Adjust path as needed
-
-// Check if admin is logged in
-if (!isset($_SESSION['admin_id'])) {
-    header("Location: ../login/login.php?error=" . urlencode("Please log in to access this page."));
-    exit;
-}
-
-// Check session timeout (2 hours = 7200 seconds)
-if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
-    // Session expired
-    session_unset();
-    session_destroy();
-    header("Location: login/lo../gin.php?error=" . urlencode("Your session has expired. Please log in again."));
-    exit;
-}
-
-// Update last activity time
-$_SESSION['last_activity'] = time();
-
-$admin_id = $_SESSION['admin_id'];
-$sql = "SELECT * FROM admin_accounts WHERE admin_id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $admin_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$admin = $result->fetch_assoc();
-
-if (!$admin) {
-    echo "Admin not found.";
-    exit;
-}
-
-// Initialize user details
-$username = $admin['first_name']; // <- Set username directly from household query
-$photo = ''; // Initialize photo; your existing profile photo block will set this later
-// Only set $photo if profile_pic exists and is not null
-if (!empty($admin['profile_picture'])) {
-    $photo = 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']);
-} else {
-    $photo = ''; // Explicitly empty if no image is saved
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -495,40 +437,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <select name="region" class="form-select" required id="region">
-                                    <option value="">Select Region</option>
-                                </select>
-                                <input type="hidden" class="form-control form-control-md" name="region_text"
-                                    id="region-text" required>
-                                <label class="form-label mt-2">Region</label>
+                                <input type="text" name="city" class="form-control" required />
+                                <label class="form-label mt-2">City</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <select name="province" class="form-select" required id="province">
-                                    <option value="">Select Province</option>
-                                </select>
-                                <input type="hidden" class="form-control form-control-md" name="province_text"
-                                    id="province-text" required>
-                                <label class="form-label mt-2">Province</label>
+                                <input type="text" name="state" class="form-control" required />
+                                <label class="form-label mt-2">State/Province</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <select name="city" class="form-select" required id="city">
-                                    <option value="">Select City/Municipality</option>
-                                </select>
-                                <input type="hidden" class="form-control form-control-md" name="city_text"
-                                    id="city-text" required>
-                                <label class="form-label mt-2">City/Municipality</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <select name="barangay" class="form-select" required id="barangay">
-                                    <option value="">Select Barangay</option>
-                                </select>
-                                <input type="hidden" class="form-control form-control-md" name="barangay_text"
-                                    id="barangay-text" required>
+                                <input type="text" name="barangay" class="form-control" required />
                                 <label class="form-label mt-2">Barangay</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="text" name="postal" class="form-control" required pattern="[0-9]{4}"
-                                    maxlength="4" />
+                                <input type="text" name="postal" class="form-control" required />
                                 <label class="form-label mt-2">Postal/Zip Code</label>
                             </div>
                         </div>
@@ -585,11 +506,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </main>
     </div>
 
-    <!--JQuery-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
-        integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="../../json/ph-address-selector.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Auto-calculate age from DOB
