@@ -1,40 +1,62 @@
 <?php
-session_start();
-require '../rfid-api/db.php';
+// ✅ Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
 
-if (!isset($_SESSION['email_address'])) {
-    header("Location: login/login.php");
+// Set session cookie parameters before starting session
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
+session_start();
+
+require '../rfid-api/db.php'; // Adjust path as needed
+
+// Check if admin is logged in
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: login/login.php?error=" . urlencode("Please log in to access this page."));
+    exit;
+}
+
+// Check session timeout (2 hours = 7200 seconds)
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
+    // Session expired
+    session_unset();
+    session_destroy();
+    header("Location: login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    exit;
+}
+
+// Update last activity time
+$_SESSION['last_activity'] = time();
+
+$admin_id = $_SESSION['admin_id'];
+$sql = "SELECT * FROM admin_accounts WHERE admin_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $admin_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$admin = $result->fetch_assoc();
+
+if (!$admin) {
+    echo "Admin not found.";
     exit;
 }
 
 // Initialize user details
-$email_address = $_SESSION['email_address'];
-$admin_id = $_SESSION['admin_id'];
-$username = $photo = '';// Initialize user details
-
-// Fetch user details including profile photo
-try {
-    $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE email_address = ?");
-    $stmt->bind_param("s", $email_address);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-
-    if ($user) {
-        $username = $user['first_name'];
-
-        // Only set $photo if profile_pic exists and is not null
-        if (!empty($user['profile_picture'])) {
-            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']);
-        } else {
-            $photo = ''; // Explicitly empty if no image is saved
-        }
-    } else {
-        $error_message = "Failed to fetch user details.";
-    }
-
-} catch (Exception $e) {
-    $error_message = "Error fetching user details: " . $e->getMessage();
+$username = $admin['first_name']; // <- Set username directly from household query
+$photo = ''; // Initialize photo; your existing profile photo block will set this later
+// Only set $photo if profile_pic exists and is not null
+if (!empty($admin['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']);
+} else {
+    $photo = ''; // Explicitly empty if no image is saved
 }
 
 // Pagination settings
@@ -51,13 +73,6 @@ $countResult = $conn->query($countSql);
 $totalEntries = $countResult->fetch_assoc()['total'];
 $totalPages = ceil($totalEntries / $entriesPerPage);
 
-// Get data for current page
-$sql = "SELECT admin_id, first_name, middle_name, last_name, roles, status, created_at 
-        FROM admin_accounts 
-        WHERE status = 'Active'
-        ORDER BY created_at DESC
-        LIMIT $entriesPerPage OFFSET $offset";
-$result = $conn->query($sql);
 ?>
 
 <!DOCTYPE html>
@@ -284,7 +299,6 @@ $result = $conn->query($sql);
                             <a href="admin/add_admin.php" class="btn btn-primary btn-sm">+ Create New</a>
                         </div>
                     </div>
-
                     <!-- Success Modal -->
                     <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel"
                         aria-hidden="true">
@@ -303,7 +317,6 @@ $result = $conn->query($sql);
                             </div>
                         </div>
                     </div>
-
                     <!-- Confirmation Modal -->
                     <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel"
                         aria-hidden="true">
@@ -328,22 +341,18 @@ $result = $conn->query($sql);
                             </div>
                         </div>
                     </div>
-
                     <?php if (isset($success) && $success): ?>
                         <script>
                             window.addEventListener('DOMContentLoaded', () => {
                                 const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
                                 const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-
                                 // Show confirmation modal first
                                 confirmModal.show();
-
                                 // If user clicks Proceed
                                 document.getElementById('confirmProceed').addEventListener('click', () => {
                                     confirmModal.hide();
                                     setTimeout(() => successModal.show(), 300); // small delay to avoid overlap
                                 });
-
                                 // Success modal buttons/redirect
                                 const redirect = () => window.location.href = 'admin_accounts.php';
                                 document.getElementById('doneButton').addEventListener('click', redirect);
@@ -351,7 +360,6 @@ $result = $conn->query($sql);
                             });
                         </script>
                     <?php endif; ?>
-
                     <!-- Table with fixed minimum height -->
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
@@ -367,19 +375,27 @@ $result = $conn->query($sql);
                             </thead>
                             <tbody class="small align-middle" style="min-height: 520px; display: table-row-group;">
                                 <?php
+                                // Get data for current page (moved inside table section)
+                                $sql = "SELECT admin_id, first_name, middle_name, last_name, roles, status, created_at 
+                                        FROM admin_accounts 
+                                        WHERE status = 'Active'
+                                        ORDER BY created_at DESC
+                                        LIMIT $entriesPerPage OFFSET $offset";
+                                $table_result = $conn->query($sql);
+
                                 $rowCount = 0;
-                                if ($result->num_rows > 0) {
-                                    while ($row = $result->fetch_assoc()) {
-                                        $admin_id = $row['admin_id'];
+                                if ($table_result->num_rows > 0) {
+                                    while ($row = $table_result->fetch_assoc()) {
+                                        // Use different variable name for table admin ID to avoid conflict
+                                        $table_admin_id = $row['admin_id'];
                                         $fullName = $row['first_name'] . ' ' . substr($row['middle_name'], 0, 1) . '. ' . $row['last_name'];
                                         $role = htmlspecialchars($row['roles']);
                                         $status = $row['status'] === 'Active' ? 'text-success' : 'text-danger';
                                         $statusText = ucfirst($row['status']);
                                         $created = date('Y-m-d H:i', strtotime($row['created_at']));
-
                                         echo '
-                            <tr data-id="' . $admin_id . '">
-                                <td>' . $admin_id . '</td>
+                            <tr data-id="' . $table_admin_id . '">
+                                <td>' . $table_admin_id . '</td>
                                 <td>' . $created . '</td>
                                 <td>' . $fullName . '</td>
                                 <td>' . $role . '</td>
@@ -388,10 +404,10 @@ $result = $conn->query($sql);
                                     <div class="dropdown text-center">
                                         <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
                                         <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="admin/view_admin.php?id=' . $admin_id . '">View Details</a></li>
-                                            <li><a class="dropdown-item" href="admin/edit_admin.php?id=' . $admin_id . '">Edit Details</a></li>
+                                            <li><a class="dropdown-item" href="admin/view_admin.php?id=' . $table_admin_id . '">View Details</a></li>
+                                            <li><a class="dropdown-item" href="admin/edit_admin.php?id=' . $table_admin_id . '">Edit Details</a></li>
                                             <li>
-                                                <a class="dropdown-item delete-account" href="admin/archive_process.php" data-id="' . $admin_id . '" data-bs-toggle="modal" data-bs-target="#confirmModal">
+                                                <a class="dropdown-item delete-account" href="admin/archive_process.php" data-id="' . $table_admin_id . '" data-bs-toggle="modal" data-bs-target="#confirmModal">
                                                     Archive Account
                                                 </a>
                                             </li>
@@ -404,7 +420,7 @@ $result = $conn->query($sql);
                                 }
                                 // Check if there are no rows and show appropriate message
                                 if ($rowCount === 0) {
-                                    echo '<tr><td colspan="6" class="text-center text-muted">No inactive admin accounts found.</td></tr>';
+                                    echo '<tr><td colspan="6" class="text-center text-muted">No active admin accounts found.</td></tr>';
                                     // Add empty rows after the "no data" message
                                     $minRows = 10;
                                     for ($i = 1; $i < $minRows; $i++) {

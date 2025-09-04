@@ -50,7 +50,6 @@ if (!password_verify($password, $user['password'])) {
 
 // ✅ Login success: store session with timestamps
 $_SESSION['household_id'] = $user['household_id'];
-$_SESSION['resident_name'] = $user['first_name'] . ' ' . $user['last_name'];
 $_SESSION['email_address'] = $user['email_address'];
 $_SESSION['login_time'] = time(); // Store login timestamp
 $_SESSION['last_activity'] = time(); // Store last activity timestamp

@@ -1,37 +1,60 @@
 <?php
+// ✅ Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
+
+// Set session cookie parameters for better longevity and security
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
 session_start();
+
 require '../../rfid-api/db.php'; // Adjust this if needed
 
-$email = $_POST['email_address'] ?? '';
+// Collect form data
+$email = trim($_POST['email_address'] ?? '');
 $password = $_POST['password'] ?? '';
 
+// If fields are empty
 if (empty($email) || empty($password)) {
     header("Location: login.php?error=" . urlencode("Please fill in all fields."));
     exit;
 }
 
-// Check if email exists
+// Query admin by email
 $sql = "SELECT * FROM admin_accounts WHERE email_address = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $email);
 $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
+$stmt->close();
 
 if (!$user) {
     header("Location: login.php?error=" . urlencode("Email address not found."));
     exit;
 }
 
-// Verify password
+// Check hashed password
 if (!password_verify($password, $user['password'])) {
     header("Location: login.php?error=" . urlencode("Incorrect password."));
     exit;
 }
 
-// Success — set session
-$_SESSION['email_address'] = $user['email_address'];
+// ✅ Login success: store session with timestamps
 $_SESSION['admin_id'] = $user['admin_id'];
+$_SESSION['email_address'] = $user['email_address'];
+$_SESSION['login_time'] = time(); // Store login timestamp
+$_SESSION['last_activity'] = time(); // Store last activity timestamp
+
+// Redirect to admin dashboard
 header("Location: ../admin_dashboard.php");
 exit;
 ?>

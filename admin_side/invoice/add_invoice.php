@@ -1,41 +1,62 @@
 <?php
-session_start();
-require '../../rfid-api/db.php';
+// ✅ Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
 
-if (!isset($_SESSION['email_address'])) {
-    header("Location: ../login/login.php");
+// Set session cookie parameters before starting session
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
+session_start();
+
+require '../../rfid-api/db.php'; // Adjust path as needed
+
+// Check if admin is logged in
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: ../login/login.php?error=" . urlencode("Please log in to access this page."));
+    exit;
+}
+
+// Check session timeout (2 hours = 7200 seconds)
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
+    // Session expired
+    session_unset();
+    session_destroy();
+    header("Location: ../login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    exit;
+}
+
+// Update last activity time
+$_SESSION['last_activity'] = time();
+
+$admin_id = $_SESSION['admin_id'];
+$sql = "SELECT * FROM admin_accounts WHERE admin_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $admin_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$admin = $result->fetch_assoc();
+
+if (!$admin) {
+    echo "Admin not found.";
     exit;
 }
 
 // Initialize user details
-$email_address = $_SESSION['email_address'];
-$admin_id = $_SESSION['admin_id'];
-$username = $photo = '';// Initialize user details
-// $payment_date_value = date('Y-m-28');
-
-// Fetch user details including profile photo
-try {
-    $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE email_address = ?");
-    $stmt->bind_param("s", $email_address);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-
-    if ($user) {
-        $username = $user['first_name'];
-
-        // Only set $photo if profile_pic exists and is not null
-        if (!empty($user['profile_picture'])) {
-            $photo = 'data:image/jpeg;base64,' . base64_encode($user['profile_picture']);
-        } else {
-            $photo = ''; // Explicitly empty if no image is saved
-        }
-    } else {
-        $error_message = "Failed to fetch user details.";
-    }
-
-} catch (Exception $e) {
-    $error_message = "Error fetching user details: " . $e->getMessage();
+$username = $admin['first_name']; // <- Set username directly from household query
+$photo = ''; // Initialize photo; your existing profile photo block will set this later
+// Only set $photo if profile_pic exists and is not null
+if (!empty($admin['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']);
+} else {
+    $photo = ''; // Explicitly empty if no image is saved
 }
 
 ?>
@@ -152,10 +173,10 @@ try {
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
-                                <img src="<?php echo htmlspecialchars($photo); ?>"
-                                    style="width: 40px; height: 40px; object-fit: cover;">
+                            <img src="<?php echo htmlspecialchars($photo); ?>"
+                                style="width: 40px; height: 40px; object-fit: cover;">
                         <?php else: ?>
-                                <i class="bi bi-person-circle" style="font-size: 32px;"></i>
+                            <i class="bi bi-person-circle" style="font-size: 32px;"></i>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -260,8 +281,7 @@ try {
                 <!-- Back Button -->
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <span class="small mb-0">Fill out the form below to issue a new invoice</span>
-                    <a href="../invoice.php"
-                    class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                    <a href="../invoice.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                         <i class="bi bi-arrow-left-short me-1"></i>Back
                     </a>
                 </div>
@@ -306,7 +326,8 @@ try {
                         <!-- Balance Remaining -->
                         <div class="col-md-6">
                             <label for="balance_remaining" class="form-label fw-semibold">Balance Remaining</label>
-                            <input type="number" step="0.01" class="form-control" id="balance_remaining" name="balance_remaining" required>
+                            <input type="number" step="0.01" class="form-control" id="balance_remaining"
+                                name="balance_remaining" required>
                         </div>
 
                         <!-- Reference Number -->
@@ -317,8 +338,10 @@ try {
 
                         <!-- Proof of Payment -->
                         <div class="col-md-6">
-                            <label for="proof_of_payment" class="form-label fw-semibold">Proof of Payment (optional)</label>
-                            <input type="file" class="form-control" id="proof_of_payment" name="proof_of_payment" accept="image/*">
+                            <label for="proof_of_payment" class="form-label fw-semibold">Proof of Payment
+                                (optional)</label>
+                            <input type="file" class="form-control" id="proof_of_payment" name="proof_of_payment"
+                                accept="image/*">
                         </div>
 
                         <!-- Payment Date -->
@@ -335,129 +358,130 @@ try {
                         </button>
                     </div>
                     <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content text-center">
-                                    <div class="modal-header bg-primary text-white">
-                                        <h5 class="modal-title fw-bold">Confirm Publish</h5>
-                                        <button type="button" class="btn-close btn-close-white"
-                                            data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <i class="bi bi-question-circle text-primary" style="font-size: 64px;"></i>
-                                        <p class="mb-2"><b>Are you sure?</b></p>
-                                        <p class="mb-3">Do you really want to publish this event?</p>
-                                        <button type="button" class="btn btn-primary" id="confirmPublish">Yes,
-                                            Publish</button>
-                                        <button type="button" class="btn btn-light"
-                                            data-bs-dismiss="modal">Cancel</button>
-                                    </div>
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title fw-bold">Confirm Publish</h5>
+                                    <button type="button" class="btn-close btn-close-white"
+                                        data-bs-dismiss="modal"></button>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Default Publish Success Modal -->
-                        <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content text-center">
-                                    <div class="modal-header bg-success text-white">
-                                        <h5 class="modal-title fw-bold">Published!</h5>
-                                        <button type="button" class="btn-close btn-close-white"
-                                            data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
-                                        <p class="mt-3 mb-2"><b>Event published successfully.</b></p>
-                                        <button type="button" class="btn btn-success"
-                                            data-bs-dismiss="modal">OK</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Error Modal -->
-                        <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content text-center">
-                                    <div class="modal-header bg-danger text-white">
-                                        <h5 class="modal-title fw-bold">Error</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <i class="bi bi-x-circle-fill text-danger" style="font-size: 64px;"></i>
-                                        <p class="mt-3 mb-2"><b>Something went wrong.</b></p>
-                                        <p id="errorMessage">Please try again later.</p>
-                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
-                                    </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-question-circle text-primary" style="font-size: 64px;"></i>
+                                    <p class="mb-2"><b>Are you sure?</b></p>
+                                    <p class="mb-3">Do you really want to publish this event?</p>
+                                    <button type="button" class="btn btn-primary" id="confirmPublish">Yes,
+                                        Publish</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </form>
+
+                    <!-- Default Publish Success Modal -->
+                    <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title fw-bold">Published!</h5>
+                                    <button type="button" class="btn-close btn-close-white"
+                                        data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
+                                    <p class="mt-3 mb-2"><b>Event published successfully.</b></p>
+                                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Error Modal -->
+                    <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title fw-bold">Error</h5>
+                                    <button type="button" class="btn-close btn-close-white"
+                                        data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-x-circle-fill text-danger" style="font-size: 64px;"></i>
+                                    <p class="mt-3 mb-2"><b>Something went wrong.</b></p>
+                                    <p id="errorMessage">Please try again later.</p>
+                                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
             </div>
-        </main>
+            </form>
+    </div>
+    </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-    const form = document.querySelector("form");
-    const requiredFields = Array.from(form.querySelectorAll("input:not([type='file']), select"));
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.querySelector("form");
+            const requiredFields = Array.from(form.querySelectorAll("input:not([type='file']), select"));
 
-    form.addEventListener("submit", function(e) {
-        let valid = true;
+            form.addEventListener("submit", function (e) {
+                let valid = true;
 
-        requiredFields.forEach(field => {
-            if (!field.value) {
-                field.classList.add("border", "border-danger");
-                valid = false;
-            } else {
-                field.classList.remove("border", "border-danger");
-            }
+                requiredFields.forEach(field => {
+                    if (!field.value) {
+                        field.classList.add("border", "border-danger");
+                        valid = false;
+                    } else {
+                        field.classList.remove("border", "border-danger");
+                    }
+                });
+
+                if (!valid) {
+                    e.preventDefault(); // Stop form submission
+                    alert("Please fill in all required fields.");
+                }
+            });
+
+            // Remove red border when user types or selects
+            requiredFields.forEach(field => {
+                field.addEventListener("input", () => field.classList.remove("border", "border-danger"));
+                field.addEventListener("change", () => field.classList.remove("border", "border-danger"));
+            });
         });
-
-        if (!valid) {
-            e.preventDefault(); // Stop form submission
-            alert("Please fill in all required fields.");
-        }
-    });
-
-    // Remove red border when user types or selects
-    requiredFields.forEach(field => {
-        field.addEventListener("input", () => field.classList.remove("border", "border-danger"));
-        field.addEventListener("change", () => field.classList.remove("border", "border-danger"));
-    });
-});
-    document.addEventListener("DOMContentLoaded", function () {
-        <?php if (isset($_SESSION['modal'])): ?>
-            var modalId = "<?php echo $_SESSION['modal']; ?>Modal";
-            <?php if ($_SESSION['modal'] === 'error' && isset($_SESSION['error_message'])): ?>
-                document.getElementById("errorMessage").innerText = "<?php echo addslashes($_SESSION['error_message']); ?>";
+        document.addEventListener("DOMContentLoaded", function () {
+            <?php if (isset($_SESSION['modal'])): ?>
+                var modalId = "<?php echo $_SESSION['modal']; ?>Modal";
+                <?php if ($_SESSION['modal'] === 'error' && isset($_SESSION['error_message'])): ?>
+                    document.getElementById("errorMessage").innerText = "<?php echo addslashes($_SESSION['error_message']); ?>";
+                <?php endif; ?>
+                var myModal = new bootstrap.Modal(document.getElementById(modalId));
+                myModal.show();
+                <?php unset($_SESSION['modal']);
+                unset($_SESSION['error_message']); ?>
             <?php endif; ?>
-            var myModal = new bootstrap.Modal(document.getElementById(modalId));
-            myModal.show();
-            <?php unset($_SESSION['modal']); unset($_SESSION['error_message']); ?>
-        <?php endif; ?>
-    });
-    document.addEventListener("DOMContentLoaded", function() {
-    const billingMonth = document.getElementById('billing_month');
-    const paymentDate = document.getElementById('payment_date');
+        });
+        document.addEventListener("DOMContentLoaded", function () {
+            const billingMonth = document.getElementById('billing_month');
+            const paymentDate = document.getElementById('payment_date');
 
-    // Function to set payment date to 28th of the selected month
-    function updatePaymentDate() {
-        if (billingMonth.value) {
-            // billingMonth.value format: YYYY-MM
-            const [year, month] = billingMonth.value.split('-');
-            paymentDate.value = `${year}-${month}-28`;
-        } else {
-            // If no month selected, leave payment_date empty
-            paymentDate.value = '';
-        }
-    }
+            // Function to set payment date to 28th of the selected month
+            function updatePaymentDate() {
+                if (billingMonth.value) {
+                    // billingMonth.value format: YYYY-MM
+                    const [year, month] = billingMonth.value.split('-');
+                    paymentDate.value = `${year}-${month}-28`;
+                } else {
+                    // If no month selected, leave payment_date empty
+                    paymentDate.value = '';
+                }
+            }
 
-    // Set default on page load
-    updatePaymentDate();
+            // Set default on page load
+            updatePaymentDate();
 
-    // Update payment_date whenever billing_month changes
-    billingMonth.addEventListener('change', updatePaymentDate);
-});
-</script>
+            // Update payment_date whenever billing_month changes
+            billingMonth.addEventListener('change', updatePaymentDate);
+        });
+    </script>
 </body>
+
 </html>

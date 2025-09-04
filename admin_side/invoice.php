@@ -1,21 +1,47 @@
 <?php
-session_start();
-require '../rfid-api/db.php';
+// ✅ Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
 
-if (!isset($_SESSION['email_address'])) {
-    header("Location: login/login.php");
+// Set session cookie parameters before starting session
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
+session_start();
+
+require '../rfid-api/db.php'; // Adjust path as needed
+
+// Check if admin is logged in
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: login/login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
 
-// Initialize user details
-$email_address = $_SESSION['email_address'];
+// Check session timeout (2 hours = 7200 seconds)
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
+    // Session expired
+    session_unset();
+    session_destroy();
+    header("Location: login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    exit;
+}
+
+// Update last activity time
+$_SESSION['last_activity'] = time();
+
 $admin_id = $_SESSION['admin_id'];
-$username = $photo = ''; // Initialize user details
 
 // Fetch user details including profile photo
 try {
-    $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE email_address = ?");
-    $stmt->bind_param("s", $email_address);
+    $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE admin_id = ?");
+    $stmt->bind_param("s", $admin_id);
     $stmt->execute();
     $result = $stmt->get_result();
     $user = $result->fetch_assoc();
@@ -119,7 +145,8 @@ $amenityRates = [
 ];
 
 // Get numeric amount from formatted string (removes ₱ and commas)
-function getNumericAmount($amountStr) {
+function getNumericAmount($amountStr)
+{
     $amountStr = preg_replace('/[^\d.]/', '', $amountStr);
     return floatval($amountStr);
 }
@@ -396,16 +423,21 @@ function getNumericAmount($amountStr) {
                                 <div class="list-group list-group-flush">
                                     <?php if (!empty($invoices)): ?>
                                         <?php foreach ($invoices as $index => $inv): ?>
-                                            <a href="?invoice=<?= urlencode($inv['invoice_number']); ?>" 
-                                            class="list-group-item list-group-item-action border-0 <?= (isset($_GET['invoice']) && $_GET['invoice'] == $inv['invoice_number']) ? 'bg-light' : '' ?>">
+                                            <a href="?invoice=<?= urlencode($inv['invoice_number']); ?>"
+                                                class="list-group-item list-group-item-action border-0 <?= (isset($_GET['invoice']) && $_GET['invoice'] == $inv['invoice_number']) ? 'bg-light' : '' ?>">
                                                 <div class="d-flex justify-content-between align-items-start">
                                                     <div>
-                                                        <div class="fw-semibold"><?= htmlspecialchars($inv['full_name']); ?></div>
-                                                        <small class="text-muted"><?= htmlspecialchars($inv['invoice_number']); ?> | <?= htmlspecialchars($inv['reservation_date']); ?></small>
+                                                        <div class="fw-semibold"><?= htmlspecialchars($inv['full_name']); ?>
+                                                        </div>
+                                                        <small
+                                                            class="text-muted"><?= htmlspecialchars($inv['invoice_number']); ?>
+                                                            | <?= htmlspecialchars($inv['reservation_date']); ?></small>
                                                     </div>
                                                     <div class="text-end">
-                                                        <div class="fw-semibold">₱ <?= number_format($inv['total_amount'], 2); ?></div>
-                                                        <small class="text-success fw-semibold"><?= strtoupper($inv['status']); ?></small>
+                                                        <div class="fw-semibold">₱
+                                                            <?= number_format($inv['total_amount'], 2); ?></div>
+                                                        <small
+                                                            class="text-success fw-semibold"><?= strtoupper($inv['status']); ?></small>
                                                     </div>
                                                 </div>
                                             </a>
@@ -434,7 +466,8 @@ function getNumericAmount($amountStr) {
                                     <!-- Status and Export header -->
                                     <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
                                         <div class="fw-bold text-uppercase small">
-                                            STATUS: <span class="text-success"><?= strtoupper($selectedInvoice['status']); ?></span>
+                                            STATUS: <span
+                                                class="text-success"><?= strtoupper($selectedInvoice['status']); ?></span>
                                         </div>
                                         <button class="btn btn-primary btn-sm">Export</button>
                                     </div>
@@ -451,16 +484,23 @@ function getNumericAmount($amountStr) {
                                                 </div>
 
                                                 <div class="small">
-                                                    <div class="mb-1"><span class="fw-semibold">Name:</span> <?= htmlspecialchars($selectedInvoice['full_name']); ?></div>
-                                                    <div class="mb-1"><span class="fw-semibold">Reservation Date:</span> <?= htmlspecialchars($selectedInvoice['reservation_date']); ?></div>
-                                                    <div><span class="fw-semibold">Reservation Code:</span> <?= htmlspecialchars($selectedInvoice['reservation_code']); ?></div>
+                                                    <div class="mb-1"><span class="fw-semibold">Name:</span>
+                                                        <?= htmlspecialchars($selectedInvoice['full_name']); ?></div>
+                                                    <div class="mb-1"><span class="fw-semibold">Reservation Date:</span>
+                                                        <?= htmlspecialchars($selectedInvoice['reservation_date']); ?></div>
+                                                    <div><span class="fw-semibold">Reservation Code:</span>
+                                                        <?= htmlspecialchars($selectedInvoice['reservation_code']); ?></div>
                                                 </div>
                                             </div>
                                             <div class="col-4">
                                                 <div class="text-end small">
-                                                    <div class="fw-bold mb-2 fs-6">Invoice No. <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
-                                                    <div class="mb-1"><span class="fw-semibold">Payment Method:</span> <?= htmlspecialchars(ucfirst($selectedInvoice['payment_method'])); ?></div>
-                                                    <div><span class="fw-semibold">Reference Number:</span> <?= htmlspecialchars($selectedInvoice['reference_number']); ?></div>
+                                                    <div class="fw-bold mb-2 fs-6">Invoice No.
+                                                        <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
+                                                    <div class="mb-1"><span class="fw-semibold">Payment Method:</span>
+                                                        <?= htmlspecialchars(ucfirst($selectedInvoice['payment_method'])); ?>
+                                                    </div>
+                                                    <div><span class="fw-semibold">Reference Number:</span>
+                                                        <?= htmlspecialchars($selectedInvoice['reference_number']); ?></div>
                                                 </div>
                                             </div>
                                         </div>
@@ -483,7 +523,7 @@ function getNumericAmount($amountStr) {
                                                     $userType = $selectedInvoice['user_type'];
                                                     $dayOrNight = $selectedInvoice['rate']; // "day" or "night"
                                                     $numGuests = $selectedInvoice['guests'] ?? 1; // fallback 1 just in case
-
+                                                
                                                     $rateStr = $amenityRates[$amenity][$userType][$dayOrNight] ?? "₱0.00";
                                                     $numericRate = getNumericAmount($rateStr);
 
@@ -504,22 +544,24 @@ function getNumericAmount($amountStr) {
                                                         <td class="text-end">₱ <?= number_format($totalAmount, 2); ?></td>
                                                     </tr>
                                                     <?php if ($selectedInvoice['chairs'] > 0): ?>
-                                                    <tr>
-                                                        <td>Add-On</td>
-                                                        <td>Chairs</td>
-                                                        <td class="text-end">₱ 12.00</td>
-                                                        <td class="text-center"><?= $selectedInvoice['chairs']; ?></td>
-                                                        <td class="text-end">₱ <?= number_format($selectedInvoice['chairs'] * 12, 2); ?></td>
-                                                    </tr>
+                                                        <tr>
+                                                            <td>Add-On</td>
+                                                            <td>Chairs</td>
+                                                            <td class="text-end">₱ 12.00</td>
+                                                            <td class="text-center"><?= $selectedInvoice['chairs']; ?></td>
+                                                            <td class="text-end">₱
+                                                                <?= number_format($selectedInvoice['chairs'] * 12, 2); ?></td>
+                                                        </tr>
                                                     <?php endif; ?>
                                                     <?php if ($selectedInvoice['tables'] > 0): ?>
-                                                    <tr>
-                                                        <td>Add-On</td>
-                                                        <td>Tables</td>
-                                                        <td class="text-end">₱ 15.00</td>
-                                                        <td class="text-center"><?= $selectedInvoice['tables']; ?></td>
-                                                        <td class="text-end">₱ <?= number_format($selectedInvoice['tables'] * 15, 2); ?></td>
-                                                    </tr>
+                                                        <tr>
+                                                            <td>Add-On</td>
+                                                            <td>Tables</td>
+                                                            <td class="text-end">₱ 15.00</td>
+                                                            <td class="text-center"><?= $selectedInvoice['tables']; ?></td>
+                                                            <td class="text-end">₱
+                                                                <?= number_format($selectedInvoice['tables'] * 15, 2); ?></td>
+                                                        </tr>
                                                     <?php endif; ?>
                                                 </tbody>
                                             </table>
@@ -528,11 +570,11 @@ function getNumericAmount($amountStr) {
                                         <div class="d-flex justify-content-end">
                                             <div class="text-end small" style="min-width: 200px;">
                                                 <?php
-                                                    $chairsTotal = $selectedInvoice['chairs'] * 12;
-                                                    $tablesTotal = $selectedInvoice['tables'] * 15;
-                                                    $subtotal = $totalAmount + $chairsTotal + $tablesTotal;
-                                                    $amountPaid = $selectedInvoice['amount_paid'];
-                                                    $balanceRemaining = $subtotal - $amountPaid;
+                                                $chairsTotal = $selectedInvoice['chairs'] * 12;
+                                                $tablesTotal = $selectedInvoice['tables'] * 15;
+                                                $subtotal = $totalAmount + $chairsTotal + $tablesTotal;
+                                                $amountPaid = $selectedInvoice['amount_paid'];
+                                                $balanceRemaining = $subtotal - $amountPaid;
                                                 ?>
                                                 <div class="d-flex justify-content-between mb-1">
                                                     <span class="fw-semibold">Subtotal</span>
@@ -550,7 +592,8 @@ function getNumericAmount($amountStr) {
                                         </div>
                                     </div>
                                 <?php else: ?>
-                                    <div class="p-5 text-center text-muted">Select an invoice from the left to view details.</div>
+                                    <div class="p-5 text-center text-muted">Select an invoice from the left to view details.
+                                    </div>
                                 <?php endif; ?>
                             </div>
                         </div>
