@@ -81,51 +81,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $members = $_POST['members'];
     $rfid = $_POST['rfid'];
 
-    // 2. Validate password (required and must match)
-    if (empty($password)) {
-        $error = "Password cannot be empty.";
-    } elseif ($password !== $confirmPassword) {
-        $error = "Passwords do not match.";
+    // Validate and format date of birth
+    if (empty($dob)) {
+        $error = "Date of birth is required.";
     } else {
-        // Hash password
-        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-
-        try {
-            // 3. Check if RFID already exists
-            $rfid_check_stmt = $conn->prepare("SELECT household_id FROM household_accounts WHERE rfid = ?");
-            $rfid_check_stmt->bind_param("s", $rfid);
-            $rfid_check_stmt->execute();
-            $rfid_result = $rfid_check_stmt->get_result();
-
-            if ($rfid_result->num_rows > 0) {
-                $error = "RFID card is already registered to another household/visitor. Please use a different RFID card.";
+        // Validate date format and convert if necessary
+        $date_obj = DateTime::createFromFormat('Y-m-d', $dob);
+        if (!$date_obj || $date_obj->format('Y-m-d') !== $dob) {
+            $error = "Invalid date format for date of birth.";
+        } else {
+            // Ensure date is not in the future
+            $today = new DateTime();
+            if ($date_obj > $today) {
+                $error = "Date of birth cannot be in the future.";
             } else {
-                // 4. Generate new household_id (HOU-0001, HOU-0002...)
-                $result = $conn->query("SELECT household_id FROM household_accounts ORDER BY household_id DESC LIMIT 1");
-                if ($result && $row = $result->fetch_assoc()) {
-                    $last_id = intval(substr($row['household_id'], 4)); // extract numeric part
-                    $new_id_number = $last_id + 1;
+                $dob = $date_obj->format('Y-m-d'); // Ensure proper format
+            }
+        }
+    }
+
+    // 2. Validate password (only if date validation passed)
+    if (!isset($error)) {
+        if (empty($password)) {
+            $error = "Password cannot be empty.";
+        } elseif ($password !== $confirmPassword) {
+            $error = "Passwords do not match.";
+        } else {
+            // Hash password
+            $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+
+            try {
+                // 3. Check if RFID already exists in household_accounts
+                $rfid_check_stmt = $conn->prepare("SELECT household_id FROM household_accounts WHERE rfid = ?");
+                $rfid_check_stmt->bind_param("s", $rfid);
+                $rfid_check_stmt->execute();
+                $household_rfid_result = $rfid_check_stmt->get_result();
+
+                // 4. Check if RFID already exists in visitor_details
+                $visitor_rfid_check_stmt = $conn->prepare("SELECT visitor_id FROM visitor_details WHERE rfid = ?");
+                $visitor_rfid_check_stmt->bind_param("s", $rfid);
+                $visitor_rfid_check_stmt->execute();
+                $visitor_rfid_result = $visitor_rfid_check_stmt->get_result();
+
+                if ($household_rfid_result->num_rows > 0 || $visitor_rfid_result->num_rows > 0) {
+                    $error = "RFID card is already registered to another household/visitor. Please use a different RFID card.";
                 } else {
-                    $new_id_number = 1; // first household
-                }
-                $household_id = 'HOU-' . str_pad($new_id_number, 4, '0', STR_PAD_LEFT);
-                // 5. Check if profile picture uploaded
-                $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
+                    // 5. Generate new household_id (HOU-0001, HOU-0002...)
+                    $result = $conn->query("SELECT household_id FROM household_accounts ORDER BY household_id DESC LIMIT 1");
+                    if ($result && $row = $result->fetch_assoc()) {
+                        $last_id = intval(substr($row['household_id'], 4)); // extract numeric part
+                        $new_id_number = $last_id + 1;
+                    } else {
+                        $new_id_number = 1; // first household
+                    }
+                    $household_id = 'HOU-' . str_pad($new_id_number, 4, '0', STR_PAD_LEFT);
+                    // 6. Check if profile picture uploaded
+                    $profile_pic = null;
+                    if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
+                        $file_tmp = $_FILES['profile_pic']['tmp_name'];
+                        $profile_pic = file_get_contents($file_tmp); // Read image as binary data
+                    }
 
-                if ($has_photo) {
-                    $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
-
-                    $sql = "INSERT INTO household_accounts 
-                        (household_id, first_name, middle_name, last_name, date_of_birth, age, sex, cellphone_number, landline, 
-                        email_address, password, street_address, street_address_2, city, state_province, barangay, 
-                        postal_zip_code, members, rfid, profile_picture)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    // 7. Insert into database with password
+                    $sql = "INSERT INTO household_accounts (
+                        household_id, first_name, middle_name, last_name, date_of_birth, age, sex,
+                        cellphone_number, landline, email_address, password, street_address, street_address_2, city,
+                        state_province, barangay, postal_zip_code, members, rfid, profile_picture
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                     $stmt = $conn->prepare($sql);
 
-                    $null_blob = NULL;
+                    // Bind parameters including the hashed password
                     $stmt->bind_param(
-                        "sssssisssssssssssssb",
+                        "sssssisssssssssssssb", // Added 's' for password field
                         $household_id,
                         $first_name,
                         $middle_name,
@@ -136,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $cellphone,
                         $landline,
                         $email,
-                        $hashed_password,
+                        $hashed_password, // Added hashed password
                         $street,
                         $street2,
                         $city,
@@ -145,52 +173,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $postal,
                         $members,
                         $rfid,
-                        $null_blob // temp bind
+                        $profile_pic // binary data
                     );
 
-                    $stmt->send_long_data(19, $profile_pic); // 19th param
-                } else {
-                    // No photo uploaded
-                    $sql = "INSERT INTO household_accounts 
-                        (household_id, first_name, middle_name, last_name, date_of_birth, age, sex, cellphone_number, landline, 
-                        email_address, password, street_address, street_address_2, city, state_province, barangay, 
-                        postal_zip_code, members, rfid)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    // Send long data for profile picture if it exists
+                    if ($profile_pic !== null) {
+                        $stmt->send_long_data(18, $profile_pic); // index 18 because it's the 19th parameter
+                    }
 
-                    $stmt = $conn->prepare($sql);
-                    $stmt->bind_param(
-                        "sssssisssssssssssss",
-                        $household_id,
-                        $first_name,
-                        $middle_name,
-                        $last_name,
-                        $dob,
-                        $age,
-                        $sex,
-                        $cellphone,
-                        $landline,
-                        $email,
-                        $hashed_password,
-                        $street,
-                        $street2,
-                        $city,
-                        $state,
-                        $barangay,
-                        $postal,
-                        $members,
-                        $rfid
-                    );
+                    if ($stmt->execute()) {
+                        $success = true; // Flag to trigger modal in HTML
+                    } else {
+                        $error_message = "Error creating household account: " . $stmt->error;
+                    }
                 }
-
-                // 5. Execute
-                if ($stmt->execute()) {
-                    $success = true;
-                } else {
-                    $error = "Insert failed: " . $stmt->error;
-                }
+            } catch (Exception $e) {
+                $error = "Error checking RFID: " . $e->getMessage();
             }
-        } catch (Exception $e) {
-            $error = "Error checking RFID: " . $e->getMessage();
         }
     }
 }
@@ -456,7 +455,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Last Name</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="date" name="dob" class="form-control" required />
+                                <input type="date" name="dob" class="form-control" required
+                                    max="<?php echo date('Y-m-d'); ?>" />
                                 <label class="form-label mt-2">Date of Birth</label>
                             </div>
                             <div class="col-md-4 mb-3">
@@ -703,20 +703,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Form submission validation
             form.addEventListener('submit', function (event) {
+                // Validate date of birth
+                const dobInput = document.querySelector('input[name="dob"]');
+                if (!dobInput.value) {
+                    event.preventDefault();
+                    showErrorModal('Please select a date of birth.');
+                    dobInput.focus();
+                    return false;
+                }
+
+                // Check if date is not in the future
+                const selectedDate = new Date(dobInput.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+
+                if (selectedDate > today) {
+                    event.preventDefault();
+                    showErrorModal('Date of birth cannot be in the future.');
+                    dobInput.focus();
+                    return false;
+                }
+
                 // Check RFID field
                 if (!rfidInput.value.trim()) {
                     event.preventDefault();
-                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                    document.getElementById('errorMessage').textContent = 'RFID is required. Please tap your RFID card.';
-                    errorModal.show();
+                    showErrorModal('RFID is required. Please tap your RFID card.');
                     return false;
                 }
 
                 if (!validatePasswords()) {
                     event.preventDefault();
-                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                    document.getElementById('errorMessage').textContent = 'Passwords do not match. Please ensure both password fields are identical.';
-                    errorModal.show();
+                    showErrorModal('Passwords do not match. Please ensure both password fields are identical.');
                     return false;
                 }
 
@@ -724,9 +741,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 const password = passwordInput.value;
                 if (password.length < 6) {
                     event.preventDefault();
-                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                    document.getElementById('errorMessage').textContent = 'Password must be at least 6 characters long.';
-                    errorModal.show();
+                    showErrorModal('Password must be at least 6 characters long.');
                     return false;
                 }
 
@@ -771,16 +786,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (dobInput && ageInput) {
                 dobInput.addEventListener('change', function () {
-                    const dob = new Date(this.value);
-                    const today = new Date();
-                    let age = today.getFullYear() - dob.getFullYear();
-                    const monthDiff = today.getMonth() - dob.getMonth();
+                    if (this.value) {
+                        const dob = new Date(this.value);
+                        const today = new Date();
 
-                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-                        age--;
+                        // Check if date is valid and not in the future
+                        if (dob > today) {
+                            showErrorModal('Date of birth cannot be in the future.');
+                            this.value = '';
+                            ageInput.value = '';
+                            return;
+                        }
+
+                        let age = today.getFullYear() - dob.getFullYear();
+                        const monthDiff = today.getMonth() - dob.getMonth();
+
+                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                            age--;
+                        }
+
+                        // Ensure age is reasonable (0-120)
+                        if (age < 0 || age > 120) {
+                            showErrorModal('Please enter a valid date of birth.');
+                            this.value = '';
+                            ageInput.value = '';
+                            return;
+                        }
+
+                        ageInput.value = age;
+                    } else {
+                        ageInput.value = '';
                     }
-
-                    ageInput.value = age;
                 });
             }
 
@@ -794,7 +830,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (file) {
                         // Validate file size (5MB limit)
                         if (file.size > 5000000) {
-                            alert('File size too large. Please select an image smaller than 5MB.');
+                            showErrorModal('File size too large. Please select an image smaller than 5MB.');
                             this.value = ''; // Clear the input
                             preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
                             return;
@@ -803,7 +839,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Validate file type
                         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
                         if (!allowedTypes.includes(file.type)) {
-                            alert('Invalid file type. Please select a JPEG, PNG, or GIF image.');
+                            showErrorModal('Invalid file type. Please select a JPEG, PNG, or GIF image.');
                             this.value = ''; // Clear the input
                             preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
                             return;
@@ -819,6 +855,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
                     }
                 });
+            }
+            // Function to show error modal
+            function showErrorModal(message) {
+                document.getElementById('errorMessage').textContent = message;
+                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                errorModal.show();
             }
         });
 

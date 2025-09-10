@@ -120,80 +120,189 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postal = $_POST['postal'];
     $role = $_POST['role'];
 
-    // 2. Check if profile picture was uploaded
-    $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
-
-    if ($has_photo) {
-        $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
-
-        $sql = "UPDATE admin_accounts SET 
-            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-            cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-            city=?, state_province=?, barangay=?, postal_zip_code=?, roles=?, profile_picture=?
-            WHERE admin_id=?";
-
-        $stmt = $conn->prepare($sql);
-
-        $stmt->bind_param(
-            "ssssisssssssssssbs", // 'b' = blob, 'i' = integer (admin_id)
-            $first_name,
-            $middle_name,
-            $last_name,
-            $dob,
-            $age,
-            $sex,
-            $cellphone,
-            $landline,
-            $email,
-            $street,
-            $street2,
-            $city,
-            $state,
-            $barangay,
-            $postal,
-            $role,
-            $null_blob, // temporary bind, will overwrite with send_long_data
-            $edit_admin
-        );
-
-        $stmt->send_long_data(16, $profile_pic); // 17th param (index 16)
+    // Validate and format date of birth
+    if (empty($dob)) {
+        $error = "Date of birth is required.";
     } else {
-        // No photo uploaded, don't update profile_pic
-        $sql = "UPDATE admin_accounts SET 
-            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-            cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-            city=?, state_province=?, barangay=?, postal_zip_code=?, roles=?
-            WHERE admin_id=?";
-
-        $stmt = $conn->prepare($sql);
-
-        $stmt->bind_param(
-            "ssssisssssssssssi", // no 'b' here
-            $first_name,
-            $middle_name,
-            $last_name,
-            $dob,
-            $age,
-            $sex,
-            $cellphone,
-            $landline,
-            $email,
-            $street,
-            $street2,
-            $city,
-            $state,
-            $barangay,
-            $postal,
-            $role,
-            $edit_admin
-        );
+        // Validate date format and convert if necessary
+        $date_obj = DateTime::createFromFormat('Y-m-d', $dob);
+        if (!$date_obj || $date_obj->format('Y-m-d') !== $dob) {
+            $error = "Invalid date format for date of birth.";
+        } else {
+            // Ensure date is not in the future
+            $today = new DateTime();
+            if ($date_obj > $today) {
+                $error = "Date of birth cannot be in the future.";
+            } else {
+                $dob = $date_obj->format('Y-m-d'); // Ensure proper format
+            }
+        }
     }
 
-    // 3. Execute and check success
-    if ($stmt->execute()) {
-        $success = true;
-    } else {
-        $error = "Update failed: " . $stmt->error;
+    // Handle password update (only if date validation passed)
+    if (!isset($error)) {
+        $password_update = false;
+        $hashed_password = null;
+
+        // Check if new password was provided
+        if (!empty($_POST['passWord']) && !empty($_POST['confirmPassword'])) {
+            $new_password = $_POST['passWord'];
+            $confirm_password = $_POST['confirmPassword'];
+
+            // Validate password
+            if ($new_password !== $confirm_password) {
+                $error = "Passwords do not match.";
+            } elseif (strlen($new_password) < 6) {
+                $error = "Password must be at least 6 characters long.";
+            } else {
+                // Hash the new password
+                $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                $password_update = true;
+            }
+        }
+    }
+
+    // 2. Check if profile picture was uploaded (only if no validation errors)
+    if (!isset($error)) {
+        $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
+
+        if ($has_photo && $password_update) {
+            // Update with both photo and password
+            $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
+
+            $sql = "UPDATE admin_accounts SET 
+        first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+        cellphone_number=?, landline=?, email_address=?, password=?, street_address=?, street_address_2=?, 
+        city=?, state_province=?, barangay=?, postal_zip_code=?, roles=?, profile_picture=?
+        WHERE admin_id=?";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "ssssisssssssssssbs",
+                $first_name,
+                $middle_name,
+                $last_name,
+                $dob,
+                $age,
+                $sex,
+                $cellphone,
+                $landline,
+                $email,
+                $hashed_password,
+                $street,
+                $street2,
+                $city,
+                $state,
+                $barangay,
+                $postal,
+                $role,
+                $null_blob,
+                $edit_admin
+            );
+            $stmt->send_long_data(17, $profile_pic); // 18th param (index 17)
+
+        } elseif ($has_photo && !$password_update) {
+            // Update with photo only
+            $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
+
+            $sql = "UPDATE admin_accounts SET 
+        first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+        cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+        city=?, state_province=?, barangay=?, postal_zip_code=?, roles=?, profile_picture=?
+        WHERE admin_id=?";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "ssssisssssssssssbs",
+                $first_name,
+                $middle_name,
+                $last_name,
+                $dob,
+                $age,
+                $sex,
+                $cellphone,
+                $landline,
+                $email,
+                $street,
+                $street2,
+                $city,
+                $state,
+                $barangay,
+                $postal,
+                $role,
+                $null_blob,
+                $edit_admin
+            );
+            $stmt->send_long_data(16, $profile_pic); // 17th param (index 16)
+
+        } elseif (!$has_photo && $password_update) {
+            // Update with password only
+            $sql = "UPDATE admin_accounts SET 
+        first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+        cellphone_number=?, landline=?, email_address=?, password=?, street_address=?, street_address_2=?, 
+        city=?, state_province=?, barangay=?, postal_zip_code=?, roles=?
+        WHERE admin_id=?";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "ssssisssssssssssss",
+                $first_name,
+                $middle_name,
+                $last_name,
+                $dob,
+                $age,
+                $sex,
+                $cellphone,
+                $landline,
+                $email,
+                $hashed_password,
+                $street,
+                $street2,
+                $city,
+                $state,
+                $barangay,
+                $postal,
+                $role,
+                $edit_admin
+            );
+
+        } else {
+            // Update without photo and password
+            $sql = "UPDATE admin_accounts SET 
+        first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+        cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+        city=?, state_province=?, barangay=?, postal_zip_code=?, roles=?
+        WHERE admin_id=?";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "ssssissssssssssss",
+                $first_name,
+                $middle_name,
+                $last_name,
+                $dob,
+                $age,
+                $sex,
+                $cellphone,
+                $landline,
+                $email,
+                $street,
+                $street2,
+                $city,
+                $state,
+                $barangay,
+                $postal,
+                $role,
+                $edit_admin
+            );
+        }
+
+        // 3. Execute and check success
+        if ($stmt->execute()) {
+            $success = true;
+        } else {
+            $error = "Update failed: " . $stmt->error;
+        }
     }
 }
 
@@ -466,7 +575,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <div class="col-md-4 mb-3">
                                 <input type="date" name="dob" class="form-control"
-                                    value="<?php echo htmlspecialchars($dob) ?>" required />
+                                    value="<?php echo htmlspecialchars($dob) ?>" required
+                                    max="<?php echo date('Y-m-d'); ?>" />
                                 <label class="form-label mt-2">Date of Birth</label>
                             </div>
                             <div class="col-md-4 mb-3">
@@ -538,6 +648,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Postal/Zip Code</label>
                             </div>
                         </div>
+                        <!-- Account Password -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold">New Password</label>
+                                <div class="input-group">
+                                    <input type="password" id="passWord" name="passWord" class="form-control"
+                                        minlength="6" />
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
+                                        tabindex="-1">
+                                        <i class="bi bi-eye" id="toggleIcon1"></i>
+                                    </button>
+                                </div>
+                                <label class="form-label mt-2">Enter new password to change (min. 6 characters)</label>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold invisible">Confirm Password</label>
+                                <div class="input-group">
+                                    <input type="password" id="confirmPassword" name="confirmPassword"
+                                        class="form-control" minlength="6" />
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword2"
+                                        tabindex="-1">
+                                        <i class="bi bi-eye" id="toggleIcon2"></i>
+                                    </button>
+                                </div>
+                                <label class="form-label mt-2">Confirm new password</label>
+                                <div id="passwordError" class="invalid-feedback"></div>
+                            </div>
+                        </div>
                         <!-- Roles -->
                         <div class="row">
                             <div class="col-md-4 mb-3">
@@ -577,6 +715,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                     </div>
+                    <!-- Error Modal -->
+                    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-danger text-white">
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
+                                    <p class="mb-2"><b>Error</b></p>
+                                    <p class="mb-3" id="errorMessage">
+                                        <?php echo isset($error) ? htmlspecialchars($error) : 'An error occurred while processing your request.'; ?>
+                                    </p>
+                                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <?php if (isset($success) && $success): ?>
                         <script>
                             window.addEventListener('DOMContentLoaded', () => {
@@ -589,41 +747,210 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             });
                         </script>
                     <?php endif; ?>
+                    <?php if (isset($error) && $error): ?>
+                        <script>
+                            window.addEventListener('DOMContentLoaded', () => {
+                                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                                errorModal.show();
+                            });
+                        </script>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>
     </div>
 
-    <!--JQuery-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
-        integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="../../json/ph-address-selector.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-calculate age from DOB
-        document.querySelector('input[name="dob"]').addEventListener('change', function () {
-            const dob = new Date(this.value);
-            const today = new Date();
-            let age = today.getFullYear() - dob.getFullYear();
-            const m = today.getMonth() - dob.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-            document.querySelector('input[name="age"]').value = age;
-        });
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.querySelector('form');
+            const passwordInput = document.getElementById('passWord');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
 
-        // Image preview for profile picture
-        document.getElementById('profile_pic').addEventListener('change', function (e) {
-            const file = e.target.files[0];
+            // Password Toggle Functionality
+            function setupPasswordToggle(inputId, toggleButtonId, iconId) {
+                const input = document.getElementById(inputId);
+                const toggleButton = document.getElementById(toggleButtonId);
+                const icon = document.getElementById(iconId);
+
+                if (input && toggleButton && icon) {
+                    toggleButton.addEventListener('click', function () {
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            icon.classList.remove('bi-eye');
+                            icon.classList.add('bi-eye-slash');
+                        } else {
+                            input.type = 'password';
+                            icon.classList.remove('bi-eye-slash');
+                            icon.classList.add('bi-eye');
+                        }
+                    });
+                }
+            }
+
+            // Setup password toggle for both password fields
+            setupPasswordToggle('passWord', 'togglePassword1', 'toggleIcon1');
+            setupPasswordToggle('confirmPassword', 'togglePassword2', 'toggleIcon2');
+
+            // Password Matching Validation
+            function validatePasswords() {
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+                const passwordError = document.getElementById('passwordError');
+
+                // Remove existing error styling
+                passwordInput.classList.remove('is-invalid');
+                confirmPasswordInput.classList.remove('is-invalid');
+                if (passwordError) {
+                    passwordError.textContent = '';
+                }
+
+                // Only validate if both fields have values
+                if (password && confirmPassword) {
+                    if (password !== confirmPassword) {
+                        // Add error styling
+                        confirmPasswordInput.classList.add('is-invalid');
+                        passwordError.textContent = 'Passwords do not match';
+                        passwordError.style.display = 'block';
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            // Real-time password validation
+            if (confirmPasswordInput && passwordInput) {
+                confirmPasswordInput.addEventListener('input', validatePasswords);
+                passwordInput.addEventListener('input', function () {
+                    if (confirmPasswordInput.value !== '') {
+                        validatePasswords();
+                    }
+                });
+            }
+
+            // Form submission validation
+            form.addEventListener('submit', function (event) {
+                // Validate date of birth
+                const dobInput = document.querySelector('input[name="dob"]');
+                if (!dobInput.value) {
+                    event.preventDefault();
+                    showErrorModal('Please select a date of birth.');
+                    dobInput.focus();
+                    return false;
+                }
+
+                // Check if date is not in the future
+                const selectedDate = new Date(dobInput.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+
+                if (selectedDate > today) {
+                    event.preventDefault();
+                    showErrorModal('Date of birth cannot be in the future.');
+                    dobInput.focus();
+                    return false;
+                }
+
+                // Validate passwords only if they're filled
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+
+                if (password || confirmPassword) {
+                    if (!validatePasswords()) {
+                        event.preventDefault();
+                        showErrorModal('Passwords do not match. Please ensure both password fields are identical.');
+                        return false;
+                    }
+
+                    if (password.length < 6) {
+                        event.preventDefault();
+                        showErrorModal('Password must be at least 6 characters long.');
+                        return false;
+                    }
+                }
+
+                console.log('Form is being submitted');
+            });
+
+            // Auto-calculate age when date of birth changes
+            const dobInput = document.querySelector('input[name="dob"]');
+            const ageInput = document.querySelector('input[name="age"]');
+
+            if (dobInput && ageInput) {
+                dobInput.addEventListener('change', function () {
+                    if (this.value) {
+                        const dob = new Date(this.value);
+                        const today = new Date();
+
+                        // Check if date is valid and not in the future
+                        if (dob > today) {
+                            showErrorModal('Date of birth cannot be in the future.');
+                            this.value = '';
+                            ageInput.value = '';
+                            return;
+                        }
+
+                        let age = today.getFullYear() - dob.getFullYear();
+                        const monthDiff = today.getMonth() - dob.getMonth();
+
+                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                            age--;
+                        }
+
+                        // Ensure age is reasonable (0-120)
+                        if (age < 0 || age > 120) {
+                            showErrorModal('Please enter a valid date of birth.');
+                            this.value = '';
+                            ageInput.value = '';
+                            return;
+                        }
+
+                        ageInput.value = age;
+                    } else {
+                        ageInput.value = '';
+                    }
+                });
+            }
+
+            // Profile picture preview - ENHANCED VERSION
+            const profilePicInput = document.getElementById('profile_pic');
             const preview = document.getElementById('preview');
 
-            if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" />`;
-                }
-                reader.readAsDataURL(file);
-            } else {
-                preview.innerHTML = '<i class="bi bi-person-fill"></i>';
+            if (profilePicInput && preview) {
+                profilePicInput.addEventListener('change', function (event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        // Validate file size (5MB limit)
+                        if (file.size > 5000000) {
+                            showErrorModal('File size too large. Please select an image smaller than 5MB.');
+                            this.value = ''; // Clear the input
+                            // Reset to original preview or default icon
+                            return;
+                        }
+
+                        // Validate file type
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                        if (!allowedTypes.includes(file.type)) {
+                            showErrorModal('Invalid file type. Please select a JPEG, PNG, or GIF image.');
+                            this.value = ''; // Clear the input
+                            return;
+                        }
+
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            preview.innerHTML = `<img src="${e.target.result}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px;">`;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            // Function to show error modal
+            function showErrorModal(message) {
+                document.getElementById('errorMessage').textContent = message;
+                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                errorModal.show();
             }
         });
     </script>

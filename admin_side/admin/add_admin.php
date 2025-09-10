@@ -70,6 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cellphone = $_POST['cellphone'];
     $landline = $_POST['landline'];
     $email = $_POST['email'];
+    $password = $_POST['password'] ?? '';
+    $confirmPassword = $_POST['confirmPassword'] ?? '';
     $street = $_POST['street'];
     $street2 = $_POST['street2'];
     $city = $_POST['city'];
@@ -78,59 +80,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postal = $_POST['postal'];
     $role = $_POST['role'];
 
-    $result = $conn->query("SELECT admin_id FROM admin_accounts ORDER BY admin_id DESC LIMIT 1");
-    if ($result && $row = $result->fetch_assoc()) {
-        $last_id = intval(substr($row['admin_id'], 4)); // Get numeric part
-        $new_id_number = $last_id + 1;
+    // Validate and format date of birth
+    if (empty($dob)) {
+        $error = "Date of birth is required.";
     } else {
-        $new_id_number = 1; // Start from 1 if no records
+        // Validate date format and convert if necessary
+        $date_obj = DateTime::createFromFormat('Y-m-d', $dob);
+        if (!$date_obj || $date_obj->format('Y-m-d') !== $dob) {
+            $error = "Invalid date format for date of birth.";
+        } else {
+            // Ensure date is not in the future
+            $today = new DateTime();
+            if ($date_obj > $today) {
+                $error = "Date of birth cannot be in the future.";
+            } else {
+                $dob = $date_obj->format('Y-m-d'); // Ensure proper format
+            }
+        }
     }
 
-    $admin_id = 'ADM-' . str_pad($new_id_number, 4, '0', STR_PAD_LEFT);
+    // Validate password (only if date validation passed)
+    if (!isset($error)) {
+        if (empty($password) || strlen($password) < 6) {
+            $error = "Password must be at least 6 characters long.";
+        } elseif ($password !== $confirmPassword) {
+            $error = "Passwords do not match.";
+        } else {
+            // Hash the password securely
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-    // 2. Handle profile picture upload
-    $profile_pic = null;
-    if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
-        $file_tmp = $_FILES['profile_pic']['tmp_name'];
-        $profile_pic = file_get_contents($file_tmp); // Read image as binary data
-    }
+            $result = $conn->query("SELECT admin_id FROM admin_accounts ORDER BY admin_id DESC LIMIT 1");
+            if ($result && $row = $result->fetch_assoc()) {
+                $last_id = intval(substr($row['admin_id'], 4)); // Get numeric part
+                $new_id_number = $last_id + 1;
+            } else {
+                $new_id_number = 1; // Start from 1 if no records
+            }
 
-    // 3. Insert into database
-    $sql = "INSERT INTO admin_accounts (
-        admin_id, first_name, middle_name, last_name, date_of_birth, age, sex,
-        cellphone_number, landline, email_address, street_address, street_address_2, city,
-        state_province, barangay, postal_zip_code, roles, profile_picture
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $admin_id = 'ADM-' . str_pad($new_id_number, 4, '0', STR_PAD_LEFT);
 
-    $stmt = $conn->prepare($sql);
-    $stmt->send_long_data(17, $profile_pic); // index 16 because it's the 17th parameter
+            // 2. Handle profile picture upload
+            $profile_pic = null;
+            if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
+                $file_tmp = $_FILES['profile_pic']['tmp_name'];
+                $profile_pic = file_get_contents($file_tmp); // Read image as binary data
+            }
 
-    $stmt->bind_param(
-        "sssssisssssssssssb", // last one is blob
-        $admin_id,
-        $first_name,
-        $middle_name,
-        $last_name,
-        $dob,
-        $age,
-        $sex,
-        $cellphone,
-        $landline,
-        $email,
-        $street,
-        $street2,
-        $city,
-        $state,
-        $barangay,
-        $postal,
-        $role,
-        $profile_pic // binary data
-    );
+            // 3. Insert into database with password
+            $sql = "INSERT INTO admin_accounts (
+                admin_id, first_name, middle_name, last_name, date_of_birth, age, sex,
+                cellphone_number, landline, email_address, password, street_address, street_address_2, city,
+                state_province, barangay, postal_zip_code, roles, profile_picture
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    if ($stmt->execute()) {
-        $success = true; // Flag to trigger modal in HTML
+            $stmt = $conn->prepare($sql);
+
+            // Bind parameters including the hashed password
+            $stmt->bind_param(
+                "sssssissssssssssssb", // Added 's' for password field
+                $admin_id,
+                $first_name,
+                $middle_name,
+                $last_name,
+                $dob,
+                $age,
+                $sex,
+                $cellphone,
+                $landline,
+                $email,
+                $hashed_password, // Added hashed password
+                $street,
+                $street2,
+                $city,
+                $state,
+                $barangay,
+                $postal,
+                $role,
+                $profile_pic // binary data
+            );
+
+            // Send long data for profile picture if it exists
+            if ($profile_pic !== null) {
+                $stmt->send_long_data(18, $profile_pic); // index 18 because it's the 19th parameter
+            }
+
+            if ($stmt->execute()) {
+                $success = true; // Flag to trigger modal in HTML
+            } else {
+                $error_message = "Error creating admin account: " . $stmt->error;
+            }
+        }
     }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -356,7 +398,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <hr class="my-0">
                 <div class="p-3">
-                    <form action="add_admin.php" method="POST" enctype="multipart/form-data">
+                    <form action="add_admin.php" id="adminForm" method="POST" enctype="multipart/form-data">
                         <div class="row mb-3">
                             <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
                             <div class="row">
@@ -391,7 +433,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Last Name</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="date" name="dob" class="form-control" required />
+                                <input type="date" name="dob" class="form-control" required
+                                    max="<?php echo date('Y-m-d'); ?>" />
                                 <label class="form-label mt-2">Date of Birth</label>
                             </div>
                             <div class="col-md-4 mb-3">
@@ -453,6 +496,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Postal/Zip Code</label>
                             </div>
                         </div>
+                        <!-- Account Password -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold">Password</label>
+                                <div class="input-group">
+                                    <input type="password" id="password" name="password" required class="form-control"
+                                        minlength="6" />
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
+                                        tabindex="-1">
+                                        <i class="bi bi-eye" id="toggleIcon1"></i>
+                                    </button>
+                                </div>
+                                <label class="form-label mt-2">Set a password for this account (min. 6
+                                    characters)</label>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold invisible">Confirm Password</label>
+                                <div class="input-group">
+                                    <input type="password" id="confirmPassword" name="confirmPassword" required
+                                        class="form-control" minlength="6" />
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword2"
+                                        tabindex="-1">
+                                        <i class="bi bi-eye" id="toggleIcon2"></i>
+                                    </button>
+                                </div>
+                                <label class="form-label mt-2">Confirm password</label>
+                            </div>
+                        </div>
                         <!-- Roles -->
                         <div class="row">
                             <div class="col-md-4 mb-3">
@@ -489,6 +560,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                     </div>
+                    <!-- Error Modal -->
+                    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-danger text-white">
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
+                                    <p class="mb-2"><b>Error</b></p>
+                                    <p class="mb-3" id="errorMessage">
+                                        <?php echo isset($error) ? htmlspecialchars($error) : 'An error occurred while processing your request.'; ?>
+                                    </p>
+                                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <?php if (isset($success) && $success): ?>
                         <script>
                             window.addEventListener('DOMContentLoaded', () => {
@@ -501,6 +592,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             });
                         </script>
                     <?php endif; ?>
+                    <?php if (isset($error) && $error): ?>
+                        <script>
+                            window.addEventListener('DOMContentLoaded', () => {
+                                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                                errorModal.show();
+                            });
+                        </script>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>
@@ -508,29 +607,198 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-calculate age from DOB
-        document.querySelector('input[name="dob"]').addEventListener('change', function () {
-            const dob = new Date(this.value);
-            const today = new Date();
-            let age = today.getFullYear() - dob.getFullYear();
-            const m = today.getMonth() - dob.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-            document.querySelector('input[name="age"]').value = age;
-        });
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('adminForm');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
 
-        // Image preview for profile picture
-        document.getElementById('profile_pic').addEventListener('change', function (e) {
-            const file = e.target.files[0];
+            // Password Toggle Functionality
+            function setupPasswordToggle(inputId, toggleButtonId, iconId) {
+                const input = document.getElementById(inputId);
+                const toggleButton = document.getElementById(toggleButtonId);
+                const icon = document.getElementById(iconId);
+
+                if (input && toggleButton && icon) {
+                    toggleButton.addEventListener('click', function () {
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            icon.classList.remove('bi-eye');
+                            icon.classList.add('bi-eye-slash');
+                        } else {
+                            input.type = 'password';
+                            icon.classList.remove('bi-eye-slash');
+                            icon.classList.add('bi-eye');
+                        }
+                    });
+                }
+            }
+
+            // Setup password toggle for both password fields
+            setupPasswordToggle('password', 'togglePassword1', 'toggleIcon1');
+            setupPasswordToggle('confirmPassword', 'togglePassword2', 'toggleIcon2');
+
+            // Password Matching Validation
+            function validatePasswords() {
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+                const passwordError = document.getElementById('passwordError');
+
+                // Remove existing error styling
+                passwordInput.classList.remove('is-invalid');
+                confirmPasswordInput.classList.remove('is-invalid');
+                if (passwordError) {
+                    passwordError.remove();
+                }
+
+                if (password !== confirmPassword && confirmPassword !== '') {
+                    // Add error styling
+                    confirmPasswordInput.classList.add('is-invalid');
+
+                    // Add error message
+                    const errorDiv = document.createElement('div');
+                    errorDiv.id = 'passwordError';
+                    errorDiv.className = 'invalid-feedback';
+                    errorDiv.textContent = 'Passwords do not match';
+                    confirmPasswordInput.parentNode.appendChild(errorDiv);
+
+                    return false;
+                }
+
+                return true;
+            }
+
+            // Real-time password validation
+            if (confirmPasswordInput) {
+                confirmPasswordInput.addEventListener('input', validatePasswords);
+                passwordInput.addEventListener('input', function () {
+                    if (confirmPasswordInput.value !== '') {
+                        validatePasswords();
+                    }
+                });
+            }
+
+            // Form submission validation
+            form.addEventListener('submit', function (event) {
+                // Validate date of birth
+                const dobInput = document.querySelector('input[name="dob"]');
+                if (!dobInput.value) {
+                    event.preventDefault();
+                    showErrorModal('Please select a date of birth.');
+                    dobInput.focus();
+                    return false;
+                }
+
+                // Check if date is not in the future
+                const selectedDate = new Date(dobInput.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+
+                if (selectedDate > today) {
+                    event.preventDefault();
+                    showErrorModal('Date of birth cannot be in the future.');
+                    dobInput.focus();
+                    return false;
+                }
+
+                if (!validatePasswords()) {
+                    event.preventDefault();
+                    showErrorModal('Passwords do not match. Please ensure both password fields are identical.');
+                    return false;
+                }
+
+                // Additional validation for password strength
+                const password = passwordInput.value;
+                if (password.length < 6) {
+                    event.preventDefault();
+                    showErrorModal('Password must be at least 6 characters long.');
+                    return false;
+                }
+
+                console.log('Form is being submitted via Save button');
+            });
+
+            // Auto-calculate age when date of birth changes
+            const dobInput = document.querySelector('input[name="dob"]');
+            const ageInput = document.querySelector('input[name="age"]');
+
+            if (dobInput && ageInput) {
+                dobInput.addEventListener('change', function () {
+                    if (this.value) {
+                        const dob = new Date(this.value);
+                        const today = new Date();
+
+                        // Check if date is valid and not in the future
+                        if (dob > today) {
+                            showErrorModal('Date of birth cannot be in the future.');
+                            this.value = '';
+                            ageInput.value = '';
+                            return;
+                        }
+
+                        let age = today.getFullYear() - dob.getFullYear();
+                        const monthDiff = today.getMonth() - dob.getMonth();
+
+                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                            age--;
+                        }
+
+                        // Ensure age is reasonable (0-120)
+                        if (age < 0 || age > 120) {
+                            showErrorModal('Please enter a valid date of birth.');
+                            this.value = '';
+                            ageInput.value = '';
+                            return;
+                        }
+
+                        ageInput.value = age;
+                    } else {
+                        ageInput.value = '';
+                    }
+                });
+            }
+
+            // Profile picture preview - ENHANCED VERSION
+            const profilePicInput = document.getElementById('profile_pic');
             const preview = document.getElementById('preview');
 
-            if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" />`;
-                }
-                reader.readAsDataURL(file);
-            } else {
-                preview.innerHTML = '<i class="bi bi-person-fill"></i>';
+            if (profilePicInput && preview) {
+                profilePicInput.addEventListener('change', function (event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        // Validate file size (5MB limit)
+                        if (file.size > 5000000) {
+                            showErrorModal('File size too large. Please select an image smaller than 5MB.');
+                            this.value = ''; // Clear the input
+                            preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
+                            return;
+                        }
+
+                        // Validate file type
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                        if (!allowedTypes.includes(file.type)) {
+                            showErrorModal('Invalid file type. Please select a JPEG, PNG, or GIF image.');
+                            this.value = ''; // Clear the input
+                            preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
+                            return;
+                        }
+
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            preview.innerHTML = `<img src="${e.target.result}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px;">`;
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        // Reset to default icon if no file selected
+                        preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
+                    }
+                });
+            }
+
+            // Function to show error modal
+            function showErrorModal(message) {
+                document.getElementById('errorMessage').textContent = message;
+                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                errorModal.show();
             }
         });
     </script>

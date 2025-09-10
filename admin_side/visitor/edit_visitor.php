@@ -337,7 +337,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="collapse show" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="../admin_accounts.php" class="nav-link px-2">Admin</a></li>
-                            <li><a href="../visitor_details.php" class="nav-link px-2">Household</a></li>
+                            <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
                             <li><a href="../visitor_accounts.php" class="nav-link px-2 actived">Visitors</a></li>
                         </ul>
                     </div>
