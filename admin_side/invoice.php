@@ -416,6 +416,21 @@ function getNumericAmount($amountStr)
                             <i class="bi bi-plus-lg me-1"></i> New Invoice
                         </a>
                     </div>
+                    <!-- Filter Dropdown -->
+                    <form method="get" class="mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="filter" class="fw-semibold">Filter by:</label>
+                            <select name="filter" id="filter" class="form-select form-select-sm w-auto"
+                                onchange="this.form.submit()">
+                                <option value="amenities" <?= (!isset($_GET['filter']) || $_GET['filter'] == 'amenities') ? 'selected' : '' ?>>
+                                    Amenities
+                                </option>
+                                <option value="monthly_dues" <?= (isset($_GET['filter']) && $_GET['filter'] == 'monthly_dues') ? 'selected' : '' ?>>
+                                    Monthly Dues
+                                </option>
+                            </select>
+                        </div>
+                    </form>
                     <div class="row g-3">
                         <!-- LEFT: List of invoices -->
                         <div class="col-md-4">

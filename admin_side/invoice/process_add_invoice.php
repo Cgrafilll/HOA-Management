@@ -10,12 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$billing_date_value = '';
-if (isset($_POST['billing_month']) && !empty($_POST['billing_month'])) {
-    // Append day 28 to the selected month (YYYY-MM → YYYY-MM-28)
-    $billing_date_value = $_POST['billing_month'] . '-28';
-}
-
 // Generate invoice number
 function generateInvoiceNumber($conn) {
     $date = date('Ymd'); 
@@ -34,43 +28,53 @@ function generateInvoiceNumber($conn) {
 try {
     $invoice_number     = generateInvoiceNumber($conn);
     $household_id       = $_POST['household_id'];
-    $billing_month      = $_POST['billing_month'];
+    $billing_month_input = $_POST['billing_month']; // This is YYYY-MM format
     $balance_remaining  = $_POST['balance_remaining'];
-    $payment_date       = $_POST['payment_date'];
+    $due_date           = $_POST['due_date'];
 
-    // Handle proof_of_payment (optional)
-    $proof_of_payment = null;
-    if (isset($_FILES['proof_of_payment']) && $_FILES['proof_of_payment']['error'] === UPLOAD_ERR_OK) {
-        $proof_of_payment = file_get_contents($_FILES['proof_of_payment']['tmp_name']);
+    // Convert billing_month from YYYY-MM to YYYY-MM-01 for DATE field
+    $billing_month = $billing_month_input . '-01';
+
+    // Debug: Let's see what we're getting
+    error_log("Debug - billing_month_input: " . var_export($billing_month_input, true));
+    error_log("Debug - billing_month (converted): " . var_export($billing_month, true));
+    error_log("Debug - household_id: " . var_export($household_id, true));
+    error_log("Debug - balance_remaining: " . var_export($balance_remaining, true));
+    error_log("Debug - due_date: " . var_export($due_date, true));
+
+    // Validate required fields
+    if (empty($household_id) || empty($billing_month_input) || empty($balance_remaining) || empty($due_date)) {
+        $_SESSION['modal'] = 'error';
+        $_SESSION['error_message'] = "All fields are required.";
+        header("Location: add_invoice.php");
+        exit;
     }
 
-    // Insert
+    // Insert with amount_paid defaulting to 0.00
+    $amount_paid = 0.00;
+    
     $stmt = $conn->prepare("INSERT INTO monthly_dues 
-        (invoice_number, household_id, billing_month, balance_remaining, proof_of_payment, payment_date) 
+        (invoice_number, household_id, billing_month, amount_paid, balance_remaining, due_date) 
         VALUES (?, ?, ?, ?, ?, ?)");
 
-    // Use "b" for blob
+    // Bind parameters - all 6 fields
     $stmt->bind_param(
-        "sssdss",
+        "sssdds",
         $invoice_number,     // string
-        $household_id,       // int
-        $billing_month,      // string (YYYY-MM)
-        $balance_remaining,  // double
-        $proof_of_payment,   // string/blob
-        $payment_date        // string
+        $household_id,       // string
+        $billing_month,      // string (DATE format YYYY-MM-DD)
+        $amount_paid,        // decimal (defaulting to 0.00)
+        $balance_remaining,  // decimal
+        $due_date           // string (DATE format YYYY-MM-DD)
     );
-
-    if ($proof_of_payment !== null) {
-        $stmt->send_long_data(4, $proof_of_payment); // bind blob
-    }
 
     if ($stmt->execute()) {
         $_SESSION['modal'] = 'success';
-        header("Location: add_invoice.php"); // redirect back to form so modal shows
+        header("Location: add_invoice.php");
         exit;
     } else {
         $_SESSION['modal'] = 'error';
-        $_SESSION['error_message'] = "Database insert failed.";
+        $_SESSION['error_message'] = "Database insert failed: " . $stmt->error;
         header("Location: add_invoice.php");
         exit;
     }
@@ -81,3 +85,4 @@ try {
     header("Location: add_invoice.php");
     exit;
 }
+?>
