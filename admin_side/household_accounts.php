@@ -294,7 +294,11 @@ $result = $conn->query($sql);
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">List of Household Accounts</span>
-                        <a href="household/add_household.php" class="btn btn-primary btn-sm">+ Create New</a>
+                        <div class="d-flex gap-2">
+                            <a href="household/archive_household.php" class="btn btn-secondary btn-sm">Archived
+                                Households</a>
+                            <a href="household/add_household.php" class="btn btn-primary btn-sm">+ Create New</a>
+                        </div>
                     </div>
 
                     <!-- Table with fixed minimum height -->
@@ -323,27 +327,34 @@ $result = $conn->query($sql);
                                         $created = date('Y-m-d H:i', strtotime($row['created_at']));
 
                                         echo '
-                            <tr>
-                                <td>' . $household_id . '</td>
-                                <td>' . $created . '</td>
-                                <td>' . $fullName . '</td>
-                                <td>' . $userType . '</td>
-                                <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
-                                <td>
-                                    <div class="dropdown text-center">
-                                        <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="household/view_household.php?id=' . $household_id . '">View Details</a></li>
-                                            <li><a class="dropdown-item" href="household/edit_household.php?id=' . $household_id . '">Edit Details</a></li>
-                                            <li><a class="dropdown-item" href="household/archive_household.php?id=' . $household_id . '">Delete Account</a></li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>';
+                                            <tr>
+                                                <td>' . $household_id . '</td>
+                                                <td>' . $created . '</td>
+                                                <td>' . $fullName . '</td>
+                                                <td>' . $userType . '</td>
+                                                <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
+                                                <td>
+                                                    <div class="text-center">
+                                                        <!-- View button -->
+                                                        <a class="btn btn-sm btn-outline-success me-1" href="household/view_household.php?id=' . $household_id . '" title="View" style="padding: 2px 6px; font-size: 0.9rem;">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                        <!-- Edit button -->
+                                                        <a class="btn btn-sm btn-outline-primary me-1" href="household/edit_household.php?id=' . $household_id . '" title="Edit" style="padding: 2px 6px; font-size: 0.9rem;">
+                                                            <i class="bi bi-pencil-square"></i>
+                                                        </a>
+                                                        <!-- Archive button -->
+                                                        <a class="btn btn-sm btn-outline-danger archiveBtn delete-account"
+                                                            href="household/archive_process.php" data-id="' . $household_id . '" data-bs-toggle="modal" data-bs-target="#confirmModal" title="Archive"
+                                                            style="padding: 2px 6px; font-size: 0.9rem;">
+                                                            <i class="bi bi-archive"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>';
                                         $rowCount++;
                                     }
                                 }
-
                                 // Check if there are no rows and show appropriate message
                                 if ($rowCount === 0) {
                                     echo '<tr><td colspan="6" class="text-center text-muted">No household accounts found.</td></tr>';

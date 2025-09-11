@@ -394,27 +394,31 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                                         $statusText = ucfirst($row['status']);
                                         $created = date('Y-m-d H:i', strtotime($row['created_at']));
                                         echo '
-                            <tr data-id="' . $table_admin_id . '">
-                                <td>' . $table_admin_id . '</td>
-                                <td>' . $created . '</td>
-                                <td>' . $fullName . '</td>
-                                <td>' . $role . '</td>
-                                <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
-                                <td>
-                                    <div class="dropdown text-center">
-                                        <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="admin/view_admin.php?id=' . $table_admin_id . '">View Details</a></li>
-                                            <li><a class="dropdown-item" href="admin/edit_admin.php?id=' . $table_admin_id . '">Edit Details</a></li>
-                                            <li>
-                                                <a class="dropdown-item delete-account" href="admin/archive_process.php" data-id="' . $table_admin_id . '" data-bs-toggle="modal" data-bs-target="#confirmModal">
-                                                    Archive Account
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>';
+                                            <tr data-id="' . $table_admin_id . '">
+                                                <td>' . $table_admin_id . '</td>
+                                                <td>' . $created . '</td>
+                                                <td>' . $fullName . '</td>
+                                                <td>' . $role . '</td>
+                                                <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
+                                                <td>
+                                                    <div class="text-center">
+                                                        <!-- View button -->
+                                                        <a class="btn btn-sm btn-outline-success me-1" href="admin/view_admin.php?id=' . $table_admin_id . '" title="View" style="padding: 2px 6px; font-size: 0.9rem;">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                        <!-- Edit button -->
+                                                        <a class="btn btn-sm btn-outline-primary me-1" href="admin/edit_admin.php?id=' . $table_admin_id . '" title="Edit" style="padding: 2px 6px; font-size: 0.9rem;">
+                                                            <i class="bi bi-pencil-square"></i>
+                                                        </a>
+                                                        <!-- Archive button -->
+                                                        <a class="btn btn-sm btn-outline-danger archiveBtn delete-account"
+                                                            href="admin/archive_process.php" data-id="' . $table_admin_id . '" data-bs-toggle="modal" data-bs-target="#confirmModal" title="Archive"
+                                                            style="padding: 2px 6px; font-size: 0.9rem;">
+                                                            <i class="bi bi-archive"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>';
                                         $rowCount++;
                                     }
                                 }

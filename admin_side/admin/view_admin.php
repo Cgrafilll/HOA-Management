@@ -36,61 +36,63 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
 // Update last activity time
 $_SESSION['last_activity'] = time();
 
-$admin_id = $_SESSION['admin_id'];
+// Get LOGGED-IN admin details (for header display)
+$logged_admin_id = $_SESSION['admin_id'];
 $sql = "SELECT * FROM admin_accounts WHERE admin_id = ?";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $admin_id);
+$stmt->bind_param("s", $logged_admin_id);
 $stmt->execute();
 $result = $stmt->get_result();
-$admin = $result->fetch_assoc();
+$logged_admin = $result->fetch_assoc();
 
-if (!$admin) {
-    echo "Admin not found.";
+if (!$logged_admin) {
+    echo "Logged-in admin not found.";
     exit;
 }
 
-// Initialize user details
-$username = $admin['first_name']; // <- Set username directly from household query
-$photo = ''; // Initialize photo; your existing profile photo block will set this later
+// Initialize logged-in user details for header
+$username = $logged_admin['first_name'];
+$photo = '';
 // Only set $photo if profile_pic exists and is not null
-if (!empty($admin['profile_picture'])) {
-    $photo = 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']);
+if (!empty($logged_admin['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($logged_admin['profile_picture']);
 } else {
-    $photo = ''; // Explicitly empty if no image is saved
+    $photo = '';
 }
 
-// Initialize admin details
-$view_admin = $_GET['id'] ?? null;
+// Get VIEWED admin details
+$view_admin_id = $_GET['id'] ?? null;
+$error_message = '';
 $prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $landline = $email = $password = $street = $street2 = $city = $state = $brgy = $postal = $roles = $status = '';
 
-if ($view_admin) {
+if ($view_admin_id) {
     try {
         $stmt = $conn->prepare("SELECT * FROM admin_accounts WHERE admin_id = ?");
-        $stmt->bind_param("s", $view_admin);
+        $stmt->bind_param("s", $view_admin_id);
         $stmt->execute();
         $result = $stmt->get_result();
-        $admin = $result->fetch_assoc();
+        $viewed_admin = $result->fetch_assoc();
 
-        if ($admin) {
-            $prof = !empty($admin['profile_picture']) ? 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']) : '';
-            $first_name = $admin['first_name'];
-            $middle_name = $admin['middle_name'];
-            $last_name = $admin['last_name'];
-            $dob = $admin['date_of_birth'];
-            $sex = $admin['sex'];
-            $age = $admin['age'];
-            $cellphone = $admin['cellphone_number'];
-            $landline = $admin['landline'];
-            $email = $admin['email_address'];
-            $password = $admin['password'];
-            $street = $admin['street_address'];
-            $street2 = $admin['street_address_2'];
-            $city = $admin['city'];
-            $state = $admin['state_province'];
-            $brgy = $admin['barangay'];
-            $postal = $admin['postal_zip_code'];
-            $roles = $admin['roles'];
-            $status = $admin['status'];
+        if ($viewed_admin) {
+            $prof = !empty($viewed_admin['profile_picture']) ? 'data:image/jpeg;base64,' . base64_encode($viewed_admin['profile_picture']) : '';
+            $first_name = $viewed_admin['first_name'];
+            $middle_name = $viewed_admin['middle_name'];
+            $last_name = $viewed_admin['last_name'];
+            $dob = $viewed_admin['date_of_birth'];
+            $sex = $viewed_admin['sex'];
+            $age = $viewed_admin['age'];
+            $cellphone = $viewed_admin['cellphone_number'];
+            $landline = $viewed_admin['landline'];
+            $email = $viewed_admin['email_address'];
+            $password = $viewed_admin['password'];
+            $street = $viewed_admin['street_address'];
+            $street2 = $viewed_admin['street_address_2'];
+            $city = $viewed_admin['city'];
+            $state = $viewed_admin['state_province'];
+            $brgy = $viewed_admin['barangay'];
+            $postal = $viewed_admin['postal_zip_code'];
+            $roles = $viewed_admin['roles'];
+            $status = $viewed_admin['status'];
         } else {
             $error_message = "Admin not found!";
         }
@@ -223,7 +225,7 @@ if ($view_admin) {
                     </div>
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="view_admin.php?id=<?php echo $admin_id; ?>"><i
+                    <li><a class="dropdown-item" href="view_admin.php?id=<?php echo $logged_admin_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
@@ -314,75 +316,81 @@ if ($view_admin) {
         </aside>
         <!-- Main Content -->
         <main class="flex-fill p-4">
-            <div class="bg-white shadow rounded p-3">
-                <!-- Header -->
-                <div class="bg-success text-white rounded-top p-3">
-                    <h5 class="mb-0 fw-bold">Admin Account Management</h5>
+            <?php if (!empty($error_message)): ?>
+                <div class="alert alert-danger" role="alert">
+                    <?php echo htmlspecialchars($error_message); ?>
                 </div>
-                <!-- Subheader + Back -->
-                <div class="p-3 d-flex justify-content-between align-items-center">
-                    <span class="small">User Details</span>
-                    <div>
-                        <button onclick="history.back()" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-arrow-left me-1"></i>Back
-                        </button>
-                        <a class="btn btn-primary btn-sm" href="view_admin.php?id=<?php echo $view_admin; ?>">Edit
-                            Details</a>
+            <?php else: ?>
+                <div class="bg-white shadow rounded p-3">
+                    <!-- Header -->
+                    <div class="bg-success text-white rounded-top p-3">
+                        <h5 class="mb-0 fw-bold">Admin Account Management</h5>
                     </div>
-                </div>
-                <hr class="my-0">
-                <!-- Content -->
-                <div class="p-4 text-center">
-                    <!-- Profile Picture + Role -->
-                    <div class="mb-4">
-                        <div class="mx-auto rounded overflow-hidden" style="width: 200px; height: 200px;">
-                            <?php if (!empty($prof)): ?>
-                                <img src="<?php echo htmlspecialchars($prof) ?>" class="img-fluid rounded"
-                                    style="object-fit: cover; width: 100%; height: 100%;">
-                            <?php else: ?>
-                                <div class="d-flex justify-content-center align-items-center border border-2 rounded"
-                                    style="width: 200px; height: 200px;">
-                                    <i class="bi bi-person-fill" style="font-size: 64px; color: #ccc;"></i>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="mt-2 fw-semibold"><?php echo htmlspecialchars($roles); ?></div>
-                    </div>
-                    <!-- Centered Grid for Labels + Values -->
-                    <div class="d-flex justify-content-center">
-                        <div class="w-100" style="max-width: 600px;">
-                            <?php
-                            $details = [
-                                'Full Name' => htmlspecialchars("$first_name $middle_name $last_name"),
-                                'Date of Birth' => date("F j, Y", strtotime($dob)),
-                                'Age' => htmlspecialchars($age),
-                                'Sex' => htmlspecialchars($sex),
-                                'Cellphone Number' => !empty($cellphone) ? htmlspecialchars($cellphone) : 'N/A',
-                                'Landline' => !empty($landline) ? htmlspecialchars($landline) : 'N/A',
-                                'Email' => htmlspecialchars($email),
-                                'Address' => htmlspecialchars(
-                                    $street .
-                                    (!empty($street2) ? ', ' . $street2 : '') .
-                                    ', ' . $brgy . ', ' . $city . ', ' . $state . ', ' . $postal
-                                )
-                            ];
-                            foreach ($details as $label => $value): ?>
-                                <div class="row mb-2">
-                                    <div class="col-4 text-start fw-bold"><?php echo $label ?>:</div>
-                                    <div class="col-8 text-start"><?php echo $value ?></div>
-                                </div>
-                            <?php endforeach; ?>
+                    <!-- Subheader + Back -->
+                    <div class="p-3 d-flex justify-content-between align-items-center">
+                        <span class="small">User Details</span>
+                        <div>
+                            <button onclick="history.back()" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-arrow-left me-1"></i>Back
+                            </button>
+                            <a class="btn btn-primary btn-sm" href="edit_admin.php?id=<?php echo $view_admin_id; ?>">Edit
+                                Details</a>
                         </div>
                     </div>
+                    <hr class="my-0">
+                    <!-- Content -->
+                    <div class="p-4 text-center">
+                        <!-- Profile Picture + Role -->
+                        <div class="mb-4">
+                            <div class="mx-auto rounded overflow-hidden" style="width: 200px; height: 200px;">
+                                <?php if (!empty($prof)): ?>
+                                    <img src="<?php echo htmlspecialchars($prof) ?>" class="img-fluid rounded"
+                                        style="object-fit: cover; width: 100%; height: 100%;">
+                                <?php else: ?>
+                                    <div class="d-flex justify-content-center align-items-center border border-2 rounded"
+                                        style="width: 200px; height: 200px;">
+                                        <i class="bi bi-person-fill" style="font-size: 64px; color: #ccc;"></i>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="mt-2 fw-semibold"><?php echo htmlspecialchars($roles); ?></div>
+                        </div>
+                        <!-- Centered Grid for Labels + Values -->
+                        <div class="d-flex justify-content-center">
+                            <div class="w-100" style="max-width: 600px;">
+                                <?php
+                                $details = [
+                                    'Full Name' => htmlspecialchars("$first_name $middle_name $last_name"),
+                                    'Date of Birth' => !empty($dob) ? date("F j, Y", strtotime($dob)) : 'N/A',
+                                    'Age' => htmlspecialchars($age),
+                                    'Sex' => htmlspecialchars($sex),
+                                    'Cellphone Number' => !empty($cellphone) ? htmlspecialchars($cellphone) : 'N/A',
+                                    'Landline' => !empty($landline) ? htmlspecialchars($landline) : 'N/A',
+                                    'Email' => htmlspecialchars($email),
+                                    'Address' => htmlspecialchars(
+                                        $street .
+                                        (!empty($street2) ? ', ' . $street2 : '') .
+                                        ', ' . $brgy . ', ' . $city . ', ' . $state . ', ' . $postal
+                                    )
+                                ];
+                                foreach ($details as $label => $value): ?>
+                                    <div class="row mb-2">
+                                        <div class="col-4 text-start fw-bold"><?php echo $label ?>:</div>
+                                        <div class="col-8 text-start"><?php echo $value ?></div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            <?php endif; ?>
         </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Auto-calculate age from DOB
-        document.querySelector('input[name="dob"]').addEventListener('change', function () {
+        document.querySelector('input[name="dob"]')?.addEventListener('change', function () {
             const dob = new Date(this.value);
             const today = new Date();
             let age = today.getFullYear() - dob.getFullYear();
@@ -392,7 +400,7 @@ if ($view_admin) {
         });
 
         // Image preview for profile picture
-        document.getElementById('profile_pic').addEventListener('change', function (e) {
+        document.getElementById('profile_pic')?.addEventListener('change', function (e) {
             const file = e.target.files[0];
             const preview = document.getElementById('preview');
 

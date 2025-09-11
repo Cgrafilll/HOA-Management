@@ -60,13 +60,13 @@ if (!empty($admin['profile_picture'])) {
 }
 
 // Initialize admin details
-$edit_household = $_GET['id'] ?? null;
+$view_household = $_GET['id'] ?? null;
 $prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $landline = $email = $password = $street = $street2 = $city = $state = $brgy = $postal = $members = $status = '';
 
-if ($edit_household) {
+if ($view_household) {
     try {
         $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE household_id = ?");
-        $stmt->bind_param("s", $edit_household);
+        $stmt->bind_param("s", $view_household);
         $stmt->execute();
         $result = $stmt->get_result();
         $admin = $result->fetch_assoc();
