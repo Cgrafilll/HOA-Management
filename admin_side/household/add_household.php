@@ -111,20 +111,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hashed_password = password_hash($password, PASSWORD_BCRYPT);
 
             try {
-                // 3. Check if RFID already exists in household_accounts
+                // 3. Check if RFID already exists in both household_accounts and visitor_details tables
+                $rfid_exists = false;
+                $duplicate_source = "";
+
+                // Check household_accounts table
                 $rfid_check_stmt = $conn->prepare("SELECT household_id FROM household_accounts WHERE rfid = ?");
                 $rfid_check_stmt->bind_param("s", $rfid);
                 $rfid_check_stmt->execute();
                 $household_rfid_result = $rfid_check_stmt->get_result();
 
-                // 4. Check if RFID already exists in visitor_details
-                $visitor_rfid_check_stmt = $conn->prepare("SELECT visitor_id FROM visitor_details WHERE rfid = ?");
-                $visitor_rfid_check_stmt->bind_param("s", $rfid);
-                $visitor_rfid_check_stmt->execute();
-                $visitor_rfid_result = $visitor_rfid_check_stmt->get_result();
+                if ($household_rfid_result->num_rows > 0) {
+                    $rfid_exists = true;
+                    $duplicate_source = "household";
+                }
 
-                if ($household_rfid_result->num_rows > 0 || $visitor_rfid_result->num_rows > 0) {
-                    $error = "RFID card is already registered to another household/visitor. Please use a different RFID card.";
+                // Check visitor_details table if no duplicate found in household_accounts
+                if (!$rfid_exists) {
+                    $visitor_rfid_check_stmt = $conn->prepare("SELECT visitor_id FROM visitor_details WHERE rfid = ?");
+                    $visitor_rfid_check_stmt->bind_param("s", $rfid);
+                    $visitor_rfid_check_stmt->execute();
+                    $visitor_rfid_result = $visitor_rfid_check_stmt->get_result();
+
+                    if ($visitor_rfid_result->num_rows > 0) {
+                        $rfid_exists = true;
+                        $duplicate_source = "visitor";
+                    }
+                }
+
+                if ($rfid_exists) {
+                    $error = "RFID card is already registered to another " . $duplicate_source . ". Please use a different RFID card.";
                 } else {
                     // 5. Generate new household_id (HOU-0001, HOU-0002...)
                     $result = $conn->query("SELECT household_id FROM household_accounts ORDER BY household_id DESC LIMIT 1");

@@ -321,9 +321,13 @@ if ($view_household) {
                 <!-- Subheader + Back -->
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <span class="small">User Details</span>
-                    <a href="../household_accounts.php" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-arrow-left me-1"></i>Back
-                    </a>
+                    <div class="d-flex gap-2">
+                        <a href="../household_accounts.php" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>Back
+                        </a>
+                        <a class="btn btn-primary btn-sm" href="edit_household.php?id=<?php echo $view_household; ?>">Edit
+                            Details</a>
+                    </div>
                 </div>
                 <hr class="my-0">
                 <!-- Content -->

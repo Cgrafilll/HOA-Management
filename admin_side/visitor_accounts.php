@@ -68,14 +68,14 @@ $currentPage = max(1, $currentPage); // Ensure page is at least 1
 $offset = ($currentPage - 1) * $entriesPerPage;
 
 // Get total count for pagination (all visitor accounts)
-$countSql = "SELECT COUNT(*) as total FROM visitor_details";
+$countSql = "SELECT COUNT(*) as total FROM visitor_details WHERE status = 'Active'";
 $countResult = $conn->query($countSql);
 $totalEntries = $countResult->fetch_assoc()['total'];
 $totalPages = ceil($totalEntries / $entriesPerPage);
 
 // Get data for current page (visitor accounts)
 $sql = "SELECT visitor_id, first_name, middle_name, last_name, status, created_at 
-        FROM visitor_details 
+        FROM visitor_details WHERE status = 'Active'
         ORDER BY created_at DESC
         LIMIT $entriesPerPage OFFSET $offset";
 $result = $conn->query($sql);
@@ -294,9 +294,72 @@ $result = $conn->query($sql);
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">List of Visitor Accounts</span>
-                        <a href="visitor/add_visitor.php" class="btn btn-primary btn-sm">+ Create New</a>
+                        <div class="d-flex gap-2">
+                            <a href="visitor/archive_visitor.php" class="btn btn-secondary btn-sm">Archived Accounts</a>
+                            <a href="visitor/add_visitor.php" class="btn btn-primary btn-sm">+ Create New</a>
+                        </div>
                     </div>
-
+                    <!-- Success Modal -->
+                    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-success text-white">
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
+                                    <p class="mb-2"><b>Success</b></p>
+                                    <p class="mb-3">User has been moved to archives.</p>
+                                    <button type="button" class="btn btn-primary" id="doneButton">Done</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Confirmation Modal -->
+                    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content text-center">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title fw-bold">Confirmation</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <i class="bi bi-x-circle text-danger" style="font-size: 64px;"></i>
+                                    <p class="mb-2"><b>Are you sure?</b></p>
+                                    <p class="mb-3">This process will archive this account.</p>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button type="button" class="btn btn-danger"
+                                            id="confirmProceed">Archive</button>
+                                        <button type="button" class="btn btn-secondary btn-cancel"
+                                            data-bs-dismiss="modal">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php if (isset($success) && $success): ?>
+                        <script>
+                            window.addEventListener('DOMContentLoaded', () => {
+                                const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+                                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                                // Show confirmation modal first
+                                confirmModal.show();
+                                // If user clicks Proceed
+                                document.getElementById('confirmProceed').addEventListener('click', () => {
+                                    confirmModal.hide();
+                                    setTimeout(() => successModal.show(), 300); // small delay to avoid overlap
+                                });
+                                // Success modal buttons/redirect
+                                const redirect = () => window.location.href = 'visitor_accounts.php';
+                                document.getElementById('doneButton').addEventListener('click', redirect);
+                                document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
+                            });
+                        </script>
+                    <?php endif; ?>
                     <!-- Table with fixed minimum height -->
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
@@ -305,9 +368,8 @@ $result = $conn->query($sql);
                                     <th>#</th>
                                     <th>Date Created</th>
                                     <th>Full Name</th>
-                                    <th>User Type</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="small align-middle" style="min-height: 520px; display: table-row-group;">
@@ -317,46 +379,52 @@ $result = $conn->query($sql);
                                     while ($row = $result->fetch_assoc()) {
                                         $visitor_id = $row['visitor_id'];
                                         $fullName = $row['first_name'] . ' ' . substr($row['middle_name'], 0, 1) . '. ' . $row['last_name'];
-                                        $userType = "Visitor";
                                         $status = $row['status'] === 'Active' ? 'text-success' : 'text-danger';
                                         $statusText = ucfirst($row['status']);
                                         $created = date('Y-m-d H:i', strtotime($row['created_at']));
 
                                         echo '
-                            <tr>
-                                <td>' . $visitor_id . '</td>
-                                <td>' . $created . '</td>
-                                <td>' . $fullName . '</td>
-                                <td>' . $userType . '</td>
-                                <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
-                                <td>
-                                    <div class="dropdown text-center">
-                                        <button class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="visitor/view_visitor.php?id=' . $visitor_id . '">View Details</a></li>
-                                            <li><a class="dropdown-item" href="visitor/edit_visitor.php?id=' . $visitor_id . '">Edit Details</a></li>
-                                            <li><a class="dropdown-item" href="visitor/archive_visitor.php?id=' . $visitor_id . '">Delete Account</a></li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>';
+                                            <tr>
+                                                <td>' . $visitor_id . '</td>
+                                                <td>' . $created . '</td>
+                                                <td>' . $fullName . '</td>
+                                                <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
+                                                <td>
+                                                    <div class="text-center">
+                                                        <!-- View button -->
+                                                        <a class="btn btn-sm btn-outline-success me-1" href="visitor/view_visitor.php?id=' . $visitor_id . '" title="View" style="padding: 2px 6px; font-size: 0.9rem;">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                        <!-- Edit button -->
+                                                        <a class="btn btn-sm btn-outline-primary me-1" href="visitor/edit_visitor.php?id=' . $visitor_id . '" title="Edit" style="padding: 2px 6px; font-size: 0.9rem;">
+                                                            <i class="bi bi-pencil-square"></i>
+                                                        </a>
+                                                        <!-- Archive button -->
+                                                        <a class="btn btn-sm btn-outline-danger archiveBtn delete-account"
+                                                            href="visitor/archive_process.php" data-id="' . $visitor_id . '" data-bs-toggle="modal" data-bs-target="#confirmModal" title="Archive"
+                                                            style="padding: 2px 6px; font-size: 0.9rem;">
+                                                            <i class="bi bi-archive"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>';
                                         $rowCount++;
                                     }
                                 }
 
                                 // Check if there are no rows and show appropriate message
                                 if ($rowCount === 0) {
-                                    echo '<tr><td colspan="6" class="text-center text-muted">No visitor accounts found.</td></tr>';
+                                    echo '<tr><td colspan="5" class="text-center text-muted">No visitor accounts found.</td></tr>';
                                     // Add empty rows after the "no data" message
                                     $minRows = 10;
                                     for ($i = 1; $i < $minRows; $i++) {
-                                        echo '<tr style="height: 52px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+                                        echo '<tr style="height: 52px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
                                     }
                                 } else {
                                     // Add empty rows to maintain consistent height (minimum 10 rows)
                                     $minRows = 10;
                                     for ($i = $rowCount; $i < $minRows; $i++) {
-                                        echo '<tr style="height: 52px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+                                        echo '<tr style="height: 52px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
                                     }
                                 }
                                 ?>
@@ -439,6 +507,52 @@ $result = $conn->query($sql);
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedId = null;
+
+        // Capture ID when clicking "Delete Account" button
+        document.querySelectorAll('.delete-account').forEach(btn => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault(); // Prevent page reload!
+                selectedId = btn.getAttribute('data-id');
+            });
+        });
+
+        // Handle confirmation proceed
+        document.getElementById('confirmProceed').addEventListener('click', () => {
+            if (selectedId) {
+                fetch('visitor/archive_process.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'visitor_id=' + encodeURIComponent(selectedId)
+                })
+                    .then(res => res.text())  // read as text first
+                    .then(text => {
+                        let data;
+                        try {
+                            data = JSON.parse(text); // then parse
+                        } catch (e) {
+                            throw new Error("Invalid JSON response");
+                        }
+                        if (data.success) {
+                            bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+                            setTimeout(() => {
+                                new bootstrap.Modal(document.getElementById('successModal')).show();
+                            }, 300);
+                            document.querySelector(`tr[data-id="${selectedId}"]`)?.remove();
+                        } else {
+                            alert(data.message || "Failed to archive.");
+                        }
+                    })
+            } else {
+                alert("Invalid visitor ID.");
+            }
+        });
+        // Redirect after success
+        const redirect = () => window.location.href = 'visitor_accounts.php';
+        document.getElementById('doneButton').addEventListener('click', redirect);
+        document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
+    </script>
 </body>
 
 </html>

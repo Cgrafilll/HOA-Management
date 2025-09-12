@@ -126,15 +126,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $new_password = trim($_POST['passWord'] ?? '');
     $confirm_password = trim($_POST['confirmPassword'] ?? '');
 
-    // 2. Check if RFID already exists (excluding current household)
+    // 2. Check if RFID already exists in both household_accounts and visitor_details tables
     try {
+        $rfid_exists = false;
+        $duplicate_source = "";
+
+        // Check household_accounts table (excluding current household)
         $rfid_check_stmt = $conn->prepare("SELECT household_id FROM household_accounts WHERE rfid = ? AND household_id != ?");
         $rfid_check_stmt->bind_param("ss", $rfid, $edit_household);
         $rfid_check_stmt->execute();
         $rfid_result = $rfid_check_stmt->get_result();
 
         if ($rfid_result->num_rows > 0) {
-            $error = "RFID card is already registered to another household/visitor. Please use a different RFID card.";
+            $rfid_exists = true;
+            $duplicate_source = "household";
+        }
+
+        // Check visitor_details table if no duplicate found in household_accounts
+        if (!$rfid_exists) {
+            $visitor_check_stmt = $conn->prepare("SELECT visitor_id FROM visitor_details WHERE rfid = ?");
+            $visitor_check_stmt->bind_param("s", $rfid);
+            $visitor_check_stmt->execute();
+            $visitor_result = $visitor_check_stmt->get_result();
+
+            if ($visitor_result->num_rows > 0) {
+                $rfid_exists = true;
+                $duplicate_source = "visitor";
+            }
+        }
+
+        if ($rfid_exists) {
+            $error = "RFID card is already registered to another " . $duplicate_source . ". Please use a different RFID card.";
         } else {
             // 3. Check if profile picture was uploaded
             $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
@@ -152,6 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if (!isset($error)) {
+                // Continue with the rest of the update logic...
                 // Build SQL query based on what needs to be updated
                 $sql_parts = [
                     "first_name=?",
