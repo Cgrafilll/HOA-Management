@@ -178,7 +178,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
         * {
@@ -509,7 +508,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 <hr class="my-0">
                 <div class="d-flex justify-content-center align-items-center my-3">
                     <span class="text-uppercase text-center fw-medium"
-                        style="font-family: 'Libre Baskervill', serif; font-size: 36px; letter-spacing: 10px;"><?php echo htmlspecialchars($amenity); ?>
+                        style="font-family: 'Libre Baskerville', serif; font-size: 36px; letter-spacing: 10px;"><?php echo htmlspecialchars($amenity); ?>
                         RESERVATION</span>
                 </div>
                 <div class="p-3">
