@@ -463,7 +463,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $amountPaid = isset($_POST['amountPaid']) ? (float) $_POST['amountPaid'] : 0.0;
 
     // Always default to pending
-    $status = "pending";
+    $status = "Pending";
 
     // Get the appropriate user ID based on user type
     $homeowner_id = null;

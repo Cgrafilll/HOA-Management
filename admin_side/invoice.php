@@ -59,7 +59,7 @@ try {
         $error_message = "Failed to fetch user details.";
     }
     // Fetch invoices from amenity_bookings OR monthly_dues based on filter
-    $filter = $_GET['filter'] ?? 'amenities';
+    $filter = $_GET['filter'] ?? '--';
 
 try {
     if ($filter === '--') {
@@ -236,6 +236,7 @@ function getNumericAmount($amountStr)
             padding-bottom: 100px;
             /* ✅ give breathing room at bottom */
         }
+
         .card-body p,
         .card-body h6 {
             word-wrap: break-word;
@@ -450,9 +451,9 @@ function getNumericAmount($amountStr)
                         <div class="d-flex align-items-center gap-2">
                             <label for="filter" class="fw-semibold">Filter by:</label>
                             <select name="filter" id="filter" class="form-select form-select-sm w-auto"
-                                onchange="this.form.submit()">
-                                <option value="--" <?= (isset($_GET['filter']) && $_GET['filter'] == '--') ? 'selected' : '' ?>>--</option>
-                                <option value="amenities" <?= (!isset($_GET['filter']) || $_GET['filter'] == 'amenities') ? 'selected' : '' ?>>
+                                    onchange="this.form.submit()">
+                                <option value="--" <?= (!isset($_GET['filter']) || $_GET['filter'] == '--') ? 'selected' : '' ?>>--</option>
+                                <option value="amenities" <?= (isset($_GET['filter']) && $_GET['filter'] == 'amenities') ? 'selected' : '' ?>>
                                     Amenities
                                 </option>
                                 <option value="monthly_dues" <?= (isset($_GET['filter']) && $_GET['filter'] == 'monthly_dues') ? 'selected' : '' ?>>
