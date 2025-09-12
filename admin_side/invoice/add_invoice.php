@@ -332,39 +332,37 @@ if (!empty($admin['profile_picture'])) {
                             <i class="bi bi-save me-1"></i> Save Invoice
                         </button>
                     </div>
-                    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+                    <!-- Confirmation Modal -->
+                        <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered">
                                 <div class="modal-content text-center">
-                                    <div class="modal-header bg-primary text-white">
-                                        <h5 class="modal-title fw-bold">Confirm Publish</h5>
+                                    <div class="modal-header bg-success text-white">
+                                        <h5 class="modal-title fw-bold">Confirm Invoice Creation</h5>
                                         <button type="button" class="btn-close btn-close-white"
                                             data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <i class="bi bi-question-circle text-primary" style="font-size: 64px;"></i>
+                                        <i class="bi bi-question-circle text-success" style="font-size: 64px;"></i>
                                         <p class="mb-2"><b>Are you sure?</b></p>
-                                        <p class="mb-3">Do you really want to publish this event?</p>
-                                        <button type="button" class="btn btn-primary" id="confirmPublish">Yes,
-                                            Publish</button>
-                                        <button type="button" class="btn btn-light"
-                                            data-bs-dismiss="modal">Cancel</button>
+                                        <p class="mb-3">Do you really want to create this invoice?</p>
+                                        <button type="button" class="btn btn-success" id="confirmPublish">Yes, Create Invoice</button>
+                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
                         <!-- Default Publish Success Modal -->
                         <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered">
                                 <div class="modal-content text-center">
                                     <div class="modal-header bg-success text-white">
-                                        <h5 class="modal-title fw-bold">Published!</h5>
+                                        <h5 class="modal-title fw-bold">Added!</h5>
                                         <button type="button" class="btn-close btn-close-white"
                                             data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
                                         <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
-                                        <p class="mt-3 mb-2"><b>Event published successfully.</b></p>
+                                        <p class="mt-3 mb-2"><b>Invoice added successfully.</b></p>
                                         <button type="button" class="btn btn-success"
                                             data-bs-dismiss="modal">OK</button>
                                     </div>
@@ -398,10 +396,16 @@ if (!empty($admin['profile_picture'])) {
     document.addEventListener("DOMContentLoaded", function() {
     const form = document.querySelector("form");
     const requiredFields = Array.from(form.querySelectorAll("input:not([type='file']), select"));
+    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    const confirmPublishBtn = document.getElementById('confirmPublish');
 
+    // Form submission handler
     form.addEventListener("submit", function(e) {
+        e.preventDefault(); // Always prevent default submission first
+        
         let valid = true;
 
+        // Validate required fields
         requiredFields.forEach(field => {
             if (!field.value) {
                 field.classList.add("border", "border-danger");
@@ -412,9 +416,55 @@ if (!empty($admin['profile_picture'])) {
         });
 
         if (!valid) {
-            e.preventDefault(); // Stop form submission
             alert("Please fill in all required fields.");
+            return;
         }
+
+        // If validation passes, show confirmation modal
+        confirmModal.show();
+    });
+
+    // Handle confirmation modal "Yes, Create Invoice" button
+    confirmPublishBtn.addEventListener("click", function() {
+        confirmModal.hide();
+        
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-spinner-grow me-1"></i> Creating...';
+        submitBtn.disabled = true;
+        
+        // Create FormData and submit via AJAX
+        const formData = new FormData(form);
+        
+        fetch('process_add_invoice.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                // Show success modal
+                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+                
+                // Reset form after success
+                form.reset();
+                updatePaymentDate(); // Reset due date field
+            } else {
+                throw new Error('Server error');
+            }
+        })
+        .catch(error => {
+            // Show error modal
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            document.getElementById('errorMessage').innerText = 'An error occurred. Please try again.';
+            errorModal.show();
+        })
+        .finally(() => {
+            // Restore button state
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
     });
 
     // Remove red border when user types or selects
@@ -422,19 +472,19 @@ if (!empty($admin['profile_picture'])) {
         field.addEventListener("input", () => field.classList.remove("border", "border-danger"));
         field.addEventListener("change", () => field.classList.remove("border", "border-danger"));
     });
-});
-    document.addEventListener("DOMContentLoaded", function () {
-        <?php if (isset($_SESSION['modal'])): ?>
-            var modalId = "<?php echo $_SESSION['modal']; ?>Modal";
-            <?php if ($_SESSION['modal'] === 'error' && isset($_SESSION['error_message'])): ?>
-                document.getElementById("errorMessage").innerText = "<?php echo addslashes($_SESSION['error_message']); ?>";
-            <?php endif; ?>
-            var myModal = new bootstrap.Modal(document.getElementById(modalId));
-            myModal.show();
-            <?php unset($_SESSION['modal']); unset($_SESSION['error_message']); ?>
+
+    // Handle success/error modals from PHP session
+    <?php if (isset($_SESSION['modal'])): ?>
+        var modalId = "<?php echo $_SESSION['modal']; ?>Modal";
+        <?php if ($_SESSION['modal'] === 'error' && isset($_SESSION['error_message'])): ?>
+            document.getElementById("errorMessage").innerText = "<?php echo addslashes($_SESSION['error_message']); ?>";
         <?php endif; ?>
-    });
-    document.addEventListener("DOMContentLoaded", function() {
+        var myModal = new bootstrap.Modal(document.getElementById(modalId));
+        myModal.show();
+        <?php unset($_SESSION['modal']); unset($_SESSION['error_message']); ?>
+    <?php endif; ?>
+
+    // Billing month and due date logic
     const billingMonth = document.getElementById('billing_month');
     const paymentDate = document.getElementById('due_date');
 
