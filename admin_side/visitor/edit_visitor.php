@@ -454,8 +454,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Last Name</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <input type="date" name="dob" class="form-control"
-                                    value="<?php echo htmlspecialchars($dob) ?>" required />
+                                <input type="date" name="dob" class="form-control" id="dobInput"
+                                    value="<?php echo htmlspecialchars($dob) ?>" required
+                                    max="<?php echo date('Y-m-d'); ?>" />
                                 <label class="form-label mt-2">Date of Birth</label>
                             </div>
                             <div class="col-md-4 mb-3">
@@ -540,13 +541,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </select>
                             </div>
                         </div>
-                        <!-- Resident RFID -->
+                        <!-- Visitor RFID -->
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold">Resident RFID</label>
+                                <label class="form-label mt-2 fw-bold">Visitor RFID</label>
                                 <input type="text" name="rfid" id="rfidInput" class="form-control"
                                     value="<?php echo htmlspecialchars($rfid) ?>" required />
                                 <label class="form-label mt-2">Tap your RFID card</label>
+                            </div>
+                        </div>
+                        <!-- Account Password -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold">Password</label>
+                                <div class="input-group">
+                                    <input type="password" id="password" name="password" required class="form-control"
+                                        minlength="6" />
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
+                                        tabindex="-1">
+                                        <i class="bi bi-eye" id="toggleIcon1"></i>
+                                    </button>
+                                </div>
+                                <label class="form-label mt-2">Set a password for this account (min. 6
+                                    characters)</label>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label mt-2 fw-bold invisible">Confirm Password</label>
+                                <div class="input-group">
+                                    <input type="password" id="confirmPassword" name="confirmPassword" required
+                                        class="form-control" minlength="6" />
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword2"
+                                        tabindex="-1">
+                                        <i class="bi bi-eye" id="toggleIcon2"></i>
+                                    </button>
+                                </div>
+                                <label class="form-label mt-2">Confirm password</label>
                             </div>
                         </div>
                         <!-- Submit Buttons -->

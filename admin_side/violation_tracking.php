@@ -314,11 +314,11 @@ if (!empty($admin['profile_picture'])) {
                         <table class="table table-bordered table-hover">
                             <thead class="bg-success text-white small">
                                 <tr>
-                                    <th>#</th>
                                     <th>Resident Name</th>
                                     <th>Date of Incident</th>
                                     <th>Violation Type</th>
                                     <th>Description / Notes</th>
+                                    <th class="text-center">Evidence</th>
                                     <th>Action Taken</th>
                                     <th class="text-center">Actions</th>
                                 </tr>
@@ -331,7 +331,8 @@ if (!empty($admin['profile_picture'])) {
                                             v.date_incident,
                                             v.violation_type,
                                             v.description_of_incident,
-                                            v.action_taken
+                                            v.action_taken,
+                                            v.evidence
                                         FROM violations v
                                         INNER JOIN household_accounts h 
                                             ON v.household_id = h.household_id
@@ -342,25 +343,47 @@ if (!empty($admin['profile_picture'])) {
                                 if ($violations && $violations->num_rows > 0) {
                                     while ($row = $violations->fetch_assoc()) {
                                         echo '
-                                        <tr>
-                                            <td>' . htmlspecialchars($row['violation_id']) . '</td>
-                                            <td>' . htmlspecialchars($row['resident_name']) . '</td>
-                                            <td>' . htmlspecialchars($row['date_incident']) . '</td>
-                                            <td>' . htmlspecialchars($row['violation_type']) . '</td>
-                                            <td>' . htmlspecialchars($row['description_of_incident']) . '</td>
-                                            <td>' . htmlspecialchars($row['action_taken']) . '</td>
-                                            <td class="text-center">
-                                                <div class="dropdown">
-                                                    <button class="btn btn-sm btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                        Actions
-                                                    </button>
-                                                    <ul class="dropdown-menu">
-                                                        <li><a class="dropdown-item" href="violations/update_violation.php?id=' . $row['violation_id'] . '"><i class="bi bi-pencil-square me-2"></i>Update Report</a></li>
-                                                        <li><a class="dropdown-item text-danger" href="violations/archive_violation.php?id=' . $row['violation_id'] . '"><i class="bi bi-archive me-2"></i>Archive Report</a></li>
-                                                    </ul>
-                                                </div>
-                                            </td>
-                                        </tr>';
+                                            <tr>
+                                                <td>' . htmlspecialchars($row['resident_name']) . '</td>
+                                                <td>' . htmlspecialchars($row['date_incident']) . '</td>
+                                                <td>' . htmlspecialchars($row['violation_type']) . '</td>
+                                                <td>' . htmlspecialchars($row['description_of_incident']) . '</td>
+                                                <td class="text-center">';
+
+                                        // Handle LONGBLOB evidence data
+                                        if (!empty($row['evidence'])) {
+                                            echo '<img src="data:image/jpeg;base64,' . base64_encode($row['evidence']) . '" 
+                                                        alt="Evidence" 
+                                                        style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px; cursor: pointer;" 
+                                                        class="img-thumbnail" 
+                                                        onclick="showImageModal(this.src)">';
+                                        } else {
+                                            echo '<span class="text-muted small">No evidence</span>';
+                                        }
+
+                                        echo '</td>
+                                                <td>' . htmlspecialchars($row['action_taken']) . '</td>
+                                                <td class="text-center">
+                                                    <div class="dropdown">
+                                                        <button class="btn btn-sm btn-outline-success dropdown-toggle" type="button" 
+                                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                                            Actions
+                                                        </button>
+                                                        <ul class="dropdown-menu">
+                                                            <li>
+                                                                <a class="dropdown-item" href="violations/update_violation.php?id=' . urlencode($row['violation_id']) . '">
+                                                                    <i class="bi bi-pencil-square me-2"></i>Update Report
+                                                                </a>
+                                                            </li>
+                                                            <li>
+                                                                <a class="dropdown-item text-danger" href="violations/archive_violation.php?id=' . urlencode($row['violation_id']) . '">
+                                                                    <i class="bi bi-archive me-2"></i>Archive Report
+                                                                </a>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </td>
+                                            </tr>';
                                         $rowCount++;
                                     }
                                 }
@@ -376,8 +399,30 @@ if (!empty($admin['profile_picture'])) {
                 </div>
             </div>
         </main>
+        <!-- Image Modal for Full View -->
+        <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="imageModalLabel">Evidence Image</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img id="modalImage" src="" alt="Evidence" class="img-fluid" style="max-height: 70vh;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
+    <script>
+        function showImageModal(imageSrc) {
+            document.getElementById('modalImage').src = imageSrc;
+            const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+            imageModal.show();
+        }
+    </script>
 </body>
 
 </html>

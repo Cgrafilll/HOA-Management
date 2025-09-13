@@ -470,10 +470,10 @@ try {
                                         <strong>Drag & drop files or <a href="#" id="browseLink">Browse</a></strong>
                                     </div>
                                     <div class="small text-muted">
-                                        Supported formats: JPEG, PNG, GIF, PDF
+                                        Supported formats: JPEG, PNG, GIF
                                     </div>
                                     <input type="file" id="fileInput" name="evidence" class="d-none"
-                                        accept="image/jpeg,image/png,image/gif,application/pdf" required>
+                                        accept="image/jpeg,image/png,image/gif" required>
                                 </div>
                                 <label class="form-label mt-2">Upload your Evidence<small
                                         class="fw-bold text-danger">*</small></label>
@@ -700,10 +700,10 @@ try {
                 const file = files[0]; // Take only the first file
 
                 // Validate file type (only proof of payment formats)
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
 
                 if (!allowedTypes.includes(file.type)) {
-                    alert('Please select a valid file type for proof of payment (JPEG, PNG, GIF, PDF)');
+                    alert('Please select a valid file type for proof of payment (JPEG, PNG, GIF)');
                     return;
                 }
 
