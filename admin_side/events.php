@@ -79,11 +79,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $body = preg_replace('/\s+/', ' ', $body); // collapse multiple spaces/newlines
         $event_date = $_POST['event_date'];
         $status = "published";
-        $admin_id = $user['admin_id']; // make sure $user is already fetched
 
         try {
             $stmt = $conn->prepare("INSERT INTO events (admin_id, title, body, status, event_date) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("issss", $admin_id, $title, $body, $status, $event_date);
+            $stmt->bind_param("sssss", $admin_id, $title, $body, $status, $event_date);
             $stmt->execute();
 
             // ✅ Clear the form token after successful insert
@@ -386,17 +385,16 @@ try {
                         <div class="row">
                             <div class="col-6">
                                 <h5 class="fw mb-2">Event Title</h5>
-                                <input type="text" id="title" name="title" class="form-control border-dark rounded mb-1"
+                                <input type="text" id="title" name="title" class="form-control rounded mb-1"
                                     maxlength="150" placeholder="Enter event title" required>
                             </div>
                             <div class="col-6">
                                 <h5 class="fw mb-2">Event Date</h5>
-                                <input type="date" id="event_date" name="event_date"
-                                    class="form-control border-dark mb-3" required>
+                                <input type="date" id="event_date" name="event_date" class="form-control mb-3" required>
                             </div>
                         </div>
                         <h5 class="fw mb-2 mt-3">Description</h5>
-                        <textarea id="body" name="body" class="form-control border-dark rounded mb-1"
+                        <textarea id="body" name="body" class="form-control rounded mb-1"
                             style="min-height:100px; resize:none;" placeholder="Enter event description"
                             required></textarea>
                         <p id="formError" class="text-danger small mt-2" style="display:none;">
@@ -566,24 +564,23 @@ try {
                         <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered">
                                 <div class="modal-content text-center">
-                                    <div class="modal-header bg-primary text-white">
+                                    <div class="modal-header bg-success text-white">
                                         <h5 class="modal-title fw-bold">Confirm Publish</h5>
                                         <button type="button" class="btn-close btn-close-white"
                                             data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <i class="bi bi-question-circle text-primary" style="font-size: 64px;"></i>
+                                        <i class="bi bi-question-circle text-success" style="font-size: 64px;"></i>
                                         <p class="mb-2"><b>Are you sure?</b></p>
                                         <p class="mb-3">Do you really want to publish this event?</p>
-                                        <button type="button" class="btn btn-primary" id="confirmPublish">Yes,
-                                            Publish</button>
+                                        <button type="button" class="btn btn-success"
+                                            id="confirmPublish">Publish</button>
                                         <button type="button" class="btn btn-light"
                                             data-bs-dismiss="modal">Cancel</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
                         <!-- Default Publish Success Modal -->
                         <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered">
@@ -595,9 +592,12 @@ try {
                                     </div>
                                     <div class="modal-body">
                                         <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
-                                        <p class="mt-3 mb-2"><b>Event published successfully.</b></p>
-                                        <button type="button" class="btn btn-success"
-                                            data-bs-dismiss="modal">OK</button>
+                                        <p class="mt-3 mb-2"><b>Event Published!</b></p>
+                                        <p class="mb-3">Your event has been successfully published.</p>
+                                        <div class="d-flex justify-content-center">
+                                            <button type="button" class="btn btn-success"
+                                                data-bs-dismiss="modal">OK</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

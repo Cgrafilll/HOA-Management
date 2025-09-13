@@ -636,10 +636,10 @@ if (isset($_GET['action'])) {
                                         <strong>Drag & drop files or <a href="#" id="browseLink">Browse</a></strong>
                                     </div>
                                     <div class="small text-muted">
-                                        Supported formats: JPEG, PNG, GIF, PDF, TXT, XLS, AI, Word, PPT
+                                        Supported formats: JPEG, PNG, GIF, PDF
                                     </div>
                                     <input type="file" id="fileInput" name="evidence" class="d-none"
-                                        accept="JPEG, PNG, GIF, MP4, PDF, DOC, DOCX" required>
+                                        accept="image/jpeg,image/png,image/gif,application/pdf" required>
                                 </div>
                                 <div id="filePreview" class="mt-2"></div>
                             </div>
@@ -652,6 +652,153 @@ if (isset($_GET['action'])) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // File Upload Functionality
+        const fileDropArea = document.getElementById('fileDropArea');
+        const fileInput = document.getElementById('fileInput');
+        const browseLink = document.getElementById('browseLink');
+        const filePreview = document.getElementById('filePreview');
+
+        // Handle browse link click
+        browseLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            fileInput.click();
+        });
+
+        // Handle file input change
+        fileInput.addEventListener('change', function (e) {
+            handleFiles(e.target.files);
+        });
+
+        // Drag and drop functionality
+        fileDropArea.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fileDropArea.classList.add('dragover');
+        });
+
+        fileDropArea.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fileDropArea.classList.remove('dragover');
+        });
+
+        fileDropArea.addEventListener('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fileDropArea.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+
+        // Handle file processing
+        function handleFiles(files) {
+            if (files.length === 0) return;
+
+            const file = files[0]; // Take only the first file
+
+            // Validate file type (only proof of payment formats)
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+
+            if (!allowedTypes.includes(file.type)) {
+                alert('Please select a valid file type for proof of payment (JPEG, PNG, GIF, PDF)');
+                return;
+            }
+
+            // Validate file size (max 10MB)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > maxSize) {
+                alert('File size must be less than 10MB');
+                return;
+            }
+
+            // Update the file input
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+
+            // Display file preview
+            displayFilePreview(file);
+        }
+
+        // Display file preview
+        function displayFilePreview(file) {
+            filePreview.innerHTML = '';
+
+            const previewContainer = document.createElement('div');
+            previewContainer.className = 'alert alert-success d-flex align-items-center justify-content-between';
+
+            const fileInfo = document.createElement('div');
+            fileInfo.className = 'd-flex align-items-center';
+
+            const fileIcon = document.createElement('i');
+            if (file.type.startsWith('image/')) {
+                fileIcon.className = 'bi bi-file-earmark-image me-2';
+            } else if (file.type === 'application/pdf') {
+                fileIcon.className = 'bi bi-file-earmark-pdf me-2';
+            } else {
+                fileIcon.className = 'bi bi-file-earmark me-2';
+            }
+
+            const fileName = document.createElement('span');
+            fileName.textContent = `${file.name} (${formatFileSize(file.size)})`;
+
+            fileInfo.appendChild(fileIcon);
+            fileInfo.appendChild(fileName);
+
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.className = 'btn-close';
+            removeButton.onclick = function () {
+                fileInput.value = '';
+                filePreview.innerHTML = '';
+            };
+
+            previewContainer.appendChild(fileInfo);
+            previewContainer.appendChild(removeButton);
+            filePreview.appendChild(previewContainer);
+        }
+
+        // Format file size for display
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Update the clearFormFields function to include file upload reset
+        function clearFormFields() {
+            // Reset dropdowns
+            document.getElementById('userTypeSelect').value = "";
+            document.getElementById('userIdSelect').innerHTML = '<option value="" selected disabled>First select user type</option>';
+            document.getElementById('userIdSelect').disabled = true;
+            document.getElementById('categorySelect').value = "";
+
+            // Reset text/number inputs
+            document.querySelector('input[placeholder="Enter Invoice Number"]').value = "";
+            document.getElementById('amountPaid').value = "";
+
+            // Reset display fields
+            document.getElementById('refNo').textContent = "";
+            document.getElementById('residentName').textContent = "";
+            document.getElementById('issueDate').textContent = "";
+
+            // Reset input borders
+            const invoiceInput = document.querySelector('input[placeholder="Enter Invoice Number"]');
+            invoiceInput.style.borderColor = '#dee2e6';
+            invoiceInput.style.boxShadow = 'none';
+
+            const userIdSelect = document.getElementById('userIdSelect');
+            userIdSelect.style.borderColor = '#dee2e6';
+            userIdSelect.style.boxShadow = 'none';
+
+            // Reset file upload
+            fileInput.value = '';
+            filePreview.innerHTML = '';
+        }
+
         // Toggle Payment Method
         const bankTransfer = document.getElementById('bankTransfer');
         const inOffice = document.getElementById('inOffice');
@@ -823,39 +970,6 @@ if (isset($_GET['action'])) {
                 this.style.boxShadow = 'none';
             }
         });
-
-        // Clear all form fields
-        function clearFormFields() {
-            // Reset dropdowns
-            document.getElementById('userTypeSelect').value = "";
-            document.getElementById('userIdSelect').innerHTML = '<option value="" selected disabled>First select user type</option>';
-            document.getElementById('userIdSelect').disabled = true;
-            document.getElementById('categorySelect').value = "";
-
-            // Reset text/number inputs
-            document.querySelector('input[placeholder="Enter Invoice Number"]').value = "";
-            document.getElementById('amountPaid').value = "";
-
-            // Reset display fields
-            document.getElementById('refNo').textContent = "";
-            document.getElementById('residentName').textContent = "";
-            document.getElementById('issueDate').textContent = "";
-
-            // Reset input borders
-            const invoiceInput = document.querySelector('input[placeholder="Enter Invoice Number"]');
-            invoiceInput.style.borderColor = '#dee2e6';
-            invoiceInput.style.boxShadow = 'none';
-
-            const userIdSelect = document.getElementById('userIdSelect');
-            userIdSelect.style.borderColor = '#dee2e6';
-            userIdSelect.style.boxShadow = 'none';
-
-            // ✅ Reset file upload input and preview
-            const proofInput = document.getElementById('proofOfPayment');
-            const previewArea = document.getElementById('imagePreview');
-            if (proofInput) proofInput.value = ""; // clears file input
-            if (previewArea) previewArea.innerHTML = ""; // clears preview
-        }
 
         // Toggle Payment Method
         bankTransfer.addEventListener('click', () => {

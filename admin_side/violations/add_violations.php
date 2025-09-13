@@ -413,7 +413,8 @@ try {
                         <div class="row">
                             <span class="fw-bold mb-3">Incident Details</span>
                             <div class="col-4 mb-3">
-                                <input type="date" name="date_incident" class="form-control" required />
+                                <input type="date" name="date_incident" class="form-control" id="dateIncident"
+                                    required />
                                 <label class="form-label mt-2">Date of Incident<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
@@ -469,11 +470,10 @@ try {
                                         <strong>Drag & drop files or <a href="#" id="browseLink">Browse</a></strong>
                                     </div>
                                     <div class="small text-muted">
-                                        Supported formats: JPEG, PNG, GIF, PDF, TXT, XLS, AI, Word, PPT
+                                        Supported formats: JPEG, PNG, GIF, PDF
                                     </div>
                                     <input type="file" id="fileInput" name="evidence" class="d-none"
-                                        accept=".jpeg,.jpg,.png,.gif,.pdf,.txt,.xls,.xlsx,.ai,.doc,.docx,.ppt,.pptx"
-                                        required>
+                                        accept="image/jpeg,image/png,image/gif,application/pdf" required>
                                 </div>
                                 <label class="form-label mt-2">Upload your Evidence<small
                                         class="fw-bold text-danger">*</small></label>
@@ -654,70 +654,123 @@ try {
                 confirmModal.hide();
             });
 
-            // File upload functionality
+            // File Upload Functionality
             const fileDropArea = document.getElementById('fileDropArea');
             const fileInput = document.getElementById('fileInput');
             const browseLink = document.getElementById('browseLink');
             const filePreview = document.getElementById('filePreview');
 
-            // Browse link click handler
+            // Handle browse link click
             browseLink.addEventListener('click', function (e) {
                 e.preventDefault();
                 fileInput.click();
             });
 
-            // Drag and drop handlers
+            // Handle file input change
+            fileInput.addEventListener('change', function (e) {
+                handleFiles(e.target.files);
+            });
+
+            // Drag and drop functionality
             fileDropArea.addEventListener('dragover', function (e) {
                 e.preventDefault();
+                e.stopPropagation();
                 fileDropArea.classList.add('dragover');
             });
 
             fileDropArea.addEventListener('dragleave', function (e) {
                 e.preventDefault();
+                e.stopPropagation();
                 fileDropArea.classList.remove('dragover');
             });
 
             fileDropArea.addEventListener('drop', function (e) {
                 e.preventDefault();
+                e.stopPropagation();
                 fileDropArea.classList.remove('dragover');
 
                 const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    fileInput.files = files;
-                    displayFilePreview(files[0]);
-                }
+                handleFiles(files);
             });
 
-            // File input change handler
-            fileInput.addEventListener('change', function () {
-                if (this.files.length > 0) {
-                    displayFilePreview(this.files[0]);
+            // Handle file processing
+            function handleFiles(files) {
+                if (files.length === 0) return;
+
+                const file = files[0]; // Take only the first file
+
+                // Validate file type (only proof of payment formats)
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Please select a valid file type for proof of payment (JPEG, PNG, GIF, PDF)');
+                    return;
                 }
-            });
 
-            // Function to display file preview
-            function displayFilePreview(file) {
-                const fileName = file.name;
-                const fileSize = (file.size / 1024 / 1024).toFixed(2); // Convert to MB
+                // Validate file size (max 10MB)
+                const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+                if (file.size > maxSize) {
+                    alert('File size must be less than 10MB');
+                    return;
+                }
 
-                filePreview.innerHTML = `
-            <div class="alert alert-success d-flex align-items-center" role="alert">
-                <i class="bi bi-file-earmark-check me-2"></i>
-                <div>
-                    <strong>${fileName}</strong> (${fileSize} MB)
-                    <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeFile()">
-                        <i class="bi bi-x"></i>
-                    </button>
-                </div>
-            </div>
-        `;
+                // Update the file input
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+
+                // Display file preview
+                displayFilePreview(file);
             }
 
-            // Function to remove selected file
-            window.removeFile = function () {
-                fileInput.value = '';
+            // Display file preview
+            function displayFilePreview(file) {
                 filePreview.innerHTML = '';
-            };
+
+                const previewContainer = document.createElement('div');
+                previewContainer.className = 'alert alert-success d-flex align-items-center justify-content-between';
+
+                const fileInfo = document.createElement('div');
+                fileInfo.className = 'd-flex align-items-center';
+
+                const fileIcon = document.createElement('i');
+                if (file.type.startsWith('image/')) {
+                    fileIcon.className = 'bi bi-file-earmark-image me-2';
+                } else if (file.type === 'application/pdf') {
+                    fileIcon.className = 'bi bi-file-earmark-pdf me-2';
+                } else {
+                    fileIcon.className = 'bi bi-file-earmark me-2';
+                }
+
+                const fileName = document.createElement('span');
+                fileName.textContent = `${file.name} (${formatFileSize(file.size)})`;
+
+                fileInfo.appendChild(fileIcon);
+                fileInfo.appendChild(fileName);
+
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.className = 'btn-close';
+                removeButton.onclick = function () {
+                    fileInput.value = '';
+                    filePreview.innerHTML = '';
+                };
+
+                previewContainer.appendChild(fileInfo);
+                previewContainer.appendChild(removeButton);
+                filePreview.appendChild(previewContainer);
+            }
+
+            // Format file size for display
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            document.getElementById('dateIncident').max = new Date().toISOString().split('T')[0];
         });
     </script>
 </body>

@@ -316,7 +316,7 @@ if (!empty($admin['profile_picture'])) {
                         <!-- Balance Remaining -->
                         <div class="col-md-6">
                             <label for="balance_remaining" class="form-label fw-semibold">Balance to be Paid:</label>
-                            <input type="number" step="0.01" class="form-control" id="balance_remaining" name="balance_remaining" required>
+                            <input type="number" step="0.01" class="form-control" id="balance_remaining" name="balance_remaining" min="0" required>
                         </div>
 
                         <!-- Payment Date -->

@@ -78,11 +78,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $body = trim($_POST['body']);         // remove leading/trailing whitespace
         $body = preg_replace('/\s+/', ' ', $body); // collapse multiple spaces/newlines into single space
         $status = "published";
-        $admin_id = $user['admin_id'];
 
         try {
             $stmt = $conn->prepare("INSERT INTO announcements (admin_id, title, body, status) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("isss", $admin_id, $title, $body, $status);
+            $stmt->bind_param("ssss", $admin_id, $title, $body, $status);
             $stmt->execute();
 
             // ✅ Clear the form token after successful insert
@@ -392,11 +391,11 @@ try {
                             value="<?php echo htmlspecialchars($_SESSION['form_token']); ?>">
                         <!-- Title -->
                         <h5 class="fw mb-2">Title</h5>
-                        <input type="text" id="title" name="title" class="form-control border-dark rounded mb-1"
+                        <input type="text" id="title" name="title" class="form-control rounded mb-1"
                             maxlength="150" placeholder="Enter announcement title">
                         <!-- Body -->
                         <h5 class="fw mb-2 mt-3">Body</h5>
-                        <textarea id="body" name="body" class="form-control border-dark rounded mb-1"
+                        <textarea id="body" name="body" class="form-control rounded mb-1"
                             style="min-height:100px; resize:none;" placeholder="Enter a description"></textarea>
                         <!-- Error message -->
                         <p id="formError" class="text-danger small mt-2" style="display:none;">

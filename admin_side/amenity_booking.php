@@ -772,7 +772,7 @@ while ($row = $calendar_result->fetch_assoc()) {
         });
 
         const bookings = <?php echo json_encode($bookings); ?>;
-        let currentDate = new Date(2025, 7, 1); // August 2025
+        let currentDate = new Date(); // Current date
         let currentView = 'month';
 
         function renderCalendar() {

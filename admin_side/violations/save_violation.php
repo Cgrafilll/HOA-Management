@@ -67,19 +67,14 @@ try {
         // Anonymous checkbox (default "No")
         $anonymous = isset($_POST['anonymous']) && $_POST['anonymous'] == "1" ? "Yes" : "No";
 
-        // Handle evidence upload
-        $evidence_file = null;
+        // Handle evidence upload - store directly in database
+        $evidence_data = null;
         if (isset($_FILES['evidence']) && $_FILES['evidence']['error'] == 0) {
-            $targetDir = "../admin_side/violations/evidences/";
-            if (!is_dir($targetDir)) {
-                mkdir($targetDir, 0777, true);
-            }
-            $fileName = time() . "_" . basename($_FILES['evidence']['name']);
-            $targetFile = $targetDir . $fileName;
-            if (move_uploaded_file($_FILES['evidence']['tmp_name'], $targetFile)) {
-                $evidence_file = $fileName;
-            } else {
-                echo "error: Failed to upload evidence file";
+            // Read the file content
+            $evidence_data = file_get_contents($_FILES['evidence']['tmp_name']);
+
+            if ($evidence_data === false) {
+                echo "error: Failed to read evidence file";
                 exit;
             }
         }
@@ -107,7 +102,7 @@ try {
         }
 
         $stmt->bind_param(
-            "sssssssssss",
+            "sssssssssbs",
             $household_id,
             $date_incident,
             $time_incident,
@@ -117,7 +112,7 @@ try {
             $homeowner_involved,
             $address_lot_number,
             $other_parties,
-            $evidence_file,
+            $evidence_data,
             $anonymous
         );
 

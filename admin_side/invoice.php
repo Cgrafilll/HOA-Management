@@ -61,12 +61,13 @@ try {
     // Fetch invoices from amenity_bookings OR monthly_dues based on filter
     $filter = $_GET['filter'] ?? '--';
 
-try {
-    if ($filter === '--') {
-        $invoices = []; // ✅ Empty result
-    } elseif ($filter === 'monthly_dues') {
-        // Fetch from monthly_dues
-        $stmt = $conn->prepare("
+    try {
+        if ($filter === '--') {
+            // ✅ Fetch ALL invoices from both tables when no filter is selected
+            $invoices = [];
+
+            // Fetch from monthly_dues
+            $stmt = $conn->prepare("
             SELECT 
                 md.id,
                 md.invoice_number,
@@ -77,17 +78,18 @@ try {
                 md.due_date,
                 md.status,
                 CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) AS full_name,
-                (md.amount_paid + md.balance_remaining) AS total_amount
+                (md.amount_paid + md.balance_remaining) AS total_amount,
+                'monthly_dues' AS source_table,
+                md.due_date AS sort_date
             FROM monthly_dues md
             LEFT JOIN household_accounts ha ON md.household_id = ha.household_id
-            ORDER BY md.due_date DESC
         ");
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $invoices = $result->fetch_all(MYSQLI_ASSOC);
-    } else {
-        // Fetch from amenity_bookings
-        $stmt = $conn->prepare("
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $monthlyDuesInvoices = $result->fetch_all(MYSQLI_ASSOC);
+
+            // Fetch from amenity_bookings
+            $stmt = $conn->prepare("
             SELECT 
                 ab.invoice_number,
                 ab.reservation_code,
@@ -111,21 +113,107 @@ try {
                     WHEN ab.user_type = 'visitor' 
                         THEN CONCAT(v.first_name, ' ', v.middle_name, ' ', v.last_name)
                     ELSE 'Unknown'
-                END AS full_name
+                END AS full_name,
+                'amenity_bookings' AS source_table,
+                ab.created_at AS sort_date
+            FROM amenity_bookings ab
+            LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
+            LEFT JOIN visitor_details v ON ab.visitor_id = v.visitor_id
+        ");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $amenityInvoices = $result->fetch_all(MYSQLI_ASSOC);
+
+            // Combine both arrays
+            $invoices = array_merge($monthlyDuesInvoices, $amenityInvoices);
+
+            // Sort by date (most recent first)
+            usort($invoices, function ($a, $b) {
+                return strtotime($b['sort_date']) - strtotime($a['sort_date']);
+            });
+
+        } elseif ($filter === 'monthly_dues') {
+            // Fetch from monthly_dues
+            $stmt = $conn->prepare("
+            SELECT 
+                md.id,
+                md.invoice_number,
+                md.household_id,
+                md.billing_month,
+                md.amount_paid,
+                md.balance_remaining,
+                md.due_date,
+                md.status,
+                CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) AS full_name,
+                (md.amount_paid + md.balance_remaining) AS total_amount,
+                'monthly_dues' AS source_table
+            FROM monthly_dues md
+            LEFT JOIN household_accounts ha ON md.household_id = ha.household_id
+            ORDER BY md.due_date DESC
+        ");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $invoices = $result->fetch_all(MYSQLI_ASSOC);
+        } else {
+            // Fetch from amenity_bookings
+            $stmt = $conn->prepare("
+            SELECT 
+                ab.invoice_number,
+                ab.reservation_code,
+                ab.reservation_date,
+                ab.created_at,
+                ab.total_amount,
+                ab.amount_paid,
+                (ab.total_amount - ab.amount_paid) AS balance_remaining,
+                ab.payment_method,
+                ab.reference_number,
+                ab.status,
+                ab.amenity,
+                ab.chairs,
+                ab.tables,
+                ab.rate,
+                ab.user_type,
+                ab.guests,
+                CASE 
+                    WHEN ab.user_type = 'homeowner' 
+                        THEN CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name)
+                    WHEN ab.user_type = 'visitor' 
+                        THEN CONCAT(v.first_name, ' ', v.middle_name, ' ', v.last_name)
+                    ELSE 'Unknown'
+                END AS full_name,
+                'amenity_bookings' AS source_table
             FROM amenity_bookings ab
             LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
             LEFT JOIN visitor_details v ON ab.visitor_id = v.visitor_id
             ORDER BY ab.created_at DESC
         ");
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $invoices = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $invoices = $result->fetch_all(MYSQLI_ASSOC);
+        }
+    } catch (Exception $e) {
+        $invoices = [];
+        $error_message = "Error fetching invoices: " . $e->getMessage();
     }
-} catch (Exception $e) {
-    $invoices = [];
-    $error_message = "Error fetching invoices: " . $e->getMessage();
-}
 
+    // ✅ Auto-select first invoice if none is specifically requested
+    $selectedInvoice = null;
+    $activeInvoiceNumber = null;
+
+    if (isset($_GET['invoice']) && !empty($_GET['invoice'])) {
+        // Specific invoice requested
+        $activeInvoiceNumber = $_GET['invoice'];
+        foreach ($invoices as $inv) {
+            if ($inv['invoice_number'] === $_GET['invoice']) {
+                $selectedInvoice = $inv;
+                break;
+            }
+        }
+    } elseif (!empty($invoices)) {
+        // No specific invoice requested, auto-select first one
+        $selectedInvoice = $invoices[0];
+        $activeInvoiceNumber = $invoices[0]['invoice_number'];
+    }
 
 } catch (Exception $e) {
     $error_message = "Error fetching user details: " . $e->getMessage();
@@ -215,36 +303,8 @@ function getNumericAmount($amountStr)
             overflow-y: auto;
         }
 
-        .announcement-card {
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            white-space: normal;
-            max-width: 100%;
-        }
-
-        .announcement-body {
-            font-size: 0.95rem;
-            margin: 0;
-            margin-bottom: 8px;
-            line-height: 1.4;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-
         main {
             margin-left: 250px;
-            padding-bottom: 100px;
-            /* ✅ give breathing room at bottom */
-        }
-
-        .card-body p,
-        .card-body h6 {
-            word-wrap: break-word;
-            /* Old support */
-            overflow-wrap: break-word;
-            /* Modern support */
-            white-space: pre-wrap;
-            /* Keeps newlines */
         }
 
         .sidebar a,
@@ -299,22 +359,34 @@ function getNumericAmount($amountStr)
             transform: rotate(180deg);
         }
 
-        /* Make Cancel button slightly darker on hover */
-        #confirmModal .btn-cancel:hover {
-            background-color: #d6d8db;
-            /* slightly darker gray */
-            color: #000;
+        .invoice.active {
+            border-color: #198754 !important;
+            background-color: #d1e7dd !important;
+            color: #0f5132 !important;
+            border-left: 4px solid #198754 !important;
+            box-shadow: 0 2px 4px rgba(25, 135, 84, 0.2) !important;
+            transform: translateX(2px);
+            transition: all 0.2s ease-in-out;
         }
 
-        .form-control.border-danger {
-            border: 2px solid #dc3545 !important;
-            /* force red */
+        .invoice:not(.active):hover {
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
+            transform: translateX(1px);
+            transition: all 0.2s ease-in-out;
         }
 
-        textarea {
-            min-height: 100px;
-            resize: none;
-            /* optional: prevent manual drag */
+        .invoice.active h6 {
+            color: #0f5132 !important;
+            font-weight: 700 !important;
+        }
+
+        .invoice.active small {
+            font-weight: 600 !important;
+        }
+
+        .invoice {
+            transition: all 0.3s ease-in-out;
         }
     </style>
 </head>
@@ -403,7 +475,7 @@ function getNumericAmount($amountStr)
                     </button>
                     <div class="collapse" id="commCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="announcements.php" class="nav-link px-2 actived">Announcements</a></li>
+                            <li><a href="announcements.php" class="nav-link px-2">Announcements</a></li>
                             <li><a href="events.php" class="nav-link px-2">Events</a></li>
                             <li><a href="phonebook.php" class="nav-link px-2">Phone Book</a></li>
                         </ul>
@@ -451,8 +523,8 @@ function getNumericAmount($amountStr)
                         <div class="d-flex align-items-center gap-2">
                             <label for="filter" class="fw-semibold">Filter by:</label>
                             <select name="filter" id="filter" class="form-select form-select-sm w-auto"
-                                    onchange="this.form.submit()">
-                                <option value="--" <?= (!isset($_GET['filter']) || $_GET['filter'] == '--') ? 'selected' : '' ?>>--</option>
+                                onchange="this.form.submit()">
+                                <option value="--" <?= (!isset($_GET['filter']) || $_GET['filter'] == '--') ? 'selected' : '' ?>>All</option>
                                 <option value="amenities" <?= (isset($_GET['filter']) && $_GET['filter'] == 'amenities') ? 'selected' : '' ?>>
                                     Amenities
                                 </option>
@@ -468,63 +540,72 @@ function getNumericAmount($amountStr)
                             <div class="border rounded-3">
                                 <div class="list-group list-group-flush">
                                     <?php if (!empty($invoices)): ?>
-                                        <?php foreach ($invoices as $inv): ?>
+                                        <?php foreach ($invoices as $index => $inv): ?>
                                             <a href="?filter=<?= htmlspecialchars($filter) ?>&invoice=<?= htmlspecialchars($inv['invoice_number']); ?>"
-                                            class="list-group-item list-group-item-action <?= (isset($_GET['invoice']) && $_GET['invoice'] === $inv['invoice_number']) ? 'active' : '' ?>">
+                                                class="list-group-item list-group-item-action invoice <?= ($inv['invoice_number'] === $activeInvoiceNumber) ? 'active' : '' ?>">
                                                 <div class="d-flex w-100 justify-content-between">
-                                                    <h6 class="mb-1">Invoice #<?= htmlspecialchars($inv['invoice_number']); ?></h6>
-                                                    
-                                                    <!-- ✅ Show due_date only for monthly_dues -->
-                                                    <?php if ($filter === 'monthly_dues' && !empty($inv['due_date'])): ?>
-                                                        <small><?= date('M d, Y', strtotime($inv['due_date'])); ?></small>
+                                                    <h6 class="mb-1">Invoice #<?= htmlspecialchars($inv['invoice_number']); ?>
+                                                    </h6>
+                                                    <!-- Show different date info based on source -->
+                                                    <?php if (isset($inv['source_table'])): ?>
+                                                        <?php if ($inv['source_table'] === 'monthly_dues' && !empty($inv['due_date'])): ?>
+                                                            <small><?= date('M d, Y', strtotime($inv['due_date'])); ?></small>
+                                                        <?php elseif ($inv['source_table'] === 'amenity_bookings' && !empty($inv['created_at'])): ?>
+                                                            <small><?= date('M d, Y', strtotime($inv['created_at'])); ?></small>
+                                                        <?php endif; ?>
+                                                    <?php else: ?>
+                                                        <!-- Fallback for filtered results -->
+                                                        <?php if ($filter === 'monthly_dues' && !empty($inv['due_date'])): ?>
+                                                            <small><?= date('M d, Y', strtotime($inv['due_date'])); ?></small>
+                                                        <?php elseif ($filter === 'amenities' && !empty($inv['created_at'])): ?>
+                                                            <small><?= date('M d, Y', strtotime($inv['created_at'])); ?></small>
+                                                        <?php endif; ?>
                                                     <?php endif; ?>
                                                 </div>
-
                                                 <p class="mb-1 small">
                                                     <?= htmlspecialchars($inv['full_name'] ?? 'No Name'); ?>
                                                 </p>
-                                                <small class="fw-bold 
-                                                    <?= ($inv['status'] === 'Pending') ? 'text-warning' : (($inv['status'] === 'Partial') ? 'text-info' : 'text-success'); ?>">
-                                                    <?= htmlspecialchars($inv['status']); ?>
+                                                <small
+                                                    class="fw-bold <?= ($inv['status'] === 'Pending') ? 'text-warning' : (($inv['status'] === 'Partial') ? 'text-info' : 'text-success'); ?>">
+                                                    <?= htmlspecialchars(ucfirst($inv['status'])); ?>
                                                 </small>
                                             </a>
                                         <?php endforeach; ?>
                                     <?php else: ?>
-                                        <div class="p-5 text-muted medium">Please select from the filter to view an invoice.</div>
+                                        <div class="p-5 text-muted medium">No invoices found.</div>
                                     <?php endif; ?>
                                 </div>
                             </div>
                         </div>
-                       <?php
-                        $selectedInvoice = null;
-                        if (isset($_GET['invoice'])) {
-                            foreach ($invoices as $inv) {
-                                if ($inv['invoice_number'] === $_GET['invoice']) {
-                                    $selectedInvoice = $inv;
-                                    break;
-                                }
-                            }
-                        }
-                        ?>
                         <div class="col-md-8">
                             <div class="border rounded-3">
                                 <?php if ($selectedInvoice): ?>
                                     <!-- Status and Export header -->
                                     <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
                                         <div class="fw-bold text-uppercase small">
-                                            STATUS: <span
-                                                class="<?php 
-                                                $statusColor = 'text-success';
-                                                if ($selectedInvoice['status'] === 'Pending') $statusColor = 'text-warning';
-                                                if ($selectedInvoice['status'] === 'Partial') $statusColor = 'text-info';
-                                                echo $statusColor;
-                                                ?>"><?= strtoupper($selectedInvoice['status']); ?></span>
+                                            STATUS: <span class="<?php
+                                            $statusColor = 'text-success';
+                                            if ($selectedInvoice['status'] === 'Pending')
+                                                $statusColor = 'text-warning';
+                                            if ($selectedInvoice['status'] === 'Partial')
+                                                $statusColor = 'text-info';
+                                            echo $statusColor;
+                                            ?>"><?= strtoupper($selectedInvoice['status']); ?></span>
                                         </div>
                                         <button class="btn btn-primary btn-sm">Export</button>
                                     </div>
-
                                     <div class="p-3">
-                                        <?php if ($filter === 'monthly_dues'): ?>
+                                        <?php
+                                        // Determine if this is a monthly dues invoice
+                                        $isMonthlyDues = false;
+                                        if (isset($selectedInvoice['source_table'])) {
+                                            $isMonthlyDues = ($selectedInvoice['source_table'] === 'monthly_dues');
+                                        } else {
+                                            // Fallback: check if it has monthly dues specific fields
+                                            $isMonthlyDues = isset($selectedInvoice['billing_month']) && isset($selectedInvoice['household_id']);
+                                        }
+
+                                        if ($isMonthlyDues): ?>
                                             <!-- Monthly Dues Invoice Detail -->
                                             <!-- Company Header -->
                                             <div class="row mb-3">
@@ -542,13 +623,15 @@ function getNumericAmount($amountStr)
                                                         <div class="mb-1"><span class="fw-semibold">Household ID:</span>
                                                             <?= htmlspecialchars($selectedInvoice['household_id']); ?></div>
                                                         <div><span class="fw-semibold">Billing Period:</span>
-                                                            <?= date('F Y', strtotime($selectedInvoice['billing_month'])); ?></div>
+                                                            <?= date('F Y', strtotime($selectedInvoice['billing_month'])); ?>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="col-4">
                                                     <div class="text-end small">
                                                         <div class="fw-bold mb-2 fs-6">Invoice No.
-                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
+                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?>
+                                                        </div>
                                                         <div class="mb-1"><span class="fw-semibold">Due Date:</span>
                                                             <?= date('M d, Y', strtotime($selectedInvoice['due_date'])); ?>
                                                         </div>
@@ -557,7 +640,6 @@ function getNumericAmount($amountStr)
                                                     </div>
                                                 </div>
                                             </div>
-
                                             <!-- Monthly Dues Items table -->
                                             <div class="table-responsive">
                                                 <table class="table table-bordered mb-3">
@@ -571,19 +653,22 @@ function getNumericAmount($amountStr)
                                                     <tbody class="small">
                                                         <tr>
                                                             <td>HOA Monthly Dues</td>
-                                                            <td><?= date('F Y', strtotime($selectedInvoice['billing_month'])); ?></td>
-                                                            <td class="text-end">₱ <?= number_format($selectedInvoice['total_amount'], 2); ?></td>
+                                                            <td><?= date('F Y', strtotime($selectedInvoice['billing_month'])); ?>
+                                                            </td>
+                                                            <td class="text-end">₱
+                                                                <?= number_format($selectedInvoice['total_amount'], 2); ?>
+                                                            </td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
                                             </div>
-
                                             <!-- Monthly Dues Summary -->
                                             <div class="d-flex justify-content-end">
                                                 <div class="text-end small" style="min-width: 200px;">
                                                     <div class="d-flex justify-content-between mb-1">
                                                         <span class="fw-semibold">Total Amount</span>
-                                                        <span>₱ <?= number_format($selectedInvoice['total_amount'], 2); ?></span>
+                                                        <span>₱
+                                                            <?= number_format($selectedInvoice['total_amount'], 2); ?></span>
                                                     </div>
                                                     <div class="d-flex justify-content-between mb-1">
                                                         <span class="fw-semibold">Amount Paid</span>
@@ -591,13 +676,13 @@ function getNumericAmount($amountStr)
                                                     </div>
                                                     <div class="d-flex justify-content-between fw-bold border-top pt-1">
                                                         <span>Balance Due</span>
-                                                        <span>₱ <?= number_format($selectedInvoice['balance_remaining'], 2); ?></span>
+                                                        <span>₱
+                                                            <?= number_format($selectedInvoice['balance_remaining'], 2); ?></span>
                                                     </div>
                                                 </div>
                                             </div>
-
                                         <?php else: ?>
-                                            <!-- Amenity Booking Invoice Detail (existing code) -->
+                                            <!-- Amenity Booking Invoice Detail -->
                                             <!-- Company Header -->
                                             <div class="row mb-3">
                                                 <div class="col-8">
@@ -620,12 +705,15 @@ function getNumericAmount($amountStr)
                                                 <div class="col-4">
                                                     <div class="text-end small">
                                                         <div class="fw-bold mb-2 fs-6">Invoice No.
-                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
+                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?>
+                                                        </div>
                                                         <div class="mb-1"><span class="fw-semibold">Payment Method:</span>
                                                             <?= htmlspecialchars(ucfirst($selectedInvoice['payment_method'])); ?>
                                                         </div>
-                                                        <div><span class="fw-semibold">Reference Number:</span>
-                                                            <?= htmlspecialchars($selectedInvoice['reference_number']); ?></div>
+                                                        <?php if (strtolower($selectedInvoice['payment_method']) !== 'cash'): ?>
+                                                            <div><span class="fw-semibold">Reference Number:</span>
+                                                                <?= htmlspecialchars($selectedInvoice['reference_number']); ?></div>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                             </div>
@@ -648,7 +736,7 @@ function getNumericAmount($amountStr)
                                                         $userType = $selectedInvoice['user_type'];
                                                         $dayOrNight = $selectedInvoice['rate']; // "day" or "night"
                                                         $numGuests = $selectedInvoice['guests'] ?? 1; // fallback 1 just in case
-                                                    
+                                                
                                                         $rateStr = $amenityRates[$amenity][$userType][$dayOrNight] ?? "₱0.00";
                                                         $numericRate = getNumericAmount($rateStr);
 
@@ -675,7 +763,8 @@ function getNumericAmount($amountStr)
                                                                 <td class="text-end">₱ 12.00</td>
                                                                 <td class="text-center"><?= $selectedInvoice['chairs']; ?></td>
                                                                 <td class="text-end">₱
-                                                                    <?= number_format($selectedInvoice['chairs'] * 12, 2); ?></td>
+                                                                    <?= number_format($selectedInvoice['chairs'] * 12, 2); ?>
+                                                                </td>
                                                             </tr>
                                                         <?php endif; ?>
                                                         <?php if ($selectedInvoice['tables'] > 0): ?>
@@ -685,7 +774,8 @@ function getNumericAmount($amountStr)
                                                                 <td class="text-end">₱ 15.00</td>
                                                                 <td class="text-center"><?= $selectedInvoice['tables']; ?></td>
                                                                 <td class="text-end">₱
-                                                                    <?= number_format($selectedInvoice['tables'] * 15, 2); ?></td>
+                                                                    <?= number_format($selectedInvoice['tables'] * 15, 2); ?>
+                                                                </td>
                                                             </tr>
                                                         <?php endif; ?>
                                                     </tbody>
@@ -717,10 +807,9 @@ function getNumericAmount($amountStr)
                                             </div>
                                         <?php endif; ?>
                                     </div>
-                                    <?php else: ?>
-                                        <div class="p-5 text-center text-muted">Invoice displays here upon selection.
-                                        </div>
-                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <div class="p-5 text-center text-muted">No invoices available to display.</div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
