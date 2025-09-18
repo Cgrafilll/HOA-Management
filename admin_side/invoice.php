@@ -771,22 +771,22 @@ function getNumericAmount($amountStr)
                                                             <tr>
                                                                 <td>Add-On</td>
                                                                 <td>Tables</td>
-                                                                <td class="text-end">₱ 15.00</td>
+                                                                <td class="text-end">₱ 20.00</td>
                                                                 <td class="text-center"><?= $selectedInvoice['tables']; ?></td>
                                                                 <td class="text-end">₱
-                                                                    <?= number_format($selectedInvoice['tables'] * 15, 2); ?>
+                                                                    <?= number_format($selectedInvoice['tables'] * 20, 2); ?>
                                                                 </td>
                                                             </tr>
                                                         <?php endif; ?>
                                                     </tbody>
                                                 </table>
                                             </div>
-                                            <!-- Amenity Summary -->
+                                           <!-- Amenity Summary -->
                                             <div class="d-flex justify-content-end">
                                                 <div class="text-end small" style="min-width: 200px;">
                                                     <?php
                                                     $chairsTotal = $selectedInvoice['chairs'] * 12;
-                                                    $tablesTotal = $selectedInvoice['tables'] * 15;
+                                                    $tablesTotal = $selectedInvoice['tables'] * 20;
                                                     $subtotal = $totalAmount + $chairsTotal + $tablesTotal;
                                                     $amountPaid = $selectedInvoice['amount_paid'];
                                                     $balanceRemaining = $subtotal - $amountPaid;
