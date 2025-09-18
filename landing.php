@@ -74,6 +74,10 @@
         .auth-form {
             transition: all 0.3s ease;
         }
+
+        .auth-form.hidden {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -263,24 +267,25 @@
             </div>
             <!-- Login/Signup Form Column -->
             <div class="col-lg-6">
-                <div class="bg-white p-4 rounded shadow d-flex flex-column" style="height: 100%; min-height: 550px;">
+                <div class="bg-white p-4 rounded shadow d-flex flex-column" style="height: 100%; min-height: 670px;">
                     <!-- Auth Toggle -->
                     <div class="auth-toggle d-flex">
-                        <button type="button" id="loginTab" class="active" onclick="showLogin()">Log In</button>
-                        <button type="button" id="signupTab" onclick="showSignup()">Sign Up</button>
+                        <button type="button" id="loginTab" class="active">Log In</button>
+                        <button type="button" id="signupTab">Sign Up</button>
                     </div>
                     <!-- Login Form -->
-                    <form id="loginForm" class="auth-form mt-3 d-flex flex-column flex-grow-1" action="#" method="POST">
+                    <form id="loginForm" class="auth-form mt-3 d-flex flex-column flex-grow-1"
+                        action="visitor_side/visitor_login.php" method="POST">
                         <div class="my-auto">
                             <div class="mb-5 ">
                                 <div class="mb-3">
-                                    <label for="loginEmail" class="form-label">Email Address</label>
-                                    <input type="email" class="form-control" id="loginEmail" name="email" required>
+                                    <label for="email_address" class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" id="email_address" name="email_address" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label mt-2">Password</label>
                                     <div class="input-group">
-                                        <input type="password" id="loginPassword" name="loginPassword" required
+                                        <input type="password" id="password" name="password" required
                                             class="form-control" minlength="6" />
                                         <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
                                             tabindex="-1">
@@ -297,7 +302,7 @@
                         </div>
                     </form>
                     <!-- Signup Form -->
-                    <form id="signupForm" class="auth-form mt-3" action="#" method="POST" style="display: none;">
+                    <form id="signupForm" class="auth-form mt-3 hidden" action="#" method="POST">
                         <div class="row mb-3">
                             <div class="col-4">
                                 <label for="firstName" class="form-label">First Name</label>
@@ -310,6 +315,25 @@
                             <div class="col-4">
                                 <label for="lastName" class="form-label">Last Name</label>
                                 <input type="text" class="form-control" id="lastName" name="lastName" required>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-4">
+                                <label class="form-label">Date of Birth</label>
+                                <input type="date" name="dob" class="form-control" id="dobInput" required
+                                    max="<?php echo date('Y-m-d'); ?>" />
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Age</label>
+                                <input type="number" name="age" class="form-control" id="ageInput" readonly />
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label">Sex</label>
+                                <select name="sex" class="form-select" required>
+                                    <option value="">Select</option>
+                                    <option>Male</option>
+                                    <option>Female</option>
+                                </select>
                             </div>
                         </div>
                         <div class="row mb-3">
@@ -358,85 +382,170 @@
         </div>
     </footer>
 
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-success text-white">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
+                    <p class="mb-2"><b>Success</b></p>
+                    <p class="mb-3">User details have been successfully saved.</p>
+                    <button type="button" class="btn btn-primary" id="doneButton">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-danger text-white">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
+                    <p class="mb-2"><b>Error</b></p>
+                    <p class="mb-3" id="errorMessage">
+                        <?php echo isset($error) ? htmlspecialchars($error) : 'An error occurred while processing your request.'; ?>
+                    </p>
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php if (isset($success) && $success): ?>
+        <script>
+            window.addEventListener('DOMContentLoaded', () => {
+                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+
+                const redirect = () => window.location.href = 'visitor_side/dashboard.php';
+                document.getElementById('doneButton').addEventListener('click', redirect);
+                document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
+            });
+        </script>
+    <?php endif; ?>
+    <?php if (isset($error) && $error): ?>
+        <script>
+            window.addEventListener('DOMContentLoaded', () => {
+                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                errorModal.show();
+            });
+        </script>
+    <?php endif; ?>
+
     <script>
-        function showLogin() {
-            document.getElementById('loginForm').style.display = 'block';
-            document.getElementById('signupForm').style.display = 'none';
-            document.getElementById('loginTab').classList.add('active');
-            document.getElementById('signupTab').classList.remove('active');
+        document.addEventListener('DOMContentLoaded', function () {
+            function showLogin() {
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('signupForm').classList.add('hidden');
+                document.getElementById('loginTab').classList.add('active');
+                document.getElementById('signupTab').classList.remove('active');
 
-            // Add fade in animation
-            document.getElementById('loginForm').classList.add('fade-in');
-            setTimeout(() => {
-                document.getElementById('loginForm').classList.remove('fade-in');
-            }, 300);
-        }
+                // Add fade in animation
+                document.getElementById('loginForm').classList.add('fade-in');
+                setTimeout(() => {
+                    document.getElementById('loginForm').classList.remove('fade-in');
+                }, 300);
+            }
 
-        function showSignup() {
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('signupForm').style.display = 'block';
-            document.getElementById('loginTab').classList.remove('active');
-            document.getElementById('signupTab').classList.add('active');
+            function showSignup() {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('signupForm').classList.remove('hidden');
+                document.getElementById('loginTab').classList.remove('active');
+                document.getElementById('signupTab').classList.add('active');
 
-            // Add fade in animation
-            document.getElementById('signupForm').classList.add('fade-in');
-            setTimeout(() => {
-                document.getElementById('signupForm').classList.remove('fade-in');
-            }, 300);
-        }
+                // Add fade in animation
+                document.getElementById('signupForm').classList.add('fade-in');
+                setTimeout(() => {
+                    document.getElementById('signupForm').classList.remove('fade-in');
+                }, 300);
+            }
 
-        // Password Toggle Functionality
-        function togglePassword(inputId, toggleButtonId, iconId) {
-            const input = document.getElementById(inputId);
-            const toggleButton = document.getElementById(toggleButtonId);
-            const icon = document.getElementById(iconId);
+            // Add event listeners for tab buttons
+            document.getElementById('loginTab').addEventListener('click', showLogin);
+            document.getElementById('signupTab').addEventListener('click', showSignup);
 
-            if (input && toggleButton && icon) {
-                toggleButton.addEventListener('click', function () {
-                    if (input.type === 'password') {
-                        input.type = 'text';
-                        icon.classList.remove('bi-eye');
-                        icon.classList.add('bi-eye-slash');
+            // Password Toggle Functionality
+            function togglePassword(inputId, toggleButtonId, iconId) {
+                const input = document.getElementById(inputId);
+                const toggleButton = document.getElementById(toggleButtonId);
+                const icon = document.getElementById(iconId);
+
+                if (input && toggleButton && icon) {
+                    toggleButton.addEventListener('click', function () {
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            icon.classList.remove('bi-eye');
+                            icon.classList.add('bi-eye-slash');
+                        } else {
+                            input.type = 'password';
+                            icon.classList.remove('bi-eye-slash');
+                            icon.classList.add('bi-eye');
+                        }
+                    });
+                }
+            }
+
+            // Setup password toggle for both password fields
+            togglePassword('password', 'togglePassword1', 'toggleIcon1');
+            togglePassword('signupPassword', 'togglePassword2', 'toggleIcon2');
+            togglePassword('confirmPassword', 'togglePassword3', 'toggleIcon3');
+
+            // Auto-calculate age when date of birth changes - FIXED VERSION
+            const dobInput = document.getElementById('dobInput');
+            const ageInput = document.getElementById('ageInput');
+
+            if (dobInput && ageInput) {
+                dobInput.addEventListener('change', function () {
+                    console.log('Date changed:', this.value); // Debug log
+
+                    if (this.value) {
+                        const dob = new Date(this.value);
+                        const today = new Date();
+
+                        console.log('DOB:', dob); // Debug log
+                        console.log('Today:', today); // Debug log
+
+                        // Check if date is valid and not in the future
+                        if (dob > today) {
+                            showErrorModal('Date of birth cannot be in the future.');
+                            this.value = '';
+                            ageInput.value = '';
+                            return;
+                        }
+
+                        let age = today.getFullYear() - dob.getFullYear();
+                        const monthDiff = today.getMonth() - dob.getMonth();
+
+                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                            age--;
+                        }
+
+                        console.log('Calculated age:', age); // Debug log
+
+                        // Ensure age is reasonable (0-120)
+                        if (age < 0 || age > 120) {
+                            showErrorModal('Please enter a valid date of birth.');
+                            this.value = '';
+                            ageInput.value = '';
+                            return;
+                        }
+
+                        ageInput.value = age;
+                        console.log('Age set to:', ageInput.value); // Debug log
                     } else {
-                        input.type = 'password';
-                        icon.classList.remove('bi-eye-slash');
-                        icon.classList.add('bi-eye');
+                        ageInput.value = '';
                     }
                 });
             }
-        }
-
-        // Setup password toggle for both password fields
-        togglePassword('loginPassword', 'togglePassword1', 'toggleIcon1');
-        togglePassword('signupPassword', 'togglePassword2', 'toggleIcon2');
-        togglePassword('confirmPassword', 'togglePassword3', 'toggleIcon3');
-
-
-        // Password confirmation validation
-        document.getElementById('signupForm').addEventListener('submit', function (e) {
-            const password = document.getElementById('signupPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-
-            if (password !== confirmPassword) {
-                e.preventDefault();
-                alert('Passwords do not match!');
-            }
         });
 
-        // Form submission handlers (you can replace these with actual API calls)
-        document.getElementById('loginForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            console.log('Login attempt:', Object.fromEntries(formData));
-            alert('Login functionality would be implemented here!');
-        });
-
-        document.getElementById('signupForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            console.log('Signup attempt:', Object.fromEntries(formData));
-            alert('Account creation functionality would be implemented here!');
-        });
     </script>
 
 </body>

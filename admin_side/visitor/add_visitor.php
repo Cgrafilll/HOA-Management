@@ -69,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $age = $_POST['age'];
     $sex = $_POST['sex'];
     $cellphone = $_POST['cellphone'];
+    $email = $_POST['email'];
     $employment_status = $_POST['employment_status']; // Yes/No
     $reason = $_POST['reason'];
     $rfid = $_POST['rfid'];
@@ -171,14 +172,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!isset($error)) {
                         $sql = "INSERT INTO visitor_details (
                             visitor_id, first_name, middle_name, last_name, date_of_birth, age, sex,
-                            cellphone_number, employed_in_subdivision, reason_for_visit, rfid, password, profile_picture
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                            cellphone_number, email_address, employed_in_subdivision, reason_for_visit, rfid, password, profile_picture
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                         $stmt = $conn->prepare($sql);
 
                         // Bind parameters including the hashed password
                         $stmt->bind_param(
-                            "sssssissssssb",
+                            "sssssisssssssb",
                             $visitor_id,
                             $first_name,
                             $middle_name,
@@ -187,6 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $age,
                             $sex,
                             $cellphone,
+                            $email,
                             $employment_status,
                             $reason,
                             $rfid,
@@ -196,7 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         // Send long data for profile picture if it exists
                         if ($profile_pic !== null) {
-                            $stmt->send_long_data(12, $profile_pic); // index 12 because it's the 13th parameter
+                            $stmt->send_long_data(13, $profile_pic); // index 13 because it's the 14th parameter
                         }
 
                         if ($stmt->execute()) {
@@ -483,7 +485,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <div class="col-md-4 mb-3">
                                 <select name="sex" class="form-select" required>
-                                    <option value="">Select</option>
+                                    <option disabled>Select</option>
                                     <option>Male</option>
                                     <option>Female</option>
                                 </select>
@@ -496,6 +498,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="col-md-4 mb-3">
                                 <input type="text" name="cellphone" class="form-control" />
                                 <label class="form-label mt-2">Cellphone Number</label>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <input type="email" name="email" class="form-control" required />
+                                <label class="form-label mt-2">Email Address</label>
                             </div>
                         </div>
                         <!-- Reason for Visit -->
