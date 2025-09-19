@@ -42,19 +42,19 @@ $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $visitor_id);
 $stmt->execute();
 $result = $stmt->get_result();
-$resident = $result->fetch_assoc();
+$visitor = $result->fetch_assoc();
 
-if (!$resident) {
-    echo "Resident not found.";
+if (!$visitor) {
+    echo "Visitor not found.";
     exit;
 }
 
 // Initialize user details
-$username = $resident['first_name']; // <- Set username directly from household query
+$username = $visitor['first_name']; // <- Set username directly from household query
 $photo = ''; // Initialize photo; your existing profile photo block will set this later
 // Only set $photo if profile_pic exists and is not null
-if (!empty($resident['profile_picture'])) {
-    $photo = 'data:image/jpeg;base64,' . base64_encode($resident['profile_picture']);
+if (!empty($visitor['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($visitor['profile_picture']);
 } else {
     $photo = ''; // Explicitly empty if no image is saved
 }
@@ -175,7 +175,7 @@ if (!empty($resident['profile_picture'])) {
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                     <li><a class="dropdown-item"
-                            href="resident_details/view_resident.php?id=<?php echo $visitor_id; ?>"><i
+                            href="visitor_details/view_visitor.php?id=<?php echo $visitor_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">

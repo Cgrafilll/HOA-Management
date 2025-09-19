@@ -1,3 +1,120 @@
+<?php
+session_start();
+require 'rfid-api/db.php';
+
+// Initialize variables
+$success = false;
+$error = '';
+
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Check if it's a signup form submission
+    if (isset($_POST['firstName']) && isset($_POST['email'])) {
+        try {
+            // Get and sanitize form data
+            $firstName = trim($_POST['firstName']);
+            $middleName = trim($_POST['middleName']);
+            $lastName = trim($_POST['lastName']);
+            $dob = $_POST['dob'];
+            $age = (int) $_POST['age'];
+            $sex = $_POST['sex'];
+            $email = trim(strtolower($_POST['email']));
+            $phone = trim($_POST['phone']);
+            $signupPassword = $_POST['signupPassword'];
+            $confirmPassword = $_POST['confirmPassword'];
+
+            // Validation
+            $errors = [];
+
+            // Validate email format
+            if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "Please enter a valid email address.";
+            }
+
+            // Validate phone number (basic validation for Philippine format)
+            if (!empty($phone) && !preg_match('/^(\+63|0)?[0-9]{10,11}$/', str_replace([' ', '-', '(', ')'], '', $phone))) {
+                $errors[] = "Please enter a valid phone number.";
+            }
+
+            if (!empty($errors)) {
+                $error = implode('<br>', $errors);
+            } else {
+                // Check for duplicate email
+                $checkEmailQuery = "SELECT COUNT(*) FROM visitor_details WHERE email_address = ?";
+                $checkStmt = $conn->prepare($checkEmailQuery);
+                $checkStmt->bind_param("s", $email);
+                $checkStmt->execute();
+                $result = $checkStmt->get_result();
+                $emailCount = $result->fetch_row()[0];
+                $checkStmt->close();
+
+                if ($emailCount > 0) {
+                    $error = "An account with this email address already exists. Please use a different email or try logging in.";
+                } else {
+                    // Generate new visitor_id (VIS-0001, VIS-0002...)
+                    $result = $conn->query("SELECT visitor_id FROM visitor_details ORDER BY visitor_id DESC LIMIT 1");
+                    if ($result && $row = $result->fetch_assoc()) {
+                        $last_id = intval(substr($row['visitor_id'], 4)); // extract numeric part
+                        $new_id_number = $last_id + 1;
+                    } else {
+                        $new_id_number = 1; // first visitor
+                    }
+                    $visitor_id = 'VIS-' . str_pad($new_id_number, 4, '0', STR_PAD_LEFT);
+
+                    // Hash the password
+                    $hashedPassword = password_hash($signupPassword, PASSWORD_DEFAULT);
+
+                    // Insert into database
+                    $insertQuery = "INSERT INTO visitor_details (
+                        visitor_id,
+                        first_name, 
+                        middle_name, 
+                        last_name, 
+                        date_of_birth, 
+                        age, 
+                        sex, 
+                        email_address, 
+                        cellphone_number, 
+                        password, 
+                        created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+
+                    $stmt = $conn->prepare($insertQuery);
+                    $stmt->bind_param(
+                        "sssssissss",
+                        $visitor_id,
+                        $firstName,
+                        $middleName,
+                        $lastName,
+                        $dob,
+                        $age,
+                        $sex,
+                        $email,
+                        $phone,
+                        $hashedPassword
+                    );
+
+                    if ($stmt->execute()) {
+                        $success = true;
+                        // Start a session and log the user in
+                        $_SESSION['visitor_id'] = $visitor_id;
+                        $_SESSION['login_time'] = time();
+                        $_SESSION['last_activity'] = time();
+                    } else {
+                        $error = "Failed to create account. Please try again.";
+                    }
+                    $stmt->close();
+                }
+            }
+
+        } catch (Exception $e) {
+            $error = "An error occurred: " . $e->getMessage();
+        }
+    }
+}
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -280,7 +397,8 @@
                             <div class="mb-5 ">
                                 <div class="mb-3">
                                     <label for="email_address" class="form-label">Email Address</label>
-                                    <input type="email" class="form-control" id="email_address" name="email_address" required>
+                                    <input type="email" class="form-control" id="email_address" name="email_address"
+                                        required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label mt-2">Password</label>
@@ -302,7 +420,7 @@
                         </div>
                     </form>
                     <!-- Signup Form -->
-                    <form id="signupForm" class="auth-form mt-3 hidden" action="#" method="POST">
+                    <form id="signupForm" class="auth-form mt-3 hidden" action="landing.php" method="POST">
                         <div class="row mb-3">
                             <div class="col-4">
                                 <label for="firstName" class="form-label">First Name</label>
@@ -330,7 +448,7 @@
                             <div class="col-4">
                                 <label class="form-label">Sex</label>
                                 <select name="sex" class="form-select" required>
-                                    <option value="">Select</option>
+                                    <option value="" selected disabled>Select</option>
                                     <option>Male</option>
                                     <option>Female</option>
                                 </select>
@@ -356,6 +474,7 @@
                                     <i class="bi bi-eye" id="toggleIcon2"></i>
                                 </button>
                             </div>
+                            <small class="form-text text-muted">Password must be at least 6 characters long</small>
                         </div>
                         <div class="row mb-3">
                             <label class="form-label mt-2">Confirm Password</label>
@@ -366,6 +485,10 @@
                                     tabindex="-1">
                                     <i class="bi bi-eye" id="toggleIcon3"></i>
                                 </button>
+                            </div>
+                            <!-- Password mismatch error div -->
+                            <div id="passwordMismatchError" class="text-danger small mt-1" style="display: none;">
+                                <i class="bi bi-exclamation-circle"></i> Passwords do not match
                             </div>
                         </div>
                         <button type="submit" class="btn btn-success w-100 my-3">Create Account</button>
@@ -394,7 +517,7 @@
                     <i class="bi bi-check2-circle text-success" style="font-size: 64px;"></i>
                     <p class="mb-2"><b>Success</b></p>
                     <p class="mb-3">User details have been successfully saved.</p>
-                    <button type="button" class="btn btn-primary" id="doneButton">Done</button>
+                    <button type="button" class="btn btn-success" id="doneButton">Done</button>
                 </div>
             </div>
         </div>
@@ -441,6 +564,21 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Function to show error modal with custom message
+            function showErrorModal(message) {
+                const errorMessage = document.getElementById('errorMessage');
+                errorMessage.innerHTML = message;
+                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                errorModal.show();
+            }
+
+            // Get form elements
+            const signupForm = document.getElementById('signupForm');
+            const dobInput = document.getElementById('dobInput');
+            const ageInput = document.getElementById('ageInput');
+            const passwordInput = document.getElementById('signupPassword');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+
             function showLogin() {
                 document.getElementById('loginForm').classList.remove('hidden');
                 document.getElementById('signupForm').classList.add('hidden');
@@ -497,20 +635,12 @@
             togglePassword('signupPassword', 'togglePassword2', 'toggleIcon2');
             togglePassword('confirmPassword', 'togglePassword3', 'toggleIcon3');
 
-            // Auto-calculate age when date of birth changes - FIXED VERSION
-            const dobInput = document.getElementById('dobInput');
-            const ageInput = document.getElementById('ageInput');
-
+            // Auto-calculate age when date of birth changes
             if (dobInput && ageInput) {
                 dobInput.addEventListener('change', function () {
-                    console.log('Date changed:', this.value); // Debug log
-
                     if (this.value) {
                         const dob = new Date(this.value);
                         const today = new Date();
-
-                        console.log('DOB:', dob); // Debug log
-                        console.log('Today:', today); // Debug log
 
                         // Check if date is valid and not in the future
                         if (dob > today) {
@@ -527,8 +657,6 @@
                             age--;
                         }
 
-                        console.log('Calculated age:', age); // Debug log
-
                         // Ensure age is reasonable (0-120)
                         if (age < 0 || age > 120) {
                             showErrorModal('Please enter a valid date of birth.');
@@ -538,7 +666,149 @@
                         }
 
                         ageInput.value = age;
-                        console.log('Age set to:', ageInput.value); // Debug log
+                    } else {
+                        ageInput.value = '';
+                    }
+                });
+            }
+
+            // Password validation functions
+            function validatePasswordLength(password) {
+                return password.length >= 6;
+            }
+
+            function validatePasswordMatch(password, confirmPassword) {
+                return password === confirmPassword;
+            }
+
+            function validateDateOfBirth(dob) {
+                if (!dob) return false;
+
+                const dobDate = new Date(dob);
+                const today = new Date();
+
+                // Check if date is in the future
+                if (dobDate > today) {
+                    return { valid: false, message: 'Date of birth cannot be in the future.' };
+                }
+
+                // Calculate age
+                let age = today.getFullYear() - dobDate.getFullYear();
+                const monthDiff = today.getMonth() - dobDate.getMonth();
+
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDate.getDate())) {
+                    age--;
+                }
+
+                // Check reasonable age range
+                if (age < 0 || age > 120) {
+                    return { valid: false, message: 'Please enter a valid date of birth.' };
+                }
+
+                return { valid: true, age: age };
+            }
+
+            // Form submission validation
+            if (signupForm) {
+                signupForm.addEventListener('submit', function (e) {
+                    const password = passwordInput.value;
+                    const confirmPassword = confirmPasswordInput.value;
+                    const dob = dobInput.value;
+
+                    // Validate password length
+                    if (!validatePasswordLength(password)) {
+                        e.preventDefault();
+                        showErrorModal('Password must be at least 6 characters long.');
+                        return false;
+                    }
+
+                    // Validate password match
+                    if (!validatePasswordMatch(password, confirmPassword)) {
+                        e.preventDefault();
+                        showErrorModal('Passwords do not match.');
+                        return false;
+                    }
+
+                    // Validate date of birth
+                    const dobValidation = validateDateOfBirth(dob);
+                    if (!dobValidation.valid) {
+                        e.preventDefault();
+                        showErrorModal(dobValidation.message);
+                        return false;
+                    }
+
+                    // Update age field with calculated age before submission
+                    ageInput.value = dobValidation.age;
+
+                    // If all validations pass, form will be submitted normally
+                    return true;
+                });
+            }
+
+            // Real-time password validation with visual feedback
+            if (passwordInput && confirmPasswordInput) {
+                function updatePasswordValidation() {
+                    const password = passwordInput.value;
+                    const confirmPassword = confirmPasswordInput.value;
+                    const mismatchError = document.getElementById('passwordMismatchError');
+
+                    // Remove previous validation classes
+                    passwordInput.classList.remove('is-invalid', 'is-valid');
+                    confirmPasswordInput.classList.remove('is-invalid', 'is-valid');
+
+                    // Validate password length
+                    if (password.length > 0) {
+                        if (validatePasswordLength(password)) {
+                            passwordInput.classList.add('is-valid');
+                        } else {
+                            passwordInput.classList.add('is-invalid');
+                        }
+                    }
+
+                    // Validate password match and show/hide error div
+                    if (confirmPassword.length > 0) {
+                        if (validatePasswordMatch(password, confirmPassword)) {
+                            confirmPasswordInput.classList.add('is-valid');
+                            // Hide mismatch error
+                            if (mismatchError) {
+                                mismatchError.style.display = 'none';
+                            }
+                        } else {
+                            confirmPasswordInput.classList.add('is-invalid');
+                            // Show mismatch error
+                            if (mismatchError) {
+                                mismatchError.style.display = 'block';
+                            }
+                        }
+                    } else {
+                        // Hide error when confirm password is empty
+                        if (mismatchError) {
+                            mismatchError.style.display = 'none';
+                        }
+                    }
+                }
+
+                passwordInput.addEventListener('input', updatePasswordValidation);
+                confirmPasswordInput.addEventListener('input', updatePasswordValidation);
+            }
+
+            // Real-time date validation with visual feedback
+            if (dobInput) {
+                dobInput.addEventListener('input', function () {
+                    const dob = this.value;
+
+                    // Remove previous validation classes
+                    this.classList.remove('is-invalid', 'is-valid');
+
+                    if (dob) {
+                        const dobValidation = validateDateOfBirth(dob);
+                        if (dobValidation.valid) {
+                            this.classList.add('is-valid');
+                            ageInput.value = dobValidation.age;
+                        } else {
+                            this.classList.add('is-invalid');
+                            ageInput.value = '';
+                        }
                     } else {
                         ageInput.value = '';
                     }
