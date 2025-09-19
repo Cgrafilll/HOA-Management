@@ -80,6 +80,7 @@ if ($view_visitor) {
             $sex = $admin['sex'];
             $age = $admin['age'];
             $cellphone = $admin['cellphone_number'];
+            $email = $admin['email_address'];
             $employed = $admin['employed_in_subdivision'];
             $reason = $admin['reason_for_visit'];
         } else {
@@ -347,6 +348,7 @@ if ($view_visitor) {
                                 'Age' => htmlspecialchars($age),
                                 'Sex' => htmlspecialchars($sex),
                                 'Cellphone Number' => !empty($cellphone) ? htmlspecialchars($cellphone) : 'N/A',
+                                'Email Address' => htmlspecialchars($email),
                                 'Reason for Visit' => htmlspecialchars($reason)
                             ];
                             foreach ($details as $label => $value): ?>

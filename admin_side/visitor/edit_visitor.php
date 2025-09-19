@@ -61,7 +61,7 @@ if (!empty($admin['profile_picture'])) {
 
 // Initialize admin details
 $edit_visitor = $_GET['id'] ?? null;
-$prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $employement = $rfid = $reason = '';
+$prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $email = $employement = $rfid = $reason = '';
 
 if ($edit_visitor) {
     try {
@@ -80,6 +80,7 @@ if ($edit_visitor) {
             $sex = $admin['sex'];
             $age = $admin['age'];
             $cellphone = $admin['cellphone_number'];
+            $email = $admin['email_address'];
             $employement = $admin['employed_in_subdivision'];
             $reason = $admin['reason_for_visit'];
             $rfid = $admin['rfid'];
@@ -102,86 +103,206 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $age = $_POST['age'];
     $sex = $_POST['sex'];
     $cellphone = $_POST['cellphone'];
+    $email = $_POST['email'];
     $employment_status = $_POST['employment_status']; // Yes/No
     $reason = $_POST['reason'];
     $rfid = $_POST['rfid'];
 
     try {
-        // 2. Check if RFID already exists (excluding current visitor)
-        $rfid_check_stmt = $conn->prepare("SELECT visitor_id FROM visitor_details WHERE rfid = ? AND visitor_id != ?");
-        $rfid_check_stmt->bind_param("ss", $rfid, $edit_visitor);
-        $rfid_check_stmt->execute();
-        $rfid_result = $rfid_check_stmt->get_result();
+        // 2. Check if RFID already exists in both tables (excluding current visitor)
+        $rfid_exists = false;
+        $duplicate_source = "";
 
-        if ($rfid_result->num_rows > 0) {
-            $error = "RFID card is already registered to another household/visitor. Please use a different RFID card.";
+        // Check visitor_details table (excluding current visitor)
+        $visitor_rfid_check_stmt = $conn->prepare("SELECT visitor_id FROM visitor_details WHERE rfid = ? AND visitor_id != ?");
+        $visitor_rfid_check_stmt->bind_param("ss", $rfid, $edit_visitor);
+        $visitor_rfid_check_stmt->execute();
+        $visitor_rfid_result = $visitor_rfid_check_stmt->get_result();
+
+        if ($visitor_rfid_result->num_rows > 0) {
+            $rfid_exists = true;
+            $duplicate_source = "visitor";
+        }
+
+        // Check household_accounts table if no duplicate found in visitor_details
+        if (!$rfid_exists) {
+            $household_rfid_check_stmt = $conn->prepare("SELECT household_id FROM household_accounts WHERE rfid = ?");
+            $household_rfid_check_stmt->bind_param("s", $rfid);
+            $household_rfid_check_stmt->execute();
+            $household_rfid_result = $household_rfid_check_stmt->get_result();
+
+            if ($household_rfid_result->num_rows > 0) {
+                $rfid_exists = true;
+                $duplicate_source = "household";
+            }
+        }
+
+        if ($rfid_exists) {
+            $error = "RFID card is already registered to another " . $duplicate_source . ". Please use a different RFID card.";
         } else {
-            // 3. Check if profile picture was uploaded
-            $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
+            // 3. Handle password updates
+            $password = $_POST['password'] ?? '';
+            $confirmPassword = $_POST['confirmPassword'] ?? '';
+            $update_password = false;
+            $hashed_password = '';
 
-            if ($has_photo) {
-                $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
-
-                $sql = "UPDATE visitor_details SET 
-                    first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-                    cellphone_number=?, employed_in_subdivision=?, reason_for_visit=?, rfid=?, profile_picture=?
-                    WHERE visitor_id=?";
-
-                $stmt = $conn->prepare($sql);
-
-                $null_blob = null; // placeholder for blob
-                $stmt->bind_param(
-                    "ssssisssssbs",
-                    $first_name,
-                    $middle_name,
-                    $last_name,
-                    $dob,
-                    $age,
-                    $sex,
-                    $cellphone,
-                    $employment_status,
-                    $reason,
-                    $rfid,
-                    $null_blob, // will be replaced with send_long_data
-                    $edit_visitor
-                );
-
-                // send binary profile picture data
-                $stmt->send_long_data(10, $profile_pic); // index 10 = profile_picture
-            } else {
-                // No photo uploaded
-                $sql = "UPDATE visitor_details SET 
-                    first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-                    cellphone_number=?, employed_in_subdivision=?, reason_for_visit=?, rfid=?
-                    WHERE visitor_id=?";
-
-                $stmt = $conn->prepare($sql);
-
-                $stmt->bind_param(
-                    "ssssissssss",
-                    $first_name,
-                    $middle_name,
-                    $last_name,
-                    $dob,
-                    $age,
-                    $sex,
-                    $cellphone,
-                    $employment_status,
-                    $reason,
-                    $rfid,
-                    $edit_visitor
-                );
+            // Check if password fields have values
+            if (!empty($password) || !empty($confirmPassword)) {
+                // If either field has a value, both are required
+                if (empty($password)) {
+                    $error = "Password cannot be empty when updating password.";
+                } elseif (empty($confirmPassword)) {
+                    $error = "Please confirm your password.";
+                } elseif ($password !== $confirmPassword) {
+                    $error = "Passwords do not match.";
+                } elseif (strlen($password) < 6) {
+                    $error = "Password must be at least 6 characters long.";
+                } else {
+                    // Hash the new password
+                    $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+                    $update_password = true;
+                }
             }
 
-            // 4. Execute and check success
-            if ($stmt->execute()) {
-                $success = true;
-            } else {
-                $error = "Update failed: " . $stmt->error;
+            // Only proceed with database update if no password errors
+            if (!isset($error)) {
+                // 4. Check if profile picture was uploaded
+                $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
+
+                if ($has_photo) {
+                    // Validate file size (5MB limit)
+                    if ($_FILES['profile_pic']['size'] > 5000000) {
+                        $error = "File size too large. Please select an image smaller than 5MB.";
+                    } else {
+                        // Validate file type
+                        $file_type = $_FILES['profile_pic']['type'];
+                        $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                        if (!in_array($file_type, $allowed_types)) {
+                            $error = "Invalid file type. Please select a JPEG, PNG, or GIF image.";
+                        } else {
+                            $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
+                        }
+                    }
+                }
+
+                // Proceed with database update if no file errors
+                if (!isset($error)) {
+                    if ($has_photo && $update_password) {
+                        // Update with photo and password
+                        $sql = "UPDATE visitor_details SET 
+                        first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+                        cellphone_number=?, email_address=?, employed_in_subdivision=?, reason_for_visit=?, rfid=?, password=?, profile_picture=?
+                        WHERE visitor_id=?";
+
+                        $stmt = $conn->prepare($sql);
+                        $null_blob = null;
+                        $stmt->bind_param(
+                            "ssssisssssssbs",
+                            $first_name,
+                            $middle_name,
+                            $last_name,
+                            $dob,
+                            $age,
+                            $sex,
+                            $cellphone,
+                            $email,
+                            $employment_status,
+                            $reason,
+                            $rfid,
+                            $hashed_password,
+                            $null_blob,
+                            $edit_visitor
+                        );
+                        $stmt->send_long_data(12, $profile_pic); // index 12 = profile_picture
+
+                    } elseif ($has_photo && !$update_password) {
+                        // Update with photo only
+                        $sql = "UPDATE visitor_details SET 
+                        first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+                        cellphone_number=?, email_address=?, employed_in_subdivision=?, reason_for_visit=?, rfid=?, profile_picture=?
+                        WHERE visitor_id=?";
+
+                        $stmt = $conn->prepare($sql);
+                        $null_blob = null;
+                        $stmt->bind_param(
+                            "ssssissssssbs",
+                            $first_name,
+                            $middle_name,
+                            $last_name,
+                            $dob,
+                            $age,
+                            $sex,
+                            $cellphone,
+                            $email,
+                            $employment_status,
+                            $reason,
+                            $rfid,
+                            $null_blob,
+                            $edit_visitor
+                        );
+                        $stmt->send_long_data(11, $profile_pic); // index 11 = profile_picture
+
+                    } elseif (!$has_photo && $update_password) {
+                        // Update with password only
+                        $sql = "UPDATE visitor_details SET 
+                        first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+                        cellphone_number=?, email_address=?, employed_in_subdivision=?, reason_for_visit=?, rfid=?, password=?
+                        WHERE visitor_id=?";
+
+                        $stmt = $conn->prepare($sql);
+                        $stmt->bind_param(
+                            "ssssissssssss",
+                            $first_name,
+                            $middle_name,
+                            $last_name,
+                            $dob,
+                            $age,
+                            $sex,
+                            $cellphone,
+                            $email,
+                            $employment_status,
+                            $reason,
+                            $rfid,
+                            $hashed_password,
+                            $edit_visitor
+                        );
+
+                    } else {
+                        // Update without photo and without password
+                        $sql = "UPDATE visitor_details SET 
+                        first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+                        cellphone_number=?, email_address=?, employed_in_subdivision=?, reason_for_visit=?, rfid=?
+                        WHERE visitor_id=?";
+
+                        $stmt = $conn->prepare($sql);
+                        $stmt->bind_param(
+                            "ssssisssssss",
+                            $first_name,
+                            $middle_name,
+                            $last_name,
+                            $dob,
+                            $age,
+                            $sex,
+                            $cellphone,
+                            $email,
+                            $employment_status,
+                            $reason,
+                            $rfid,
+                            $edit_visitor
+                        );
+                    }
+
+                    // 5. Execute and check success
+                    if ($stmt->execute()) {
+                        $success = true;
+                    } else {
+                        $error = "Update failed: " . $stmt->error;
+                    }
+                }
             }
         }
     } catch (Exception $e) {
-        $error = "Error checking RFID: " . $e->getMessage();
+        $error = "Error processing request: " . $e->getMessage();
     }
 }
 
@@ -481,6 +602,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     value="<?php echo htmlspecialchars($cellphone) ?>" />
                                 <label class="form-label mt-2">Cellphone Number</label>
                             </div>
+                            <div class="col-md-4 mb-3">
+                                <input type="email" name="email" class="form-control"
+                                    value="<?php echo htmlspecialchars($email) ?>" required />
+                                <label class="form-label mt-2">Email Address</label>
+                            </div>
                         </div>
                         <!-- Reason for Visit -->
                         <span class="fw-bold mb-3">Reason for Visit</span>
@@ -553,9 +679,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <!-- Account Password -->
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold">Password</label>
+                                <label class="form-label mt-2 fw-bold">New Password</label>
                                 <div class="input-group">
-                                    <input type="password" id="password" name="password" required class="form-control"
+                                    <input type="password" id="password" name="password" class="form-control"
                                         minlength="6" />
                                     <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
                                         tabindex="-1">
@@ -568,7 +694,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="col-md-4 mb-3">
                                 <label class="form-label mt-2 fw-bold invisible">Confirm Password</label>
                                 <div class="input-group">
-                                    <input type="password" id="confirmPassword" name="confirmPassword" required
+                                    <input type="password" id="confirmPassword" name="confirmPassword"
                                         class="form-control" minlength="6" />
                                     <button type="button" class="btn btn-outline-secondary" id="togglePassword2"
                                         tabindex="-1">
@@ -576,6 +702,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </button>
                                 </div>
                                 <label class="form-label mt-2">Confirm password</label>
+                                <div id="passwordError" class="invalid-feedback"></div>
                             </div>
                         </div>
                         <!-- Submit Buttons -->
@@ -652,6 +779,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.addEventListener('DOMContentLoaded', function () {
             const form = document.querySelector('form');
 
+            // Function to show error modal
+            function showErrorModal(message) {
+                const errorMessage = document.getElementById('errorMessage');
+                if (errorMessage) {
+                    errorMessage.textContent = message;
+                }
+                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                errorModal.show();
+            }
+
+            // ====== PASSWORD VALIDATION ======
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+
+            function setupPasswordToggle(inputId, toggleButtonId, iconId) {
+                const input = document.getElementById(inputId);
+                const toggleButton = document.getElementById(toggleButtonId);
+                const icon = document.getElementById(iconId);
+
+                if (input && toggleButton && icon) {
+                    toggleButton.addEventListener('click', function () {
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            icon.classList.remove('bi-eye');
+                            icon.classList.add('bi-eye-slash');
+                        } else {
+                            input.type = 'password';
+                            icon.classList.remove('bi-eye-slash');
+                            icon.classList.add('bi-eye');
+                        }
+                    });
+                }
+            }
+
+            // Setup password toggle for both password fields
+            setupPasswordToggle('password', 'togglePassword1', 'toggleIcon1');
+            setupPasswordToggle('confirmPassword', 'togglePassword2', 'toggleIcon2');
+
+            // Password validation function
+            function validatePasswords() {
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+                const passwordError = document.getElementById('passwordError');
+
+                // Remove existing error styling
+                passwordInput.classList.remove('is-invalid');
+                confirmPasswordInput.classList.remove('is-invalid');
+                if (passwordError) {
+                    passwordError.textContent = '';
+                }
+
+                // Only validate if both fields have values
+                if (password && confirmPassword) {
+                    if (password !== confirmPassword) {
+                        // Add error styling
+                        confirmPasswordInput.classList.add('is-invalid');
+                        passwordError.textContent = 'Passwords do not match';
+                        passwordError.style.display = 'block';
+                        return false;
+                    }
+                    if (password.length < 6) {
+                        passwordInput.classList.add('is-invalid');
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            // Real-time password validation
+            if (passwordInput && confirmPasswordInput) {
+                passwordInput.addEventListener('input', validatePasswords);
+                confirmPasswordInput.addEventListener('input', function () {
+                    if (passwordInput.value !== '') {
+                        validatePasswords();
+                    }
+                });
+            }
+
             // ====== RFID INPUT HANDLING ======
             const rfidInput = document.getElementById('rfidInput');
             if (rfidInput) {
@@ -696,16 +901,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (dobInput && ageInput) {
                 dobInput.addEventListener('change', function () {
-                    const dob = new Date(this.value);
-                    const today = new Date();
-                    let age = today.getFullYear() - dob.getFullYear();
-                    const monthDiff = today.getMonth() - dob.getMonth();
+                    if (this.value) {
+                        const dob = new Date(this.value);
+                        const today = new Date();
 
-                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-                        age--;
+                        // Check if date is valid and not in the future
+                        if (dob > today) {
+                            showErrorModal('Date of birth cannot be in the future.');
+                            this.value = '';
+                            ageInput.value = '';
+                            return;
+                        }
+
+                        let age = today.getFullYear() - dob.getFullYear();
+                        const monthDiff = today.getMonth() - dob.getMonth();
+
+                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                            age--;
+                        }
+
+                        // Ensure age is reasonable (0-120)
+                        if (age < 0 || age > 120) {
+                            showErrorModal('Please enter a valid date of birth.');
+                            this.value = '';
+                            ageInput.value = '';
+                            return;
+                        }
+
+                        ageInput.value = age;
+                    } else {
+                        ageInput.value = '';
                     }
-
-                    ageInput.value = age;
                 });
             }
 
@@ -716,7 +942,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (profilePicInput && preview) {
                 profilePicInput.addEventListener('change', function (event) {
                     const file = event.target.files[0];
-                    if (file && file.type.startsWith('image/')) {
+                    if (file) {
+                        // Validate file size (5MB limit)
+                        if (file.size > 5000000) {
+                            showErrorModal('File size too large. Please select an image smaller than 5MB.');
+                            this.value = ''; // Clear the input
+                            preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
+                            return;
+                        }
+
+                        // Validate file type
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                        if (!allowedTypes.includes(file.type)) {
+                            showErrorModal('Invalid file type. Please select a JPEG, PNG, or GIF image.');
+                            this.value = ''; // Clear the input
+                            preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
+                            return;
+                        }
+
                         const reader = new FileReader();
                         reader.onload = function (e) {
                             preview.innerHTML = `<img src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover;">`;
@@ -791,6 +1034,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // ====== FINAL VALIDATION ON SUBMIT ======
             if (form) {
                 form.addEventListener('submit', function (e) {
+                    // Validate date of birth
+                    const dobInput = document.querySelector('input[name="dob"]');
+                    if (!dobInput.value) {
+                        e.preventDefault();
+                        showErrorModal('Please select a date of birth.');
+                        dobInput.focus();
+                        return false;
+                    }
+
+                    // Check if date is not in the future
+                    const selectedDate = new Date(dobInput.value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+
+                    if (selectedDate > today) {
+                        e.preventDefault();
+                        showErrorModal('Date of birth cannot be in the future.');
+                        dobInput.focus();
+                        return false;
+                    }
+
                     const isNo = radioNo && radioNo.checked;
                     const isYes = radioYes && radioYes.checked;
                     const reasonNoSelected = reasonNo && reasonNo.value !== '';
@@ -799,18 +1063,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     let valid = true;
 
                     if (!isNo && !isYes) {
-                        alert("Please select if you're employed by the subdivision.");
+                        showErrorModal("Please select if you're employed by the subdivision.");
+                        e.preventDefault();
                         valid = false;
+                        return false;
                     } else if (isNo && !reasonNoSelected) {
-                        alert("Please select a reason under 'No'.");
+                        showErrorModal("Please select a reason under 'No'.");
+                        e.preventDefault();
                         valid = false;
+                        return false;
                     } else if (isYes && !reasonYesSelected) {
-                        alert("Please select a reason under 'Yes'.");
+                        showErrorModal("Please select a reason under 'Yes'.");
+                        e.preventDefault();
                         valid = false;
+                        return false;
                     }
 
-                    if (!valid) e.preventDefault();
-                    else console.log('Form is being submitted via Save button');
+                    // Validate passwords only if they're filled
+                    const password = passwordInput.value;
+                    const confirmPassword = confirmPasswordInput.value;
+
+                    if (password || confirmPassword) {
+                        if (password === '') {
+                            showErrorModal('Password cannot be empty when updating password.');
+                            e.preventDefault();
+                            return false;
+                        }
+                        if (confirmPassword === '') {
+                            showErrorModal('Please confirm your password.');
+                            e.preventDefault();
+                            return false;
+                        }
+                        if (!validatePasswords()) {
+                            showErrorModal('Passwords do not match. Please ensure both password fields are identical.');
+                            e.preventDefault();
+                            return false;
+                        }
+                        if (password.length < 6) {
+                            showErrorModal('Password must be at least 6 characters long.');
+                            e.preventDefault();
+                            return false;
+                        }
+                    }
+
+                    if (valid) {
+                        console.log('Form is being submitted via Save button');
+                    }
                 });
             }
         });
