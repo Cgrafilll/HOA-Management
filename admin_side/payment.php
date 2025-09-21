@@ -263,7 +263,7 @@ if (isset($_GET['action'])) {
                         'amount' => number_format($amount, 2)
                     ];
                     
-                    // Add chairs if any
+                    // Add chairs if any exist
                     if ($booking['chairs'] > 0) {
                         $chairRate = 12.00; // Fixed rate: ₱12 per chair
                         $items[] = [
