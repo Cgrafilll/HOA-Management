@@ -59,6 +59,76 @@ if (!empty($visitor['profile_picture'])) {
     $photo = ''; // Explicitly empty if no image is saved
 }
 
+// Fetch announcements
+$announcements_sql = "SELECT a.id, a.title, a.body, a.status, a.created_at, 
+                             ad.first_name, ad.last_name 
+                      FROM announcements a 
+                      LEFT JOIN admin_accounts ad ON a.admin_id = ad.admin_id 
+                      WHERE a.status = 'published' 
+                      ORDER BY a.created_at DESC";
+$announcements_result = $conn->query($announcements_sql);
+
+// Fetch events from database
+$events_sql = "SELECT e.id, e.title, e.body, e.status, e.event_date, e.created_at, 
+                      ad.first_name, ad.last_name 
+               FROM events e 
+               LEFT JOIN admin_accounts ad ON e.admin_id = ad.admin_id 
+               WHERE e.status = 'published' 
+               ORDER BY e.event_date ASC, e.created_at DESC";
+
+$events_result = $conn->query($events_sql);
+
+// ✅ SIMPLIFIED BOOKING PAGINATION - Only for this household
+$limit = 10;
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
+$offset = ($page - 1) * $limit;
+
+// Get total records count for this homeowner
+$totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE visitor_id = ?";
+$totalStmt = $conn->prepare($totalQuery);
+$totalStmt->bind_param("s", $visitor_id);
+$totalStmt->execute();
+$totalResult = $totalStmt->get_result();
+$totalRow = $totalResult->fetch_assoc();
+$totalRecords = $totalRow['total'];
+$totalPages = ceil($totalRecords / $limit);
+
+// ✅ SIMPLIFIED BOOKING QUERY - Only fetch what we need for this homeowner
+$booking_sql = "SELECT 
+    ab.id,
+    ab.reservation_code,
+    ab.amenity,
+    ab.user_type,
+    ab.reservation_date,
+    ab.status,
+    ab.created_at,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.first_name
+        WHEN ab.user_type = 'visitor' THEN vd.first_name
+        ELSE NULL
+    END as first_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.middle_name
+        WHEN ab.user_type = 'visitor' THEN vd.middle_name
+        ELSE NULL
+    END as middle_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.last_name
+        WHEN ab.user_type = 'visitor' THEN vd.last_name
+        ELSE NULL
+    END as last_name
+FROM amenity_bookings ab
+LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+WHERE ab.homeowner_id = ? 
+ORDER BY ab.reservation_date DESC 
+LIMIT ? OFFSET ?";
+
+$bookings_stmt = $conn->prepare($booking_sql);
+$bookings_stmt->bind_param("sii", $visitor_id, $limit, $offset);
+$bookings_stmt->execute();
+$bookings_result = $bookings_stmt->get_result();
+
 ?>
 
 <!DOCTYPE html>
@@ -197,9 +267,6 @@ if (!empty($visitor['profile_picture'])) {
                 <a href="amenity_booking/amenity_booking.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
-                </a>
-                <a href="report.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
-                    <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
                 <!-- Accounting -->
                 <div>

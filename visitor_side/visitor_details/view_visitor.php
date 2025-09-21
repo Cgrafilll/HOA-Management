@@ -229,75 +229,32 @@ if ($view_visitor) {
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1">
-                <a href="../admin_dashboard.php"
+            <nav class="nav d-flex flex-column gap-1">
+                <a href="../dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                <!-- Accounts -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#accountsCollapse" aria-expanded="true">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-person-lines-fill me-2"></i> Accounts
-                        </span>
-                    </button>
-                    <div class="collapse show" id="accountsCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../admin_accounts.php" class="nav-link px-2">Admin</a></li>
-                            <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
-                            <li><a href="../visitor_accounts.php" class="nav-link px-2 actived">Visitors</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <!-- Record Keeping -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#recordCollapse" aria-expanded="false">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-book me-2"></i> Record Keeping
-                        </span>
-                    </button>
-                    <div class="collapse" id="recordCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
-                            <li><a href="../violation_tracking.php" class="nav-link px-2">Violation Tracking</a></li>
-                            <li><a href="../entry_logs.php" class="nav-link px-2">Entry Logs</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <!-- Communication -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#commCollapse" aria-expanded="false">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-chat-left-text me-2"></i> Communication
-                        </span>
-                    </button>
-                    <div class="collapse" id="commCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../announcements.php" class="nav-link px-2">Announcements</a></li>
-                            <li><a href="../events.php" class="nav-link px-2">Events</a></li>
-                            <li><a href="../phonebook.php" class="nav-link px-2">Phone Book</a></li>
-                        </ul>
-                    </div>
-                </div>
+                <a href="../amenity_booking.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-book me-2"></i> Amenity Booking
+                </a>
                 <!-- Accounting -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#acctCollapse" aria-expanded="false">
+                    <button
+                        class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start"
+                        data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-cash-coin me-2"></i> Accounting
                         </span>
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../payment.php" class="nav-link px-2">Payments</a></li>
-                            <li><a href="../invoice.php" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="#" class="nav-link px-2">Payments</a></li>
+                            <li><a href="#" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
-                <a href="../login/logout.php"
+                <a href="../logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
                     style="position: fixed; bottom: 0; width: 220px;">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
@@ -314,9 +271,13 @@ if ($view_visitor) {
                 <!-- Subheader + Back -->
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <span class="small">User Details</span>
-                    <a href="../visitor_accounts.php" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-arrow-left me-1"></i>Back
-                    </a>
+                    <div>
+                        <button onclick="history.back()" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>Back
+                        </button>
+                        <a class="btn btn-primary btn-sm" href="edit_visitor.php?id=<?php echo $view_visitor; ?>">Edit
+                            Details</a>
+                    </div>
                 </div>
                 <hr class="my-0">
                 <!-- Content -->
