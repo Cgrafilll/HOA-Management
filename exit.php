@@ -144,11 +144,11 @@
         <aside class="sidebar p-3">
             <nav class="nav d-flex flex-column gap-1">
                 <a href="index.php"
-                    class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i>Entry Monitoring
                 </a>
                 <a href="exit.php"
-                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
                     <i class="bi bi-sign-turn-left me-2"></i>Exit Monitoring
                 </a>
                 <a href="amenity.php"

@@ -188,87 +188,6 @@ while ($row = $calendar_result->fetch_assoc()) {
             padding: 30px;
         }
 
-        .log-entry {
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .rfid-input {
-            font-size: 1.2rem;
-            padding: 15px;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-        }
-
-        .rfid-input:focus {
-            border-color: #198754;
-            box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
-        }
-
-        .scan-logs {
-            max-height: 400px;
-            overflow-y: auto;
-            scroll-behavior: smooth;
-        }
-
-        .user-details {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        /* Enhanced scrollbar styling */
-        .scan-logs::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .scan-logs::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-
-        .scan-logs::-webkit-scrollbar-thumb {
-            background: #198754;
-            border-radius: 4px;
-        }
-
-        .scan-logs::-webkit-scrollbar-thumb:hover {
-            background: #157347;
-        }
-
-        /* Auto-scroll indicator */
-        .scroll-indicator {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(25, 135, 84, 0.8);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-        }
-
-        .scroll-indicator.show {
-            opacity: 1;
-        }
-
-        .logs-container {
-            position: relative;
-        }
-
         .calendar-container {
             background: white;
             border-radius: 8px;
@@ -377,7 +296,10 @@ while ($row = $calendar_result->fetch_assoc()) {
         <aside class="sidebar p-3">
             <nav class="nav d-flex flex-column gap-1">
                 <a href="index.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
-                    <i class="bi bi-house me-2"></i>Home / Scanner
+                    <i class="bi bi-house me-2"></i>Entry Monitoring
+                </a>
+                <a href="exit.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-sign-turn-left me-2"></i>Exit Monitoring
                 </a>
                 <a href="amenity.php"
                     class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
