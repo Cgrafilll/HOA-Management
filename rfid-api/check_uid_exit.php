@@ -30,7 +30,7 @@ try {
         }
 
         // ✅ Generate new exit_id for logging
-        $result = $conn->query("SELECT exit_id FROM exit_logs WHERE exit_id LIKE 'ENT-%' ORDER BY exit_id DESC LIMIT 1");
+        $result = $conn->query("SELECT exit_id FROM exit_logs WHERE exit_id LIKE 'EXI-%' ORDER BY exit_id DESC LIMIT 1");
         if ($result && $exitRow = $result->fetch_assoc()) {
             $last_id = intval(substr($exitRow['exit_id'], 4)); // extract numeric part after 'EXI-'
             $new_id_number = $last_id + 1;
@@ -77,7 +77,7 @@ try {
         }
 
         // ✅ Generate new exit_id for logging
-        $result = $conn->query("SELECT exit_id FROM exit_logs WHERE exit_id LIKE 'ENT-%' ORDER BY exit_id DESC LIMIT 1");
+        $result = $conn->query("SELECT exit_id FROM exit_logs WHERE exit_id LIKE 'EXI-%' ORDER BY exit_id DESC LIMIT 1");
         if ($result && $exitRow = $result->fetch_assoc()) {
             $last_id = intval(substr($exitRow['exit_id'], 4)); // extract numeric part after 'EXI-'
             $new_id_number = $last_id + 1;
