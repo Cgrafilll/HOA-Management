@@ -147,8 +147,7 @@
                     class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i>Entry Monitoring
                 </a>
-                <a href="exit.php"
-                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                <a href="exit.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-sign-turn-left me-2"></i>Exit Monitoring
                 </a>
                 <a href="amenity.php"
@@ -180,7 +179,7 @@
 
                         <!-- Gate Status -->
                         <div id="gateStatus" class="alert alert-secondary border mt-3" role="alert">
-                            <i class="bi bi-door-closed me-2"></i>Gate Status: <strong>CLOSED</strong>
+                            <i class="bi bi-door-closed me-2"></i>Gate 1 Status: <strong>CLOSED</strong>
                         </div>
 
                         <!-- Gate Status Info -->
@@ -447,7 +446,7 @@
             fetch('rfid-api/open_gate.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'action=' + encodeURIComponent(action)
+                body: 'action=' + encodeURIComponent(action) + '&gate=1' // Gate 1 for Entry
             })
                 .then(res => res.json())
                 .then(data => {
@@ -457,10 +456,10 @@
                         const icon = isOpen ? 'bi-door-open' : 'bi-door-closed';
                         const alertClass = isOpen ? 'alert-success' : 'alert-secondary';
 
-                        gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate Status: <strong>${data.gate}</strong>`;
+                        gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate 1 Status: <strong>${data.gate}</strong>`;
                         gateStatus.className = `alert ${alertClass} border mt-3`;
                     } else {
-                        gateStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>Gate Status: <strong>Error</strong>`;
+                        gateStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>Gate 1 Status: <strong>Error</strong>`;
                         gateStatus.className = 'alert alert-danger border mt-3';
                     }
                 })
@@ -476,7 +475,7 @@
             const icon = isOpen ? 'bi-door-open' : 'bi-door-closed';
             const alertClass = isOpen ? 'alert-success' : 'alert-secondary';
 
-            gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate Status: <strong>${status}</strong>`;
+            gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate 1 Status: <strong>${status}</strong>`;
             gateStatus.className = `alert ${alertClass} border mt-3`;
         }
 

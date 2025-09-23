@@ -143,8 +143,7 @@
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav d-flex flex-column gap-1">
-                <a href="index.php"
-                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                <a href="index.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i>Entry Monitoring
                 </a>
                 <a href="exit.php"
@@ -180,9 +179,9 @@
 
                         <!-- Gate Status -->
                         <div id="gateStatus" class="alert alert-secondary border mt-3" role="alert">
-                            <i class="bi bi-door-closed me-2"></i>Gate Status: <strong>CLOSED</strong>
+                            <i class="bi bi-door-closed me-2"></i>Gate 2 Status: <strong>CLOSED</strong>
                         </div>
-
+                        
                         <!-- Gate Status Info -->
                         <div class="alert alert-info border-0 mt-2">
                             <i class="bi bi-info-circle me-2"></i>
@@ -280,7 +279,7 @@
             addToScanLog(uid, 'Checking...', 'text-secondary');
 
             // Check UID against database
-            fetch('rfid-api/check_uid.php', {
+            fetch('rfid-api/check_uid_exit.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'uid=' + encodeURIComponent(uid)
@@ -447,7 +446,7 @@
             fetch('rfid-api/open_gate.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'action=' + encodeURIComponent(action)
+                body: 'action=' + encodeURIComponent(action) + '&gate=2' // Gate 2 for Exit
             })
                 .then(res => res.json())
                 .then(data => {
@@ -457,10 +456,10 @@
                         const icon = isOpen ? 'bi-door-open' : 'bi-door-closed';
                         const alertClass = isOpen ? 'alert-success' : 'alert-secondary';
 
-                        gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate Status: <strong>${data.gate}</strong>`;
+                        gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate 2 Status: <strong>${data.gate}</strong>`;
                         gateStatus.className = `alert ${alertClass} border mt-3`;
                     } else {
-                        gateStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>Gate Status: <strong>Error</strong>`;
+                        gateStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>Gate 2 Status: <strong>Error</strong>`;
                         gateStatus.className = 'alert alert-danger border mt-3';
                     }
                 })
@@ -476,7 +475,7 @@
             const icon = isOpen ? 'bi-door-open' : 'bi-door-closed';
             const alertClass = isOpen ? 'alert-success' : 'alert-secondary';
 
-            gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate Status: <strong>${status}</strong>`;
+            gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate 2 Status: <strong>${status}</strong>`;
             gateStatus.className = `alert ${alertClass} border mt-3`;
         }
 
