@@ -308,14 +308,94 @@ if (isset($_GET['action'])) {
                 }
                 break;
                 
+            case 'get_monthly_dues_by_invoice':
+                $invoice_number = $_GET['invoice_number'] ?? '';
+                $user_id = $_GET['user_id'] ?? '';
+                $user_type = $_GET['user_type'] ?? '';
+                
+                if (empty($invoice_number) || empty($user_id) || empty($user_type)) {
+                    echo json_encode(['success' => false, 'error' => 'Missing required parameters']);
+                    exit;
+                }
+                
+                // Monthly dues only apply to homeowners/residents
+                if ($user_type !== 'Homeowner/Resident') {
+                    echo json_encode(['success' => false, 'error' => 'Monthly dues only apply to homeowners/residents']);
+                    exit;
+                }
+                
+                // Get user details
+                $stmt = $conn->prepare("SELECT first_name, middle_name, last_name FROM household_accounts WHERE household_id = ?");
+                $stmt->bind_param("s", $user_id);
+                $stmt->execute();
+                $user_data = $stmt->get_result()->fetch_assoc();
+                
+                // Get monthly dues details
+                $stmt = $conn->prepare("
+                    SELECT 
+                        invoice_number,
+                        billing_month,
+                        amount_paid,
+                        balance_remaining,
+                        due_date,
+                        status
+                    FROM monthly_dues 
+                    WHERE household_id = ? AND invoice_number = ?
+                    LIMIT 1
+                ");
+                $stmt->bind_param("ss", $user_id, $invoice_number);
+                $stmt->execute();
+                $dues = $stmt->get_result()->fetch_assoc();
+                
+                if ($dues && $user_data) {
+                    // Calculate total amount (amount_paid + balance_remaining)
+                    $total_amount = $dues['amount_paid'] + $dues['balance_remaining'];
+                    
+                    // Build items array for table population
+                    $items = [];
+                    
+                    // Format billing month for display
+                    $billing_month = date('F Y', strtotime($dues['billing_month']));
+                    
+                    // Main monthly dues item
+                    $items[] = [
+                        'category' => 'Monthly Dues',
+                        'item' => "Association Dues - {$billing_month}",
+                        'rate' => number_format($total_amount, 2),
+                        'qty' => 1,
+                        'amount' => number_format($total_amount, 2)
+                    ];
+                    
+                    echo json_encode([
+                        'success' => true,
+                        'data' => [
+                            'reference_number' => $invoice_number, // Using invoice_number as reference
+                            'first_name' => $user_data['first_name'],
+                            'middle_name' => $user_data['middle_name'],
+                            'last_name' => $user_data['last_name'],
+                            'created_at' => $dues['due_date'], // Using due_date as created_at equivalent
+                            'billing_month' => $dues['billing_month'],
+                            'items' => $items,
+                            'subtotal' => number_format($total_amount, 2),
+                            'amount_paid' => number_format($dues['amount_paid'], 2),
+                            'balance_due' => number_format($dues['balance_remaining'], 2),
+                            'status' => $dues['status']
+                        ]
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'error' => 'No monthly dues record found']);
+                }
+                break;
+                
             default:
                 echo json_encode(['success' => false, 'error' => 'Invalid action']);
         }
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
-    exit;
+    exit; // THIS IS CRUCIAL - prevents HTML from being sent with AJAX responses
 }
+            
 ?>
 <!DOCTYPE html>
 <html lang="en">

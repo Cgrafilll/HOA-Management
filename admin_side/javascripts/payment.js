@@ -74,15 +74,21 @@ class PaymentManager {
     handleCategoryChange() {
         const selectedCategory = this.categorySelect.value;
         
-        // Clear table if not Amenity Fee
-        if (selectedCategory !== 'Amenity Fee') {
+        // Clear table if not Amenity Fee or Monthly Dues
+        if (selectedCategory !== 'Amenity Fee' && selectedCategory !== 'Monthly Dues') {
             this.clearInvoiceTable();
             this.refNo.textContent = "";
             this.residentName.textContent = "";
             this.issueDate.textContent = "";
         } else if (this.invoiceInput.value) {
-            // If switching to Amenity Fee and invoice exists, fetch details
+            // If switching to Amenity Fee or Monthly Dues and invoice exists, fetch details
             this.fetchInvoiceDetails();
+        }
+        
+        // Show validation message if Monthly Dues is selected but user type is Visitor
+        if (selectedCategory === 'Monthly Dues' && this.userTypeSelect.value === 'Visitor') {
+            this.refNo.textContent = "Monthly dues only apply to homeowners/residents";
+            this.clearInvoiceTable();
         }
     }
 
@@ -177,11 +183,26 @@ class PaymentManager {
         this.issueDate.textContent = "";
         this.clearInvoiceTable();
         
-        // Only fetch for Amenity Fee category
-        if (selectedCategory === "Amenity Fee" && invoiceNumber && userId && userType) {
+        // Only fetch for Amenity Fee or Monthly Dues categories
+        if ((selectedCategory === "Amenity Fee" || selectedCategory === "Monthly Dues") && invoiceNumber && userId && userType) {
+            
+            // Validate Monthly Dues is only for homeowners/residents
+            if (selectedCategory === "Monthly Dues" && userType !== "Homeowner/Resident") {
+                this.refNo.textContent = "Monthly dues only apply to homeowners/residents";
+                this.invoiceInput.style.borderColor = '#dc3545';
+                this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+                this.clearInvoiceTable();
+                return;
+            }
+            
             try {
+                // Determine which endpoint to use
+                const action = selectedCategory === "Amenity Fee" 
+                    ? 'get_amenity_booking_by_invoice' 
+                    : 'get_monthly_dues_by_invoice';
+                    
                 const params = new URLSearchParams({
-                    action: 'get_amenity_booking_by_invoice',
+                    action: action,
                     invoice_number: invoiceNumber,
                     user_id: userId,
                     user_type: userType
@@ -199,6 +220,15 @@ class PaymentManager {
                     this.residentName.textContent = `${data.first_name} ${data.middle_name} ${data.last_name}`;
                     this.issueDate.textContent = new Date(data.created_at).toLocaleDateString();
                     
+                    // For Monthly Dues, also show billing month if available
+                    if (selectedCategory === "Monthly Dues" && data.billing_month) {
+                        const billingMonth = new Date(data.billing_month).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long' 
+                        });
+                        this.issueDate.textContent += ` (${billingMonth})`;
+                    }
+                    
                     // Populate table
                     this.populateInvoiceTable(data.items);
                     
@@ -207,25 +237,27 @@ class PaymentManager {
                     this.previouslyPaid.textContent = `₱${data.amount_paid}`;
                     this.balanceDue.textContent = `₱${data.balance_due}`;
                     
-                    // Add status indicator if partially paid
+                    // Add status indicator
                     if (data.status === 'Partial') {
                         this.balanceDue.parentElement.classList.add('text-warning');
                         this.balanceDue.parentElement.classList.remove('text-success');
-                    } else if (data.status === 'Paid') {
+                    } else if (data.status === 'Paid' || data.status === 'Completed') {
                         this.balanceDue.parentElement.classList.add('text-success');
                         this.balanceDue.parentElement.classList.remove('text-warning');
+                    } else {
+                        this.balanceDue.parentElement.classList.remove('text-success', 'text-warning');
                     }
                     
                     this.invoiceInput.style.borderColor = '#198754';
                     this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
                 } else {
-                    this.refNo.textContent = "Invoice not found";
+                    this.refNo.textContent = result.error || "Invoice not found";
                     this.invoiceInput.style.borderColor = '#dc3545';
                     this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
                     this.clearInvoiceTable();
                 }
             } catch (error) {
-                console.error('Error fetching amenity booking:', error);
+                console.error('Error fetching invoice details:', error);
                 this.refNo.textContent = "Error loading";
                 this.invoiceInput.style.borderColor = '#dc3545';
                 this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
@@ -401,6 +433,7 @@ class PaymentManager {
         this.filePreview.innerHTML = '';
     }
 
+    // Update the handleSubmit validation for Monthly Dues:
     handleSubmit(e) {
         e.preventDefault();
         
@@ -434,10 +467,10 @@ class PaymentManager {
             return;
         }
         
-        // Additional validation for Amenity Fee payments
-        if (this.categorySelect.value === 'Amenity Fee') {
+        // Additional validation for Amenity Fee and Monthly Dues payments
+        if (this.categorySelect.value === 'Amenity Fee' || this.categorySelect.value === 'Monthly Dues') {
             if (!this.currentInvoiceData) {
-                alert('Please enter a valid invoice number for Amenity Fee payments');
+                alert(`Please enter a valid invoice number for ${this.categorySelect.value} payments`);
                 return;
             }
             
