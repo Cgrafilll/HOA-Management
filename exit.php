@@ -243,9 +243,9 @@
     </main>
 
     <script>
-        let autoCloseTimer = null;
         let logUpdateInterval = null;
         let scrollTimeout = null;
+        let statusPollingInterval = null;
 
         // Focus on RFID input when page loads
         document.addEventListener('DOMContentLoaded', function () {
@@ -253,6 +253,7 @@
             loadScanLogs();
             startAutoLogUpdate();
             setupScrollDetection();
+            startStatusPolling();
         });
 
         // Handle RFID input
@@ -308,7 +309,7 @@
                         updateScanLog(uid, statusText, statusClass, data.full_name);
                         displayUserDetails(data);
                         triggerGate('open');
-                        resetAutoClose();
+                        // Arduino handles auto-closing - no resetAutoClose needed
                     } else {
                         updateScanLog(uid, 'Not Registered', 'text-danger', 'Unknown Card');
                         clearUserDetails();
@@ -338,17 +339,17 @@
             logEntry.dataset.timestamp = Date.now();
 
             logEntry.innerHTML = `
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="fw-bold">UID: ${uid}</div>
-                        <div class="scan-name text-muted">Name: Checking...</div>
-                    </div>
-                    <div class="text-end">
-                        <div><span class="badge scan-status ${statusClass.replace('text-', 'bg-')}">${status}</span></div>
-                        <div class="text-muted small mt-1">${new Date().toLocaleTimeString()}</div>
-                    </div>
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="fw-bold">UID: ${uid}</div>
+                    <div class="scan-name text-muted">Name: Checking...</div>
                 </div>
-            `;
+                <div class="text-end">
+                    <div><span class="badge scan-status ${statusClass.replace('text-', 'bg-')}">${status}</span></div>
+                    <div class="text-muted small mt-1">${new Date().toLocaleTimeString()}</div>
+                </div>
+            </div>
+        `;
 
             // Add new entry at the top
             scanEntries.insertBefore(logEntry, scanEntries.firstChild);
@@ -391,74 +392,73 @@
             let profileImageHtml = '';
             if (data.profile_picture && data.profile_picture.trim() !== '') {
                 profileImageHtml = `
-                    <img src="${data.profile_picture}" 
-                         class="border border-2 rounded mb-3" 
-                         style="width: 150px; height: 150px; object-fit: cover;"
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                         alt="Profile Picture">
-                    <div class="d-none justify-content-center align-items-center border border-2 rounded mb-3" 
-                         style="width: 150px; height: 150px; margin: 0 auto;">
-                        <i class="bi bi-person" style="font-size: 4rem; color: #ccc;"></i>
-                    </div>
-                `;
+                <img src="${data.profile_picture}" 
+                     class="border border-2 rounded mb-3" 
+                     style="width: 150px; height: 150px; object-fit: cover;"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                     alt="Profile Picture">
+                <div class="d-none justify-content-center align-items-center border border-2 rounded mb-3" 
+                     style="width: 150px; height: 150px; margin: 0 auto;">
+                    <i class="bi bi-person" style="font-size: 4rem; color: #ccc;"></i>
+                </div>
+            `;
             } else {
                 profileImageHtml = `
-                    <div class="d-flex justify-content-center align-items-center border border-2 rounded mb-3" 
-                         style="width: 150px; height: 150px; margin: 0 auto;">
-                        <i class="bi bi-person" style="font-size: 4rem; color: #ccc;"></i>
-                    </div>
-                `;
+                <div class="d-flex justify-content-center align-items-center border border-2 rounded mb-3" 
+                     style="width: 150px; height: 150px; margin: 0 auto;">
+                    <i class="bi bi-person" style="font-size: 4rem; color: #ccc;"></i>
+                </div>
+            `;
             }
 
             userDetailsSection.innerHTML = `
-                <div class="row">
-                    <div class="col-md-3 d-flex flex-column align-items-center justify-content-center">
-                        ${profileImageHtml}
-                        <span class="badge ${roleClass.replace('text-', 'bg-')} fs-6">${roleText}</span>
-                    </div>
-                    <div class="col-md-9">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Full Name:</label>
-                                <div class="form-control-plaintext">${data.full_name}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">RFID:</label>
-                                <div class="form-control-plaintext">${data.rfid}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">First Name:</label>
-                                <div class="form-control-plaintext">${data.first_name}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Middle Name:</label>
-                                <div class="form-control-plaintext">${data.middle_name || 'N/A'}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Last Name:</label>
-                                <div class="form-control-plaintext">${data.last_name}</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Type:</label>
-                                <div class="form-control-plaintext">${roleText}</div>
-                            </div>
+            <div class="row">
+                <div class="col-md-3 d-flex flex-column align-items-center justify-content-center">
+                    ${profileImageHtml}
+                    <span class="badge ${roleClass.replace('text-', 'bg-')} fs-6">${roleText}</span>
+                </div>
+                <div class="col-md-9">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Full Name:</label>
+                            <div class="form-control-plaintext">${data.full_name}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">RFID:</label>
+                            <div class="form-control-plaintext">${data.rfid}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">First Name:</label>
+                            <div class="form-control-plaintext">${data.first_name}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Middle Name:</label>
+                            <div class="form-control-plaintext">${data.middle_name || 'N/A'}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Last Name:</label>
+                            <div class="form-control-plaintext">${data.last_name}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Type:</label>
+                            <div class="form-control-plaintext">${roleText}</div>
                         </div>
                     </div>
                 </div>
-            `;
+            </div>
+        `;
         }
 
         function clearUserDetails() {
             document.getElementById('userDetailsSection').innerHTML = `
-                <div class="text-center text-muted py-5">
-                    <i class="bi bi-person-circle" style="font-size: 4rem;"></i>
-                    <div class="mt-3">User not found in database</div>
-                </div>
-            `;
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-person-circle" style="font-size: 4rem;"></i>
+                <div class="mt-3">User not found in database</div>
+            </div>
+        `;
         }
 
         function triggerGate(action) {
-
             console.log("Sending command:", action, "for gate 2"); // Debug line
 
             fetch('rfid-api/open_gate.php', {
@@ -468,40 +468,90 @@
             })
                 .then(res => res.json())
                 .then(data => {
-                    const gateStatus = document.getElementById('gateStatus');
-                    if (data.status === 'success') {
-                        const isOpen = data.gate === 'OPEN';
-                        const icon = isOpen ? 'bi-door-open' : 'bi-door-closed';
-                        const alertClass = isOpen ? 'alert-success' : 'alert-secondary';
-
-                        gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate 2 Status: <strong>${data.gate}</strong>`;
-                        gateStatus.className = `alert ${alertClass} border mt-3`;
-                    } else {
-                        gateStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>Gate 2 Status: <strong>Error</strong>`;
-                        gateStatus.className = 'alert alert-danger border mt-3';
-                    }
+                    console.log("Arduino response:", data.arduino_response); // Debug line
+                    updateGateStatusFromArduino(data);
                 })
                 .catch(err => {
                     console.error('Gate trigger error:', err);
-                    updateGateDisplay(action === 'open' ? 'OPEN' : 'CLOSED');
+                    updateGateDisplay('ERROR');
                 });
+        }
+
+        function updateGateStatusFromArduino(data) {
+            if (data.status === 'success') {
+                // Parse Arduino response for actual gate state
+                const response = data.arduino_response || '';
+                let currentStatus = 'UNKNOWN';
+
+                if (response.includes('Gate2 opened') || response.includes('SUCCESS: Gate2 opened')) {
+                    currentStatus = 'OPEN';
+                } else if (response.includes('Gate2 closed') || response.includes('SUCCESS: Gate2 closed')) {
+                    currentStatus = 'CLOSED';
+                } else if (response.includes('already open')) {
+                    currentStatus = 'OPEN';
+                } else if (response.includes('already closed')) {
+                    currentStatus = 'CLOSED';
+                } else if (data.gate && data.gate !== 'UNKNOWN') {
+                    currentStatus = data.gate;
+                }
+
+                updateGateDisplay(currentStatus);
+            } else {
+                updateGateDisplay('ERROR');
+            }
         }
 
         function updateGateDisplay(status) {
             const gateStatus = document.getElementById('gateStatus');
-            const isOpen = status === 'OPEN';
-            const icon = isOpen ? 'bi-door-open' : 'bi-door-closed';
-            const alertClass = isOpen ? 'alert-success' : 'alert-secondary';
+
+            let icon, alertClass;
+
+            switch (status) {
+                case 'OPEN':
+                    icon = 'bi-door-open';
+                    alertClass = 'alert-success';
+                    break;
+                case 'CLOSED':
+                    icon = 'bi-door-closed';
+                    alertClass = 'alert-secondary';
+                    break;
+                case 'ERROR':
+                    icon = 'bi-exclamation-triangle';
+                    alertClass = 'alert-danger';
+                    break;
+                default:
+                    icon = 'bi-question-circle';
+                    alertClass = 'alert-warning';
+                    status = 'UNKNOWN';
+            }
 
             gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate 2 Status: <strong>${status}</strong>`;
             gateStatus.className = `alert ${alertClass} border mt-3`;
         }
 
-        function resetAutoClose() {
-            if (autoCloseTimer) clearTimeout(autoCloseTimer);
-            autoCloseTimer = setTimeout(() => {
-                triggerGate('close');
-            }, 5000); // 5 seconds
+        // ADD THESE FUNCTIONS HERE
+        function startStatusPolling() {
+            // Poll Arduino status every 2 seconds
+            statusPollingInterval = setInterval(() => {
+                pollArduinoStatus();
+            }, 2000);
+        }
+
+        function pollArduinoStatus() {
+            fetch('rfid-api/get_gate_status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'gate=2' // Check Gate 2 status
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        updateGateStatusFromArduino(data);
+                    }
+                })
+                .catch(err => {
+                    console.error('Status polling error:', err);
+                });
         }
 
         function loadScanLogs() {
@@ -523,17 +573,17 @@
                             logEntry.dataset.timestamp = new Date(log.date_created).getTime();
 
                             logEntry.innerHTML = `
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <div class="fw-bold">UID: ${log.uid}</div>
-                                        <div class="text-dark">Name: ${log.full_name}</div>
-                                    </div>
-                                    <div>
-                                        <span class="badge ${statusClass}">${statusText}</span>
-                                        <div class="text-muted small mt-1">${new Date(log.date_created).toLocaleTimeString()}</div>
-                                    </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-bold">UID: ${log.uid}</div>
+                                    <div class="text-dark">Name: ${log.full_name}</div>
                                 </div>
-                            `;
+                                <div>
+                                    <span class="badge ${statusClass}">${statusText}</span>
+                                    <div class="text-muted small mt-1">${new Date(log.date_created).toLocaleTimeString()}</div>
+                                </div>
+                            </div>
+                        `;
 
                             scanEntries.appendChild(logEntry);
                         });
@@ -616,17 +666,17 @@
             const badgeClass = statusClass.replace('text-', 'bg-');
 
             logEntry.innerHTML = `
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="fw-bold">UID: ${uid}</div>
-                        <div class="text-dark">Name: ${fullName}</div>
-                    </div>
-                    <div class="text-end">
-                        <div><span class="badge ${badgeClass}">${status}</span></div>
-                        <div class="text-muted small mt-1">${timestamp.toLocaleTimeString()}</div>
-                    </div>
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="fw-bold">UID: ${uid}</div>
+                    <div class="text-dark">Name: ${fullName}</div>
                 </div>
-            `;
+                <div class="text-end">
+                    <div><span class="badge ${badgeClass}">${status}</span></div>
+                    <div class="text-muted small mt-1">${timestamp.toLocaleTimeString()}</div>
+                </div>
+            </div>
+        `;
 
             // Add new entry at the top
             scanEntries.insertBefore(logEntry, scanEntries.firstChild);
@@ -642,18 +692,12 @@
             }, 100);
         }
 
-        // Cleanup intervals when page is closed
-        window.addEventListener('beforeunload', function () {
-            if (logUpdateInterval) {
-                clearInterval(logUpdateInterval);
+        function autoScrollToBottom() {
+            const scanLogsContainer = document.getElementById('scanLogsContainer');
+            if (!isUserScrolling) {
+                scanLogsContainer.scrollTop = scanLogsContainer.scrollHeight;
             }
-            if (autoCloseTimer) {
-                clearTimeout(autoCloseTimer);
-            }
-            if (scrollTimeout) {
-                clearTimeout(scrollTimeout);
-            }
-        });
+        }
 
         // Manual gate control function
         function manualGateControl(action) {
@@ -670,26 +714,12 @@
             })
                 .then(res => res.json())
                 .then(data => {
-                    const gateStatus = document.getElementById('gateStatus');
-                    if (data.status === 'success') {
-                        const isOpen = data.gate === 'OPEN';
-                        const icon = isOpen ? 'bi-door-open' : 'bi-door-closed';
-                        const alertClass = isOpen ? 'alert-success' : 'alert-secondary';
-
-                        gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate 2 Status: <strong>${data.gate}</strong>`;
-                        gateStatus.className = `alert ${alertClass} border mt-3`;
-
-                        // Show success message
-                        showTemporaryMessage(`Gate manually ${action === 'open' ? 'opened' : 'closed'}`, 'success');
-                    } else {
-                        gateStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>Gate 2 Status: <strong>Error</strong>`;
-                        gateStatus.className = 'alert alert-danger border mt-3';
-                        showTemporaryMessage('Error controlling gate', 'danger');
-                    }
+                    console.log("Manual control Arduino response:", data.arduino_response); // Debug line
+                    updateGateStatusFromArduino(data);
                 })
                 .catch(err => {
                     console.error('Manual gate control error:', err);
-                    showTemporaryMessage('Connection error', 'warning');
+                    updateGateDisplay('ERROR');
                 })
                 .finally(() => {
                     // Re-enable buttons after 2 seconds
@@ -699,6 +729,19 @@
                     }, 2000);
                 });
         }
+
+        // Cleanup intervals when page is closed
+        window.addEventListener('beforeunload', function () {
+            if (logUpdateInterval) {
+                clearInterval(logUpdateInterval);
+            }
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+            }
+            if (statusPollingInterval) { // ADD THIS BLOCK
+                clearInterval(statusPollingInterval);
+            }
+        });
 
     </script>
 
