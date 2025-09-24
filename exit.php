@@ -181,7 +181,7 @@
                         <div id="gateStatus" class="alert alert-secondary border mt-3" role="alert">
                             <i class="bi bi-door-closed me-2"></i>Gate 2 Status: <strong>CLOSED</strong>
                         </div>
-                        
+
                         <!-- Gate Status Info -->
                         <div class="alert alert-info border-0 mt-2">
                             <i class="bi bi-info-circle me-2"></i>
@@ -443,6 +443,9 @@
         }
 
         function triggerGate(action) {
+
+            console.log("Sending command:", action, "for gate 2"); // Debug line
+            
             fetch('rfid-api/open_gate.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

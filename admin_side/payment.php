@@ -563,11 +563,10 @@ if (isset($_GET['action'])) {
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1">
-                <a href="admin_dashboard.php" class="nav-link px-3 py-2 rounded">
+            <nav class="nav d-flex flex-column gap-1">
+                <a href="admin_dashboard.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                
                 <!-- Accounts -->
                 <div>
                     <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse" 

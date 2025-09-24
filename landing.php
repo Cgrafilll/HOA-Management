@@ -564,6 +564,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Get all navigation links and sections
+            const navLinks = document.querySelectorAll('nav a.nav-link');
+            const sections = document.querySelectorAll('section[id]');
+
+            // Function to update active navigation link
+            function updateActiveNav() {
+                let currentSection = '';
+                const scrollPosition = window.scrollY + 100; // Offset for better detection
+
+                // Find which section is currently in view
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.offsetHeight;
+
+                    if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+                        currentSection = section.getAttribute('id');
+                    }
+                });
+
+                // Update navigation links
+                navLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+                    const sectionId = href.substring(1); // Remove the # symbol
+
+                    if (sectionId === currentSection) {
+                        // Set as active
+                        link.classList.remove('text-secondary');
+                        link.classList.add('text-success', 'fw-semibold');
+                    } else {
+                        // Set as inactive
+                        link.classList.remove('text-success', 'fw-semibold');
+                        link.classList.add('text-secondary');
+                    }
+                });
+            }
+
+            // Add scroll event listener
+            window.addEventListener('scroll', updateActiveNav);
+
+            // Also add smooth scrolling behavior for navigation links
+            navLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetSection = document.getElementById(targetId);
+
+                    if (targetSection) {
+                        targetSection.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Call once on page load to set initial active state
+            updateActiveNav();
+
             // Function to show error modal with custom message
             function showErrorModal(message) {
                 const errorMessage = document.getElementById('errorMessage');

@@ -1097,31 +1097,65 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             // Save selected value
             document.getElementById('selectedPayment').value = value;
 
-            // Toggle Payment Info + Reference + File Upload
+            // Get all elements that need to be hidden/shown
             const bankInfo = document.getElementById("bankInfo");
             const cashInfo = document.getElementById("cashInfo");
             const referenceNumber = document.getElementById("referenceNumber");
             const fileInput = document.getElementById("fileInput");
+            const reserveButton = document.querySelector('button[type="submit"]');
+            const amountPaidField = document.getElementById("amountPaid");
+            const termsCheckbox = document.getElementById("termsConditions");
+            const privacyCheckbox = document.getElementById("privacyPolicy");
 
             if (value === "cash") {
                 cashInfo.classList.remove("d-none");
                 bankInfo.classList.add("d-none");
 
-                // Hide & remove required
+                // Hide & remove required for payment-related fields
                 referenceNumber.closest(".form-floating").classList.add("d-none");
                 fileInput.closest("#fileDropArea").classList.add("d-none");
                 referenceNumber.removeAttribute("required");
                 fileInput.removeAttribute("required");
 
+                // Hide amount paid field
+                amountPaidField.closest(".mb-3").classList.add("d-none");
+                amountPaidField.removeAttribute("required");
+
+                // Hide terms and privacy policy checkboxes
+                termsCheckbox.closest(".form-check").classList.add("d-none");
+                privacyCheckbox.closest(".form-check").classList.add("d-none");
+                termsCheckbox.removeAttribute("required");
+                privacyCheckbox.removeAttribute("required");
+
+                // Disable reserve button for cash payment
+                reserveButton.disabled = true;
+                reserveButton.classList.add('disabled');
+                reserveButton.textContent = 'Proceed to Clubhouse for Payment';
+
             } else {
                 bankInfo.classList.remove("d-none");
                 cashInfo.classList.add("d-none");
 
-                // Show & add required
+                // Show & add required for payment-related fields
                 referenceNumber.closest(".form-floating").classList.remove("d-none");
                 fileInput.closest("#fileDropArea").classList.remove("d-none");
                 referenceNumber.setAttribute("required", "required");
                 fileInput.setAttribute("required", "required");
+
+                // Show amount paid field
+                amountPaidField.closest(".mb-3").classList.remove("d-none");
+                amountPaidField.setAttribute("required", "required");
+
+                // Show terms and privacy policy checkboxes
+                termsCheckbox.closest(".form-check").classList.remove("d-none");
+                privacyCheckbox.closest(".form-check").classList.remove("d-none");
+                termsCheckbox.setAttribute("required", "required");
+                privacyCheckbox.setAttribute("required", "required");
+
+                // Enable reserve button for bank payment
+                reserveButton.disabled = false;
+                reserveButton.classList.remove('disabled');
+                reserveButton.textContent = 'Reserve';
             }
         }
 
