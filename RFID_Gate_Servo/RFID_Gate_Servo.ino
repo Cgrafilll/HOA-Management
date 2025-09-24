@@ -1,166 +1,186 @@
 #include <Servo.h>
 
-Servo servo1;
-Servo servo2;
+// Servo objects for the two gates
+Servo gate1Servo;
+Servo gate2Servo;
 
-// Ultrasonic Sensor pins
-#define trigPin1 2
-#define echoPin1 3
-#define trigPin2 4
-#define echoPin2 5
+// Servo pin assignments
+const int GATE1_PIN = 9;
+const int GATE2_PIN = 10;
 
-const int objectThreshold = 20;          // cm - distance to detect object
-const unsigned long autoCloseTimeout = 15000; // 15 seconds max open time
-const unsigned long detectDelay = 5000;  // 5 seconds wait before closing
-
-// Gate 1 variables
+// Gate status tracking
 bool gate1Open = false;
-unsigned long gate1OpenTime = 0;
-unsigned long detect1StartTime = 0;
-bool object1Detected = false;
-
-// Gate 2 variables
 bool gate2Open = false;
+
+// Auto-close timing (optional - can be disabled by setting to 0)
+const unsigned long AUTO_CLOSE_DELAY = 10000; // 10 seconds in milliseconds
+unsigned long gate1OpenTime = 0;
 unsigned long gate2OpenTime = 0;
-unsigned long detect2StartTime = 0;
-bool object2Detected = false;
 
 void setup() {
+  // Initialize serial communication
   Serial.begin(9600);
-  servo1.attach(9);
-  servo2.attach(10);
-  servo1.write(140); // closed position
-  servo2.write(140); // closed position
-
-  pinMode(trigPin1, OUTPUT);
-  pinMode(echoPin1, INPUT);
-  pinMode(trigPin2, OUTPUT);
-  pinMode(echoPin2, INPUT);
-
+  
+  // Attach servos to pins
+  gate1Servo.attach(GATE1_PIN);
+  gate2Servo.attach(GATE2_PIN);
+  
+  // Set both gates to closed position initially
+  gate1Servo.write(80);
+  gate2Servo.write(50);
+  
+  // Initialize gate status
+  gate1Open = false;
+  gate2Open = false;
+  
+  // Wait for servos to reach position
+  delay(1000);
+  
+  // Signal ready to PHP
   Serial.println("READY");
+  Serial.println("Gate Controller Initialized");
 }
 
 void loop() {
-  // Listen for Serial commands from PHP
+  // Check for incoming serial commands
   if (Serial.available() > 0) {
     String command = Serial.readStringUntil('\n');
     command.trim();
     command.toUpperCase();
+    
+    // Process the command
+    processCommand(command);
+  }
+  
+  // Handle auto-close functionality (if enabled)
+  if (AUTO_CLOSE_DELAY > 0) {
+    handleAutoClose();
+  }
+  
+  // Small delay to prevent overwhelming the system
+  delay(50);
+}
 
-    if (command == "OPEN1" || command == "OPEN") {
-      openGate(1);
-    }
-    else if (command == "OPEN2") {
-      openGate(2);
-    }
-    else if (command == "CLOSE1" || command == "CLOSE") {
-      closeGate(1);
-    }
-    else if (command == "CLOSE2") {
-      closeGate(2);
+void processCommand(String command) {
+  if (command == "OPEN1" || command == "OPEN") {
+    openGate(1);
+  }
+  else if (command == "OPEN2") {
+    openGate(2);
+  }
+  else if (command == "CLOSE1" || command == "CLOSE") {
+    closeGate(1);
+  }
+  else if (command == "CLOSE2") {
+    closeGate(2);
+  }
+  else if (command == "STATUS") {
+    reportStatus();
+  }
+  else if (command == "RESET") {
+    resetAllGates();
+  }
+  else {
+    Serial.println("ERROR: Unknown command - " + command);
+  }
+}
+
+void openGate(int gateNumber) {
+  if (gateNumber == 1) {
+    if (!gate1Open) {
+      gate1Servo.write(20);
+      gate1Open = true;
+      gate1OpenTime = millis();
+      Serial.println("SUCCESS: Gate1 opened");
+    } else {
+      Serial.println("INFO: Gate1 already open");
     }
   }
-
-  // Gate 1 Logic (Entry Gate)
-  if (gate1Open) {
-    int distance1 = getDistance(trigPin1, echoPin1);
-
-    // Detect object
-    if (distance1 <= objectThreshold && distance1 > 0) {
-      if (!object1Detected) {
-        object1Detected = true;
-        detect1StartTime = millis();
-        Serial.println("DETECT1: Object detected - Closing Gate1 in 5s");
-      }
-    }
-
-    // Close 5s after object detected
-    if (object1Detected && (millis() - detect1StartTime >= detectDelay)) {
-      closeGate(1);
-      object1Detected = false;
-    }
-
-    // Auto-close after 15s if no object detected
-    if (!object1Detected && (millis() - gate1OpenTime > autoCloseTimeout)) {
-      closeGate(1);
+  else if (gateNumber == 2) {
+    if (!gate2Open) {
+      gate2Servo.write(120);
+      gate2Open = true;
+      gate2OpenTime = millis();
+      Serial.println("SUCCESS: Gate2 opened");
+    } else {
+      Serial.println("INFO: Gate2 already open");
     }
   }
+  else {
+    Serial.println("ERROR: Invalid gate number");
+  }
+}
 
-  // Gate 2 Logic (Exit Gate)
-  if (gate2Open) {
-    int distance2 = getDistance(trigPin2, echoPin2);
-
-    // Detect object
-    if (distance2 <= objectThreshold && distance2 > 0) {
-      if (!object2Detected) {
-        object2Detected = true;
-        detect2StartTime = millis();
-        Serial.println("DETECT2: Object detected - Closing Gate2 in 5s");
-      }
-    }
-
-    // Close 5s after object detected
-    if (object2Detected && (millis() - detect2StartTime >= detectDelay)) {
-      closeGate(2);
-      object2Detected = false;
-    }
-
-    // Auto-close after 15s if no object detected
-    if (!object2Detected && (millis() - gate2OpenTime > autoCloseTimeout)) {
-      closeGate(2);
+void closeGate(int gateNumber) {
+  if (gateNumber == 1) {
+    if (gate1Open) {
+      gate1Servo.write(80);
+      gate1Open = false;
+      gate1OpenTime = 0;
+      Serial.println("SUCCESS: Gate1 closed");
+    } else {
+      Serial.println("INFO: Gate1 already closed");
     }
   }
+  else if (gateNumber == 2) {
+    if (gate2Open) {
+      gate2Servo.write(50);
+      gate2Open = false;
+      gate2OpenTime = 0;
+      Serial.println("SUCCESS: Gate2 closed");
+    } else {
+      Serial.println("INFO: Gate2 already closed");
+    }
+  }
+  else {
+    Serial.println("ERROR: Invalid gate number");
+  }
+}
 
+void handleAutoClose() {
+  unsigned long currentTime = millis();
+  
+  // Auto-close Gate 1 if it's been open too long
+  if (gate1Open && gate1OpenTime > 0 && (currentTime - gate1OpenTime >= AUTO_CLOSE_DELAY)) {
+    Serial.println("AUTO: Closing Gate1 after timeout");
+    closeGate(1);
+  }
+  
+  // Auto-close Gate 2 if it's been open too long
+  if (gate2Open && gate2OpenTime > 0 && (currentTime - gate2OpenTime >= AUTO_CLOSE_DELAY)) {
+    Serial.println("AUTO: Closing Gate2 after timeout");
+    closeGate(2);
+  }
+}
+
+void reportStatus() {
+  Serial.println("STATUS: Gate1=" + String(gate1Open ? "OPEN" : "CLOSED") + 
+                 " Gate2=" + String(gate2Open ? "OPEN" : "CLOSED"));
+}
+
+void resetAllGates() {
+  Serial.println("RESET: Closing all gates");
+  closeGate(1);
+  closeGate(2);
   delay(100);
+  Serial.println("RESET: Complete");
 }
 
-void openGate(int gateNum) {
-  if (gateNum == 1 && !gate1Open) {
-    servo1.write(50);
-    gate1Open = true;
-    gate1OpenTime = millis();
-    object1Detected = false;
-    Serial.println("SUCCESS: Gate1 opened");
-  }
-  else if (gateNum == 2 && !gate2Open) {
-    servo2.write(50);
-    gate2Open = true;
-    gate2OpenTime = millis();
-    object2Detected = false;
-    Serial.println("SUCCESS: Gate2 opened");
-  }
-}
-
-void closeGate(int gateNum) {
-  if (gateNum == 1 && gate1Open) {
-    servo1.write(140);
-    gate1Open = false;
-    object1Detected = false;
-    Serial.println("SUCCESS: Gate1 closed");
-  }
-  else if (gateNum == 2 && gate2Open) {
-    servo2.write(140);
-    gate2Open = false;
-    object2Detected = false;
-    Serial.println("SUCCESS: Gate2 closed");
-  }
-}
-
-int getDistance(int trigPin, int echoPin) {
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
-
-  long duration = pulseIn(echoPin, HIGH, 30000);
-  if (duration == 0) return 9999;
-
-  int distance = duration * 0.034 / 2;
+// Function to manually control servo positions (for testing)
+void testServoMovement() {
+  Serial.println("TEST: Moving servos");
   
-  if (distance < 2 || distance > 400) {
-    return 9999;
-  }
+  // Test Gate 1
+  gate1Servo.write(20);
+  delay(1000);
+  gate1Servo.write(80);
+  delay(1000);
   
-  return distance;
+  // Test Gate 2
+  gate2Servo.write(120);
+  delay(1000);
+  gate2Servo.write(80);
+  delay(1000);
+  
+  Serial.println("TEST: Complete");
 }

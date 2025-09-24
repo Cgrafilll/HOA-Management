@@ -188,6 +188,21 @@
                             <small>Gate opens automatically for registered users and closes after the vehicle has
                                 passed.</small>
                         </div>
+
+                        <!-- Manual Gate Controls -->
+                        <div class="mt-3">
+                            <label class="form-label fw-bold mb-2">Manual Gate Control:</label>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-success" id="manualOpenBtn"
+                                    onclick="manualGateControl('open')">
+                                    <i class="bi bi-door-open me-1"></i>Open Gate
+                                </button>
+                                <button type="button" class="btn btn-danger" id="manualCloseBtn"
+                                    onclick="manualGateControl('close')">
+                                    <i class="bi bi-door-closed me-1"></i>Close Gate
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -636,6 +651,52 @@
                 clearTimeout(scrollTimeout);
             }
         });
+
+        // Manual gate control function
+        function manualGateControl(action) {
+            console.log("Manual gate control:", action, "for gate 1");
+
+            // Disable buttons temporarily to prevent rapid clicking
+            document.getElementById('manualOpenBtn').disabled = true;
+            document.getElementById('manualCloseBtn').disabled = true;
+
+            fetch('rfid-api/open_gate.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=' + encodeURIComponent(action) + '&gate=1' // Gate 1 for Entrance
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const gateStatus = document.getElementById('gateStatus');
+                    if (data.status === 'success') {
+                        const isOpen = data.gate === 'OPEN';
+                        const icon = isOpen ? 'bi-door-open' : 'bi-door-closed';
+                        const alertClass = isOpen ? 'alert-success' : 'alert-secondary';
+
+                        gateStatus.innerHTML = `<i class="bi ${icon} me-2"></i>Gate 1 Status: <strong>${data.gate}</strong>`;
+                        gateStatus.className = `alert ${alertClass} border mt-3`;
+
+                        // Show success message
+                        showTemporaryMessage(`Gate manually ${action === 'open' ? 'opened' : 'closed'}`, 'success');
+                    } else {
+                        gateStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>Gate 1 Status: <strong>Error</strong>`;
+                        gateStatus.className = 'alert alert-danger border mt-3';
+                        showTemporaryMessage('Error controlling gate', 'danger');
+                    }
+                })
+                .catch(err => {
+                    console.error('Manual gate control error:', err);
+                    showTemporaryMessage('Connection error', 'warning');
+                })
+                .finally(() => {
+                    // Re-enable buttons after 2 seconds
+                    setTimeout(() => {
+                        document.getElementById('manualOpenBtn').disabled = false;
+                        document.getElementById('manualCloseBtn').disabled = false;
+                    }, 2000);
+                });
+        }
+
     </script>
 
 </body>
