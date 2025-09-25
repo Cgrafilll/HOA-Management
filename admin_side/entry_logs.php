@@ -62,36 +62,52 @@ if (!empty($admin['profile_picture'])) {
 // Pagination settings for entry logs
 $entriesPerPage = 10;
 
-// Get current page for homeowner tab
-$homeownerPage = isset($_GET['homeowner_page']) ? (int) $_GET['homeowner_page'] : 1;
-$homeownerPage = max(1, $homeownerPage);
+// Get filter parameter
+$filter = isset($_GET['filter']) ? $_GET['filter'] : 'all';
 
-// Get current page for visitor tab
-$visitorPage = isset($_GET['visitor_page']) ? (int) $_GET['visitor_page'] : 1;
-$visitorPage = max(1, $visitorPage);
+// Get current page for entry and exit logs
+$entryPage = isset($_GET['entry_page']) ? (int) $_GET['entry_page'] : 1;
+$entryPage = max(1, $entryPage);
+
+$exitPage = isset($_GET['exit_page']) ? (int) $_GET['exit_page'] : 1;
+$exitPage = max(1, $exitPage);
 
 // Calculate offsets
-$homeownerOffset = ($homeownerPage - 1) * $entriesPerPage;
-$visitorOffset = ($visitorPage - 1) * $entriesPerPage;
+$entryOffset = ($entryPage - 1) * $entriesPerPage;
+$exitOffset = ($exitPage - 1) * $entriesPerPage;
 
-// Get total counts for each type
-$homeownerCountSql = "SELECT COUNT(*) as total FROM entry_logs WHERE type = 'household'";
-$homeownerCountResult = $conn->query($homeownerCountSql);
-$homeownerTotalEntries = $homeownerCountResult->fetch_assoc()['total'];
-$homeownerTotalPages = ceil($homeownerTotalEntries / $entriesPerPage);
+// Build WHERE clause based on filter
+$entryWhereClause = "";
+$exitWhereClause = "";
 
-$visitorCountSql = "SELECT COUNT(*) as total FROM entry_logs WHERE type = 'visitor'";
-$visitorCountResult = $conn->query($visitorCountSql);
-$visitorTotalEntries = $visitorCountResult->fetch_assoc()['total'];
-$visitorTotalPages = ceil($visitorTotalEntries / $entriesPerPage);
+if ($filter == 'household') {
+    $entryWhereClause = "WHERE type = 'household'";
+    $exitWhereClause = "WHERE type = 'household'";
+} elseif ($filter == 'visitor') {
+    $entryWhereClause = "WHERE type = 'visitor'";
+    $exitWhereClause = "WHERE type = 'visitor'";
+}
+// For 'all', no WHERE clause needed
 
-// Get paginated data for homeowner entries
-$homeowner_sql = "SELECT * FROM entry_logs WHERE type = 'household' ORDER BY date_created DESC LIMIT $entriesPerPage OFFSET $homeownerOffset";
-$homeowner_result = $conn->query($homeowner_sql);
+// Get total counts for ENTRY LOGS
+$entryCountSql = "SELECT COUNT(*) as total FROM entry_logs $entryWhereClause";
+$entryCountResult = $conn->query($entryCountSql);
+$entryTotalEntries = $entryCountResult->fetch_assoc()['total'];
+$entryTotalPages = ceil($entryTotalEntries / $entriesPerPage);
 
-// Get paginated data for visitor entries
-$visitor_sql = "SELECT * FROM entry_logs WHERE type = 'visitor' ORDER BY date_created DESC LIMIT $entriesPerPage OFFSET $visitorOffset";
-$visitor_result = $conn->query($visitor_sql);
+// Get total counts for EXIT LOGS
+$exitCountSql = "SELECT COUNT(*) as total FROM exit_logs $exitWhereClause";
+$exitCountResult = $conn->query($exitCountSql);
+$exitTotalEntries = $exitCountResult->fetch_assoc()['total'];
+$exitTotalPages = ceil($exitTotalEntries / $entriesPerPage);
+
+// Get paginated data for ENTRY logs
+$entry_sql = "SELECT * FROM entry_logs $entryWhereClause ORDER BY date_created DESC LIMIT $entriesPerPage OFFSET $entryOffset";
+$entry_result = $conn->query($entry_sql);
+
+// Get paginated data for EXIT logs
+$exit_sql = "SELECT * FROM exit_logs $exitWhereClause ORDER BY date_created DESC LIMIT $entriesPerPage OFFSET $exitOffset";
+$exit_result = $conn->query($exit_sql);
 
 ?>
 
@@ -263,7 +279,7 @@ $visitor_result = $conn->query($visitor_sql);
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
                             <li><a href="violation_tracking.php" class="nav-link px-2">Violation Tracking</a></li>
-                            <li><a href="entry_logs.php" class="nav-link px-2 actived">Entry Logs</a></li>
+                            <li><a href="entry_logs.php" class="nav-link px-2 actived">Gate Logs</a></li>
                         </ul>
                     </div>
                 </div>
@@ -309,7 +325,7 @@ $visitor_result = $conn->query($visitor_sql);
         <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
-                    <h5 class="mb-0 fw-bold">Entry Logs</h5>
+                    <h5 class="mb-0 fw-bold">Gate Logs</h5>
                 </div>
                 <div class="">
                     <!-- Success Modal -->
@@ -354,7 +370,6 @@ $visitor_result = $conn->query($visitor_sql);
                             </div>
                         </div>
                     </div>
-
                     <?php if (isset($success) && $success): ?>
                         <script>
                             window.addEventListener('DOMContentLoaded', () => {
@@ -377,39 +392,53 @@ $visitor_result = $conn->query($visitor_sql);
                             });
                         </script>
                     <?php endif; ?>
-
-                    <!-- Tabs -->
-                    <ul class="nav nav-tabs mt-3" id="dashboardTabs">
+                    <!-- Main Tabs: Entry and Exit -->
+                    <ul class="nav nav-tabs mt-3" id="mainTabs">
                         <li class="nav-item">
-                            <a class="nav-link active link-dark" id="homeowners-tab" data-bs-toggle="tab"
-                                href="#homeowner" role="tab">Homeowner / Resident</a>
+                            <a class="nav-link active link-dark" id="entry-tab" data-bs-toggle="tab" href="#entry"
+                                role="tab">Entry Logs</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link link-secondary" id="visitor-tab" data-bs-toggle="tab" href="#visitor"
-                                role="tab">Visitor</a>
+                            <a class="nav-link link-secondary" id="exit-tab" data-bs-toggle="tab" href="#exit"
+                                role="tab">Exit Logs</a>
                         </li>
                     </ul>
-
                     <!-- Tab Content -->
-                    <div class="tab-content p-3">
-                        <!-- Resident Table -->
-                        <div class="tab-pane fade show active" id="homeowner" role="tabpanel">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="small">Homeowner Entry Logs</span>
-                                <div class="d-flex gap-2">
-                                    <a href="entry_logs/archive_homeowner.php" class="btn btn-secondary btn-sm">Archived
-                                        RFID</a>
-                                    <a href="entry_logs/manage_homeowner.php" class="btn btn-primary btn-sm">Manage
-                                        Homeowner RFID</a>
+                    <div class="tab-content px-2">
+                        <!-- Entry Logs Tab -->
+                        <div class="tab-pane fade show active" id="entry" role="tabpanel">
+                            <!-- Filter Dropdown -->
+                            <form method="get" class="mb-3 mt-3">
+                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label for="filter" class="fw-semibold">Filter by:</label>
+                                        <select name="filter" id="filter" class="form-select form-select-sm w-auto"
+                                            onchange="this.form.submit()">
+                                            <option value="all" <?= ($filter == 'all') ? 'selected' : '' ?>>All</option>
+                                            <option value="household" <?= ($filter == 'household') ? 'selected' : '' ?>>
+                                                Household</option>
+                                            <option value="visitor" <?= ($filter == 'visitor') ? 'selected' : '' ?>>Visitor
+                                            </option>
+                                        </select>
+                                        <input type="hidden" name="tab" value="entry">
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a href="entry_logs/archive_homeowner.php"
+                                            class="btn btn-secondary btn-sm">Archived
+                                            RFID</a>
+                                        <a href="entry_logs/manage_homeowner.php" class="btn btn-primary btn-sm">Manage
+                                            RFID</a>
+                                    </div>
                                 </div>
-                            </div>
+                            </form>
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover">
                                     <thead class="bg-success text-white small">
                                         <tr>
-                                            <th>#</th>
-                                            <th>Resident RFID</th>
+                                            <th>Entry ID</th>
+                                            <th>RFID</th>
                                             <th>Full Name</th>
+                                            <th>Type</th>
                                             <th>Date and Time</th>
                                             <th>Location</th>
                                         </tr>
@@ -417,105 +446,85 @@ $visitor_result = $conn->query($visitor_sql);
                                     <tbody class="small align-middle"
                                         style="min-height: 520px; display: table-row-group;">
                                         <?php
-                                        $household_count = 0;
-                                        if ($homeowner_result->num_rows > 0) {
-                                            while ($row = $homeowner_result->fetch_assoc()) {
-                                                $household_count++;
+                                        $entry_count = 0;
+                                        if ($entry_result->num_rows > 0) {
+                                            while ($row = $entry_result->fetch_assoc()) {
+                                                $entry_count++;
                                                 $id = $row['entry_id'];
                                                 $uid = $row['uid'];
                                                 $fullName = trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
+                                                $type = ucfirst($row['type']);
                                                 $date = date('F j, Y, g:i A', strtotime($row['date_created']));
                                                 $location = "Gate 1";
                                                 echo "<tr>
-                                            <td>{$id}</td>
-                                            <td>{$uid}</td>
-                                            <td>{$fullName}</td>
-                                            <td>{$date}</td>
-                                            <td>{$location}</td>
-                                        </tr>";
+                                                    <td>{$id}</td>
+                                                    <td>{$uid}</td>
+                                                    <td>{$fullName}</td>
+                                                    <td>{$type}</td>
+                                                    <td>{$date}</td>
+                                                    <td>{$location}</td>
+                                                </tr>";
                                             }
                                         }
 
                                         // Check if there are no rows and show appropriate message
-                                        if ($household_count === 0) {
-                                            echo '<tr><td colspan="5" class="text-center text-muted">No household entry logs found.</td></tr>';
+                                        if ($entry_count === 0) {
+                                            echo '<tr><td colspan="6" class="text-center text-muted">No entry logs found for selected filter.</td></tr>';
                                             // Add empty rows after the "no data" message
                                             $minRows = 10;
                                             for ($i = 1; $i < $minRows; $i++) {
-                                                echo '<tr style="height: 38px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+                                                echo '<tr style="height: 38px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
                                             }
                                         } else {
                                             // Add empty rows to maintain consistent height (minimum 10 rows)
                                             $minRows = 10;
-                                            for ($i = $household_count; $i < $minRows; $i++) {
-                                                echo '<tr style="height: 38px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+                                            for ($i = $entry_count; $i < $minRows; $i++) {
+                                                echo '<tr style="height: 38px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
                                             }
                                         }
                                         ?>
                                     </tbody>
                                 </table>
 
-                                <!-- Homeowner Pagination -->
+                                <!-- Entry Pagination -->
                                 <div class="d-flex justify-content-between align-items-center mt-2">
                                     <?php
-                                    $homeownerStart = $homeownerTotalEntries > 0 ? $homeownerOffset + 1 : 0;
-                                    $homeownerEnd = min($homeownerOffset + $entriesPerPage, $homeownerTotalEntries);
-                                    echo "<span class='small'>Showing $homeownerStart to $homeownerEnd of $homeownerTotalEntries entries</span>";
+                                    $entryStart = $entryTotalEntries > 0 ? $entryOffset + 1 : 0;
+                                    $entryEnd = min($entryOffset + $entriesPerPage, $entryTotalEntries);
+                                    echo "<span class='small'>Showing $entryStart to $entryEnd of $entryTotalEntries entries</span>";
                                     ?>
                                     <nav>
                                         <ul class="pagination pagination-sm m-0">
                                             <?php
-                                            // Only show pagination if there are entries
-                                            if ($homeownerTotalEntries > 0) {
+                                            if ($entryTotalEntries > 0) {
                                                 // Previous button
-                                                $prevDisabled = $homeownerPage <= 1 ? 'disabled' : '';
-                                                $prevPage = $homeownerPage - 1;
+                                                $prevDisabled = $entryPage <= 1 ? 'disabled' : '';
+                                                $prevPage = $entryPage - 1;
                                                 echo "<li class='page-item $prevDisabled'>";
-                                                if ($homeownerPage > 1) {
-                                                    echo "<a class='page-link' href='?homeowner_page=$prevPage#homeowner'>Previous</a>";
+                                                if ($entryPage > 1) {
+                                                    echo "<a class='page-link' href='?entry_page=$prevPage&filter=$filter&tab=entry'>Previous</a>";
                                                 } else {
                                                     echo "<a class='page-link'>Previous</a>";
                                                 }
                                                 echo "</li>";
 
-                                                // Page numbers
-                                                $startPage = max(1, $homeownerPage - 2);
-                                                $endPage = min($homeownerTotalPages, $homeownerPage + 2);
-
-                                                // First page and ellipsis
-                                                if ($startPage > 1) {
-                                                    echo "<li class='page-item'><a class='page-link' href='?homeowner_page=1#homeowner'>1</a></li>";
-                                                    if ($startPage > 2) {
-                                                        echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
-                                                    }
-                                                }
-
-                                                // Page range
-                                                for ($i = $startPage; $i <= $endPage; $i++) {
-                                                    $activeClass = $i == $homeownerPage ? 'active' : '';
-                                                    echo "<li class='page-item $activeClass'><a class='page-link' href='?homeowner_page=$i#homeowner'>$i</a></li>";
-                                                }
-
-                                                // Last page and ellipsis
-                                                if ($endPage < $homeownerTotalPages) {
-                                                    if ($endPage < $homeownerTotalPages - 1) {
-                                                        echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
-                                                    }
-                                                    echo "<li class='page-item'><a class='page-link' href='?homeowner_page=$homeownerTotalPages#homeowner'>$homeownerTotalPages</a></li>";
+                                                // Page numbers (simplified)
+                                                for ($i = 1; $i <= $entryTotalPages; $i++) {
+                                                    $activeClass = $i == $entryPage ? 'active' : '';
+                                                    echo "<li class='page-item $activeClass'><a class='page-link' href='?entry_page=$i&filter=$filter&tab=entry'>$i</a></li>";
                                                 }
 
                                                 // Next button
-                                                $nextDisabled = $homeownerPage >= $homeownerTotalPages ? 'disabled' : '';
-                                                $nextPage = $homeownerPage + 1;
+                                                $nextDisabled = $entryPage >= $entryTotalPages ? 'disabled' : '';
+                                                $nextPage = $entryPage + 1;
                                                 echo "<li class='page-item $nextDisabled'>";
-                                                if ($homeownerPage < $homeownerTotalPages) {
-                                                    echo "<a class='page-link' href='?homeowner_page=$nextPage#homeowner'>Next</a>";
+                                                if ($entryPage < $entryTotalPages) {
+                                                    echo "<a class='page-link' href='?entry_page=$nextPage&filter=$filter&tab=entry'>Next</a>";
                                                 } else {
                                                     echo "<a class='page-link'>Next</a>";
                                                 }
                                                 echo "</li>";
                                             } else {
-                                                // Show disabled pagination when no entries
                                                 echo "<li class='page-item disabled'><a class='page-link'>Previous</a></li>";
                                                 echo "<li class='page-item active'><a class='page-link'>1</a></li>";
                                                 echo "<li class='page-item disabled'><a class='page-link'>Next</a></li>";
@@ -526,25 +535,40 @@ $visitor_result = $conn->query($visitor_sql);
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Visitor Table -->
-                        <div class="tab-pane fade" id="visitor" role="tabpanel">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="small">Visitor Entry Logs</span>
-                                <div class="d-flex gap-2">
-                                    <a href="entry_logs/archive_visitor.php" class="btn btn-secondary btn-sm">Archived
-                                        RFID</a>
-                                    <a href="entry_logs/manage_visitor.php" class="btn btn-primary btn-sm">Manage
-                                        Visitor RFID</a>
+                        <!-- Exit Logs Tab -->
+                        <div class="tab-pane fade" id="exit" role="tabpanel">
+                            <!-- Filter Dropdown -->
+                            <form method="get" class="mb-3 mt-3">
+                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label for="filter" class="fw-semibold">Filter by:</label>
+                                        <select name="filter" id="filter" class="form-select form-select-sm w-auto"
+                                            onchange="this.form.submit()">
+                                            <option value="all" <?= ($filter == 'all') ? 'selected' : '' ?>>All</option>
+                                            <option value="household" <?= ($filter == 'household') ? 'selected' : '' ?>>
+                                                Household</option>
+                                            <option value="visitor" <?= ($filter == 'visitor') ? 'selected' : '' ?>>Visitor
+                                            </option>
+                                        </select>
+                                        <input type="hidden" name="tab" value="exit">
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a href="entry_logs/archive_homeowner.php"
+                                            class="btn btn-secondary btn-sm">Archived
+                                            RFID</a>
+                                        <a href="entry_logs/manage_homeowner.php" class="btn btn-primary btn-sm">Manage
+                                            RFID</a>
+                                    </div>
                                 </div>
-                            </div>
+                            </form>
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover">
-                                    <thead class="bg-primary text-white small">
+                                    <thead class="bg-danger text-white small">
                                         <tr>
-                                            <th>#</th>
-                                            <th>Visitor RFID</th>
+                                            <th>Exit ID</th>
+                                            <th>RFID</th>
                                             <th>Full Name</th>
+                                            <th>Type</th>
                                             <th>Date and Time</th>
                                             <th>Location</th>
                                         </tr>
@@ -552,105 +576,81 @@ $visitor_result = $conn->query($visitor_sql);
                                     <tbody class="small align-middle"
                                         style="min-height: 520px; display: table-row-group;">
                                         <?php
-                                        $visitor_count = 0;
-                                        if ($visitor_result->num_rows > 0) {
-                                            while ($row = $visitor_result->fetch_assoc()) {
-                                                $visitor_count++;
-                                                $id = $row['entry_id'];
+                                        $exit_count = 0;
+                                        if ($exit_result->num_rows > 0) {
+                                            while ($row = $exit_result->fetch_assoc()) {
+                                                $exit_count++;
+                                                $id = $row['exit_id'];
                                                 $uid = $row['uid'];
                                                 $fullName = trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
+                                                $type = ucfirst($row['type']);
                                                 $date = date('F j, Y, g:i A', strtotime($row['date_created']));
                                                 $location = "Gate 1";
                                                 echo "<tr>
-                                            <td>{$id}</td>
-                                            <td>{$uid}</td>
-                                            <td>{$fullName}</td>
-                                            <td>{$date}</td>
-                                            <td>{$location}</td>
-                                        </tr>";
+                                                    <td>{$id}</td>
+                                                    <td>{$uid}</td>
+                                                    <td>{$fullName}</td>
+                                                    <td>{$type}</td>
+                                                    <td>{$date}</td>
+                                                    <td>{$location}</td>
+                                                </tr>";
                                             }
                                         }
-
                                         // Check if there are no rows and show appropriate message
-                                        if ($visitor_count === 0) {
-                                            echo '<tr><td colspan="5" class="text-center text-muted">No visitor entry logs found.</td></tr>';
+                                        if ($exit_count === 0) {
+                                            echo '<tr><td colspan="6" class="text-center text-muted">No exit logs found for selected filter.</td></tr>';
                                             // Add empty rows after the "no data" message
                                             $minRows = 10;
                                             for ($i = 1; $i < $minRows; $i++) {
-                                                echo '<tr style="height: 38px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+                                                echo '<tr style="height: 38px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
                                             }
                                         } else {
                                             // Add empty rows to maintain consistent height (minimum 10 rows)
                                             $minRows = 10;
-                                            for ($i = $visitor_count; $i < $minRows; $i++) {
-                                                echo '<tr style="height: 38px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+                                            for ($i = $exit_count; $i < $minRows; $i++) {
+                                                echo '<tr style="height: 38px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
                                             }
                                         }
                                         ?>
                                     </tbody>
                                 </table>
-
-                                <!-- Visitor Pagination -->
+                                <!-- Exit Pagination -->
                                 <div class="d-flex justify-content-between align-items-center mt-2">
                                     <?php
-                                    $visitorStart = $visitorTotalEntries > 0 ? $visitorOffset + 1 : 0;
-                                    $visitorEnd = min($visitorOffset + $entriesPerPage, $visitorTotalEntries);
-                                    echo "<span class='small'>Showing $visitorStart to $visitorEnd of $visitorTotalEntries entries</span>";
+                                    $exitStart = $exitTotalEntries > 0 ? $exitOffset + 1 : 0;
+                                    $exitEnd = min($exitOffset + $entriesPerPage, $exitTotalEntries);
+                                    echo "<span class='small'>Showing $exitStart to $exitEnd of $exitTotalEntries entries</span>";
                                     ?>
                                     <nav>
                                         <ul class="pagination pagination-sm m-0">
                                             <?php
-                                            // Only show pagination if there are entries
-                                            if ($visitorTotalEntries > 0) {
+                                            if ($exitTotalEntries > 0) {
                                                 // Previous button
-                                                $prevDisabled = $visitorPage <= 1 ? 'disabled' : '';
-                                                $prevPage = $visitorPage - 1;
+                                                $prevDisabled = $exitPage <= 1 ? 'disabled' : '';
+                                                $prevPage = $exitPage - 1;
                                                 echo "<li class='page-item $prevDisabled'>";
-                                                if ($visitorPage > 1) {
-                                                    echo "<a class='page-link' href='?visitor_page=$prevPage#visitor'>Previous</a>";
+                                                if ($exitPage > 1) {
+                                                    echo "<a class='page-link' href='?exit_page=$prevPage&filter=$filter&tab=exit'>Previous</a>";
                                                 } else {
                                                     echo "<a class='page-link'>Previous</a>";
                                                 }
                                                 echo "</li>";
-
-                                                // Page numbers
-                                                $startPage = max(1, $visitorPage - 2);
-                                                $endPage = min($visitorTotalPages, $visitorPage + 2);
-
-                                                // First page and ellipsis
-                                                if ($startPage > 1) {
-                                                    echo "<li class='page-item'><a class='page-link' href='?visitor_page=1#visitor'>1</a></li>";
-                                                    if ($startPage > 2) {
-                                                        echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
-                                                    }
+                                                // Page numbers (simplified)
+                                                for ($i = 1; $i <= $exitTotalPages; $i++) {
+                                                    $activeClass = $i == $exitPage ? 'active' : '';
+                                                    echo "<li class='page-item $activeClass'><a class='page-link' href='?exit_page=$i&filter=$filter&tab=exit'>$i</a></li>";
                                                 }
-
-                                                // Page range
-                                                for ($i = $startPage; $i <= $endPage; $i++) {
-                                                    $activeClass = $i == $visitorPage ? 'active' : '';
-                                                    echo "<li class='page-item $activeClass'><a class='page-link' href='?visitor_page=$i#visitor'>$i</a></li>";
-                                                }
-
-                                                // Last page and ellipsis
-                                                if ($endPage < $visitorTotalPages) {
-                                                    if ($endPage < $visitorTotalPages - 1) {
-                                                        echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
-                                                    }
-                                                    echo "<li class='page-item'><a class='page-link' href='?visitor_page=$visitorTotalPages#visitor'>$visitorTotalPages</a></li>";
-                                                }
-
                                                 // Next button
-                                                $nextDisabled = $visitorPage >= $visitorTotalPages ? 'disabled' : '';
-                                                $nextPage = $visitorPage + 1;
+                                                $nextDisabled = $exitPage >= $exitTotalPages ? 'disabled' : '';
+                                                $nextPage = $exitPage + 1;
                                                 echo "<li class='page-item $nextDisabled'>";
-                                                if ($visitorPage < $visitorTotalPages) {
-                                                    echo "<a class='page-link' href='?visitor_page=$nextPage#visitor'>Next</a>";
+                                                if ($exitPage < $exitTotalPages) {
+                                                    echo "<a class='page-link' href='?exit_page=$nextPage&filter=$filter&tab=exit'>Next</a>";
                                                 } else {
                                                     echo "<a class='page-link'>Next</a>";
                                                 }
                                                 echo "</li>";
                                             } else {
-                                                // Show disabled pagination when no entries
                                                 echo "<li class='page-item disabled'><a class='page-link'>Previous</a></li>";
                                                 echo "<li class='page-item active'><a class='page-link'>1</a></li>";
                                                 echo "<li class='page-item disabled'><a class='page-link'>Next</a></li>";
@@ -666,30 +666,29 @@ $visitor_result = $conn->query($visitor_sql);
             </div>
         </main>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let selectedId = null;
 
-        // Handle tab switching and link color changes
+        // Handle main tab switching (Entry/Exit)
         document.addEventListener('DOMContentLoaded', function () {
-            const tabLinks = document.querySelectorAll('#dashboardTabs .nav-link');
-            const tabPanes = document.querySelectorAll('.tab-pane');
+            const mainTabLinks = document.querySelectorAll('#mainTabs .nav-link');
+            const mainTabPanes = document.querySelectorAll('.tab-content > .tab-pane');
 
-            // Add click event listener to each tab link
-            tabLinks.forEach(function (tabLink) {
+            // Handle main tab switching
+            mainTabLinks.forEach(function (tabLink) {
                 tabLink.addEventListener('click', function (event) {
                     event.preventDefault();
-
-                    // Get the target tab pane
                     const targetId = this.getAttribute('href').substring(1);
                     const targetPane = document.getElementById(targetId);
 
-                    // Remove active classes from all tabs and panes
-                    tabLinks.forEach(function (link) {
+                    // Remove active classes from all main tabs and panes
+                    mainTabLinks.forEach(function (link) {
                         link.classList.remove('active', 'link-dark');
                         link.classList.add('link-secondary');
                     });
-
-                    tabPanes.forEach(function (pane) {
+                    mainTabPanes.forEach(function (pane) {
                         pane.classList.remove('show', 'active');
                     });
 
@@ -703,17 +702,23 @@ $visitor_result = $conn->query($visitor_sql);
                     }
                 });
             });
+
+            // Handle URL tab parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = urlParams.get('tab');
+            if (tab === 'exit') {
+                document.getElementById('exit-tab').click();
+            }
         });
 
-        // Capture ID when clicking "Delete Account" button
+        // Rest of the existing JavaScript for modals...
         document.querySelectorAll('.delete-account').forEach(btn => {
             btn.addEventListener('click', (event) => {
-                event.preventDefault(); // Prevent page reload!
+                event.preventDefault();
                 selectedId = btn.getAttribute('data-id');
             });
         });
 
-        // Handle confirmation proceed
         document.getElementById('confirmProceed').addEventListener('click', () => {
             if (selectedId) {
                 fetch('admin/archive_process.php', {
@@ -721,11 +726,11 @@ $visitor_result = $conn->query($visitor_sql);
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: 'admin_id=' + encodeURIComponent(selectedId)
                 })
-                    .then(res => res.text())  // read as text first
+                    .then(res => res.text())
                     .then(text => {
                         let data;
                         try {
-                            data = JSON.parse(text); // then parse
+                            data = JSON.parse(text);
                         } catch (e) {
                             throw new Error("Invalid JSON response");
                         }
@@ -743,33 +748,12 @@ $visitor_result = $conn->query($visitor_sql);
                 alert("Invalid admin ID.");
             }
         });
-        // Redirect after success
-        const redirect = () => window.location.href = 'admin_accounts.php';
+
+        const redirect = () => window.location.href = 'entry_logs.php';
         document.getElementById('doneButton').addEventListener('click', redirect);
         document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
-
-        // Handle tab switching and maintain pagination state
-        document.addEventListener('DOMContentLoaded', function () {
-            // Check URL hash to activate correct tab
-            const hash = window.location.hash;
-            if (hash === '#visitor') {
-                document.getElementById('homeowners-tab').classList.remove('active');
-                document.getElementById('visitor-tab').classList.add('active');
-                document.getElementById('homeowner').classList.remove('show', 'active');
-                document.getElementById('visitor').classList.add('show', 'active');
-            }
-
-            // Update URL hash when tab is clicked
-            document.getElementById('homeowners-tab').addEventListener('click', function () {
-                window.location.hash = '#homeowner';
-            });
-
-            document.getElementById('visitor-tab').addEventListener('click', function () {
-                window.location.hash = '#visitor';
-            });
-        });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 
 </html>
