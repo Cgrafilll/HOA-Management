@@ -422,13 +422,6 @@ $exit_result = $conn->query($exit_sql);
                                         </select>
                                         <input type="hidden" name="tab" value="entry">
                                     </div>
-                                    <div class="d-flex gap-2">
-                                        <a href="entry_logs/archive_homeowner.php"
-                                            class="btn btn-secondary btn-sm">Archived
-                                            RFID</a>
-                                        <a href="entry_logs/manage_homeowner.php" class="btn btn-primary btn-sm">Manage
-                                            RFID</a>
-                                    </div>
                                 </div>
                             </form>
                             <div class="table-responsive">
@@ -551,13 +544,6 @@ $exit_result = $conn->query($exit_sql);
                                             </option>
                                         </select>
                                         <input type="hidden" name="tab" value="exit">
-                                    </div>
-                                    <div class="d-flex gap-2">
-                                        <a href="entry_logs/archive_homeowner.php"
-                                            class="btn btn-secondary btn-sm">Archived
-                                            RFID</a>
-                                        <a href="entry_logs/manage_homeowner.php" class="btn btn-primary btn-sm">Manage
-                                            RFID</a>
                                     </div>
                                 </div>
                             </form>

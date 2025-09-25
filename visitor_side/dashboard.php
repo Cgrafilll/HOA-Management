@@ -59,25 +59,6 @@ if (!empty($visitor['profile_picture'])) {
     $photo = ''; // Explicitly empty if no image is saved
 }
 
-// Fetch announcements
-$announcements_sql = "SELECT a.id, a.title, a.body, a.status, a.created_at, 
-                             ad.first_name, ad.last_name 
-                      FROM announcements a 
-                      LEFT JOIN admin_accounts ad ON a.admin_id = ad.admin_id 
-                      WHERE a.status = 'published' 
-                      ORDER BY a.created_at DESC";
-$announcements_result = $conn->query($announcements_sql);
-
-// Fetch events from database
-$events_sql = "SELECT e.id, e.title, e.body, e.status, e.event_date, e.created_at, 
-                      ad.first_name, ad.last_name 
-               FROM events e 
-               LEFT JOIN admin_accounts ad ON e.admin_id = ad.admin_id 
-               WHERE e.status = 'published' 
-               ORDER BY e.event_date ASC, e.created_at DESC";
-
-$events_result = $conn->query($events_sql);
-
 // ✅ SIMPLIFIED BOOKING PAGINATION - Only for this household
 $limit = 10;
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
@@ -293,84 +274,6 @@ $bookings_result = $bookings_stmt->get_result();
         </aside>
         <!--Main Content-->
         <main class="flex-fill p-4">
-            <!-- Announcements and Events -->
-            <div class="row g-4 mb-3">
-                <div class="col-6">
-                    <div class="card shadow-sm h-100 d-flex flex-column">
-                        <div class="card-header bg-success text-white fw-semibold">Announcements</div>
-                        <div class="card-body flex-grow-1 overflow-auto" style="max-height: 400px;">
-                            <?php if ($announcements_result && $announcements_result->num_rows > 0): ?>
-                                <?php while ($row = $announcements_result->fetch_assoc()): ?>
-                                    <div class="card mb-3 shadow-sm announcement-card">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div class="announcement-title"
-                                                    style="font-weight: 600;font-size: 1rem;margin-bottom: 6px;">
-                                                    <?= htmlspecialchars($row['title']); ?>
-                                                </div>
-                                            </div>
-                                            <div class="announcement-body mt-2">
-                                                <?= nl2br(htmlspecialchars($row['body'])); ?>
-                                            </div>
-                                            <div class="announcement-meta mt-1 text-muted" style="font-size: 0.8rem;">
-                                                Posted by <?= htmlspecialchars($row['first_name'] . " " . $row['last_name']); ?>
-                                                on <?= date("M d, Y h:i A", strtotime($row['created_at'])); ?>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endwhile; ?>
-                            <?php else: ?>
-                                <div class="text-center text-muted py-4">
-                                    <i class="bi bi-megaphone" style="font-size: 3rem; opacity: 0.3;"></i>
-                                    <p class="mt-2">No announcements available</p>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card shadow-sm h-100 d-flex flex-column">
-                        <div class="card-header bg-success text-white fw-semibold">Events</div>
-                        <div class="card-body flex-grow-1 overflow-auto" style="max-height: 400px;">
-                            <?php if ($events_result && $events_result->num_rows > 0): ?>
-                                <?php while ($event_row = $events_result->fetch_assoc()): ?>
-                                    <div class="card mb-3 shadow-sm event-card">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div class="event-title"
-                                                    style="font-weight: 600;font-size: 1rem;margin-bottom: 6px;">
-                                                    <?= htmlspecialchars($event_row['title']); ?>
-                                                </div>
-                                                <?php if (!empty($event_row['event_date'])): ?>
-                                                    <div class="event-date mb-2">
-                                                        <small class="badge bg-primary">
-                                                            <i class="bi bi-calendar-event me-1"></i>
-                                                            <?= date("M d, Y", strtotime($event_row['event_date'])); ?>
-                                                        </small>
-                                                    </div>
-                                                <?php endif; ?>
-                                            </div>
-                                            <div class="event-body mt-2">
-                                                <?= nl2br(htmlspecialchars($event_row['body'])); ?>
-                                            </div>
-                                            <div class="event-meta mt-1 text-muted" style="font-size: 0.8rem;">
-                                                Posted by
-                                                <?= htmlspecialchars($event_row['first_name'] . " " . $event_row['last_name']); ?>
-                                                on <?= date("M d, Y h:i A", strtotime($event_row['created_at'])); ?>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endwhile; ?>
-                            <?php else: ?>
-                                <div class="text-center text-muted py-4">
-                                    <i class="bi bi-calendar-event" style="font-size: 3rem; opacity: 0.3;"></i>
-                                    <p class="mt-2">No events available</p>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
             <!-- Amenity Schedule -->
             <div class="card shadow-sm">
                 <div class="card-header bg-success text-white fw-semibold">Amenity Schedule</div>
