@@ -630,9 +630,9 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
         <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="imageModalLabel">Evidence Image</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="modal-header bg-success">
+                        <h5 class="modal-title text-white" id="imageModalLabel">Evidence Image</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body text-center">
                         <img id="modalImage" src="" alt="Evidence" class="img-fluid" style="max-height: 70vh;">
