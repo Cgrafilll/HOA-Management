@@ -140,8 +140,8 @@ try {
 
         // Prepare the INSERT statement
         $stmt = $conn->prepare("INSERT INTO violations 
-            (household_id, date_incident, time_incident, location, violation_type, description_of_incident, homeowner_involved, address_lot_number, other_parties, evidence, anonymous) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            (household_id, date_incident, time_incident, location, violation_type, description_of_incident, homeowner_involved, address_lot_number, other_parties, evidence, anonymous, action_taken) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')");
 
         if (!$stmt) {
             echo "error: Failed to prepare statement - " . $conn->error;

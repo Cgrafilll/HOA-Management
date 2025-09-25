@@ -198,8 +198,8 @@ if (!empty($resident['profile_picture'])) {
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">REPORT VIOLATION</h1>
             <div class="dropdown">
-                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="residentDropdown" data-bs-toggle="dropdown"
-                    aria-expanded="false" role="button" style="cursor: pointer;">
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="residentDropdown"
+                    data-bs-toggle="dropdown" aria-expanded="false" role="button" style="cursor: pointer;">
                     <span>Hello, <?php echo htmlspecialchars($residentname); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
@@ -302,8 +302,9 @@ if (!empty($resident['profile_picture'])) {
                             <span class="fw-bold mb-3">Contact Information</span>
                             <div class="col-md-4 mb-3">
                                 <input type="tel" name="cellphone_number" class="form-control"
-                                    value="<?php echo htmlspecialchars($resident['cellphone_number']); ?>" pattern="[0-9]+"
-                                    maxlength="15" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                    value="<?php echo htmlspecialchars($resident['cellphone_number']); ?>"
+                                    pattern="[0-9]+" maxlength="15"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                     placeholder="e.g., 09171234567" readonly />
                                 <label class="form-label mt-2">Cellphone Number</label>
                             </div>
@@ -312,12 +313,14 @@ if (!empty($resident['profile_picture'])) {
                         <div class="row">
                             <span class="fw-bold mb-3">Incident Details</span>
                             <div class="col-4 mb-3">
-                                <input type="date" name="date_incident" class="form-control" required />
+                                <input type="date" name="date_incident" class="form-control" id="dateIncident"
+                                    max="<?php echo date('Y-m-d'); ?>" required />
                                 <label class="form-label mt-2">Date of Incident<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
                             <div class="col-4 mb-3">
-                                <input type="time" name="time_incident" class="form-control" required />
+                                <input type="time" name="time_incident" class="form-control" id="timeIncident"
+                                    max="<?php echo date('H:i'); ?>" required />
                                 <label class="form-label mt-2">Time of Incident<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
@@ -368,10 +371,10 @@ if (!empty($resident['profile_picture'])) {
                                         <strong>Drag & drop files or <a href="#" id="browseLink">Browse</a></strong>
                                     </div>
                                     <div class="small text-muted">
-                                        Supported formats: JPEG, PNG, GIF, PDF, TXT, XLS, AI, Word, PPT
+                                        Supported formats: JPEG, PNG, GIF
                                     </div>
                                     <input type="file" id="fileInput" name="evidence" class="d-none"
-                                        accept=".jpeg,.jpg,.png,.gif,.pdf,.txt,.xls,.xlsx,.ai,.doc,.docx,.ppt,.pptx"
+                                        accept=".jpeg,.jpg,.png,.gif"
                                         required>
                                 </div>
                                 <label class="form-label mt-2">Upload your Evidence<small

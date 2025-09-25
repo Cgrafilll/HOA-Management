@@ -414,12 +414,13 @@ try {
                             <span class="fw-bold mb-3">Incident Details</span>
                             <div class="col-4 mb-3">
                                 <input type="date" name="date_incident" class="form-control" id="dateIncident"
-                                    required />
+                                    max="<?php echo date('Y-m-d'); ?>" required />
                                 <label class="form-label mt-2">Date of Incident<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
                             <div class="col-4 mb-3">
-                                <input type="time" name="time_incident" class="form-control" required />
+                                <input type="time" name="time_incident" class="form-control" id="timeIncident"
+                                    max="<?php echo date('H:i'); ?>" required />
                                 <label class="form-label mt-2">Time of Incident<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>

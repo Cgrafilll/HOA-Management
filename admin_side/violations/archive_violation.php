@@ -16,11 +16,11 @@ session_set_cookie_params([
 // NOW start the session
 session_start();
 
-require '../rfid-api/db.php'; // Adjust path as needed
+require '../../rfid-api/db.php'; // Adjust path as needed
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_id'])) {
-    header("Location: login/login.php?error=" . urlencode("Please log in to access this page."));
+    header("Location: ../login/login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
 
@@ -29,7 +29,7 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
     // Session expired
     session_unset();
     session_destroy();
-    header("Location: login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    header("Location: ../login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
     exit;
 }
 
@@ -59,16 +59,16 @@ if (!empty($admin['profile_picture'])) {
     $photo = ''; // Explicitly empty if no image is saved
 }
 
-// Pagination settings for active violations
-$entriesPerPage = 5;
+// Pagination settings for archived accounts
+$entriesPerPage = 5; // Changed from 10 to 5
 $currentPage = isset($_GET['page']) ? (int) $_GET['page'] : 1;
 $currentPage = max(1, $currentPage); // Ensure page is at least 1
 
 // Calculate offset for SQL query
 $offset = ($currentPage - 1) * $entriesPerPage;
 
-// Get total count for pagination (active violations only)
-$countSql = "SELECT COUNT(*) as total FROM violations WHERE status = 'Active'";
+// Get total count for pagination (archived accounts only)
+$countSql = "SELECT COUNT(*) as total FROM violations WHERE status = 'Inactive'";
 $countResult = $conn->query($countSql);
 $totalEntries = $countResult->fetch_assoc()['total'];
 $totalPages = ceil($totalEntries / $entriesPerPage);
@@ -84,7 +84,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
     <title>NSSHAI HOA Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
+    <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
@@ -110,16 +110,6 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
 
         main {
             margin-left: 250px;
-        }
-
-        .card-body p,
-        .card-body h6 {
-            word-wrap: break-word;
-            /* Old support */
-            overflow-wrap: break-word;
-            /* Modern support */
-            white-space: pre-wrap;
-            /* Keeps newlines */
         }
 
         .sidebar a,
@@ -172,6 +162,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
+
         }
 
         /* Make Cancel button slightly darker on hover */
@@ -180,17 +171,6 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             /* slightly darker gray */
             color: #000;
         }
-
-        .form-control.border-danger {
-            border: 2px solid #dc3545 !important;
-            /* force red */
-        }
-
-        textarea {
-            min-height: 100px;
-            resize: none;
-            /* optional: prevent manual drag */
-        }
     </style>
 </head>
 
@@ -198,7 +178,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
         <div class="me-4" style="width: 250px;">
-            <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
+            <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">RECORD KEEPING</h1>
@@ -217,12 +197,12 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                     </div>
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="admin/view_admin.php?id=<?php echo $admin_id; ?>"><i
+                    <li><a class="dropdown-item" href="../admin/view_admin.php?id=<?php echo $admin_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    <li><a class="dropdown-item" href="login/logout.php"><i
+                    <li><a class="dropdown-item" href="../login/logout.php"><i
                                 class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                 </ul>
             </div>
@@ -232,7 +212,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav flex-column gap-1">
-                <a href="admin_dashboard.php"
+                <a href="../admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
@@ -246,9 +226,9 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                     </button>
                     <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="admin_accounts.php" class="nav-link px-2">Admin</a></li>
-                            <li><a href="household_accounts.php" class="nav-link px-2">Household</a></li>
-                            <li><a href="visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
+                            <li><a href="../admin_accounts.php" class="nav-link px-2">Admin</a></li>
+                            <li><a href="../household_accounts.php" class="nav-link px-2">Household</a></li>
+                            <li><a href="../visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
                         </ul>
                     </div>
                 </div>
@@ -262,9 +242,10 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                     </button>
                     <div class="collapse show" id="recordCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
-                            <li><a href="#" class="nav-link px-2 actived">Violation Tracking</a></li>
-                            <li><a href="entry_logs.php" class="nav-link px-2">Gate Logs</a></li>
+                            <li><a href="../amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
+                            <li><a href="../violation_tracking.php" class="nav-link px-2 actived">Violation Tracking</a>
+                            </li>
+                            <li><a href="../entry_logs.php" class="nav-link px-2">Gate Logs</a></li>
                         </ul>
                     </div>
                 </div>
@@ -278,9 +259,9 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                     </button>
                     <div class="collapse" id="commCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="announcements.php" class="nav-link px-2 actived">Announcements</a></li>
-                            <li><a href="events.php" class="nav-link px-2">Events</a></li>
-                            <li><a href="phonebook.php" class="nav-link px-2">Phone Book</a></li>
+                            <li><a href="../announcements.php" class="nav-link px-2">Announcements</a></li>
+                            <li><a href="../events.php" class="nav-link px-2">Events</a></li>
+                            <li><a href="../phonebook.php" class="nav-link px-2">Phone Book</a></li>
                         </ul>
                     </div>
                 </div>
@@ -294,12 +275,12 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="payment.php" class="nav-link px-2">Payments</a></li>
-                            <li><a href="invoice.php" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="../payment.php" class="nav-link px-2">Payments</a></li>
+                            <li><a href="../invoice.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
-                <a href="login/logout.php"
+                <a href="../login/logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
                     style="position: fixed; bottom: 0; width: 220px;">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
@@ -330,45 +311,22 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                         </div>
                     </div>
                 </div>
-                <!-- Confirmation Modal -->
-                <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel"
-                    aria-hidden="true">
+                <!-- Activate Confirmation Modal -->
+                <div class="modal fade" id="activateConfirmModal" tabindex="-1"
+                    aria-labelledby="activateConfirmModalLabel" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content text-center">
-                            <div class="modal-header bg-success text-white">
-                                <h5 class="modal-title fw-bold">Confirmation</h5>
+                            <div class="modal-header bg-success">
+                                <h5 class="modal-title text-white fw-bold">Activate Violation</h5>
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                                     aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <i class="bi bi-question-circle text-success" style="font-size: 64px;"></i>
-                                <p class="mb-2"><b>Save Changes?</b></p>
-                                <p class="mb-3">Are you sure you want to save the action taken changes?</p>
+                                <i class="bi bi-key text-success" style="font-size: 64px;"></i>
+                                <p class="mb-2"><b>Activate this violation?</b></p>
+                                <p class="mb-3">This violation will be moved to active violations.</p>
                                 <div class="d-flex justify-content-center gap-2">
-                                    <button type="button" class="btn btn-success" id="confirmSave">Save</button>
-                                    <button type="button" class="btn btn-secondary btn-cancel"
-                                        data-bs-dismiss="modal">Cancel</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Archive Confirmation Modal -->
-                <div class="modal fade" id="archiveConfirmModal" tabindex="-1"
-                    aria-labelledby="archiveConfirmModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content text-center">
-                            <div class="modal-header bg-danger">
-                                <h5 class="modal-title text-white fw-bold">Archive Violation</h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <i class="bi bi-archive text-danger" style="font-size: 64px;"></i>
-                                <p class="mb-2"><b>Archive this violation?</b></p>
-                                <p class="mb-3">This violation will be moved to archived violations.</p>
-                                <div class="d-flex justify-content-center gap-2">
-                                    <button type="button" class="btn btn-danger" id="confirmArchive">Archive</button>
+                                    <button type="button" class="btn btn-success" id="confirmActivate">Activate</button>
                                     <button type="button" class="btn btn-secondary"
                                         data-bs-dismiss="modal">Cancel</button>
                                 </div>
@@ -398,12 +356,11 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                 </div>
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="small">Violations</span>
+                        <span class="small">Archived Violations</span>
                         <div>
-                            <a href="violations/archive_violation.php"
-                                class="btn btn-outline-secondary btn-sm me-2">Archived Violation</a>
-                            <a href="violations/add_violations.php" class="btn btn-primary btn-sm">+ Create Violation
-                                Report</a>
+                            <button onclick="history.back()" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-arrow-left me-1"></i>Back
+                            </button>
                         </div>
                     </div>
                     <hr class="mb-3 mt-0">
@@ -436,7 +393,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                                     FROM violations v
                                     INNER JOIN household_accounts h 
                                         ON v.household_id = h.household_id
-                                    WHERE v.status = 'Active'
+                                    WHERE v.status = 'Inactive'
                                     ORDER BY v.date_incident DESC
                                     LIMIT $entriesPerPage OFFSET $offset";
 
@@ -469,6 +426,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                                                 default:
                                                     $badge_class = 'badge bg-light text-dark';
                                             }
+
                                             echo '
                                                 <tr data-violation-id="' . $row['violation_id'] . '" style="height: 80px;">
                                                     <td class="align-middle">' . htmlspecialchars($row['resident_name']) . '</td>
@@ -487,31 +445,17 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                                             } else {
                                                 echo '<span class="text-muted small">No evidence</span>';
                                             }
+
                                             echo '</td>
-                                                    <td class="text-center action-taken-cell align-middle" data-current-status="' . htmlspecialchars($row['action_taken']) . '">
+                                                    <td class="text-center align-middle">
                                                         <span class="' . $badge_class . ' status-badge">' . htmlspecialchars($row['action_taken']) . '</span>
                                                     </td>
                                                     <td class="text-center align-middle">
-                                                        <div class="action-buttons">
-                                                            <!-- Edit button -->
-                                                            <button class="btn btn-sm btn-outline-primary me-1 edit-btn" title="Edit" style="padding: 2px 6px; font-size: 0.9rem;">
-                                                                <i class="bi bi-pencil-square"></i>
-                                                            </button>
-                                                            <!-- Archive button -->
-                                                            <button class="btn btn-sm btn-outline-danger archive-btn" 
-                                                                data-violation-id="' . $row['violation_id'] . '" title="Archive"
-                                                                style="padding: 2px 6px; font-size: 0.9rem;">
-                                                                <i class="bi bi-archive"></i>
-                                                            </button>
-                                                        </div>
-                                                        <div class="edit-buttons d-none">
-                                                            <button class="btn btn-sm btn-success me-1 save-btn" title="Save" style="padding: 2px 6px; font-size: 0.9rem;">
-                                                                <i class="bi bi-check-lg"></i>
-                                                            </button>
-                                                            <button class="btn btn-sm btn-secondary cancel-btn" title="Cancel" style="padding: 2px 6px; font-size: 0.9rem;">
-                                                                <i class="bi bi-x-lg"></i>
-                                                            </button>
-                                                        </div>
+                                                        <button class="btn btn-sm btn-success activate-btn"
+                                                            data-id="' . htmlspecialchars($row['violation_id']) . '" data-bs-toggle="modal" 
+                                                            data-bs-target="#activateConfirmModal">
+                                                            <i class="bi bi-check-circle me-1"></i> Activate
+                                                        </button>
                                                     </td>
                                                 </tr>';
                                             $rowCount++;
@@ -532,9 +476,9 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                                         $rowCount++;
                                     }
                                 } else {
-                                    // No active violations found - show message and fill 5 rows
+                                    // No archived violations found - show message and fill 5 rows
                                     echo '<tr style="height: 80px;">
-                                        <td colspan="7" class="text-center text-muted align-middle">No violation reports found.</td>
+                                        <td colspan="7" class="text-center text-muted align-middle">No archived violations found.</td>
                                     </tr>';
 
                                     // Fill remaining 4 empty rows
@@ -554,7 +498,6 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                             </tbody>
                         </table>
                     </div>
-
                     <!-- Pagination -->
                     <?php if ($totalEntries > 0): ?>
                         <div class="d-flex justify-content-between align-items-center mt-3">
@@ -563,7 +506,6 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                                 <?php echo min($currentPage * $entriesPerPage, $totalEntries); ?> of
                                 <?php echo $totalEntries; ?> entries
                             </div>
-
                             <?php if ($totalPages > 1): ?>
                                 <nav aria-label="Pagination">
                                     <ul class="pagination pagination-sm mb-0">
@@ -626,21 +568,21 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                 </div>
             </div>
         </main>
-        <!-- Image Modal for Full View -->
-        <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="imageModalLabel">Evidence Image</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                        <img id="modalImage" src="" alt="Evidence" class="img-fluid" style="max-height: 70vh;">
-                    </div>
+    </div>
+
+    <!-- Image Modal for Full View -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalLabel">Evidence Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" src="" alt="Evidence" class="img-fluid" style="max-height: 70vh;">
                 </div>
             </div>
         </div>
-
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -651,332 +593,59 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             imageModal.show();
         }
 
-        // Global variables to store current edit context
-        let currentEditRow = null;
-        let pendingStatus = null;
-        let currentArchiveViolationId = null; // ADD THIS LINE
-
-        // Handle edit functionality
+        // Handle activate button functionality
         document.addEventListener('DOMContentLoaded', function () {
-            // Edit button click handler
             document.addEventListener('click', function (e) {
-                if (e.target.closest('.edit-btn')) {
-                    const row = e.target.closest('tr');
-                    const actionCell = row.querySelector('.action-taken-cell');
-                    const currentStatus = actionCell.dataset.currentStatus;
+                if (e.target.closest('.activate-btn')) {
+                    const violationId = e.target.closest('.activate-btn').dataset.id;
 
-                    // Create dropdown
-                    const dropdown = `
-                        <select class="form-select form-select-sm status-dropdown">
-                            <option value="Pending" ${currentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
-                            <option value="Under Review" ${currentStatus === 'Under Review' ? 'selected' : ''}>Under Review</option>
-                            <option value="Resolved" ${currentStatus === 'Resolved' ? 'selected' : ''}>Resolved</option>
-                            <option value="Dismissed" ${currentStatus === 'Dismissed' ? 'selected' : ''}>Dismissed</option>
-                        </select>
-                    `;
+                    // Show confirmation modal for activation
+                    document.getElementById('confirmActivate').onclick = function () {
+                        // Close modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('activateConfirmModal'));
+                        modal.hide();
 
-                    // Replace badge with dropdown
-                    actionCell.innerHTML = dropdown;
-
-                    // Show edit buttons, hide action buttons
-                    row.querySelector('.action-buttons').classList.add('d-none');
-                    row.querySelector('.edit-buttons').classList.remove('d-none');
-                }
-
-                // Archive button click handler - ADD THIS BLOCK
-                if (e.target.closest('.archive-btn')) {
-                    const violationId = e.target.closest('.archive-btn').dataset.violationId;
-                    currentArchiveViolationId = violationId;
-
-                    // Show archive confirmation modal
-                    const archiveModal = new bootstrap.Modal(document.getElementById('archiveConfirmModal'));
-                    archiveModal.show();
-                }
-
-                // Save button click handler - Show confirmation modal
-                if (e.target.closest('.save-btn')) {
-                    const row = e.target.closest('tr');
-                    const newStatus = row.querySelector('.status-dropdown').value;
-                    const currentStatus = row.querySelector('.action-taken-cell').dataset.currentStatus;
-
-                    // Check if status actually changed
-                    if (newStatus === currentStatus) {
-                        // No change, just exit edit mode
-                        updateStatusDisplay(row, currentStatus);
-                        exitEditMode(row);
-                        return;
-                    }
-
-                    // Store context for confirmation
-                    currentEditRow = row;
-                    pendingStatus = newStatus;
-
-                    // Show confirmation modal
-                    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-                    confirmModal.show();
-                }
-
-                // Cancel button click handler
-                if (e.target.closest('.cancel-btn')) {
-                    const row = e.target.closest('tr');
-                    const actionCell = row.querySelector('.action-taken-cell');
-                    const currentStatus = actionCell.dataset.currentStatus;
-
-                    // Restore original badge
-                    updateStatusDisplay(row, currentStatus);
-                    exitEditMode(row);
-                }
-            });
-
-            // Confirmation modal save handler
-            document.getElementById('confirmSave').addEventListener('click', function () {
-                if (currentEditRow && pendingStatus) {
-                    const violationId = currentEditRow.dataset.violationId;
-
-                    // Close confirmation modal
-                    const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-                    confirmModal.hide();
-
-                    // Save to database via AJAX
-                    fetch('violations/update_status.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            violation_id: violationId,
-                            action_taken: pendingStatus
+                        // Send activation request
+                        fetch('update_status.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                violation_id: violationId,
+                                action: 'activate'
+                            })
                         })
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                // Update the display
-                                updateStatusDisplay(currentEditRow, pendingStatus);
-                                exitEditMode(currentEditRow);
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    // Show success modal and reload page
+                                    document.getElementById('successMessage').textContent = 'Violation has been activated successfully.';
+                                    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                                    successModal.show();
 
-                                // Show success modal
-                                document.getElementById('successMessage').textContent = 'Violation status has been updated successfully.';
-                                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                                successModal.show();
-                            } else {
-                                // Show error modal
-                                document.getElementById('errorMessage').textContent = data.message || 'An error occurred while updating the violation status.';
-                                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                                errorModal.show();
-
-                                // Restore original status on error
-                                const currentStatus = currentEditRow.querySelector('.action-taken-cell').dataset.currentStatus;
-                                updateStatusDisplay(currentEditRow, currentStatus);
-                                exitEditMode(currentEditRow);
-                            }
-
-                            // Reset context
-                            currentEditRow = null;
-                            pendingStatus = null;
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-
-                            // Show error modal
-                            document.getElementById('errorMessage').textContent = 'Network error occurred. Please try again.';
-                            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                            errorModal.show();
-
-                            // Restore original status on error
-                            if (currentEditRow) {
-                                const currentStatus = currentEditRow.querySelector('.action-taken-cell').dataset.currentStatus;
-                                updateStatusDisplay(currentEditRow, currentStatus);
-                                exitEditMode(currentEditRow);
-                            }
-
-                            // Reset context
-                            currentEditRow = null;
-                            pendingStatus = null;
-                        });
-                }
-            });
-
-            // Reset context when confirmation modal is closed without saving
-            document.getElementById('confirmModal').addEventListener('hidden.bs.modal', function () {
-                if (currentEditRow && pendingStatus) {
-                    // User closed modal without saving, restore original status
-                    const currentStatus = currentEditRow.querySelector('.action-taken-cell').dataset.currentStatus;
-                    updateStatusDisplay(currentEditRow, currentStatus);
-                    exitEditMode(currentEditRow);
-
-                    // Reset context
-                    currentEditRow = null;
-                    pendingStatus = null;
-                }
-            });
-
-            // Archive confirmation handler
-            document.getElementById('confirmArchive').addEventListener('click', function () {
-                if (currentArchiveViolationId) {
-                    // Close archive modal
-                    const archiveModal = bootstrap.Modal.getInstance(document.getElementById('archiveConfirmModal'));
-                    archiveModal.hide();
-
-                    // Archive violation via AJAX
-                    fetch('violations/update_status.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            violation_id: currentArchiveViolationId,
-                            action: 'archive'
-                        })
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                // Remove the row from the table
-                                const row = document.querySelector(`tr[data-violation-id="${currentArchiveViolationId}"]`);
-                                if (row) {
-                                    row.style.transition = 'opacity 0.3s';
-                                    row.style.opacity = '0';
-                                    setTimeout(() => {
-                                        row.remove();
-
-                                        // Check if there are any actual data rows left (rows with violation-id)
-                                        const tbody = document.querySelector('tbody');
-                                        const dataRows = tbody.querySelectorAll('tr[data-violation-id]');
-
-                                        if (dataRows.length === 0) {
-                                            // No data rows left - rebuild table with empty state
-                                            tbody.innerHTML = `
-                                    <tr style="height: 80px;">
-                                        <td colspan="7" class="text-center text-muted align-middle">No violation reports found.</td>
-                                    </tr>
-                                    <tr style="height: 80px;">
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                    </tr>
-                                    <tr style="height: 80px;">
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                    </tr>
-                                    <tr style="height: 80px;">
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                    </tr>
-                                    <tr style="height: 80px;">
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                    </tr>
-                                `;
-
-                                            // Also hide the pagination if it exists
-                                            const paginationDiv = document.querySelector('.d-flex.justify-content-between.align-items-center.mt-3');
-                                            if (paginationDiv) {
-                                                paginationDiv.style.display = 'none';
-                                            }
-                                        } else {
-                                            // There are still data rows, add an empty row to maintain count
-                                            const currentRows = tbody.querySelectorAll('tr');
-                                            if (currentRows.length < 5) {
-                                                const emptyRow = document.createElement('tr');
-                                                emptyRow.style.height = '80px';
-                                                emptyRow.innerHTML = `
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                        <td class="align-middle">&nbsp;</td>
-                                    `;
-                                                tbody.appendChild(emptyRow);
-                                            }
-                                        }
-                                    }, 300);
+                                    // Reload page after modal closes
+                                    successModal._element.addEventListener('hidden.bs.modal', function () {
+                                        location.reload();
+                                    });
+                                } else {
+                                    // Show error modal
+                                    document.getElementById('errorMessage').textContent = data.message || 'An error occurred while activating the violation.';
+                                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                                    errorModal.show();
                                 }
-
-                                // Show success modal
-                                document.getElementById('successMessage').textContent = 'Violation has been archived successfully.';
-                                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                                successModal.show();
-                            } else {
-                                // Show error modal
-                                document.getElementById('errorMessage').textContent = data.message || 'An error occurred while archiving the violation.';
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                document.getElementById('errorMessage').textContent = 'Network error occurred. Please try again.';
                                 const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
                                 errorModal.show();
-                            }
-
-                            // Reset context
-                            currentArchiveViolationId = null;
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-
-                            // Show error modal
-                            document.getElementById('errorMessage').textContent = 'Network error occurred. Please try again.';
-                            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                            errorModal.show();
-
-                            // Reset context
-                            currentArchiveViolationId = null;
-                        });
+                            });
+                    };
                 }
-            });
-            
-            // Reset context when archive modal is closed without archiving - ADD THIS BLOCK
-            document.getElementById('archiveConfirmModal').addEventListener('hidden.bs.modal', function () {
-                currentArchiveViolationId = null;
             });
         });
 
-        function updateStatusDisplay(row, status) {
-            const actionCell = row.querySelector('.action-taken-cell');
-            let badgeClass = '';
-
-            switch (status.toLowerCase()) {
-                case 'pending':
-                    badgeClass = 'badge bg-primary';
-                    break;
-                case 'under review':
-                    badgeClass = 'badge bg-warning text-dark';
-                    break;
-                case 'resolved':
-                    badgeClass = 'badge bg-success';
-                    break;
-                case 'dismissed':
-                    badgeClass = 'badge bg-secondary';
-                    break;
-                default:
-                    badgeClass = 'badge bg-light text-dark';
-            }
-
-            actionCell.innerHTML = `<span class="${badgeClass} status-badge">${status}</span>`;
-            actionCell.dataset.currentStatus = status;
-        }
-
-        function exitEditMode(row) {
-            row.querySelector('.action-buttons').classList.remove('d-none');
-            row.querySelector('.edit-buttons').classList.add('d-none');
-        }
     </script>
 
 </body>
