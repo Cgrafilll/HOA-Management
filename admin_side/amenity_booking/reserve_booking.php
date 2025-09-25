@@ -488,7 +488,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 <a href="../login/logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
                     style="position: fixed; bottom: 0; width: 220px;">
-                    <i class="bi bi-box-arrow-right me-2"></i> Logout
+                    <i class="bi bi-box-arrow-right me-2"></i>Logout
                 </a>
             </nav>
         </aside>
@@ -667,6 +667,27 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         </div>
                                     </div>
                                 </div>
+                                <!-- Vehicle -->
+                                <div class="row">
+                                    <label class="form-label fw-bold">Vehicle</label>
+                                    <div class="col-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="number" class="form-control" id="cars" name="cars" min="0"
+                                                value="0">
+                                            <label for="cars">No. of Vehicle/s</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="plates" name="plates">
+                                            <label for="plates">Vehicle Plate Number/s</label>
+                                        </div>
+                                        <div class="form-text text-muted">
+                                            <small><i class="bi bi-info-circle me-1"></i>If more than 1 vehicle,
+                                                separate plate numbers by comma (e.g., ABC-1234, XYZ-5678)</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <!-- Right Column -->
                             <div class="col-lg-6">
@@ -733,11 +754,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             <strong>Drag & drop files or <a href="#" id="browseLink">Browse</a></strong>
                                         </div>
                                         <div class="small text-muted">
-                                            Supported formats: JPEG, PNG, GIF, PDF, TXT, XLS, AI, Word, PPT
+                                            Supported formats: JPEG, PNG, GIF, PDF
                                         </div>
                                         <input type="file" id="fileInput" name="proofOfPayment" class="d-none"
-                                            accept=".jpeg,.jpg,.png,.gif,.pdf,.txt,.xls,.xlsx,.ai,.doc,.docx,.ppt,.pptx"
-                                            required>
+                                            accept=".jpeg,.jpg,.png,.gif,.pdf" required>
                                     </div>
                                     <div id="filePreview" class="mt-2"></div>
                                 </div>
@@ -1133,9 +1153,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             fileInput.value = '';
             filePreview.innerHTML = '';
         }
-
-        // REMOVED: Form submission - now handled by separate confirmation system
-        // The form submission is now handled by the confirmation modal system
 
         // Store rates from PHP into JS
         const amenityRates = <?php echo json_encode($amenityRates); ?>;
@@ -1633,6 +1650,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             initializeAmountPaidValidation();
             initializeFormSubmission();
         });
+
         // Modal Handler - Updated for confirmation flow
         document.addEventListener("DOMContentLoaded", function () {
             // Check URL parameters for success/error messages
@@ -1679,6 +1697,58 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 });
             }
         });
+
+        // Vehicle and plate number functionality
+        document.addEventListener("DOMContentLoaded", function () {
+            const carsField = document.getElementById('cars');
+            const platesField = document.getElementById('plates');
+
+            if (carsField && platesField) {
+                // Function to toggle plate number field based on number of cars
+                function togglePlateField() {
+                    const numberOfCars = parseInt(carsField.value) || 0;
+
+                    if (numberOfCars === 0) {
+                        // Disable and clear the plate field
+                        platesField.disabled = true;
+                        platesField.value = '';
+                        platesField.style.backgroundColor = '#f8f9fa';
+                        platesField.style.opacity = '0.6';
+                        platesField.removeAttribute('required');
+
+                        // Update the existing instruction text
+                        const instructionDiv = platesField.parentNode.nextElementSibling;
+                        if (instructionDiv && instructionDiv.classList.contains('form-text')) {
+                            instructionDiv.innerHTML = '<small class="text-muted"><i class="bi bi-info-circle me-1"></i>Enter number of vehicles first to enable plate number field</small>';
+                        }
+                    } else {
+                        // Enable the plate field
+                        platesField.disabled = false;
+                        platesField.style.backgroundColor = '';
+                        platesField.style.opacity = '';
+                        platesField.setAttribute('required', 'required');
+                        
+                        // Update instruction text based on number of cars
+                        const instructionDiv = platesField.parentNode.nextElementSibling;
+                        if (instructionDiv && instructionDiv.classList.contains('form-text')) {
+                            if (numberOfCars === 1) {
+                                instructionDiv.innerHTML = '<small><i class="bi bi-info-circle me-1"></i>Enter the vehicle plate number</small>';
+                            } else {
+                                instructionDiv.innerHTML = '<small><i class="bi bi-info-circle me-1"></i>If more than 1 vehicle, separate plate numbers by comma (e.g., ABC-1234, XYZ-5678)</small>';
+                            }
+                        }
+                    }
+                }
+
+                // Initialize the field state on page load
+                togglePlateField();
+
+                // Add event listeners to monitor changes in the cars field
+                carsField.addEventListener('input', togglePlateField);
+                carsField.addEventListener('change', togglePlateField);
+            }
+        });
+
     </script>
 
 </body>
