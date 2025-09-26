@@ -130,7 +130,7 @@ function sendBookingReceipt($recipientEmail, $recipientName, $bookingDetails)
     }
 }
 
-// Generate HTML email template (keeping your existing function)
+// Generate HTML email template (updated with vehicle information)
 function generateEmailTemplate($recipientName, $bookingDetails)
 {
     $reservationCode = htmlspecialchars($bookingDetails['reservation_code']);
@@ -274,6 +274,23 @@ function generateEmailTemplate($recipientName, $bookingDetails)
                     </div>';
     }
 
+    // Add vehicle information if any
+    if ($bookingDetails['vehicles'] > 0) {
+        $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">🚗 Vehicles</span>
+                        <span class="detail-value">' . $bookingDetails['vehicles'] . ' vehicle(s)</span>
+                    </div>';
+        
+        if (!empty($bookingDetails['plate_numbers'])) {
+            $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">🏷️ Plate Numbers</span>
+                        <span class="detail-value">' . htmlspecialchars($bookingDetails['plate_numbers']) . '</span>
+                    </div>';
+        }
+    }
+
     // Payment information
     $html .= '
                     <div class="detail-row">
@@ -318,7 +335,15 @@ function generateEmailTemplate($recipientName, $bookingDetails)
                         <li>Please save your reservation code <strong>' . $reservationCode . '</strong> for future reference.</li>
                         <li>You will receive another email once your booking is approved or if additional information is needed.</li>
                         <li>Minimum 50% down payment is required. Payment must be received before your scheduled date.</li>
-                        <li>Rescheduling is allowed but must be requested at least 24 hours in advance.</li>
+                        <li>Rescheduling is allowed but must be requested at least 24 hours in advance.</li>';
+    
+    // Add vehicle reminder if applicable
+    if ($bookingDetails['vehicles'] > 0) {
+        $html .= '
+                        <li>Please ensure all registered vehicles (' . htmlspecialchars($bookingDetails['plate_numbers']) . ') are used during your visit.</li>';
+    }
+    
+    $html .= '
                     </ul>
                 </div>
                 
@@ -350,7 +375,7 @@ function generateEmailTemplate($recipientName, $bookingDetails)
     return $html;
 }
 
-// Generate plain text version for email clients that don't support HTML
+// Generate plain text version for email clients that don't support HTML (updated)
 function generatePlainTextEmail($recipientName, $bookingDetails)
 {
     $text = "AMENITY BOOKING CONFIRMATION - NSSHAI\n";
@@ -373,6 +398,15 @@ function generatePlainTextEmail($recipientName, $bookingDetails)
     }
 
     $text .= "- Exclusive Booking: " . ucfirst($bookingDetails['exclusive_booking']) . "\n";
+    
+    // Add vehicle information
+    if ($bookingDetails['vehicles'] > 0) {
+        $text .= "- Vehicles: " . $bookingDetails['vehicles'] . "\n";
+        if (!empty($bookingDetails['plate_numbers'])) {
+            $text .= "- Plate Numbers: " . $bookingDetails['plate_numbers'] . "\n";
+        }
+    }
+    
     $text .= "- Payment Method: " . ucfirst($bookingDetails['payment_method']) . "\n";
     $text .= "- Total Amount: ₱" . number_format($bookingDetails['total_amount'], 2) . "\n";
     $text .= "- Amount Paid: ₱" . number_format($bookingDetails['amount_paid'], 2) . "\n";
@@ -385,8 +419,13 @@ function generatePlainTextEmail($recipientName, $bookingDetails)
     $text .= "- Your booking is currently PENDING approval\n";
     $text .= "- Keep your reservation code safe\n";
     $text .= "- You will receive updates via email\n";
-    $text .= "- Contact us at 8-2457647 for questions\n\n";
-    $text .= "Best regards,\nNSSHAI Administration Team";
+    $text .= "- Contact us at 8-2457647 for questions\n";
+    
+    if ($bookingDetails['vehicles'] > 0) {
+        $text .= "- Use registered vehicles: " . $bookingDetails['plate_numbers'] . "\n";
+    }
+    
+    $text .= "\nBest regards,\nNSSHAI Administration Team";
 
     return $text;
 }
@@ -452,6 +491,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $guests = isset($_POST['guests']) ? (int) $_POST['guests'] : 0;
     $chairs = isset($_POST['chairs']) ? (int) $_POST['chairs'] : 0;
     $tables = isset($_POST['tables']) ? (int) $_POST['tables'] : 0;
+    
+    // Handle vehicle information
+    $vehicles = isset($_POST['cars']) ? (int) $_POST['cars'] : 0;
+    $plateNumbers = isset($_POST['plates']) ? trim($_POST['plates']) : '';
 
     // Handle total amount - remove commas and convert to float
     $total = 0.0;
@@ -509,20 +552,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
-    /// Prepare database statement - updated to match your actual table structure
+    // Prepare database statement - updated to include vehicle fields
     $stmt = $conn->prepare("
         INSERT INTO amenity_bookings 
-        (reservation_code, admin_id, homeowner_id, visitor_id, amenity, user_type, reservation_date, guests, rate, payment_method, exclusive_booking, chairs, tables, reference_number, total_amount, amount_paid, proof_of_payment, invoice_number, status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (reservation_code, admin_id, homeowner_id, visitor_id, amenity, user_type, reservation_date, guests, rate, payment_method, exclusive_booking, chairs, tables, vehicles, plate_numbers, reference_number, total_amount, amount_paid, proof_of_payment, invoice_number, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
     if (!$stmt) {
         die("Prepare failed: " . $conn->error);
     }
 
-    // Bind parameters - corrected type string
+    // Bind parameters - updated to include vehicle fields
     $stmt->bind_param(
-        "sssssssisssiissdsss",
+        "sssssssisssiisssddsss",
         $reservation_code,   // s
         $admin_id,           // s                
         $homeowner_id,       // s
@@ -536,6 +579,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $exclusiveBooking,   // s 
         $chairs,             // i
         $tables,             // i
+        $vehicles,           // i (new)
+        $plateNumbers,       // s (new)
         $referenceNumber,    // s     
         $total,              // d
         $amountPaid,         // d 
@@ -543,7 +588,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $invoice_number,     // s 
         $status              // s
     );
-// s
 
     if ($stmt->execute()) {
         // Get recipient name from the appropriate table
@@ -568,7 +612,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $nameStmt->close();
         }
 
-        // Prepare booking details for email
+        // Prepare booking details for email - updated to include vehicle information
         $bookingDetails = [
             'reservation_code' => $reservation_code,
             'invoice_number' => $invoice_number,
@@ -579,6 +623,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             'exclusive_booking' => $exclusiveBooking,
             'chairs' => $chairs,
             'tables' => $tables,
+            'vehicles' => $vehicles,
+            'plate_numbers' => $plateNumbers,
             'payment_method' => $payment,
             'total_amount' => $total,
             'amount_paid' => $amountPaid,
