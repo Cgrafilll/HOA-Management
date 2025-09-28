@@ -60,6 +60,19 @@ class PaymentManager {
         // Initialize Bootstrap modals
         this.confirmModal = new bootstrap.Modal(document.getElementById('confirmPaymentModal'));
         this.successModal = new bootstrap.Modal(document.getElementById('successPaymentModal'));
+        
+        // Check if error modal exists before initializing
+        const errorModalElement = document.getElementById('errorPaymentModal');
+        const errorMessageElement = document.getElementById('errorMessage');
+        
+        if (errorModalElement && errorMessageElement) {
+            this.errorModal = new bootstrap.Modal(errorModalElement);
+            this.errorMessage = errorMessageElement;
+        } else {
+            console.warn('Error modal elements not found. Error modal functionality will be disabled.');
+            this.errorModal = null;
+            this.errorMessage = null;
+        }
     }
 
     attachEventListeners() {
@@ -445,18 +458,28 @@ class PaymentManager {
         // Reset table and summary
         this.clearInvoiceTable();
         
-        // Reset styles
-        this.invoiceInput.style.borderColor = '#dee2e6';
-        this.invoiceInput.style.boxShadow = 'none';
-        this.userIdSelect.style.borderColor = '#dee2e6';
-        this.userIdSelect.style.boxShadow = 'none';
+        // Reset all validation styles
+        const fieldsToReset = [
+            this.userTypeSelect,
+            this.userIdSelect,
+            this.categorySelect,
+            this.invoiceInput,
+            this.amountPaid
+        ];
+        
+        fieldsToReset.forEach(field => {
+            field.classList.remove('is-invalid');
+            field.style.borderColor = '#dee2e6';
+            field.style.boxShadow = 'none';
+        });
+        
+        // Reset file drop area styling
+        this.fileDropArea.style.borderColor = '#d1d5db';
+        this.fileDropArea.style.backgroundColor = '#f9fafb';
         
         // Reset file upload
         this.fileInput.value = '';
         this.filePreview.innerHTML = '';
-        
-        // Remove validation classes
-        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
     }
 
     handleSubmit(e) {
@@ -475,44 +498,73 @@ class PaymentManager {
         requiredFields.forEach(field => {
             if (!field.value) {
                 field.classList.add('is-invalid');
+                field.style.borderColor = '#dc3545';
+                field.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
                 isValid = false;
             } else {
                 field.classList.remove('is-invalid');
+                field.style.borderColor = '#dee2e6';
+                field.style.boxShadow = 'none';
             }
         });
         
+        // Validate amount paid field specifically
+        if (!this.amountPaid.value || parseFloat(this.amountPaid.value) <= 0) {
+            this.amountPaid.classList.add('is-invalid');
+            this.amountPaid.style.borderColor = '#dc3545';
+            this.amountPaid.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+            isValid = false;
+        }
+        
+        // Check if proof of payment is uploaded for bank transfer and highlight if missing
+        if (this.selectedMethod.textContent === "Bank Transfer" && !this.fileInput.files.length) {
+            this.fileDropArea.style.borderColor = '#dc3545';
+            this.fileDropArea.style.backgroundColor = '#f8d7da';
+            isValid = false;
+        } else {
+            // Reset file drop area styling if valid
+            this.fileDropArea.style.borderColor = '#d1d5db';
+            this.fileDropArea.style.backgroundColor = '#f9fafb';
+        }
+        
         if (!isValid) {
-            alert('Please fill in all required fields');
             return;
         }
         
-        // Check if proof of payment is uploaded for bank transfer
-        if (this.selectedMethod.textContent === "Bank Transfer" && !this.fileInput.files.length) {
-            alert('Please upload proof of payment for bank transfers');
+                
+        if (!isValid) {
             return;
         }
         
         // Additional validation for Amenity Fee and Monthly Dues payments
         if (this.categorySelect.value === 'Amenity Fee' || this.categorySelect.value === 'Monthly Dues') {
             if (!this.currentInvoiceData) {
-                alert(`Please enter a valid invoice number for ${this.categorySelect.value} payments`);
+                this.showErrorModal(`Please enter a valid invoice number for ${this.categorySelect.value} payments.`);
                 return;
             }
             
-            // Check if payment amount is valid
+            // Check if payment amount exceeds balance due - USE ERROR MODAL FOR THIS
             const amountPaid = parseFloat(this.amountPaid.value);
             const balanceDue = parseFloat(this.currentInvoiceData.balance_due.replace(/,/g, ''));
             
             if (amountPaid > balanceDue) {
-                const confirmOverpayment = confirm(
-                    `The amount entered (₱${amountPaid.toFixed(2)}) exceeds the balance due (₱${balanceDue.toFixed(2)}). Do you want to proceed?`
-                );
-                if (!confirmOverpayment) return;
+                this.showErrorModal(`The amount entered (₱${amountPaid.toFixed(2)}) exceeds the balance due (₱${balanceDue.toFixed(2)}). Please enter a valid amount.`);
+                return;
             }
         }
         
-        // Show confirmation modal
+        // Show confirmation modal if all validations pass
         this.showConfirmationModal();
+    }
+
+    showErrorModal(message) {
+        if (this.errorModal && this.errorMessage) {
+            this.errorMessage.textContent = message;
+            this.errorModal.show();
+        } else {
+            // Fallback to alert if error modal is not available
+            alert(message);
+        }
     }
 
     showConfirmationModal() {
@@ -578,7 +630,7 @@ class PaymentManager {
             
         } catch (error) {
             console.error('Payment processing error:', error);
-            alert('Error processing payment: ' + error.message);
+            this.showErrorModal('Error processing payment: ' + error.message);
         } finally {
             // Re-enable the confirm button
             this.confirmPaymentBtn.disabled = false;
