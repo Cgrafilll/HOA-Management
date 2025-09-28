@@ -32,7 +32,7 @@ header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
+    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
     exit;
 }
 
@@ -359,7 +359,6 @@ function generateInvoiceNumber($conn) {
 }
 
 try {
-    $invoice_number     = generateInvoiceNumber($conn);
     $household_id       = $_POST['household_id'];
     $billing_month_input = $_POST['billing_month']; // This is YYYY-MM format
     $balance_remaining  = $_POST['balance_remaining'];
@@ -371,17 +370,61 @@ try {
     // Validate required fields
     if (empty($household_id) || empty($billing_month_input) || empty($balance_remaining) || empty($due_date)) {
         http_response_code(400);
-        echo json_encode(['error' => 'All fields are required.']);
+        echo json_encode([
+            'success' => false, 
+            'error_type' => 'validation',
+            'error' => 'All fields are required.'
+        ]);
         exit;
     }
+
+    // ✅ VALIDATION 1: Check if due date has already passed
+    $today = date('Y-m-d');
+    $due_date_formatted = date('Y-m-d', strtotime($due_date));
+    
+    if ($due_date_formatted <= $today) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false, 
+            'error_type' => 'validation',
+            'error' => 'Cannot create invoice with a due date that has already passed (' . date('F j, Y', strtotime($due_date)) . '). Due date must be in the future.'
+        ]);
+        exit;
+    }
+
+    // ✅ VALIDATION 2: Check for duplicate monthly dues (same household + same due date)
+    // Since due_date is timestamp, we need to check for the same date regardless of time
+    $stmt = $conn->prepare("SELECT invoice_number FROM monthly_dues WHERE household_id = ? AND DATE(due_date) = ?");
+    $stmt->bind_param("ss", $household_id, $due_date);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $existingInvoice = $result->fetch_assoc();
+        http_response_code(400);
+        echo json_encode([
+            'success' => false, 
+            'error_type' => 'validation',
+            'error' => 'An invoice for this household already exists with the same due date (' . date('F j, Y', strtotime($due_date)) . '). Existing invoice: ' . $existingInvoice['invoice_number']
+        ]);
+        exit;
+    }
+    $stmt->close();
 
     // Get household details
     $householdDetails = getHouseholdDetails($conn, $household_id);
     if (!$householdDetails) {
         http_response_code(400);
-        echo json_encode(['error' => 'Household not found.']);
+        echo json_encode([
+            'success' => false, 
+            'error_type' => 'validation',
+            'error' => 'Household not found.'
+        ]);
         exit;
     }
+
+    // Generate invoice number
+    $invoice_number = generateInvoiceNumber($conn);
 
     // Insert with amount_paid defaulting to 0.00 and status as 'Pending'
     $amount_paid = 0.00;
@@ -441,11 +484,17 @@ try {
         ]);
     } else {
         http_response_code(500);
-        echo json_encode(['error' => 'Database insert failed: ' . $stmt->error]);
+        echo json_encode([
+            'success' => false, 
+            'error' => 'Database insert failed: ' . $stmt->error
+        ]);
     }
 
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Error: ' . $e->getMessage()]);
+    echo json_encode([
+        'success' => false, 
+        'error' => 'Error: ' . $e->getMessage()
+    ]);
 }
 ?>

@@ -332,62 +332,82 @@ if (!empty($admin['profile_picture'])) {
                             <i class="bi bi-save me-1"></i> Save Invoice
                         </button>
                     </div>
-                    <!-- Confirmation Modal -->
-                        <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content text-center">
-                                    <div class="modal-header bg-success text-white">
-                                        <h5 class="modal-title fw-bold">Confirm Invoice Creation</h5>
-                                        <button type="button" class="btn-close btn-close-white"
-                                            data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <i class="bi bi-question-circle text-success" style="font-size: 64px;"></i>
-                                        <p class="mb-2"><b>Are you sure?</b></p>
-                                        <p class="mb-3">Do you really want to create this invoice?</p>
-                                        <button type="button" class="btn btn-success" id="confirmPublish">Yes, Create Invoice</button>
-                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                                    </div>
-                                </div>
+                </form>
+
+                <!-- Confirmation Modal -->
+                <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content text-center">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title fw-bold">Confirm Invoice Creation</h5>
+                                <button type="button" class="btn-close btn-close-white"
+                                    data-bs-dismiss="modal"></button>
                             </div>
-                        </div>
-                        <!-- Default Publish Success Modal -->
-                        <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content text-center">
-                                    <div class="modal-header bg-success text-white">
-                                        <h5 class="modal-title fw-bold">Added!</h5>
-                                        <button type="button" class="btn-close btn-close-white"
-                                            data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
-                                        <p class="mt-3 mb-2"><b>Invoice added successfully.</b></p>
-                                        <button type="button" class="btn btn-success"
-                                            data-bs-dismiss="modal">OK</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Error Modal -->
-                        <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content text-center">
-                                    <div class="modal-header bg-danger text-white">
-                                        <h5 class="modal-title fw-bold">Error</h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <i class="bi bi-x-circle-fill text-danger" style="font-size: 64px;"></i>
-                                        <p class="mt-3 mb-2"><b>Something went wrong.</b></p>
-                                        <p id="errorMessage">Please try again later.</p>
-                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
-                                    </div>
-                                </div>
+                            <div class="modal-body">
+                                <i class="bi bi-question-circle text-success" style="font-size: 64px;"></i>
+                                <p class="mb-2"><b>Are you sure?</b></p>
+                                <p class="mb-3">Do you really want to create this invoice?</p>
+                                <button type="button" class="btn btn-success" id="confirmPublish">Yes, Create Invoice</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                             </div>
                         </div>
                     </div>
-                </form>
+                </div>
+
+                <!-- Success Modal -->
+                <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content text-center">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title fw-bold">Success!</h5>
+                                <button type="button" class="btn-close btn-close-white"
+                                    data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
+                                <p class="mt-3 mb-2"><b>Invoice created successfully!</b></p>
+                                <p class="mb-3" id="successMessage">The invoice has been created and email notification sent.</p>
+                                <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invoice Error Modal -->
+                <div class="modal fade" id="errorInvoiceModal" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content text-center">
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title">Invoice Error</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
+                                <p class="mt-3 mb-2"><b>Cannot Create Invoice!</b></p>
+                                <p class="mb-3" id="invoiceErrorMessage">An error occurred while creating the invoice.</p>
+                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- General Error Modal -->
+                <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content text-center">
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title fw-bold">Error</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <i class="bi bi-x-circle-fill text-danger" style="font-size: 64px;"></i>
+                                <p class="mt-3 mb-2"><b>Something went wrong.</b></p>
+                                <p id="errorMessage">Please try again later.</p>
+                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -431,7 +451,7 @@ if (!empty($admin['profile_picture'])) {
         // Show loading state
         const submitBtn = form.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="bi bi-spinner-grow me-1"></i> Creating...';
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Creating...';
         submitBtn.disabled = true;
         
         // Create FormData and submit via AJAX
@@ -442,22 +462,52 @@ if (!empty($admin['profile_picture'])) {
             body: formData
         })
         .then(response => {
-            if (response.ok) {
-                // Show success modal
+            // Handle both success and error responses
+            return response.json().then(data => {
+                return {
+                    status: response.status,
+                    ok: response.ok,
+                    data: data
+                };
+            });
+        })
+        .then(result => {
+            if (result.ok && result.data.success) {
+                // Show success modal with custom message
                 const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                let message = 'Invoice created successfully!';
+                if (result.data.email_sent) {
+                    message += ' Email notification has been sent to the homeowner.';
+                } else if (result.data.recipient_email) {
+                    message += ' Note: Email notification could not be sent.';
+                }
+                document.getElementById('successMessage').innerText = message;
                 successModal.show();
                 
                 // Reset form after success
                 form.reset();
                 updatePaymentDate(); // Reset due date field
             } else {
-                throw new Error('Server error');
+                // Handle error responses (including 400 status codes)
+                const errorData = result.data;
+                
+                if (errorData.error_type === 'validation') {
+                    // Show validation error in invoice error modal
+                    const errorInvoiceModal = new bootstrap.Modal(document.getElementById('errorInvoiceModal'));
+                    document.getElementById('invoiceErrorMessage').innerText = errorData.error;
+                    errorInvoiceModal.show();
+                } else {
+                    // Show general error
+                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                    document.getElementById('errorMessage').innerText = errorData.error || 'An error occurred. Please try again.';
+                    errorModal.show();
+                }
             }
         })
         .catch(error => {
-            // Show error modal
+            // Show general error modal for network/parsing errors
             const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-            document.getElementById('errorMessage').innerText = 'An error occurred. Please try again.';
+            document.getElementById('errorMessage').innerText = 'Network error. Please check your connection and try again.';
             errorModal.show();
         })
         .finally(() => {
