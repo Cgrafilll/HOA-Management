@@ -124,6 +124,30 @@ function isPerPersonRate($rateString) {
     return strpos($rateString, '/ per person') !== false;
 }
 
+// Helper function to handle file upload
+function handleFileUpload($file, $uploadDir = '../uploads/payments/') {
+    if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+        return null;
+    }
+    
+    // Create upload directory if it doesn't exist
+    if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+    
+    // Generate unique filename
+    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $filename = 'payment_' . uniqid() . '.' . $extension;
+    $filepath = $uploadDir . $filename;
+    
+    // Move uploaded file
+    if (move_uploaded_file($file['tmp_name'], $filepath)) {
+        return $filename;
+    }
+    
+    return null;
+}
+
 // Handle AJAX requests
 if (isset($_GET['action'])) {
     header('Content-Type: application/json');
@@ -196,6 +220,7 @@ if (isset($_GET['action'])) {
                 // Get complete booking details including amenity info
                 $stmt = $conn->prepare("
                     SELECT 
+                        id,
                         reference_number, 
                         created_at,
                         amenity,
@@ -290,6 +315,7 @@ if (isset($_GET['action'])) {
                     echo json_encode([
                         'success' => true,
                         'data' => [
+                            'booking_id' => $booking['id'],
                             'reference_number' => $booking['reference_number'],
                             'first_name' => $user_data['first_name'],
                             'middle_name' => $user_data['middle_name'],
@@ -333,6 +359,7 @@ if (isset($_GET['action'])) {
                 // Get monthly dues details
                 $stmt = $conn->prepare("
                     SELECT 
+                        id,
                         invoice_number,
                         billing_month,
                         amount_paid,
@@ -369,6 +396,7 @@ if (isset($_GET['action'])) {
                     echo json_encode([
                         'success' => true,
                         'data' => [
+                            'dues_id' => $dues['id'],
                             'reference_number' => $invoice_number, // Using invoice_number as reference
                             'first_name' => $user_data['first_name'],
                             'middle_name' => $user_data['middle_name'],
@@ -384,6 +412,138 @@ if (isset($_GET['action'])) {
                     ]);
                 } else {
                     echo json_encode(['success' => false, 'error' => 'No monthly dues record found']);
+                }
+                break;
+                
+            case 'process_payment':
+                if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                    echo json_encode(['success' => false, 'error' => 'Invalid request method']);
+                    exit;
+                }
+                
+                $category = $_POST['category'] ?? '';
+                $user_type = $_POST['user_type'] ?? '';
+                $user_id = $_POST['user_id'] ?? '';
+                $invoice_number = $_POST['invoice_number'] ?? '';
+                $amount = floatval($_POST['amount'] ?? 0);
+                $payment_method = ($_POST['payment_method'] === 'Bank Transfer') ? 'bank' : 'cash';
+                $reference_number = $_POST['reference_number'] ?? '';
+                
+                // Validate required fields
+                if (empty($category) || empty($user_type) || empty($user_id) || empty($invoice_number) || $amount <= 0) {
+                    echo json_encode(['success' => false, 'error' => 'Missing required fields']);
+                    exit;
+                }
+                
+                // Handle file upload
+                $proof_filename = null;
+                if (isset($_FILES['proof_of_payment']) && $_FILES['proof_of_payment']['error'] === UPLOAD_ERR_OK) {
+                    $proof_filename = handleFileUpload($_FILES['proof_of_payment']);
+                    if (!$proof_filename) {
+                        echo json_encode(['success' => false, 'error' => 'Failed to upload proof of payment']);
+                        exit;
+                    }
+                }
+                
+                $conn->begin_transaction();
+                
+                try {
+                    $reference_id = null;
+                    $db_user_type = ($user_type === 'Homeowner/Resident') ? 'homeowner' : 'visitor';
+                    $household_id = ($user_type === 'Homeowner/Resident') ? $user_id : null;
+                    $visitor_id = ($user_type === 'Visitor') ? $user_id : null;
+                    
+                    if ($category === 'Amenity Fee') {
+                        // Get amenity booking details
+                        $booking_id_field = ($user_type === 'Homeowner/Resident') ? 'homeowner_id' : 'visitor_id';
+                        $stmt = $conn->prepare("SELECT id, amount_paid, total_amount FROM amenity_bookings WHERE $booking_id_field = ? AND invoice_number = ?");
+                        $stmt->bind_param("ss", $user_id, $invoice_number);
+                        $stmt->execute();
+                        $booking = $stmt->get_result()->fetch_assoc();
+                        
+                        if (!$booking) {
+                            throw new Exception('Amenity booking not found');
+                        }
+                        
+                        $reference_id = $booking['id'];
+                        $new_amount_paid = $booking['amount_paid'] + $amount;
+                        $balance = $booking['total_amount'] - $new_amount_paid;
+                        
+                        // Determine new status
+                        if ($balance <= 0) {
+                            $new_status = 'paid';
+                        } elseif ($new_amount_paid > 0) {
+                            $new_status = 'partial';
+                        } else {
+                            $new_status = 'pending';
+                        }
+                        
+                        // Update amenity booking
+                        $stmt = $conn->prepare("UPDATE amenity_bookings SET amount_paid = ?, status = ? WHERE id = ?");
+                        $stmt->bind_param("dsi", $new_amount_paid, $new_status, $reference_id);
+                        $stmt->execute();
+                        
+                    } elseif ($category === 'Monthly Dues') {
+                        if ($user_type !== 'Homeowner/Resident') {
+                            throw new Exception('Monthly dues only apply to homeowners/residents');
+                        }
+                        
+                        // Get monthly dues details
+                        $stmt = $conn->prepare("SELECT id, amount_paid, balance_remaining FROM monthly_dues WHERE household_id = ? AND invoice_number = ?");
+                        $stmt->bind_param("ss", $user_id, $invoice_number);
+                        $stmt->execute();
+                        $dues = $stmt->get_result()->fetch_assoc();
+                        
+                        if (!$dues) {
+                            throw new Exception('Monthly dues record not found');
+                        }
+                        
+                        $reference_id = $dues['id'];
+                        $new_amount_paid = $dues['amount_paid'] + $amount;
+                        $new_balance = $dues['balance_remaining'] - $amount;
+                        
+                        // Ensure balance doesn't go negative
+                        if ($new_balance < 0) {
+                            $new_balance = 0;
+                        }
+                        
+                        // Determine new status
+                        if ($new_balance <= 0) {
+                            $new_status = 'Completed';
+                        } elseif ($new_amount_paid > 0) {
+                            $new_status = 'Partial';
+                        } else {
+                            $new_status = 'Pending';
+                        }
+                        
+                        // Update monthly dues
+                        $stmt = $conn->prepare("UPDATE monthly_dues SET amount_paid = ?, balance_remaining = ?, status = ? WHERE id = ?");
+                        $stmt->bind_param("ddsi", $new_amount_paid, $new_balance, $new_status, $reference_id);
+                        $stmt->execute();
+                    }
+                    
+                    // Insert payment record
+                    $db_category = ($category === 'Amenity Fee') ? 'amenity' : 'monthly_dues';
+                    $stmt = $conn->prepare("
+                        INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+                    $stmt->bind_param("sisssdssss", $db_category, $reference_id, $invoice_number, $db_user_type, $household_id, $visitor_id, $amount, $payment_method, $reference_number, $proof_filename);
+                    $stmt->execute();
+                    
+                    $payment_id = $conn->insert_id;
+                    
+                    $conn->commit();
+                    
+                    echo json_encode([
+                        'success' => true, 
+                        'message' => 'Payment processed successfully',
+                        'payment_id' => $payment_id
+                    ]);
+                    
+                } catch (Exception $e) {
+                    $conn->rollback();
+                    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
                 }
                 break;
                 
@@ -715,6 +875,11 @@ if (isset($_GET['action'])) {
                                     </div>
                                 </div>
                                 
+                                <div class="mb-3" id="referenceNumberGroup" style="display: none;">
+                                    <label class="form-label">Reference Number</label>
+                                    <input type="text" class="form-control" id="referenceNumber" placeholder="Bank transfer reference number">
+                                </div>
+                                
                                 <!-- Summary Display -->
                                 <div class="bg-light rounded p-3 mb-3">
                                     <p class="mb-1"><strong>Reference No.:</strong> <span id="refNo"></span></p>
@@ -795,6 +960,65 @@ if (isset($_GET['action'])) {
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Payment Confirmation Modal -->
+    <div class="modal fade" id="confirmPaymentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Confirm Payment</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <i class="bi bi-question-circle text-primary" style="font-size: 64px;"></i>
+                    <p class="mt-3 mb-2"><b>Are you sure?</b></p>
+                    <p class="mb-3">Do you want to process this payment?</p>
+                    <div class="bg-light rounded p-3 mb-3 text-start">
+                        <div class="row">
+                            <div class="col-6"><strong>Name:</strong></div>
+                            <div class="col-6" id="confirmName"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6"><strong>Category:</strong></div>
+                            <div class="col-6" id="confirmCategory"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6"><strong>Invoice:</strong></div>
+                            <div class="col-6" id="confirmInvoice"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6"><strong>Amount:</strong></div>
+                            <div class="col-6" id="confirmAmount"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6"><strong>Method:</strong></div>
+                            <div class="col-6" id="confirmMethod"></div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="confirmPaymentBtn">Process Payment</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Success Modal -->
+    <div class="modal fade" id="successPaymentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Payment Successful</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <i class="bi bi-check-circle text-success" style="font-size: 64px;"></i>
+                    <p class="mt-3 mb-2"><b>Payment Processed Successfully!</b></p>
+                    <p class="mb-3">The payment has been recorded in the system.</p>
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

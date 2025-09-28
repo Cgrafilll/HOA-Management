@@ -4,6 +4,7 @@ class PaymentManager {
     constructor() {
         this.initializeElements();
         this.attachEventListeners();
+        this.initializeModals();
     }
 
     initializeElements() {
@@ -20,6 +21,8 @@ class PaymentManager {
         this.categorySelect = document.getElementById('categorySelect');
         this.invoiceInput = document.getElementById('invoiceInput');
         this.amountPaid = document.getElementById('amountPaid');
+        this.referenceNumber = document.getElementById('referenceNumber');
+        this.referenceNumberGroup = document.getElementById('referenceNumberGroup');
         
         // Display elements
         this.refNo = document.getElementById('refNo');
@@ -43,6 +46,20 @@ class PaymentManager {
         
         // Store current invoice data
         this.currentInvoiceData = null;
+        
+        // Modal confirmation elements
+        this.confirmName = document.getElementById('confirmName');
+        this.confirmCategory = document.getElementById('confirmCategory');
+        this.confirmInvoice = document.getElementById('confirmInvoice');
+        this.confirmAmount = document.getElementById('confirmAmount');
+        this.confirmMethod = document.getElementById('confirmMethod');
+        this.confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+    }
+
+    initializeModals() {
+        // Initialize Bootstrap modals
+        this.confirmModal = new bootstrap.Modal(document.getElementById('confirmPaymentModal'));
+        this.successModal = new bootstrap.Modal(document.getElementById('successPaymentModal'));
     }
 
     attachEventListeners() {
@@ -69,6 +86,9 @@ class PaymentManager {
         
         // Form submission
         document.getElementById('paymentForm').addEventListener('submit', (e) => this.handleSubmit(e));
+        
+        // Modal confirmation button
+        this.confirmPaymentBtn.addEventListener('click', () => this.processPayment());
     }
     
     handleCategoryChange() {
@@ -97,10 +117,12 @@ class PaymentManager {
             this.bankTransfer.classList.add('active');
             this.inOffice.classList.remove('active');
             this.selectedMethod.textContent = "Bank Transfer";
+            this.referenceNumberGroup.style.display = 'block';
         } else {
             this.inOffice.classList.add('active');
             this.bankTransfer.classList.remove('active');
             this.selectedMethod.textContent = "In-Office Payment";
+            this.referenceNumberGroup.style.display = 'none';
         }
         this.clearFormFields();
     }
@@ -413,6 +435,7 @@ class PaymentManager {
         this.categorySelect.value = "";
         this.invoiceInput.value = "";
         this.amountPaid.value = "";
+        this.referenceNumber.value = "";
         
         // Reset display fields
         this.refNo.textContent = "";
@@ -431,9 +454,11 @@ class PaymentManager {
         // Reset file upload
         this.fileInput.value = '';
         this.filePreview.innerHTML = '';
+        
+        // Remove validation classes
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
     }
 
-    // Update the handleSubmit validation for Monthly Dues:
     handleSubmit(e) {
         e.preventDefault();
         
@@ -486,24 +511,79 @@ class PaymentManager {
             }
         }
         
-        // Prepare form data
-        const formData = {
-            userType: this.userTypeSelect.value,
-            userId: this.userIdSelect.value,
-            category: this.categorySelect.value,
-            invoice: this.invoiceInput.value,
-            amount: this.amountPaid.value,
-            method: this.selectedMethod.textContent,
-            file: this.fileInput.files[0],
-            invoiceData: this.currentInvoiceData
-        };
+        // Show confirmation modal
+        this.showConfirmationModal();
+    }
+
+    showConfirmationModal() {
+        // Populate confirmation modal with payment details
+        const selectedUserOption = this.userIdSelect.options[this.userIdSelect.selectedIndex];
+        const userName = selectedUserOption.textContent.split(' - ')[1] || 'Unknown';
         
-        console.log('Form submitted with:', formData);
+        this.confirmName.textContent = userName;
+        this.confirmCategory.textContent = this.categorySelect.value;
+        this.confirmInvoice.textContent = this.invoiceInput.value;
+        this.confirmAmount.textContent = `₱${parseFloat(this.amountPaid.value).toFixed(2)}`;
+        this.confirmMethod.textContent = this.selectedMethod.textContent;
         
-        // Here you would normally send the data to the server
-        // For now, just show success message
-        alert('Payment processed successfully!');
-        this.clearFormFields();
+        // Show the modal
+        this.confirmModal.show();
+    }
+
+    async processPayment() {
+        try {
+            // Disable the confirm button to prevent double submission
+            this.confirmPaymentBtn.disabled = true;
+            this.confirmPaymentBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Processing...';
+            
+            // Create FormData for file upload
+            const formData = new FormData();
+            formData.append('action', 'process_payment');
+            formData.append('category', this.categorySelect.value);
+            formData.append('user_type', this.userTypeSelect.value);
+            formData.append('user_id', this.userIdSelect.value);
+            formData.append('invoice_number', this.invoiceInput.value);
+            formData.append('amount', this.amountPaid.value);
+            formData.append('payment_method', this.selectedMethod.textContent);
+            formData.append('reference_number', this.referenceNumber.value || '');
+            
+            // Add file if exists
+            if (this.fileInput.files.length > 0) {
+                formData.append('proof_of_payment', this.fileInput.files[0]);
+            }
+            
+            const response = await fetch('payment/process_payment.php', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Hide confirmation modal
+                this.confirmModal.hide();
+                
+                // Show success modal
+                this.successModal.show();
+                
+                // Clear form after a short delay
+                setTimeout(() => {
+                    this.clearFormFields();
+                    this.selectPaymentMethod('bank'); // Reset to default
+                }, 1000);
+                
+            } else {
+                throw new Error(result.error || 'Payment processing failed');
+            }
+            
+        } catch (error) {
+            console.error('Payment processing error:', error);
+            alert('Error processing payment: ' + error.message);
+        } finally {
+            // Re-enable the confirm button
+            this.confirmPaymentBtn.disabled = false;
+            this.confirmPaymentBtn.innerHTML = 'Process Payment';
+        }
     }
 }
 
