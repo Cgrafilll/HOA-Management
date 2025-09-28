@@ -1021,6 +1021,42 @@ if (isset($_GET['action'])) {
         </div>
     </div>
 
+    <!-- Payment Error Modal -->
+    <div class="modal fade" id="errorPaymentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Payment Error</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
+                    <p class="mt-3 mb-2"><b>Payment Error!</b></p>
+                    <p class="mb-3" id="errorMessage">An error occurred while processing your payment.</p>
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Error Modal -->
+    <div class="modal fade" id="errorPaymentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Payment Error</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
+                    <p class="mt-3 mb-2"><b>Payment Error!</b></p>
+                    <p class="mb-3" id="errorMessage">An error occurred while processing your payment.</p>
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="javascripts/payment.js"></script>
 </body>
