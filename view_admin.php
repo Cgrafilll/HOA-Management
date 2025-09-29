@@ -16,11 +16,11 @@ session_set_cookie_params([
 // NOW start the session
 session_start();
 
-require '../../rfid-api/db.php'; // Adjust path as needed
+require 'rfid-api/db.php'; // Adjust path as needed
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_id'])) {
-    header("Location: ../login/login.php?error=" . urlencode("Please log in to access this page."));
+    header("Location: admin_side/login/login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
 
@@ -29,7 +29,7 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
     // Session expired
     session_unset();
     session_destroy();
-    header("Location: ../login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    header("Location: admin_side/login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
     exit;
 }
 
@@ -114,7 +114,7 @@ if ($view_admin_id) {
     <title>NSSHAI HOA Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
+    <link rel="icon" href="images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
@@ -206,10 +206,10 @@ if ($view_admin_id) {
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
         <div class="me-4" style="width: 250px;">
-            <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
+            <img src="images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">ADMIN DASHBOARD</h1>
+            <h1 class="h5 mb-0 fw-bold">RFID SYSTEM</h1>
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
@@ -263,7 +263,7 @@ if ($view_admin_id) {
                 <div class="bg-white shadow rounded p-3">
                     <!-- Header -->
                     <div class="bg-success text-white rounded-top p-3">
-                        <h5 class="mb-0 fw-bold">Admin Account Management</h5>
+                        <h5 class="mb-0 fw-bold">Account Management</h5>
                     </div>
                     <!-- Subheader + Back -->
                     <div class="p-3 d-flex justify-content-between align-items-center">
