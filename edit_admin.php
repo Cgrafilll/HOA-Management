@@ -172,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $conn->prepare($sql);
             $null = NULL;
             $stmt->bind_param(
-                "ssssissssssssssbss",
+                "ssssisssssssssssbs",
                 $first_name,
                 $middle_name,
                 $last_name,
@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $null,
                 $edit_admin
             );
-            $stmt->send_long_data(16, $profile_pic);
+            $stmt->send_long_data(17, $profile_pic);
 
         } elseif ($has_photo && !$password_update) {
             // Update with photo only
@@ -207,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $conn->prepare($sql);
             $null = NULL;
             $stmt->bind_param(
-                "ssssisssssssssbss",
+                "ssssisssssssssbs",
                 $first_name,
                 $middle_name,
                 $last_name,
