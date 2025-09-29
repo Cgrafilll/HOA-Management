@@ -1,6 +1,6 @@
 <?php
 $host = 'localhost';
-$db   = 'u247214800_sitiosevilles';
+$db   = 'u247214800_sitioseville';
 $user = 'u247214800_sitioseville';
 $pass = 'I0wacxI29;1j';
 
