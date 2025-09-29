@@ -614,7 +614,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <!-- Submit Buttons -->
                         <div class="d-flex justify-content-end gap-2">
                             <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="../admin_accounts.php" class="btn btn-danger">Cancel</a>
+                            <a href="view_admin.php?id=<?php echo $admin_id; ?>" class="btn btn-danger">Cancel</a>
                         </div>
                     </form>
                     <!-- Success Modal -->
