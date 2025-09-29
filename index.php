@@ -219,7 +219,7 @@
                             <div id="scanEntries">
                                 <div class="text-muted text-center py-4">
                                     <i class="bi bi-upc-scan" style="font-size: 2rem;"></i>
-                                    <div>No scans yet. Scan an RFID card to begin.</div>
+                                    <div></div>
                                 </div>
                             </div>
                         </div>
