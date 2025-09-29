@@ -1,5 +1,5 @@
 <?php
-$host = 'u247214800_sitioseville';
+$host = 'localhost';
 $db   = 'u247214800_sitioseville';
 $user = 'u247214800_sitioseville';
 $pass = 'Admin123'; // default for XAMPP
