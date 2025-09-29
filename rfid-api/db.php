@@ -1,8 +1,8 @@
 <?php
-$host = 'localhost';
-$db   = 'sitioseville';
-$user = 'root';
-$pass = ''; // default for XAMPP
+$host = 'u247214800_sitioseville';
+$db   = 'u247214800_sitioseville';
+$user = 'u247214800_sitioseville';
+$pass = 'Admin123'; // default for XAMPP
 
 $conn = new mysqli($host, $user, $pass, $db);
 if ($conn->connect_error) {
