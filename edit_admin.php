@@ -122,45 +122,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($dob)) {
         $error = "Date of birth is required.";
     } else {
-        // Validate date format and convert if necessary
         $date_obj = DateTime::createFromFormat('Y-m-d', $dob);
         if (!$date_obj || $date_obj->format('Y-m-d') !== $dob) {
             $error = "Invalid date format for date of birth.";
         } else {
-            // Ensure date is not in the future
             $today = new DateTime();
             if ($date_obj > $today) {
                 $error = "Date of birth cannot be in the future.";
             } else {
-                $dob = $date_obj->format('Y-m-d'); // Ensure proper format
+                $dob = $date_obj->format('Y-m-d');
             }
         }
     }
 
-    // Handle password update (only if date validation passed)
+    // Handle password update
     if (!isset($error)) {
         $password_update = false;
         $hashed_password = null;
 
-        // Check if new password was provided
         if (!empty($_POST['passWord']) && !empty($_POST['confirmPassword'])) {
             $new_password = $_POST['passWord'];
             $confirm_password = $_POST['confirmPassword'];
 
-            // Validate password
             if ($new_password !== $confirm_password) {
                 $error = "Passwords do not match.";
             } elseif (strlen($new_password) < 6) {
                 $error = "Password must be at least 6 characters long.";
             } else {
-                // Hash the new password
                 $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
                 $password_update = true;
             }
         }
     }
 
-    // 2. Check if profile picture was uploaded (only if no validation errors)
+    // Check if profile picture was uploaded
     if (!isset($error)) {
         $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
 
@@ -169,14 +164,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
 
             $sql = "UPDATE admin_accounts SET 
-        first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-        cellphone_number=?, landline=?, email_address=?, password=?, street_address=?, street_address_2=?, 
-        city=?, state_province=?, barangay=?, postal_zip_code=?, profile_picture=?
-        WHERE admin_id=?";
+                first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+                cellphone_number=?, landline=?, email_address=?, password=?, street_address=?, street_address_2=?, 
+                city=?, state_province=?, barangay=?, postal_zip_code=?, profile_picture=?
+                WHERE admin_id=?";
 
             $stmt = $conn->prepare($sql);
+            $null = NULL;
             $stmt->bind_param(
-                "ssssissssssssssbs",
+                "ssssissssssssssbss",
                 $first_name,
                 $middle_name,
                 $last_name,
@@ -193,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $state,
                 $barangay,
                 $postal,
-                $null_blob,
+                $null,
                 $edit_admin
             );
             $stmt->send_long_data(16, $profile_pic);
@@ -203,14 +199,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
 
             $sql = "UPDATE admin_accounts SET 
-        first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-        cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-        city=?, state_province=?, barangay=?, postal_zip_code=?, profile_picture=?
-        WHERE admin_id=?";
+                first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+                cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+                city=?, state_province=?, barangay=?, postal_zip_code=?, profile_picture=?
+                WHERE admin_id=?";
 
             $stmt = $conn->prepare($sql);
+            $null = NULL;
             $stmt->bind_param(
-                "ssssissssssssssbs",
+                "ssssisssssssssbss",
                 $first_name,
                 $middle_name,
                 $last_name,
@@ -226,22 +223,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $state,
                 $barangay,
                 $postal,
-                $null_blob,
+                $null,
                 $edit_admin
             );
-            $stmt->send_long_data(16, $profile_pic); // 17th param (index 16)
+            $stmt->send_long_data(15, $profile_pic);
 
         } elseif (!$has_photo && $password_update) {
             // Update with password only
             $sql = "UPDATE admin_accounts SET 
-        first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-        cellphone_number=?, landline=?, email_address=?, password=?, street_address=?, street_address_2=?, 
-        city=?, state_province=?, barangay=?, postal_zip_code=?
-        WHERE admin_id=?";
+                first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+                cellphone_number=?, landline=?, email_address=?, password=?, street_address=?, street_address_2=?, 
+                city=?, state_province=?, barangay=?, postal_zip_code=?
+                WHERE admin_id=?";
 
             $stmt = $conn->prepare($sql);
             $stmt->bind_param(
-                "ssssissssssssssss",
+                "ssssisssssssssss",
                 $first_name,
                 $middle_name,
                 $last_name,
@@ -264,10 +261,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Update without photo and password
             $sql = "UPDATE admin_accounts SET 
-        first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-        cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-        city=?, state_province=?, barangay=?, postal_zip_code=?
-        WHERE admin_id=?";
+                first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+                cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+                city=?, state_province=?, barangay=?, postal_zip_code=?
+                WHERE admin_id=?";
 
             $stmt = $conn->prepare($sql);
             $stmt->bind_param(
@@ -291,12 +288,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
         }
 
-        // 3. Execute and check success
+        // Execute and check success
         if ($stmt->execute()) {
             $success = true;
         } else {
             $error = "Update failed: " . $stmt->error;
         }
+        $stmt->close();
     }
 }
 
@@ -437,8 +435,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav d-flex flex-column gap-1">
-                <a href="index.php"
-                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                <a href="index.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i>Entry Monitoring
                 </a>
                 <a href="exit.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
