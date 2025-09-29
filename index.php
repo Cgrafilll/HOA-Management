@@ -59,20 +59,6 @@ if (!empty($admin['profile_picture'])) {
     $photo = ''; // Explicitly empty if no image is saved
 }
 
-// Pagination settings
-$entriesPerPage = 10;
-$currentPage = isset($_GET['page']) ? (int) $_GET['page'] : 1;
-$currentPage = max(1, $currentPage); // Ensure page is at least 1
-
-// Calculate offset for SQL query
-$offset = ($currentPage - 1) * $entriesPerPage;
-
-// Get total count for pagination
-$countSql = "SELECT COUNT(*) as total FROM admin_accounts WHERE status = 'Active'";
-$countResult = $conn->query($countSql);
-$totalEntries = $countResult->fetch_assoc()['total'];
-$totalPages = ceil($totalEntries / $entriesPerPage);
-
 ?>
 
 <!DOCTYPE html>
@@ -228,7 +214,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                     </div>
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="view_admin.php?id=<?php echo $logged_admin_id; ?>"><i
+                    <li><a class="dropdown-item" href="view_admin.php?id=<?php echo $admin_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
@@ -348,6 +334,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
         </div>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let logUpdateInterval = null;
         let scrollTimeout = null;

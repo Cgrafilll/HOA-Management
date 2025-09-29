@@ -1,3 +1,66 @@
+<?php
+// ✅ Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
+
+// Set session cookie parameters before starting session
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
+session_start();
+
+require 'rfid-api/db.php'; // Adjust path as needed
+
+// Check if admin is logged in
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: admin_side/login/login.php?error=" . urlencode("Please log in to access this page."));
+    exit;
+}
+
+// Check session timeout (2 hours = 7200 seconds)
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
+    // Session expired
+    session_unset();
+    session_destroy();
+    header("Location: admin_side/login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    exit;
+}
+
+// Update last activity time
+$_SESSION['last_activity'] = time();
+
+$admin_id = $_SESSION['admin_id'];
+$sql = "SELECT * FROM admin_accounts WHERE admin_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $admin_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$admin = $result->fetch_assoc();
+
+if (!$admin) {
+    echo "Admin not found.";
+    exit;
+}
+
+// Initialize user details
+$username = $admin['first_name']; // <- Set username directly from household query
+$photo = ''; // Initialize photo; your existing profile photo block will set this later
+// Only set $photo if profile_pic exists and is not null
+if (!empty($admin['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']);
+} else {
+    $photo = ''; // Explicitly empty if no image is saved
+}
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -136,6 +199,30 @@
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">RFID SYSTEM</h1>
+            <div class="dropdown">
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
+                    aria-expanded="false" role="button" style="cursor: pointer;">
+                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                        style="height: 40px; width: 40px; color: #aaa;">
+                        <?php if (!empty($photo)): ?>
+                            <img src="<?php echo htmlspecialchars($photo); ?>"
+                                style="width: 40px; height: 40px; object-fit: cover;">
+                        <?php else: ?>
+                            <i class="bi bi-person-circle" style="font-size: 32px;"></i>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li><a class="dropdown-item" href="view_admin.php?id=<?php echo $admin_id; ?>"><i
+                                class="bi bi-person me-2"></i>Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="admin_side/login/logout.php"><i
+                                class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                </ul>
+            </div>
         </div>
     </header>
 
@@ -153,6 +240,11 @@
                 <a href="amenity.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i>Amenity Booking
+                </a>
+                <a href="admin_side/login/logout.php"
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
+                    <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
@@ -242,6 +334,7 @@
         </div>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let logUpdateInterval = null;
         let scrollTimeout = null;
