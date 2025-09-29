@@ -1,3 +1,80 @@
+<?php
+// ✅ Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200); // 2 hours
+ini_set('session.cookie_lifetime', 7200); // 2 hours
+
+// Set session cookie parameters before starting session
+session_set_cookie_params([
+    'lifetime' => 7200, // 2 hours
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
+    'httponly' => true, // Prevent JavaScript access
+    'samesite' => 'Strict' // CSRF protection
+]);
+
+// NOW start the session
+session_start();
+
+require 'rfid-api/db.php'; // Adjust path as needed
+
+// Check if admin is logged in
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: admin_side/login/login.php?error=" . urlencode("Please log in to access this page."));
+    exit;
+}
+
+// Check session timeout (2 hours = 7200 seconds)
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
+    // Session expired
+    session_unset();
+    session_destroy();
+    header("Location: admin_side/login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    exit;
+}
+
+// Update last activity time
+$_SESSION['last_activity'] = time();
+
+$admin_id = $_SESSION['admin_id'];
+$sql = "SELECT * FROM admin_accounts WHERE admin_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $admin_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$admin = $result->fetch_assoc();
+
+if (!$admin) {
+    echo "Admin not found.";
+    exit;
+}
+
+// Initialize user details
+$username = $admin['first_name']; // <- Set username directly from household query
+$photo = ''; // Initialize photo; your existing profile photo block will set this later
+// Only set $photo if profile_pic exists and is not null
+if (!empty($admin['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']);
+} else {
+    $photo = ''; // Explicitly empty if no image is saved
+}
+
+// Pagination settings
+$entriesPerPage = 10;
+$currentPage = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+$currentPage = max(1, $currentPage); // Ensure page is at least 1
+
+// Calculate offset for SQL query
+$offset = ($currentPage - 1) * $entriesPerPage;
+
+// Get total count for pagination
+$countSql = "SELECT COUNT(*) as total FROM admin_accounts WHERE status = 'Active'";
+$countResult = $conn->query($countSql);
+$totalEntries = $countResult->fetch_assoc()['total'];
+$totalPages = ceil($totalEntries / $entriesPerPage);
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -743,7 +820,7 @@
         });
 
     </script>
-    
+
 </body>
 
 </html>
