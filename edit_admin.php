@@ -438,7 +438,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <aside class="sidebar p-3">
             <nav class="nav d-flex flex-column gap-1">
                 <a href="index.php"
-                    class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i>Entry Monitoring
                 </a>
                 <a href="exit.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
@@ -459,7 +459,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
-                    <h5 class="mb-0 fw-bold">Admin Account Management</h5>
+                    <h5 class="mb-0 fw-bold">Account Management</h5>
                 </div>
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <span class="small mb-0">Edit User Details</span>
@@ -664,7 +664,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 const successModal = new bootstrap.Modal(document.getElementById('successModal'));
                                 successModal.show();
 
-                                const redirect = () => window.location.href = '../admin_accounts.php';
+                                const redirect = () => window.location.href = 'view_admin.php?id=<?php echo $admin_id; ?>';
                                 document.getElementById('doneButton').addEventListener('click', redirect);
                                 document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
                             });
