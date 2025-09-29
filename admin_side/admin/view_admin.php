@@ -230,7 +230,7 @@ if ($view_admin_id) {
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    <li><a class="dropdown-item" href="login/logout.php"><i
+                    <li><a class="dropdown-item" href="../login/logout.php"><i
                                 class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                 </ul>
             </div>

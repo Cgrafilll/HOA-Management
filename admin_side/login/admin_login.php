@@ -51,12 +51,12 @@ if (!password_verify($password, $user['password'])) {
 // ✅ Login success: store session with timestamps
 $_SESSION['admin_id'] = $user['admin_id'];
 $_SESSION['email_address'] = $user['email_address'];
-$_SESSION['role'] = $user['role']; // Store role in session
+$_SESSION['roles'] = $user['roles']; // Store role in session
 $_SESSION['login_time'] = time(); // Store login timestamp
 $_SESSION['last_activity'] = time(); // Store last activity timestamp
 
 // Check role and redirect accordingly
-if (strtolower(trim($user['role'])) === 'security staff') {
+if (strtolower(trim($user['roles'])) === 'security staff') {
     header("Location: ../../index.php");
 } else {
     header("Location: ../admin_dashboard.php");
