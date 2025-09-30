@@ -175,6 +175,44 @@ while ($row = $calendar_result->fetch_assoc()) {
     ];
 }
 
+// Handle AJAX request to get booked dates with rates for an amenity
+if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
+    header('Content-Type: application/json');
+
+    try {
+        $amenity = $_GET['amenity'] ?? '';
+
+        if (empty($amenity)) {
+            echo json_encode(['success' => false, 'error' => 'Amenity required']);
+            exit;
+        }
+
+        // Query to get both date and rate for each booking
+        $stmt = $conn->prepare("
+            SELECT reservation_date, rate 
+            FROM amenity_bookings 
+            WHERE amenity = ? 
+            AND (status = 'pending' OR status = 'partial' OR status = 'paid')
+        ");
+        $stmt->bind_param("s", $amenity);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $bookings = [];
+        while ($row = $result->fetch_assoc()) {
+            $bookings[] = [
+                'date' => $row['reservation_date'],
+                'rate' => $row['rate'] // 'day' or 'night'
+            ];
+        }
+
+        echo json_encode(['success' => true, 'bookings' => $bookings]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -443,6 +481,11 @@ while ($row = $calendar_result->fetch_assoc()) {
         .rate-option i {
             font-size: 24px;
             color: #0d6efd;
+        }
+
+        #selected_date_display {
+            pointer-events: none;
+            background-color: #fff;
         }
     </style>
 </head>
@@ -885,7 +928,7 @@ while ($row = $calendar_result->fetch_assoc()) {
                                 </div>
                                 <!-- Visible Date Input Below Calendar -->
                                 <input type="text" class="form-control" id="selected_date_display" readonly
-                                    placeholder="Select a date from calendar above">
+                                    placeholder="Select a date from calendar above" onfocus="this.blur()">
                                 <!-- Hidden input for form submission -->
                                 <input type="hidden" id="new_date" name="new_date" required>
                             </div>
