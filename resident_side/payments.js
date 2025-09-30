@@ -43,7 +43,6 @@ class ResidentPaymentManager {
         this.browseLink = document.getElementById('browseLink');
         this.filePreview = document.getElementById('filePreview');
         
-        
         // Store current invoice data
         this.currentInvoiceData = null;
         
@@ -58,20 +57,19 @@ class ResidentPaymentManager {
 
     initializeModals() {
         // Initialize Bootstrap modals
-        this.confirmModal = new bootstrap.Modal(document.getElementById('confirmPaymentModal'));
-        this.successModal = new bootstrap.Modal(document.getElementById('successPaymentModal'));
+        const confirmModalElement = document.getElementById('confirmPaymentModal');
+        const successModalElement = document.getElementById('successPaymentModal');
         
-        // Check if error modal exists before initializing
-        const errorModalElement = document.getElementById('errorPaymentModal');
-        const errorMessageElement = document.getElementById('errorMessage');
-        
-        if (errorModalElement && errorMessageElement) {
-            this.errorModal = new bootstrap.Modal(errorModalElement);
-            this.errorMessage = errorMessageElement;
+        if (confirmModalElement) {
+            this.confirmModal = new bootstrap.Modal(confirmModalElement);
         } else {
-            console.warn('Error modal elements not found. Error modal functionality will be disabled.');
-            this.errorModal = null;
-            this.errorMessage = null;
+            console.error('Confirmation modal not found');
+        }
+        
+        if (successModalElement) {
+            this.successModal = new bootstrap.Modal(successModalElement);
+        } else {
+            console.error('Success modal not found');
         }
     }
 
@@ -132,10 +130,8 @@ class ResidentPaymentManager {
     }
 
     attachEventListeners() {
-        // Payment method selection
+        // Payment method selection - bank transfer only for residents
         this.bankTransfer.addEventListener('click', () => this.selectPaymentMethod('bank'));
-        // In-office payment is disabled for residents
-        // this.inOffice.addEventListener('click', () => this.selectPaymentMethod('office'));
         
         // Form field changes
         this.categorySelect.addEventListener('change', () => this.handleCategoryChange());
@@ -156,7 +152,9 @@ class ResidentPaymentManager {
         document.getElementById('paymentForm').addEventListener('submit', (e) => this.handleSubmit(e));
         
         // Modal confirmation button
-        this.confirmPaymentBtn.addEventListener('click', () => this.processPayment());
+        if (this.confirmPaymentBtn) {
+            this.confirmPaymentBtn.addEventListener('click', () => this.processPayment());
+        }
     }
     
     handleCategoryChange() {
@@ -430,7 +428,6 @@ class ResidentPaymentManager {
     }
 
     clearFormFields() {
-        // Note: User Type and ID fields are NOT cleared as they're auto-populated and disabled
         // Only clear editable fields
         this.categorySelect.value = "";
         this.invoiceInput.value = "";
@@ -445,7 +442,7 @@ class ResidentPaymentManager {
         // Reset table and summary
         this.clearInvoiceTable();
         
-        // Reset validation styles for editable fields only
+        // Reset validation styles
         const fieldsToReset = [
             this.categorySelect,
             this.invoiceInput,
@@ -458,9 +455,15 @@ class ResidentPaymentManager {
             field.style.boxShadow = 'none';
         });
         
-        // Reset file drop area styling
-        this.fileDropArea.style.borderColor = '#d1d5db';
+        // Reset file drop area
+        this.fileDropArea.style.border = '2px dashed #d1d5db';
         this.fileDropArea.style.backgroundColor = '#f9fafb';
+        
+        // Remove error message if exists
+        const errorMsg = this.fileDropArea.querySelector('.upload-error');
+        if (errorMsg) {
+            errorMsg.remove();
+        }
         
         // Reset file upload
         this.fileInput.value = '';
@@ -470,7 +473,7 @@ class ResidentPaymentManager {
     handleSubmit(e) {
         e.preventDefault();
         
-        // Validate required fields (excluding disabled user type and ID fields)
+        // Validate required fields
         const requiredFields = [
             this.categorySelect,
             this.invoiceInput,
@@ -478,6 +481,8 @@ class ResidentPaymentManager {
         ];
         
         let isValid = true;
+        
+        // Check each required field
         requiredFields.forEach(field => {
             if (!field.value) {
                 field.classList.add('is-invalid');
@@ -491,7 +496,7 @@ class ResidentPaymentManager {
             }
         });
         
-        // Validate amount paid field specifically
+        // Validate amount paid specifically
         if (!this.amountPaid.value || parseFloat(this.amountPaid.value) <= 0) {
             this.amountPaid.classList.add('is-invalid');
             this.amountPaid.style.borderColor = '#dc3545';
@@ -499,12 +504,11 @@ class ResidentPaymentManager {
             isValid = false;
         }
         
-        // Check if proof of payment is uploaded for bank transfer
+        // CRITICAL: Check proof of payment for bank transfer
         if (this.selectedMethod.textContent === "Bank Transfer" && !this.fileInput.files.length) {
             this.fileDropArea.style.border = '2px dashed #dc3545';
             this.fileDropArea.style.backgroundColor = '#f8d7da';
             
-            // Add error message if not already present
             if (!this.fileDropArea.querySelector('.upload-error')) {
                 const errorMsg = document.createElement('div');
                 errorMsg.className = 'upload-error text-danger small mt-2';
@@ -517,42 +521,35 @@ class ResidentPaymentManager {
             this.fileDropArea.style.border = '2px dashed #d1d5db';
             this.fileDropArea.style.backgroundColor = '#f9fafb';
             
-            // Remove error message if exists
             const errorMsg = this.fileDropArea.querySelector('.upload-error');
             if (errorMsg) {
                 errorMsg.remove();
             }
         }
         
+        // STOP if basic validation failed
+        if (!isValid) {
+            return;
+        }
         
-        // Additional validation for Amenity Fee and Monthly Dues payments
+        // Additional validation for Amenity Fee and Monthly Dues
         if (this.categorySelect.value === 'Amenity Fee' || this.categorySelect.value === 'Monthly Dues') {
             if (!this.currentInvoiceData) {
-                this.showErrorModal(`Please enter a valid invoice number for ${this.categorySelect.value} payments.`);
+                alert(`Please enter a valid invoice number for ${this.categorySelect.value} payments.`);
                 return;
             }
             
-            // Check if payment amount exceeds balance due
             const amountPaid = parseFloat(this.amountPaid.value);
             const balanceDue = parseFloat(this.currentInvoiceData.balance_due.replace(/,/g, ''));
             
             if (amountPaid > balanceDue) {
-                this.showErrorModal(`The amount entered (₱${amountPaid.toFixed(2)}) exceeds the balance due (₱${balanceDue.toFixed(2)}). Please enter a valid amount.`);
+                alert(`The amount entered (₱${amountPaid.toFixed(2)}) exceeds the balance due (₱${balanceDue.toFixed(2)}). Please enter a valid amount.`);
                 return;
             }
         }
         
-        // Show confirmation modal if all validations pass
+        // All validations passed - show confirmation modal
         this.showConfirmationModal();
-    }
-
-    showErrorModal(message) {
-        if (this.errorModal && this.errorMessage) {
-            this.errorMessage.textContent = message;
-            this.errorModal.show();
-        } else {
-            alert(message);
-        }
     }
 
     showConfirmationModal() {
@@ -560,24 +557,32 @@ class ResidentPaymentManager {
         const selectedUserOption = this.userIdSelect.options[this.userIdSelect.selectedIndex];
         const userName = selectedUserOption.textContent.split(' - ')[1] || 'Unknown';
         
-        this.confirmName.textContent = userName;
-        this.confirmCategory.textContent = this.categorySelect.value;
-        this.confirmInvoice.textContent = this.invoiceInput.value;
-        this.confirmAmount.textContent = `₱${parseFloat(this.amountPaid.value).toFixed(2)}`;
-        this.confirmMethod.textContent = this.selectedMethod.textContent;
+        // Safely set text content with null checks
+        if (this.confirmName) this.confirmName.textContent = userName;
+        if (this.confirmCategory) this.confirmCategory.textContent = this.categorySelect.value;
+        if (this.confirmInvoice) this.confirmInvoice.textContent = this.invoiceInput.value;
+        if (this.confirmAmount) this.confirmAmount.textContent = `₱${parseFloat(this.amountPaid.value).toFixed(2)}`;
+        if (this.confirmMethod) this.confirmMethod.textContent = this.selectedMethod.textContent;
         
         // Show the modal
-        this.confirmModal.show();
+        if (this.confirmModal) {
+            this.confirmModal.show();
+        } else {
+            console.error('Confirmation modal not initialized');
+            alert('Error: Unable to show confirmation dialog');
+        }
     }
 
     async processPayment() {
-    try {
-        // Disable the confirm button to prevent double submission
-        this.confirmPaymentBtn.disabled = true;
-        this.confirmPaymentBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing payment and sending receipt...';
-        
-        // Create FormData for file upload
-        const formData = new FormData();
+        try {
+            // Disable the confirm button to prevent double submission
+            if (this.confirmPaymentBtn) {
+                this.confirmPaymentBtn.disabled = true;
+                this.confirmPaymentBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+            }
+            
+            // Create FormData for file upload
+            const formData = new FormData();
             formData.append('action', 'process_payment');
             formData.append('category', this.categorySelect.value);
             formData.append('user_type', this.userTypeSelect.value);
@@ -600,26 +605,32 @@ class ResidentPaymentManager {
             const result = await response.json();
             
             if (result.success) {
-                // Hide confirmation modal first
-                this.confirmModal.hide();
+                // Hide confirmation modal
+                if (this.confirmModal) {
+                    this.confirmModal.hide();
+                }
                 
-                // Wait a moment for modal to hide completely
+                // Wait for modal to hide
                 await new Promise(resolve => setTimeout(resolve, 300));
                 
                 // Show success modal with email status
                 const successModalBody = document.querySelector('#successPaymentModal .modal-body p:last-child');
-                if (result.email_sent) {
-                    successModalBody.textContent = 'The payment has been recorded and receipt sent to your email.';
-                } else {
-                    successModalBody.textContent = 'The payment has been recorded. Email receipt could not be sent.';
+                if (successModalBody) {
+                    if (result.email_sent) {
+                        successModalBody.textContent = 'The payment has been recorded and receipt sent to your email.';
+                    } else {
+                        successModalBody.textContent = 'The payment has been recorded. Email receipt could not be sent.';
+                    }
                 }
                 
-                this.successModal.show();
+                if (this.successModal) {
+                    this.successModal.show();
+                }
                 
-                // Clear form after a short delay
+                // Clear form after delay
                 setTimeout(() => {
                     this.clearFormFields();
-                    this.selectPaymentMethod('bank'); // Reset to default
+                    this.selectPaymentMethod('bank');
                 }, 1000);
                 
             } else {
@@ -630,15 +641,19 @@ class ResidentPaymentManager {
             console.error('Payment processing error:', error);
             
             // Hide confirmation modal
-            this.confirmModal.hide();
+            if (this.confirmModal) {
+                this.confirmModal.hide();
+            }
             
-            // Show error modal
-            this.showErrorModal('Error processing payment: ' + error.message);
+            // Show error
+            alert('Error processing payment: ' + error.message);
             
         } finally {
             // Re-enable the confirm button
-            this.confirmPaymentBtn.disabled = false;
-            this.confirmPaymentBtn.innerHTML = 'Process Payment';
+            if (this.confirmPaymentBtn) {
+                this.confirmPaymentBtn.disabled = false;
+                this.confirmPaymentBtn.innerHTML = 'Process Payment';
+            }
         }
     }
 }
