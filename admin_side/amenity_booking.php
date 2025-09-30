@@ -556,24 +556,18 @@ while ($row = $calendar_result->fetch_assoc()) {
                                                 <td class='text-center'>
                                                     <div class='text-center'>
                                                         <!-- View button -->
-<a href='#' 
-   class='btn btn-sm btn-outline-success me-1' 
-   title='View' 
-   style='padding: 2px 6px; font-size: 0.9rem;'
-   data-booking='" . htmlspecialchars(json_encode([
-                                                    "id" => $row["id"],
-                                                    "fullName" => $fullName,
-                                                    "amenity" => $amenity,
-                                                    "date" => $bookingDate,
-                                                    "reservationCode" => $resCode,
-                                                    "paymentStatus" => ucfirst($row["status"]),
-                                                    "amount" => "₱" . number_format($row["amount_paid"], 2) . ($row["status"] === "partial" ? " / ₱" . number_format($row["total_amount"], 2) : ""),
-                                                    "time" => ($row["rate"] === "day" ? "9:00 AM - 5:00 PM" : ($row["rate"] === "night" ? "5:00 PM - 10:00 PM" : "N/A")),
-                                                    "userType" => ucfirst($row["user_type"])
-                                                ]), ENT_QUOTES, 'UTF-8') . "' 
-   onclick='viewBookingFromTable(this); return false;'>
-    <i class='bi bi-eye'></i>
-</a>
+                                                        <button class='btn btn-sm btn-outline-success me-1' title='View' style='padding: 2px 6px; font-size: 0.9rem;' 
+                                                            onclick='showBookingDetailsFromTable({
+                                                                fullName: \"" . addslashes($fullName) . "\",
+                                                                amenity: \"" . addslashes($amenity) . "\",
+                                                                date: \"" . $bookingDate . "\",
+                                                                reservationCode: \"" . $resCode . "\",
+                                                                paymentStatus: \"" . ucfirst($row['status']) . "\",
+                                                                amount: \"₱" . number_format($row['amount_paid'], 2) . ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : "") . "\",
+                                                                time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\"
+                                                            })'>
+                                                            <i class='bi bi-eye'></i>
+                                                        </button>
                                                         <!-- Reschedule button -->
                                                         <a class='btn btn-sm btn-outline-primary me-1' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'>
                                                             <i class='bi bi-calendar2-week'></i>
@@ -981,10 +975,43 @@ while ($row = $calendar_result->fetch_assoc()) {
             new bootstrap.Modal(document.getElementById('bookingModal')).show();
         }
 
-        function viewBookingFromTable(element) {
-            const bookingData = element.getAttribute('data-booking');
-            const booking = JSON.parse(bookingData);
-            showBookingDetails(booking);
+        // Function to show booking details from table view
+        function showBookingDetailsFromTable(booking) {
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="booking-detail">
+                    <strong>Guest Name:</strong>
+                    <span>${booking.fullName}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Amenity:</strong>
+                    <span class="badge bg-${booking.amenity.toLowerCase() === 'clubhouse' ? 'danger' :
+                            booking.amenity.toLowerCase() === 'swimming pool' ? 'primary' :
+                                booking.amenity.toLowerCase() === 'gazebo' ? 'warning text-dark' : booking.amenity.toLowerCase() === 'basketball court' ? 'info' : 'secondary'}">${booking.amenity}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Date:</strong>
+                    <span>${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Time:</strong>
+                    <span>${booking.time}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Reservation Code:</strong>
+                    <span>${booking.reservationCode}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Payment Status:</strong>
+                    <span class="badge bg-${booking.paymentStatus === 'Paid' ? 'success' : booking.paymentStatus === 'Partial' ? 'warning text-dark' : 'secondary'}">${booking.paymentStatus}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Amount:</strong>
+                    <span>${booking.amount}</span>
+                </div>
+            `;
+
+            new bootstrap.Modal(document.getElementById('bookingModal')).show();
         }
 
         function previousMonth() {
