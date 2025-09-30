@@ -238,26 +238,55 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
 
         * {
             font-family: "Montserrat", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow-x: hidden;
         }
 
         header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 1030;
+            height: 76px;
+            background-color: white;
         }
 
         .sidebar {
             width: 250px;
-            height: 100vh;
+            height: calc(100vh - 76px);
             position: fixed;
-            top: 20;
+            top: 76px;
             left: 0;
             background-color: #1F2937;
             overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1020;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
         }
 
         main {
             margin-left: 250px;
+            margin-top: 76px;
+            min-height: calc(100vh - 76px);
+            overflow-y: auto;
         }
 
         .sidebar a,
@@ -333,12 +362,39 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
         .metric-card.blue {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         }
+
+        .sidebar-nav {
+            padding-bottom: 20px;
+        }
+
+        .sidebar .logout {
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            header .me-4 {
+                width: auto !important;
+            }
+        }
     </style>
 </head>
 
 <body class="bg-light">
     <!-- Header -->
-    <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
+    <header class="shadow-sm py-3 px-4 d-flex align-items-center">
         <div class="me-4" style="width: 250px;">
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
@@ -370,10 +426,11 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             </div>
         </div>
     </header>
+
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1">
+            <nav class="nav flex-column gap-1 sidebar-nav">
                 <a href="admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -442,12 +499,12 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                     </div>
                 </div>
                 <a href="login/logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
-                    style="position: fixed; bottom: 0; width: 220px;">
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
+
         <!-- Main Content -->
         <main class="flex-grow-1 p-4">
             <div class="row g-3 mb-4">

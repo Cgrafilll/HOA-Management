@@ -964,242 +964,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     </div>
                                     <div id="filePreview" class="mt-2"></div>
                                 </div>
-                                <!-- Terms and Conditions -->
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" id="termsConditions"
-                                        name="termsConditions" required>
-                                    <label class="form-check-label" for="termsConditions">
-                                        I agree to <a href="#" class="text-success" data-bs-toggle="modal"
-                                            data-bs-target="#termsModal">Terms and Conditions</a>
-                                    </label>
-                                </div>
-                                <!-- Terms and Conditions Modal -->
-                                <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel"
-                                    aria-hidden="true">
-                                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                                        <div class="modal-content">
-                                            <div class="modal-header bg-success text-white">
-                                                <h5 class="modal-title" id="termsModalLabel">TERMS AND CONDITIONS
-                                                    FOR
-                                                    AMENITY BOOKING</h5>
-                                                <button type="button" class="btn-close btn-close-white"
-                                                    data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <p><strong>Neopolitan Sitio Seville Homeowners' Association, Inc.
-                                                        (NSSHAI)</strong></p>
-                                                <p><em>Effective Date: April 2025</em></p>
-                                                <p>By booking any amenity through the NSSHAI HOA Management System,
-                                                    you
-                                                    agree to the following terms and conditions:</p>
-                                                <h6><strong>1. Reservation and Payment</strong></h6>
-                                                <ul>
-                                                    <li>A <strong>minimum of 50% down payment</strong> is required
-                                                        for
-                                                        all reservations.
-                                                        This payment is <strong>non-refundable</strong> but may be
-                                                        rescheduled upon request.</li>
-                                                    <li>Reservations must be made through the official HOA system
-                                                        and
-                                                        are considered valid only once payment is received and
-                                                        confirmed.</li>
-                                                    <li>All payments must be made via:
-                                                        <ul>
-                                                            <li><strong>EastWest Bank</strong><br>Account Name:
-                                                                Neopolitan Sitio Seville<br>Account Number:
-                                                                20049887271
-                                                            </li>
-                                                            <li><strong>Or in person</strong> at the HOA
-                                                                Administrative
-                                                                Office</li>
-                                                        </ul>
-                                                    </li>
-                                                </ul>
-                                                <h6><strong>2. Payment Confirmation</strong></h6>
-                                                <ul>
-                                                    <li>Proof of payment (e.g., deposit slip or screenshot) must be
-                                                        uploaded through the online form or submitted to the office
-                                                        to
-                                                        confirm the booking.</li>
-                                                    <li>Incomplete or unverified reservations may be canceled
-                                                        without
-                                                        notice.</li>
-                                                </ul>
-                                                <h6><strong>3. Rescheduling Policy</strong></h6>
-                                                <ul>
-                                                    <li><strong>Rescheduling is allowed</strong> but must be
-                                                        requested
-                                                        <strong>at least 24 hours</strong>
-                                                        before the reserved date.
-                                                    </li>
-                                                    <li>New schedule is subject to <strong>availability and HOA
-                                                            approval.</strong></li>
-                                                    <li>Only <strong>one (1) rescheduling</strong> per booking is
-                                                        permitted. Further
-                                                        changes may require a new reservation and payment.</li>
-                                                </ul>
-                                                <h6><strong>4. Exclusive Use and Special Requests</strong></h6>
-                                                <ul>
-                                                    <li>Requests for <strong>exclusive use</strong> of amenities
-                                                        (e.g.,
-                                                        swimming pool)
-                                                        require a <strong>minimum of 10 guests</strong>, higher
-                                                        rates,
-                                                        and prior
-                                                        approval.</li>
-                                                    <li>Special bookings are dependent on HOA availability and
-                                                        administrative discretion.</li>
-                                                </ul>
-                                                <h6><strong>5. Overtime Usage</strong></h6>
-                                                <ul>
-                                                    <li>Use of the <strong>Basketball Court beyond the booked
-                                                            session</strong> (Day or
-                                                        Night) will incur <strong>an additional charge of ₱1,000.00
-                                                            per
-                                                            hour.</strong></li>
-                                                    <li>This applies only to <strong>excess hours beyond the
-                                                            reserved
-                                                            time.</strong></li>
-                                                    <li>Overtime use is subject to <strong>HOA approval and
-                                                            monitoring.</strong></li>
-                                                </ul>
-                                                <h6><strong>6. Policy Enforcement</strong></h6>
-                                                <ul>
-                                                    <li>The HOA reserves the right to cancel or deny any booking due
-                                                        to
-                                                        safety issues, maintenance, or failure to comply with
-                                                        policies.
-                                                    </li>
-                                                    <li>Improper use of the system or false information may lead to
-                                                        suspension of booking privileges.</li>
-                                                </ul>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-success"
-                                                    data-bs-dismiss="modal">Close</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Privacy Policy Checkbox -->
-                                <div class="form-check mb-4">
-                                    <input class="form-check-input" type="checkbox" id="privacyPolicy"
-                                        name="privacyPolicy" required>
-                                    <label class="form-check-label" for="privacyPolicy">
-                                        I agree to <a href="#" class="text-success" data-bs-toggle="modal"
-                                            data-bs-target="#privacyPolicyModal">Privacy Policy</a>
-                                    </label>
-                                </div>
-                                <!-- Privacy Policy Modal -->
-                                <div class="modal fade" id="privacyPolicyModal" tabindex="-1"
-                                    aria-labelledby="privacyPolicyModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-                                        <div class="modal-content">
-                                            <div class="modal-header bg-success text-white">
-                                                <h5 class="modal-title fw-bold" id="privacyPolicyModalLabel">PRIVACY
-                                                    POLICY FOR AMENITY BOOKING</h5>
-                                                <button type="button" class="btn-close btn-close-white"
-                                                    data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <p><strong>Neopolitan Sitio Seville Homeowners' Association, Inc.
-                                                        (NSSHAI)</strong></p>
-                                                <p><em>Effective Date: April 2025</em></p>
-                                                <p>NSSHAl values your privacy and is committed to protecting the
-                                                    personal information you provide when using our Amenity Booking
-                                                    feature through our HOA Management System.</p>
-
-                                                <h6><strong>1. Information We Collect</strong></h6>
-                                                <span>When you access and use the Amenity Booking feature, we may
-                                                    collect
-                                                    the following personal and transactional information:</span>
-                                                <ul>
-                                                    <li>Full Name (First, Middle, Last)</li>
-                                                    <li>Email Address</li>
-                                                    <li>Date and time of booking</li>
-                                                    <li>Number of guests</li>
-                                                    <li>Amenity type and time slot selected</li>
-                                                    <li>Payment details (amount paid, mode of payment, reference
-                                                        number)
-                                                    </li>
-                                                    <li>Uploaded files (e.g., proof of payment)</li>
-                                                </ul>
-                                                <h6><strong>2. Purpose of Data Collection</strong></h6>
-                                                <span>We use the collected information to:</span>
-                                                <ul>
-                                                    <li>Manage and confirm amenity reservations</li>
-                                                    <li>Process and verify payments</li>
-                                                    <li>Maintain organized HOA records for amenities usage</li>
-                                                    <li>Communicate updates regarding bookings, schedule changes, or
-                                                        policy updates</li>
-                                                    <li>Ensure security, usage tracking, and compliance with HOA
-                                                        regulations</li>
-                                                </ul>
-                                                <h6><strong>3. Data Storage and Protection</strong></h6>
-                                                <span>Your personal information is stored securely within the HOA
-                                                    Management System and protected through:</span>
-                                                <ul>
-                                                    <li>User authentication and administrative access controls</li>
-                                                    <li>Secure encrypted file and data storage</li>
-                                                    <li>Internal system logs and audit trails</li>
-                                                    <li>Routine backups and restricted access to authorized
-                                                        personnel
-                                                        only</li>
-                                                </ul>
-                                                <h6><strong>4. Data Sharing</strong></h6>
-                                                <span>We do not sell or share personal information to third parties.
-                                                    All
-                                                    access is governed by a need-to-know basis. Data
-                                                    is accessed ony by:</span>
-                                                <ul>
-                                                    <li>HOA administrative staff</li>
-                                                    <li>Authorized clubhouse personnel</li>
-                                                    <li>Finance and accounting officers for verification and
-                                                        reporting
-                                                    </li>
-                                                </ul>
-                                                <h6><strong>5. Retention of Records</strong></h6>
-                                                <span>Personal and booking data is retained for as long as necessary
-                                                    to:
-                                                </span>
-                                                <ul>
-                                                    <li>Manage amenity usage history</li>
-                                                    <li>Maintain accounting and audit records</li>
-                                                    <li>Comply with legal or regulatory obligations</li>
-                                                    <li>Records are periodically reviewed and securely deleted when
-                                                        no
-                                                        longer required.</li>
-                                                </ul>
-                                                <h6><strong>6. Your Data Privacy Rights</strong></h6>
-                                                <span>You have the right to:</span>
-                                                <ul class="mb-0">
-                                                    <li>Request access to your personal booking and payment
-                                                        information
-                                                    </li>
-                                                    <li>Request correction of any inaccuracies</li>
-                                                    <li>Request deletion of your personal data, subject to HOA
-                                                        guidelines</li>
-                                                    <li>Withdraw consent for data processing where applicable</li>
-                                                </ul>
-                                                <p>To exercise any of these rights, you may contact our HOA Admin
-                                                    Office
-                                                    at:
-                                                    8-2457647</p>
-                                                <h6><strong>7. Policy Updates</strong></h6>
-                                                <span>We reserve the right to update this Privacy Policy. Updates
-                                                    will
-                                                    be
-                                                    reflected on our official system and communicated to residents
-                                                    as
-                                                    necessary.</span>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-success"
-                                                    data-bs-dismiss="modal">Close</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                                 <!-- Submit Button -->
                                 <div class="d-grid">
                                     <button type="submit" class="btn btn-success btn-lg">Reserve</button>
@@ -1476,14 +1240,25 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
         }
 
+        // Function to show error modal with custom message
+        function showErrorModal(message) {
+            const errorMessageElement = document.getElementById('errorMessage');
+            const errorModalElement = document.getElementById('errorModal');
+
+            if (errorMessageElement && errorModalElement) {
+                errorMessageElement.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>${message}`;
+                const errorModal = new bootstrap.Modal(errorModalElement);
+                errorModal.show();
+            }
+        }
+
         function selectDate(dateString, element) {
             const selectedRateType = document.getElementById('selectedRate')?.value || 'day';
             const booking = bookedDates[dateString];
 
             // Check if the selected rate is available
             if (booking && booking[selectedRateType]) {
-                // Show alert that this rate is not available
-                alert(`This date is already booked for ${selectedRateType}. Please select the other rate or choose a different date.`);
+                showErrorModal(`This date is already booked for <strong>${selectedRateType}</strong>. Please select the other rate or choose a different date.`);
                 return;
             }
 
@@ -1838,7 +1613,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         function selectRate(option, value) {
             // Check if selected date has this rate booked
             if (selectedDate && bookedDates[selectedDate] && bookedDates[selectedDate][value]) {
-                alert(`The ${value} rate is already booked for ${selectedDate}. Please select the other rate or choose a different date.`);
+                showErrorModal(`The <strong>${value}</strong> rate is already booked for <strong>${selectedDate}</strong>. Please select the other rate or choose a different date.`);
                 return;
             }
 
