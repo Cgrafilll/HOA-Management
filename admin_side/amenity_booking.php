@@ -569,9 +569,17 @@ while ($row = $calendar_result->fetch_assoc()) {
                                                             <i class='bi bi-eye'></i>
                                                         </button>
                                                         <!-- Reschedule button -->
-                                                        <a class='btn btn-sm btn-outline-primary me-1' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'>
+                                                        <button class='btn btn-sm btn-outline-primary me-1' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'
+                                                            onclick='openRescheduleModal({
+                                                                id: \"" . $id . "\",
+                                                                fullName: \"" . addslashes($fullName) . "\",
+                                                                amenity: \"" . addslashes($amenity) . "\",
+                                                                date: \"" . $bookingDate . "\",
+                                                                time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\",
+                                                                rate: \"" . $row['rate'] . "\"
+                                                            })'>
                                                             <i class='bi bi-calendar2-week'></i>
-                                                        </a>
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>";
@@ -742,9 +750,60 @@ while ($row = $calendar_result->fetch_assoc()) {
                         <!-- Booking details will be populated here -->
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary">Edit Booking</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
+                </div>
+            </div>
+        </div>
+        <!-- Reschedule Modal -->
+        <div class="modal fade" id="rescheduleModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">Reschedule Booking</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form id="rescheduleForm" method="POST" action="amenity_booking/reschedule_booking.php">
+                        <div class="modal-body">
+                            <input type="hidden" id="reschedule_booking_id" name="booking_id">
+
+                            <!-- Current Booking Info -->
+                            <div class="alert alert-info">
+                                <strong>Current Booking:</strong>
+                                <div id="currentBookingInfo"></div>
+                            </div>
+
+                            <!-- New Date -->
+                            <div class="mb-3">
+                                <label for="new_date" class="form-label">New Reservation Date <span
+                                        class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="new_date" name="new_date" required>
+                            </div>
+
+                            <!-- New Time Slot -->
+                            <div class="mb-3">
+                                <label for="new_rate" class="form-label">New Time Slot <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" id="new_rate" name="new_rate" required>
+                                    <option value="">Select time slot</option>
+                                    <option value="day">Day (9:00 AM - 5:00 PM)</option>
+                                    <option value="night">Night (5:00 PM - 10:00 PM)</option>
+                                </select>
+                            </div>
+
+                            <!-- Reason -->
+                            <div class="mb-3">
+                                <label for="reschedule_reason" class="form-label">Reason for Rescheduling <span
+                                        class="text-danger">*</span></label>
+                                <textarea class="form-control" id="reschedule_reason" name="reason" rows="3" required
+                                    placeholder="Please provide a reason for rescheduling..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Submit Reschedule Request</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -1009,6 +1068,32 @@ while ($row = $calendar_result->fetch_assoc()) {
             `;
 
             new bootstrap.Modal(document.getElementById('bookingModal')).show();
+        }
+
+        // Function to open reschedule modal
+        function openRescheduleModal(booking) {
+            // Set booking ID
+            document.getElementById('reschedule_booking_id').value = booking.id;
+
+            // Display current booking info
+            document.getElementById('currentBookingInfo').innerHTML = `
+                <div><strong>Guest:</strong> ${booking.fullName}</div>
+                <div><strong>Amenity:</strong> ${booking.amenity}</div>
+                <div><strong>Current Date:</strong> ${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                <div><strong>Current Time:</strong> ${booking.time}</div>
+            `;
+
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('new_date').setAttribute('min', today);
+
+            // Clear form
+            document.getElementById('new_date').value = '';
+            document.getElementById('new_rate').value = '';
+            document.getElementById('reschedule_reason').value = '';
+
+            // Show modal
+            new bootstrap.Modal(document.getElementById('rescheduleModal')).show();
         }
 
         function previousMonth() {
