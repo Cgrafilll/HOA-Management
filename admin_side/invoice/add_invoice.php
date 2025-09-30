@@ -516,7 +516,7 @@ if (!empty($admin['profile_picture'])) {
                 field.addEventListener("change", () => field.classList.remove("border", "border-danger"));
             });
 
-            // Billing month and due date logic
+            // Billing month and due date logics
             const billingMonth = document.getElementById('billing_month');
             const paymentDate = document.getElementById('due_date');
 
