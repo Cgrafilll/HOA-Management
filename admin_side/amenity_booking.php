@@ -411,21 +411,81 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         .calendar-grid-reschedule {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
+            gap: 5px;
             max-width: 100%;
             overflow: hidden;
         }
 
         .calendar-grid-reschedule .calendar-day {
             aspect-ratio: 1;
-            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
             font-size: 14px;
+            cursor: pointer;
+            border: 1px solid #dee2e6;
+            background: white;
+            position: relative;
             min-width: 0;
-            /* Allow items to shrink below their minimum content size */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .calendar-grid-reschedule .calendar-day:hover:not(.disabled):not(.booked) {
+            background: #e7f5ea;
+            border-color: #198754;
+        }
+
+        .calendar-grid-reschedule .calendar-day.today {
+            border: 2px solid #198754;
+            font-weight: 600;
+        }
+
+        .calendar-grid-reschedule .calendar-day.booked {
+            background: #f8d7da;
+            color: #721c24;
+            cursor: not-allowed;
+        }
+
+        .calendar-grid-reschedule .calendar-day.booked::after {
+            content: "●";
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 8px;
+            color: #dc3545;
+        }
+
+        .calendar-grid-reschedule .calendar-day.selected {
+            background: #198754;
+            color: white;
+            border-color: #198754;
+        }
+
+        .calendar-grid-reschedule .calendar-day.disabled {
+            background: #e9ecef;
+            color: #adb5bd;
+            cursor: not-allowed;
         }
 
         .calendar-grid-reschedule .calendar-day.empty {
+            background: transparent;
+            border: none;
             cursor: default;
+        }
+
+        .calendar-grid-reschedule .calendar-day.partial-booked {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+            cursor: pointer;
+        }
+
+        .calendar-grid-reschedule .calendar-day.partial-booked:hover {
+            background-color: #ffeaa7;
+            border-color: #ffb300;
         }
 
         .calendar-grid-reschedule .partial-indicator {
@@ -433,18 +493,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             top: 2px;
             right: 2px;
             font-size: 10px;
+            color: #856404;
             pointer-events: none;
-            /* Allow clicks to pass through to parent */
         }
 
-        /* Prevent text selection when clicking calendar */
-        .calendar-grid-reschedule .calendar-day {
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
+        #dateMessageReschedule {
+            margin-top: 10px;
         }
 
+        /* Rate Options - keep as is */
         .rate-options {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
