@@ -601,7 +601,7 @@ class ResidentPaymentManager {
                 formData.append('proof_of_payment', this.fileInput.files[0]);
             }
             
-            const response = await fetch('payment/process_payment.php', {
+            const response = await fetch('payment.php?action=process_payment', {
                 method: 'POST',
                 body: formData
             });
