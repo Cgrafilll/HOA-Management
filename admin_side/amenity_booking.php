@@ -816,7 +816,7 @@ while ($row = $calendar_result->fetch_assoc()) {
         </div>
         <!-- Reschedule Modal -->
         <div class="modal fade" id="rescheduleModal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-xl">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
                 <div class="modal-content">
                     <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title">Reschedule Booking</h5>
