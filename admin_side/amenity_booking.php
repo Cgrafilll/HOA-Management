@@ -684,6 +684,7 @@ while ($row = $calendar_result->fetch_assoc()) {
                             </div>
                         </div>
                     </div>
+
                     <!-- Reschedule Requests -->
                     <div class="tab-pane fade" id="reschedule" role="tabpanel">
                         <!-- Bookings Table -->
