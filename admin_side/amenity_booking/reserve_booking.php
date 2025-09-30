@@ -59,6 +59,34 @@ if (!empty($admin['profile_picture'])) {
     $photo = ''; // Explicitly empty if no image is saved
 }
 
+// Handle AJAX request to get booked dates for an amenity
+if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
+    try {
+        $amenity = $_GET['amenity'] ?? '';
+
+        if (empty($amenity)) {
+            echo json_encode(['success' => false, 'error' => 'Amenity required']);
+            exit;
+        }
+
+        // Fetch all booked dates for this amenity
+        $stmt = $conn->prepare("SELECT reservation_date FROM amenity_bookings WHERE amenity = ? AND status IN ('pending', 'partial', 'paid')");
+        $stmt->bind_param("s", $amenity);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $booked_dates = [];
+        while ($row = $result->fetch_assoc()) {
+            $booked_dates[] = date('Y-m-d', strtotime($row['reservation_date']));
+        }
+
+        echo json_encode(['success' => true, 'dates' => $booked_dates]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 if (isset($_GET['action']) && $_GET['action'] === 'get_households') {
     try {
         // Include cellphone_number in the query
@@ -377,6 +405,41 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 transform: translateY(0);
             }
         }
+
+        .calendar-legend {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .calendar-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .calendar-legend-box {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+        }
+
+        .calendar-legend-box.available {
+            background-color: #198754;
+        }
+
+        .calendar-legend-box.booked {
+            background-color: #dc3545;
+        }
+
+        .date-info {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #198754;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 
@@ -588,11 +651,27 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
                                 <!-- Date -->
-                                <div class="form-floating mb-3">
-                                    <input type="date" class="form-control" id="reservationDate" name="reservationDate"
-                                        required>
-                                    <label for="reservationDate">Date<small
-                                            class="fw-bold text-danger">*</small></label>
+                                <div class="mb-3">
+                                    <div class="calendar-legend">
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-box available"></div>
+                                            <span>Available</span>
+                                        </div>
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-box booked"></div>
+                                            <span>Booked</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-floating">
+                                        <input type="date" class="form-control" id="reservationDate"
+                                            name="reservationDate" required>
+                                        <label for="reservationDate">Date<small
+                                                class="fw-bold text-danger">*</small></label>
+                                    </div>
+                                    <div id="dateInfo" class="date-info d-none">
+                                        <small><i class="bi bi-info-circle me-2"></i><span
+                                                id="dateMessage"></span></small>
+                                    </div>
                                 </div>
                                 <?php if ($amenity !== "Gazebo" && $amenity !== "Clubhouse"): ?>
                                     <!-- Guests -->
@@ -1153,6 +1232,66 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             fileInput.value = '';
             filePreview.innerHTML = '';
         }
+
+        // Store booked dates
+        let bookedDates = [];
+        const amenity = "<?php echo htmlspecialchars($amenity); ?>";
+
+        // Fetch booked dates when page loads
+        async function fetchBookedDates() {
+            try {
+                const response = await fetch(`reservation_form.php?action=get_booked_dates&amenity=${encodeURIComponent(amenity)}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    bookedDates = data.dates;
+                    setupDatePicker();
+                }
+            } catch (error) {
+                console.error('Error fetching booked dates:', error);
+            }
+        }
+
+        // Setup date picker with disabled dates
+        function setupDatePicker() {
+            const dateInput = document.getElementById('reservationDate');
+            const dateInfo = document.getElementById('dateInfo');
+            const dateMessage = document.getElementById('dateMessage');
+
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.setAttribute('min', today);
+
+            // Listen for date selection
+            dateInput.addEventListener('change', function () {
+                const selectedDate = this.value;
+
+                if (bookedDates.includes(selectedDate)) {
+                    // Date is booked
+                    dateInfo.classList.remove('d-none');
+                    dateInfo.style.borderLeftColor = '#dc3545';
+                    dateInfo.style.backgroundColor = '#f8d7da';
+                    dateMessage.innerHTML = '<strong>This date is already booked!</strong> Please select another date.';
+                    this.value = ''; // Clear the input
+                } else {
+                    // Date is available
+                    dateInfo.classList.remove('d-none');
+                    dateInfo.style.borderLeftColor = '#198754';
+                    dateInfo.style.backgroundColor = '#d1e7dd';
+                    dateMessage.innerHTML = '<strong>This date is available!</strong> You can proceed with your reservation.';
+                }
+            });
+
+            // Show booked dates count
+            if (bookedDates.length > 0) {
+                console.log(`${bookedDates.length} dates are already booked for ${amenity}`);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchBookedDates();
+        });
 
         // Store rates from PHP into JS
         const amenityRates = <?php echo json_encode($amenityRates); ?>;
@@ -1727,7 +1866,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         platesField.style.backgroundColor = '';
                         platesField.style.opacity = '';
                         platesField.setAttribute('required', 'required');
-                        
+
                         // Update instruction text based on number of cars
                         const instructionDiv = platesField.parentNode.nextElementSibling;
                         if (instructionDiv && instructionDiv.classList.contains('form-text')) {
