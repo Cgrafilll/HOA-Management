@@ -173,10 +173,10 @@ if (!empty($admin['profile_picture'])) {
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
-                                <img src="<?php echo htmlspecialchars($photo); ?>"
-                                    style="width: 40px; height: 40px; object-fit: cover;">
+                            <img src="<?php echo htmlspecialchars($photo); ?>"
+                                style="width: 40px; height: 40px; object-fit: cover;">
                         <?php else: ?>
-                                <i class="bi bi-person-circle" style="font-size: 32px;"></i>
+                            <i class="bi bi-person-circle" style="font-size: 32px;"></i>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -281,8 +281,7 @@ if (!empty($admin['profile_picture'])) {
                 <!-- Back Button -->
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <span class="small mb-0">Fill out the form below to issue a new invoice</span>
-                    <a href="../invoice.php"
-                    class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                    <a href="../invoice.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                         <i class="bi bi-arrow-left-short me-1"></i>Back
                     </a>
                 </div>
@@ -316,7 +315,8 @@ if (!empty($admin['profile_picture'])) {
                         <!-- Balance Remaining -->
                         <div class="col-md-6">
                             <label for="balance_remaining" class="form-label fw-semibold">Balance to be Paid:</label>
-                            <input type="number" step="0.01" class="form-control" id="balance_remaining" name="balance_remaining" min="0" required>
+                            <input type="number" step="0.01" class="form-control" id="balance_remaining"
+                                name="balance_remaining" min="0" required>
                         </div>
 
                         <!-- Payment Date -->
@@ -347,7 +347,8 @@ if (!empty($admin['profile_picture'])) {
                                 <i class="bi bi-question-circle text-success" style="font-size: 64px;"></i>
                                 <p class="mb-2"><b>Are you sure?</b></p>
                                 <p class="mb-3">Do you really want to create this invoice?</p>
-                                <button type="button" class="btn btn-success" id="confirmPublish">Yes, Create Invoice</button>
+                                <button type="button" class="btn btn-success" id="confirmPublish">Yes, Create
+                                    Invoice</button>
                                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                             </div>
                         </div>
@@ -366,7 +367,8 @@ if (!empty($admin['profile_picture'])) {
                             <div class="modal-body">
                                 <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
                                 <p class="mt-3 mb-2"><b>Invoice created successfully!</b></p>
-                                <p class="mb-3" id="successMessage">The invoice has been created and email notification sent.</p>
+                                <p class="mb-3" id="successMessage">The invoice has been created and email notification
+                                    sent.</p>
                                 <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
                             </div>
                         </div>
@@ -379,12 +381,14 @@ if (!empty($admin['profile_picture'])) {
                         <div class="modal-content text-center">
                             <div class="modal-header bg-danger text-white">
                                 <h5 class="modal-title">Invoice Error</h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                <button type="button" class="btn-close btn-close-white"
+                                    data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
                                 <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
                                 <p class="mt-3 mb-2"><b>Cannot Create Invoice!</b></p>
-                                <p class="mb-3" id="invoiceErrorMessage">An error occurred while creating the invoice.</p>
+                                <p class="mb-3" id="invoiceErrorMessage">An error occurred while creating the invoice.
+                                </p>
                                 <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
                             </div>
                         </div>
@@ -397,7 +401,8 @@ if (!empty($admin['profile_picture'])) {
                         <div class="modal-content text-center">
                             <div class="modal-header bg-danger text-white">
                                 <h5 class="modal-title fw-bold">Error</h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                <button type="button" class="btn-close btn-close-white"
+                                    data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
                                 <i class="bi bi-x-circle-fill text-danger" style="font-size: 64px;"></i>
@@ -412,150 +417,152 @@ if (!empty($admin['profile_picture'])) {
         </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-    const form = document.querySelector("form");
-    const requiredFields = Array.from(form.querySelectorAll("input:not([type='file']), select"));
-    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-    const confirmPublishBtn = document.getElementById('confirmPublish');
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.querySelector("form");
+            const requiredFields = Array.from(form.querySelectorAll("input:not([type='file']), select"));
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            const confirmPublishBtn = document.getElementById('confirmPublish');
 
-    // Form submission handler
-    form.addEventListener("submit", function(e) {
-        e.preventDefault(); // Always prevent default submission first
-        
-        let valid = true;
+            // Form submission handler
+            form.addEventListener("submit", function (e) {
+                e.preventDefault(); // Always prevent default submission first
 
-        // Validate required fields
-        requiredFields.forEach(field => {
-            if (!field.value) {
-                field.classList.add("border", "border-danger");
-                valid = false;
-            } else {
-                field.classList.remove("border", "border-danger");
-            }
-        });
+                let valid = true;
 
-        if (!valid) {
-            alert("Please fill in all required fields.");
-            return;
-        }
+                // Validate required fields
+                requiredFields.forEach(field => {
+                    if (!field.value) {
+                        field.classList.add("border", "border-danger");
+                        valid = false;
+                    } else {
+                        field.classList.remove("border", "border-danger");
+                    }
+                });
 
-        // If validation passes, show confirmation modal
-        confirmModal.show();
-    });
+                if (!valid) {
+                    alert("Please fill in all required fields.");
+                    return;
+                }
 
-    // Handle confirmation modal "Yes, Create Invoice" button
-    confirmPublishBtn.addEventListener("click", function() {
-        confirmModal.hide();
-        
-        // Show loading state
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Creating...';
-        submitBtn.disabled = true;
-        
-        // Create FormData and submit via AJAX
-        const formData = new FormData(form);
-        
-        fetch('process_add_invoice.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            // Handle both success and error responses
-            return response.json().then(data => {
-                return {
-                    status: response.status,
-                    ok: response.ok,
-                    data: data
-                };
+                // If validation passes, show confirmation modal
+                confirmModal.show();
             });
-        })
-        .then(result => {
-            if (result.ok && result.data.success) {
-                // Show success modal with custom message
-                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                let message = 'Invoice created successfully!';
-                if (result.data.email_sent) {
-                    message += ' Email notification has been sent to the homeowner.';
-                } else if (result.data.recipient_email) {
-                    message += ' Note: Email notification could not be sent.';
-                }
-                document.getElementById('successMessage').innerText = message;
-                successModal.show();
-                
-                // Reset form after success
-                form.reset();
-                updatePaymentDate(); // Reset due date field
-            } else {
-                // Handle error responses (including 400 status codes)
-                const errorData = result.data;
-                
-                if (errorData.error_type === 'validation') {
-                    // Show validation error in invoice error modal
-                    const errorInvoiceModal = new bootstrap.Modal(document.getElementById('errorInvoiceModal'));
-                    document.getElementById('invoiceErrorMessage').innerText = errorData.error;
-                    errorInvoiceModal.show();
+
+            // Handle confirmation modal "Yes, Create Invoice" button
+            confirmPublishBtn.addEventListener("click", function () {
+                confirmModal.hide();
+
+                // Show loading state
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Creating...';
+                submitBtn.disabled = true;
+
+                // Create FormData and submit via AJAX
+                const formData = new FormData(form);
+
+                fetch('process_add_invoice.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => {
+                        // Handle both success and error responses
+                        return response.json().then(data => {
+                            return {
+                                status: response.status,
+                                ok: response.ok,
+                                data: data
+                            };
+                        });
+                    })
+                    .then(result => {
+                        if (result.ok && result.data.success) {
+                            // Show success modal with custom message
+                            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                            let message = 'Invoice created successfully!';
+                            if (result.data.email_sent) {
+                                message += ' Email notification has been sent to the homeowner.';
+                            } else if (result.data.recipient_email) {
+                                message += ' Note: Email notification could not be sent.';
+                            }
+                            document.getElementById('successMessage').innerText = message;
+                            successModal.show();
+
+                            // Reset form after success
+                            form.reset();
+                            updatePaymentDate(); // Reset due date field
+                        } else {
+                            // Handle error responses (including 400 status codes)
+                            const errorData = result.data;
+
+                            if (errorData.error_type === 'validation') {
+                                // Show validation error in invoice error modal
+                                const errorInvoiceModal = new bootstrap.Modal(document.getElementById('errorInvoiceModal'));
+                                document.getElementById('invoiceErrorMessage').innerText = errorData.error;
+                                errorInvoiceModal.show();
+                            } else {
+                                // Show general error
+                                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                                document.getElementById('errorMessage').innerText = errorData.error || 'An error occurred. Please try again.';
+                                errorModal.show();
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        // Show general error modal for network/parsing errors
+                        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                        document.getElementById('errorMessage').innerText = 'Network error. Please check your connection and try again.';
+                        errorModal.show();
+                    })
+                    .finally(() => {
+                        // Restore button state
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    });
+            });
+
+            // Remove red border when user types or selects
+            requiredFields.forEach(field => {
+                field.addEventListener("input", () => field.classList.remove("border", "border-danger"));
+                field.addEventListener("change", () => field.classList.remove("border", "border-danger"));
+            });
+
+            // Handle success/error modals from PHP session
+            <?php if (isset($_SESSION['modal'])): ?>
+                var modalId = "<?php echo $_SESSION['modal']; ?>Modal";
+                <?php if ($_SESSION['modal'] === 'error' && isset($_SESSION['error_message'])): ?>
+                    document.getElementById("errorMessage").innerText = "<?php echo addslashes($_SESSION['error_message']); ?>";
+                <?php endif; ?>
+                var myModal = new bootstrap.Modal(document.getElementById(modalId));
+                myModal.show();
+                <?php unset($_SESSION['modal']);
+                unset($_SESSION['error_message']); ?>
+            <?php endif; ?>
+
+            // Billing month and due date logic
+            const billingMonth = document.getElementById('billing_month');
+            const paymentDate = document.getElementById('due_date');
+
+            // Function to set payment date to 28th of the selected month
+            function updatePaymentDate() {
+                if (billingMonth.value) {
+                    // billingMonth.value format: YYYY-MM
+                    const [year, month] = billingMonth.value.split('-');
+                    paymentDate.value = `${year}-${month}-28`;
                 } else {
-                    // Show general error
-                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                    document.getElementById('errorMessage').innerText = errorData.error || 'An error occurred. Please try again.';
-                    errorModal.show();
+                    // If no month selected, leave payment_date empty
+                    paymentDate.value = '';
                 }
             }
-        })
-        .catch(error => {
-            // Show general error modal for network/parsing errors
-            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-            document.getElementById('errorMessage').innerText = 'Network error. Please check your connection and try again.';
-            errorModal.show();
-        })
-        .finally(() => {
-            // Restore button state
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
+
+            // Set default on page load
+            updatePaymentDate();
+
+            // Update payment_date whenever billing_month changes
+            billingMonth.addEventListener('change', updatePaymentDate);
         });
-    });
-
-    // Remove red border when user types or selects
-    requiredFields.forEach(field => {
-        field.addEventListener("input", () => field.classList.remove("border", "border-danger"));
-        field.addEventListener("change", () => field.classList.remove("border", "border-danger"));
-    });
-
-    // Handle success/error modals from PHP session
-    <?php if (isset($_SESSION['modal'])): ?>
-        var modalId = "<?php echo $_SESSION['modal']; ?>Modal";
-        <?php if ($_SESSION['modal'] === 'error' && isset($_SESSION['error_message'])): ?>
-            document.getElementById("errorMessage").innerText = "<?php echo addslashes($_SESSION['error_message']); ?>";
-        <?php endif; ?>
-        var myModal = new bootstrap.Modal(document.getElementById(modalId));
-        myModal.show();
-        <?php unset($_SESSION['modal']); unset($_SESSION['error_message']); ?>
-    <?php endif; ?>
-
-    // Billing month and due date logic
-    const billingMonth = document.getElementById('billing_month');
-    const paymentDate = document.getElementById('due_date');
-
-    // Function to set payment date to 28th of the selected month
-    function updatePaymentDate() {
-        if (billingMonth.value) {
-            // billingMonth.value format: YYYY-MM
-            const [year, month] = billingMonth.value.split('-');
-            paymentDate.value = `${year}-${month}-28`;
-        } else {
-            // If no month selected, leave payment_date empty
-            paymentDate.value = '';
-        }
-    }
-
-    // Set default on page load
-    updatePaymentDate();
-
-    // Update payment_date whenever billing_month changes
-    billingMonth.addEventListener('change', updatePaymentDate);
-});
-</script>
+    </script>
 </body>
+
 </html>

@@ -457,23 +457,22 @@ try {
             'status' => $status
         ];
 
-        // // Send invoice notification email
-        // $recipientName = trim($householdDetails['first_name'] . ' ' . ($householdDetails['middle_name'] ? $householdDetails['middle_name'] . ' ' : '') . $householdDetails['last_name']);
-        // $recipientEmail = $householdDetails['email_address'];
+        // Send invoice notification email
+        $recipientName = trim($householdDetails['first_name'] . ' ' . ($householdDetails['middle_name'] ? $householdDetails['middle_name'] . ' ' : '') . $householdDetails['last_name']);
+        $recipientEmail = $householdDetails['email_address'];
         
-        // $emailSent = false;
-        // if (!empty($recipientEmail)) {
-        //     $emailSent = sendMonthlyDuesInvoice($recipientEmail, $recipientName, $invoiceDetails);
+        $emailSent = false;
+        if (!empty($recipientEmail)) {
+            $emailSent = sendMonthlyDuesInvoice($recipientEmail, $recipientName, $invoiceDetails);
             
-        //     if ($emailSent) {
-        //         error_log("✅ Monthly dues invoice email sent successfully to: " . $recipientEmail . " [Invoice: " . $invoice_number . "]");
-        //     } else {
-        //         error_log("❌ Failed to send monthly dues invoice email to: " . $recipientEmail . " [Invoice: " . $invoice_number . "]");
-        //     }
-        // } else {
-        //     error_log("⚠️ No email address found for household: " . $household_id . " [Invoice: " . $invoice_number . "]");
-        // }
-        $emailSent = false; // Temporarily disabled
+            if ($emailSent) {
+                error_log("✅ Monthly dues invoice email sent successfully to: " . $recipientEmail . " [Invoice: " . $invoice_number . "]");
+            } else {
+                error_log("❌ Failed to send monthly dues invoice email to: " . $recipientEmail . " [Invoice: " . $invoice_number . "]");
+            }
+        } else {
+            error_log("⚠️ No email address found for household: " . $household_id . " [Invoice: " . $invoice_number . "]");
+        }
 
         http_response_code(200);
         echo json_encode([
