@@ -164,15 +164,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
 
             $sql = "UPDATE admin_accounts SET 
-                first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-                cellphone_number=?, landline=?, email_address=?, password=?, street_address=?, street_address_2=?, 
-                city=?, state_province=?, barangay=?, postal_zip_code=?, profile_picture=?
-                WHERE admin_id=?";
+            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+            cellphone_number=?, landline=?, email_address=?, password=?, street_address=?, street_address_2=?, 
+            city=?, state_province=?, barangay=?, postal_zip_code=?, profile_picture=?
+            WHERE admin_id=?";
 
             $stmt = $conn->prepare($sql);
             $null = NULL;
             $stmt->bind_param(
-                "ssssisssssssssssbs",
+                "ssssissssssssssbs",
                 $first_name,
                 $middle_name,
                 $last_name,
@@ -192,22 +192,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $null,
                 $edit_admin
             );
-            $stmt->send_long_data(17, $profile_pic);
+            $stmt->send_long_data(16, $profile_pic); // Index 16 (0-based)
 
         } elseif ($has_photo && !$password_update) {
             // Update with photo only
             $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
 
             $sql = "UPDATE admin_accounts SET 
-                first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-                cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-                city=?, state_province=?, barangay=?, postal_zip_code=?, profile_picture=?
-                WHERE admin_id=?";
+            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+            cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+            city=?, state_province=?, barangay=?, postal_zip_code=?, profile_picture=?
+            WHERE admin_id=?";
 
             $stmt = $conn->prepare($sql);
             $null = NULL;
             $stmt->bind_param(
-                "ssssisssssssssbs",
+                "ssssissssssssbs",
                 $first_name,
                 $middle_name,
                 $last_name,
@@ -226,19 +226,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $null,
                 $edit_admin
             );
-            $stmt->send_long_data(15, $profile_pic);
+            $stmt->send_long_data(15, $profile_pic); // Index 15 (0-based)
 
         } elseif (!$has_photo && $password_update) {
             // Update with password only
             $sql = "UPDATE admin_accounts SET 
-                first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-                cellphone_number=?, landline=?, email_address=?, password=?, street_address=?, street_address_2=?, 
-                city=?, state_province=?, barangay=?, postal_zip_code=?
-                WHERE admin_id=?";
+            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+            cellphone_number=?, landline=?, email_address=?, password=?, street_address=?, street_address_2=?, 
+            city=?, state_province=?, barangay=?, postal_zip_code=?
+            WHERE admin_id=?";
 
             $stmt = $conn->prepare($sql);
             $stmt->bind_param(
-                "ssssisssssssssss",
+                "ssssissssssssss",
                 $first_name,
                 $middle_name,
                 $last_name,
@@ -261,14 +261,154 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Update without photo and password
             $sql = "UPDATE admin_accounts SET 
-                first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
-                cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
-                city=?, state_province=?, barangay=?, postal_zip_code=?
-                WHERE admin_id=?";
+            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+            cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+            city=?, state_province=?, barangay=?, postal_zip_code=?
+            WHERE admin_id=?";
 
             $stmt = $conn->prepare($sql);
             $stmt->bind_param(
-                "ssssisssssssssss",
+                "ssssissssssssss",
+                $first_name,
+                $middle_name,
+                $last_name,
+                $dob,
+                $age,
+                $sex,
+                $cellphone,
+                $landline,
+                $email,
+                $street,
+                $street2,
+                $city,
+                $state,
+                $barangay,
+                $postal,
+                $edit_admin
+            );
+        }
+
+        // Execute and check success
+        if ($stmt->execute()) {
+            $success = true;
+        } else {
+            $error = "Update failed: " . $stmt->error;
+        }
+        $stmt->close();
+    }// Check if profile picture was uploaded
+    if (!isset($error)) {
+        $has_photo = isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK;
+
+        if ($has_photo && $password_update) {
+            // Update with both photo and password
+            $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
+
+            $sql = "UPDATE admin_accounts SET 
+            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+            cellphone_number=?, landline=?, email_address=?, password=?, street_address=?, street_address_2=?, 
+            city=?, state_province=?, barangay=?, postal_zip_code=?, profile_picture=?
+            WHERE admin_id=?";
+
+            $stmt = $conn->prepare($sql);
+            $null = NULL;
+            $stmt->bind_param(
+                "ssssissssssssssbs",
+                $first_name,
+                $middle_name,
+                $last_name,
+                $dob,
+                $age,
+                $sex,
+                $cellphone,
+                $landline,
+                $email,
+                $hashed_password,
+                $street,
+                $street2,
+                $city,
+                $state,
+                $barangay,
+                $postal,
+                $null,
+                $edit_admin
+            );
+            $stmt->send_long_data(16, $profile_pic); // Index 16 (0-based)
+
+        } elseif ($has_photo && !$password_update) {
+            // Update with photo only
+            $profile_pic = file_get_contents($_FILES['profile_pic']['tmp_name']);
+
+            $sql = "UPDATE admin_accounts SET 
+            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+            cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+            city=?, state_province=?, barangay=?, postal_zip_code=?, profile_picture=?
+            WHERE admin_id=?";
+
+            $stmt = $conn->prepare($sql);
+            $null = NULL;
+            $stmt->bind_param(
+                "ssssissssssssbs",
+                $first_name,
+                $middle_name,
+                $last_name,
+                $dob,
+                $age,
+                $sex,
+                $cellphone,
+                $landline,
+                $email,
+                $street,
+                $street2,
+                $city,
+                $state,
+                $barangay,
+                $postal,
+                $null,
+                $edit_admin
+            );
+            $stmt->send_long_data(15, $profile_pic); // Index 15 (0-based)
+
+        } elseif (!$has_photo && $password_update) {
+            // Update with password only
+            $sql = "UPDATE admin_accounts SET 
+            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+            cellphone_number=?, landline=?, email_address=?, password=?, street_address=?, street_address_2=?, 
+            city=?, state_province=?, barangay=?, postal_zip_code=?
+            WHERE admin_id=?";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "ssssissssssssss",
+                $first_name,
+                $middle_name,
+                $last_name,
+                $dob,
+                $age,
+                $sex,
+                $cellphone,
+                $landline,
+                $email,
+                $hashed_password,
+                $street,
+                $street2,
+                $city,
+                $state,
+                $barangay,
+                $postal,
+                $edit_admin
+            );
+
+        } else {
+            // Update without photo and password
+            $sql = "UPDATE admin_accounts SET 
+            first_name=?, middle_name=?, last_name=?, date_of_birth=?, age=?, sex=?, 
+            cellphone_number=?, landline=?, email_address=?, street_address=?, street_address_2=?, 
+            city=?, state_province=?, barangay=?, postal_zip_code=?
+            WHERE admin_id=?";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "ssssissssssssss",
                 $first_name,
                 $middle_name,
                 $last_name,
