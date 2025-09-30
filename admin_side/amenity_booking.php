@@ -537,7 +537,7 @@ while ($row = $calendar_result->fetch_assoc()) {
                                             $amenity = $row['amenity'];
                                             $bookingDate = $row['reservation_date'];
                                             $resCode = $row['reservation_code'];
-                                            $statusClass = $row['status'] === 'paid' ? 'text-success' : ($row['status'] === 'partial' ? 'text-warning' : 'text-muted');
+                                            $statusClass = $row['status'] === 'paid' ? 'text-success' : ($row['status'] === 'partial' ? 'text-primary' : 'text-secondary');
 
                                             echo "<tr>
                                                     <td>{$bookingDate}</td>
@@ -546,13 +546,16 @@ while ($row = $calendar_result->fetch_assoc()) {
                                                     <td>{$resCode}</td>
                                                     <td class='{$statusClass} fw-bold'>" . ucfirst($row['status']) . "</td>
                                                     <td class='text-center'>
-                                                        <div class='dropdown'>
-                                                            <button class='btn btn-sm btn-secondary dropdown-toggle' data-bs-toggle='dropdown'>Action</button>
-                                                            <ul class='dropdown-menu'>
-                                                                <li><a class='dropdown-item' href='#'>View Details</a></li>
-                                                                <li><a class='dropdown-item' href='#'>Edit Booking</a></li>
-                                                            </ul>
-                                                        </div>
+                                                        <div class='text-center'>
+                                                        <!-- View button -->
+                                                        <a class='btn btn-sm btn-outline-success me-1' title='View' style='padding: 2px 6px; font-size: 0.9rem;'>
+                                                            <i class='bi bi-eye'></i>
+                                                        </a>
+                                                        <!-- Reschedule button -->
+                                                        <a class='btn btn-sm btn-outline-primary me-1' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'>
+                                                            <i class='bi bi-calendar2-week'></i>
+                                                        </a>
+                                                    </div>
                                                     </td>
                                                 </tr>";
                                         }
