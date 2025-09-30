@@ -1,72 +1,17 @@
 <?php
-// Start output buffering to catch any errors
-ob_start();
-
 session_start();
+require '../../rfid-api/db.php';
 
-// Set JSON header early
-header('Content-Type: application/json');
+// ✅ FIRST: Include PHPMailer files
+require_once '../amenity_booking/PHPMailer/src/Exception.php';
+require_once '../amenity_booking/PHPMailer/src/PHPMailer.php';
+require_once '../amenity_booking/PHPMailer/src/SMTP.php';
 
-// Enable error logging for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 0); // Don't display errors to user
-ini_set('log_errors', 1);
+// ✅ THEN: Use the classes (AFTER they're loaded)
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
 
-try {
-    // Try to include database
-    if (!file_exists('../../rfid-api/db.php')) {
-        throw new Exception('Database connection file not found at: ../../rfid-api/db.php');
-    }
-    require '../../rfid-api/db.php';
-    
-    // Try to include PHPMailer files
-    $phpmailerBase = '../amenity_booking/PHPMailer/src/';
-    $phpmailerFiles = [
-        'Exception.php',
-        'PHPMailer.php',
-        'SMTP.php'
-    ];
-    
-    foreach ($phpmailerFiles as $file) {
-        $fullPath = $phpmailerBase . $file;
-        if (!file_exists($fullPath)) {
-            throw new Exception("PHPMailer file not found: $fullPath");
-        }
-    }
-    
-    // Include PHPMailer - MUST be before 'use' statements
-    require_once $phpmailerBase . 'Exception.php';
-    require_once $phpmailerBase . 'PHPMailer.php';
-    require_once $phpmailerBase . 'SMTP.php';
-    
-    // NOW use the classes
-    use PHPMailer\PHPMailer\PHPMailer;
-    use PHPMailer\PHPMailer\SMTP;
-    use PHPMailer\PHPMailer\Exception;
-    
-} catch (Exception $e) {
-    ob_clean();
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'error' => 'Server configuration error: ' . $e->getMessage()
-    ]);
-    exit;
-}
-
-// Clear any output buffering
-ob_clean();
-
-// Show errors during dev
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
-    exit;
-}
-
-// Rest of your code continues here...
 // Email configuration - UPDATE THESE WITH YOUR DETAILS
 class EmailConfig
 {
