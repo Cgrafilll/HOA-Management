@@ -557,16 +557,16 @@ while ($row = $calendar_result->fetch_assoc()) {
                                                     <div class='text-center'>
                                                         <!-- View button -->
                                                         <a href='#' class='btn btn-sm btn-outline-success me-1' title='View' style='padding: 2px 6px; font-size: 0.9rem;' onclick='viewBookingDetails(" . json_encode([
-                                                    "id" => $row["id"],
-                                                    "fullName" => $fullName,
-                                                    "amenity" => $amenity,
-                                                    "date" => $bookingDate,
-                                                    "reservationCode" => $resCode,
-                                                    "paymentStatus" => ucfirst($row["status"]),
-                                                    "amount" => "₱" . number_format($row["amount_paid"], 2) . ($row["status"] === "partial" ? " / ₱" . number_format($row["total_amount"], 2) : ""),
-                                                    "time" => ($row["rate"] === "day" ? "9:00 AM - 5:00 PM" : ($row["rate"] === "night" ? "5:00 PM - 10:00 PM" : "N/A")),
-                                                    "userType" => ucfirst($row["user_type"])
-                                                ]) . "); return false;'>
+                                                                "id" => $row["id"],
+                                                                "fullName" => $fullName,
+                                                                "amenity" => $amenity,
+                                                                "date" => $bookingDate,
+                                                                "reservationCode" => $resCode,
+                                                                "paymentStatus" => ucfirst($row["status"]),
+                                                                "amount" => "₱" . number_format($row["amount_paid"], 2) . ($row["status"] === "partial" ? " / ₱" . number_format($row["total_amount"], 2) : ""),
+                                                                "time" => ($row["rate"] === "day" ? "9:00 AM - 5:00 PM" : ($row["rate"] === "night" ? "5:00 PM - 10:00 PM" : "N/A")),
+                                                                "userType" => ucfirst($row["user_type"])
+                                                            ]) . "); return false;'>
                                                             <i class='bi bi-eye'></i>
                                                         </a>
                                                         <!-- Reschedule button -->
