@@ -113,31 +113,38 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_visitors') {
     exit;
 }
 
-// Handle AJAX request to get booked dates for an amenity
+// Handle AJAX request to get booked dates with rates for an amenity
 if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
     header('Content-Type: application/json');
-    
+
     try {
         $amenity = $_GET['amenity'] ?? '';
-        
+
         if (empty($amenity)) {
             echo json_encode(['success' => false, 'error' => 'Amenity required']);
             exit;
         }
-        
-        // Make sure $conn is your database connection
-        $stmt = $conn->prepare("SELECT reservation_date FROM amenity_bookings WHERE amenity = ? AND (status = 'pending' OR status = 'partial' OR status = 'paid')");
+
+        // Query to get both date and rate for each booking
+        $stmt = $conn->prepare("
+            SELECT reservation_date, rate 
+            FROM amenity_bookings 
+            WHERE amenity = ? 
+            AND (status = 'pending' OR status = 'partial' OR status = 'paid')
+        ");
         $stmt->bind_param("s", $amenity);
         $stmt->execute();
         $result = $stmt->get_result();
-        
-        $booked_dates = [];
+
+        $bookings = [];
         while ($row = $result->fetch_assoc()) {
-            // Format as YYYY-MM-DD
-            $booked_dates[] = date('Y-m-d', strtotime($row['reservation_date']));
+            $bookings[] = [
+                'date' => date('Y-m-d', strtotime($row['reservation_date'])),
+                'rate' => $row['rate'] // 'day' or 'night'
+            ];
         }
-        
-        echo json_encode(['success' => true, 'dates' => $booked_dates]);
+
+        echo json_encode(['success' => true, 'bookings' => $bookings]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -507,6 +514,30 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             border: none;
             cursor: default;
         }
+
+        .calendar-day.partial-booked {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .calendar-day.partial-booked:hover {
+            background-color: #ffeaa7;
+            border-color: #ffb300;
+        }
+
+        .partial-indicator {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 10px;
+            color: #856404;
+        }
+
+        #dateMessage {
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -525,8 +556,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
-                            <img src="<?php echo htmlspecialchars($photo); ?>"
-                                style="width: 40px; height: 40px; object-fit: cover;">
+                            <img src="<?php echo htmlspecialchars($photo); ?>" style="width: 40px; height: 40px;
+                        object-fit: cover;">
                         <?php else: ?>
                             <i class="bi bi-person-circle" style="font-size: 32px;"></i>
                         <?php endif; ?>
@@ -628,8 +659,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold w-100">Amenity Booking Management</h5>
                 </div>
-                <div class="p-3 d-flex justify-content-between align-items-center">
-                    <span class="small mb-0"><?php echo htmlspecialchars($amenity); ?></span>
+                <div class=" p-3 d-flex justify-content-between align-items-center">
+                    <span class="small mb-0">
+                        <?php echo htmlspecialchars($amenity); ?>
+                    </span>
                     <a href="add_booking.php?amenity=<?php echo htmlspecialchars($amenity); ?>"
                         class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                         <i class="bi bi-arrow-left-short me-1"></i>Back
@@ -638,8 +671,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 <hr class="my-0">
                 <div class="d-flex justify-content-center align-items-center my-3">
                     <span class="text-uppercase text-center fw-medium"
-                        style="font-family: 'Libre Baskerville', serif; font-size: 36px; letter-spacing: 10px;"><?php echo htmlspecialchars($amenity); ?>
-                        RESERVATION</span>
+                        style="font-family: 'Libre Baskerville', serif; font-size: 36px; letter-spacing: 10px;">
+                        <?php echo htmlspecialchars($amenity); ?>
+                        RESERVATION
+                    </span>
                 </div>
                 <div class="p-3">
                     <form action="process_booking.php?reserve=<?php echo htmlspecialchars($amenity); ?>" method="POST"
@@ -717,46 +752,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <label for="emailAddress">Email Address<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
-                                <!-- Date -->
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Select Date<small
-                                            class="fw-bold text-danger">*</small></label>
-
-                                    <!-- Calendar View -->
-                                    <div class="calendar-view">
-                                        <div class="calendar-header">
-                                            <button type="button" class="calendar-nav-btn" id="prevMonth">
-                                                <i class="bi bi-chevron-left"></i>
-                                            </button>
-                                            <div class="fw-bold" id="currentMonth">Loading...</div>
-                                            <button type="button" class="calendar-nav-btn" id="nextMonth">
-                                                <i class="bi bi-chevron-right"></i>
-                                            </button>
-                                        </div>
-                                        <div class="calendar-grid" id="calendarGrid">
-                                            <!-- Calendar will be generated by JavaScript -->
-                                        </div>
-                                        <div class="d-flex gap-3 mt-2 justify-content-center">
-                                            <small class="d-flex align-items-center">
-                                                <span class="badge bg-success me-1">●</span> Available
-                                            </small>
-                                            <small class="d-flex align-items-center">
-                                                <span class="badge bg-danger me-1">●</span> Booked
-                                            </small>
-                                            <small class="d-flex align-items-center">
-                                                <span class="badge bg-secondary me-1">●</span> Past
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    <!-- Hidden Date Input -->
-                                    <div class="form-floating">
-                                        <input type="date" class="form-control" id="reservationDate"
-                                            name="reservationDate" readonly required>
-                                        <label for="reservationDate">Selected Date<small
-                                                class="fw-bold text-danger">*</small></label>
-                                    </div>
-                                </div>
                                 <?php if ($amenity !== "Gazebo" && $amenity !== "Clubhouse"): ?>
                                     <!-- Guests -->
                                     <div class="form-floating mb-3">
@@ -772,12 +767,15 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         <?php if ($currentRates): ?>
                                             <div class="custom-radio-option selected" data-value="day"
                                                 onclick="selectRate(this, 'day')">
-                                                <span id="dayRate">Day • <?= $currentRates['day'] ?></span>
+                                                <span id="dayRate">Day •
+                                                    <?= $currentRates['day'] ?></span>
                                                 <div class="custom-radio-circle selected"></div>
                                             </div>
                                             <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'disabled d-none' : '' ?>"
                                                 data-value="night" onclick="selectRate(this, 'night')">
-                                                <span id="nightRate">Night • <?= $currentRates['night'] ?></span>
+                                                <span id="nightRate">Night •
+                                                    <?= $currentRates['night'] ?>
+                                                </span>
                                                 <div class="custom-radio-circle"></div>
                                             </div>
                                         <?php else: ?>
@@ -847,13 +845,54 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         </div>
                                         <div class="form-text text-muted">
                                             <small><i class="bi bi-info-circle me-1"></i>If more than 1 vehicle,
-                                                separate plate numbers by comma (e.g., ABC-1234, XYZ-5678)</small>
+                                                separate plate numbers by comma (e.g., ABC-1234,
+                                                XYZ-5678)</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <!-- Right Column -->
                             <div class="col-lg-6">
+                                <!-- Date -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Select Date<small
+                                            class="fw-bold text-danger">*</small></label>
+                                    <!-- Calendar View -->
+                                    <div class="calendar-view">
+                                        <div class="calendar-header">
+                                            <button type="button" class="calendar-nav-btn" id="prevMonth">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </button>
+                                            <div class="fw-bold" id="currentMonth">Loading...</div>
+                                            <button type="button" class="calendar-nav-btn" id="nextMonth">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                        <div class="calendar-grid" id="calendarGrid">
+                                            <!-- Calendar will be generated by JavaScript -->
+                                        </div>
+                                        <div class="d-flex gap-3 mt-2 justify-content-center">
+                                            <small class="d-flex align-items-center">
+                                                <span class="badge bg-success me-1">●</span> Available
+                                            </small>
+                                            <small class="d-flex align-items-center">
+                                                <span class="badge bg-danger me-1">●</span> Booked
+                                            </small>
+                                            <small class="d-flex align-items-center">
+                                                <span class="badge bg-secondary me-1">●</span> Past
+                                            </small>
+                                        </div>
+                                        <!-- Add this div after your calendar for showing availability messages -->
+                                        <div id="dateMessage"></div>
+                                    </div>
+                                    <!-- Hidden Date Input -->
+                                    <div class="form-floating">
+                                        <input type="date" class="form-control" id="reservationDate"
+                                            name="reservationDate" readonly required>
+                                        <label for="reservationDate">Selected Date<small class="fw-bold
+                                                text-danger">*</small></label>
+                                    </div>
+                                </div>
                                 <!-- Payment Information -->
                                 <div id="paymentInfo" class="payment-info p-3 rounded mb-4">
                                     <!-- Default Bank Info -->
@@ -863,17 +902,18 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         <div class="mb-2"><small>Neopolitan Sitio Seville</small></div>
                                         <div class="mb-2"><small>Account Number: 20049887271</small></div>
                                         <div class="small fw-bold">
-                                            Please settle payment as soon as possible to secure your slot. We strictly
+                                            Please settle payment as soon as possible to secure your slot. We
+                                            strictly
                                             enforce payment first before we begin with your schedule/session.
                                             Failure to do so will result in cancellation of your reservation.
                                         </div>
                                     </div>
-
                                     <!-- Cash Info -->
                                     <div id="cashInfo" class="d-none">
                                         <h6 class="fw-bold mb-3">Payment Method: Cash</h6>
                                         <div class="small fw-bold">
-                                            Please proceed to the clubhouse office at Neopolitan Sitio Seville to pay in
+                                            Please proceed to the clubhouse office at Neopolitan Sitio Seville to
+                                            pay in
                                             cash.
                                             Make sure to settle your payment as soon as possible to confirm your
                                             booking.
@@ -939,7 +979,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <div class="modal-dialog modal-lg modal-dialog-scrollable">
                                         <div class="modal-content">
                                             <div class="modal-header bg-success text-white">
-                                                <h5 class="modal-title" id="termsModalLabel">TERMS AND CONDITIONS FOR
+                                                <h5 class="modal-title" id="termsModalLabel">TERMS AND CONDITIONS
+                                                    FOR
                                                     AMENITY BOOKING</h5>
                                                 <button type="button" class="btn-close btn-close-white"
                                                     data-bs-dismiss="modal" aria-label="Close"></button>
@@ -948,23 +989,28 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                 <p><strong>Neopolitan Sitio Seville Homeowners' Association, Inc.
                                                         (NSSHAI)</strong></p>
                                                 <p><em>Effective Date: April 2025</em></p>
-                                                <p>By booking any amenity through the NSSHAI HOA Management System, you
+                                                <p>By booking any amenity through the NSSHAI HOA Management System,
+                                                    you
                                                     agree to the following terms and conditions:</p>
                                                 <h6><strong>1. Reservation and Payment</strong></h6>
                                                 <ul>
-                                                    <li>A <strong>minimum of 50% down payment</strong> is required for
+                                                    <li>A <strong>minimum of 50% down payment</strong> is required
+                                                        for
                                                         all reservations.
                                                         This payment is <strong>non-refundable</strong> but may be
                                                         rescheduled upon request.</li>
-                                                    <li>Reservations must be made through the official HOA system and
+                                                    <li>Reservations must be made through the official HOA system
+                                                        and
                                                         are considered valid only once payment is received and
                                                         confirmed.</li>
                                                     <li>All payments must be made via:
                                                         <ul>
                                                             <li><strong>EastWest Bank</strong><br>Account Name:
-                                                                Neopolitan Sitio Seville<br>Account Number: 20049887271
+                                                                Neopolitan Sitio Seville<br>Account Number:
+                                                                20049887271
                                                             </li>
-                                                            <li><strong>Or in person</strong> at the HOA Administrative
+                                                            <li><strong>Or in person</strong> at the HOA
+                                                                Administrative
                                                                 Office</li>
                                                         </ul>
                                                     </li>
@@ -972,14 +1018,17 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                 <h6><strong>2. Payment Confirmation</strong></h6>
                                                 <ul>
                                                     <li>Proof of payment (e.g., deposit slip or screenshot) must be
-                                                        uploaded through the online form or submitted to the office to
+                                                        uploaded through the online form or submitted to the office
+                                                        to
                                                         confirm the booking.</li>
-                                                    <li>Incomplete or unverified reservations may be canceled without
+                                                    <li>Incomplete or unverified reservations may be canceled
+                                                        without
                                                         notice.</li>
                                                 </ul>
                                                 <h6><strong>3. Rescheduling Policy</strong></h6>
                                                 <ul>
-                                                    <li><strong>Rescheduling is allowed</strong> but must be requested
+                                                    <li><strong>Rescheduling is allowed</strong> but must be
+                                                        requested
                                                         <strong>at least 24 hours</strong>
                                                         before the reserved date.
                                                     </li>
@@ -991,9 +1040,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                 </ul>
                                                 <h6><strong>4. Exclusive Use and Special Requests</strong></h6>
                                                 <ul>
-                                                    <li>Requests for <strong>exclusive use</strong> of amenities (e.g.,
+                                                    <li>Requests for <strong>exclusive use</strong> of amenities
+                                                        (e.g.,
                                                         swimming pool)
-                                                        require a <strong>minimum of 10 guests</strong>, higher rates,
+                                                        require a <strong>minimum of 10 guests</strong>, higher
+                                                        rates,
                                                         and prior
                                                         approval.</li>
                                                     <li>Special bookings are dependent on HOA availability and
@@ -1003,17 +1054,21 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                 <ul>
                                                     <li>Use of the <strong>Basketball Court beyond the booked
                                                             session</strong> (Day or
-                                                        Night) will incur <strong>an additional charge of ₱1,000.00 per
+                                                        Night) will incur <strong>an additional charge of ₱1,000.00
+                                                            per
                                                             hour.</strong></li>
-                                                    <li>This applies only to <strong>excess hours beyond the reserved
+                                                    <li>This applies only to <strong>excess hours beyond the
+                                                            reserved
                                                             time.</strong></li>
                                                     <li>Overtime use is subject to <strong>HOA approval and
                                                             monitoring.</strong></li>
                                                 </ul>
                                                 <h6><strong>6. Policy Enforcement</strong></h6>
                                                 <ul>
-                                                    <li>The HOA reserves the right to cancel or deny any booking due to
-                                                        safety issues, maintenance, or failure to comply with policies.
+                                                    <li>The HOA reserves the right to cancel or deny any booking due
+                                                        to
+                                                        safety issues, maintenance, or failure to comply with
+                                                        policies.
                                                     </li>
                                                     <li>Improper use of the system or false information may lead to
                                                         suspension of booking privileges.</li>
@@ -1064,7 +1119,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                     <li>Date and time of booking</li>
                                                     <li>Number of guests</li>
                                                     <li>Amenity type and time slot selected</li>
-                                                    <li>Payment details (amount paid, mode of payment, reference number)
+                                                    <li>Payment details (amount paid, mode of payment, reference
+                                                        number)
                                                     </li>
                                                     <li>Uploaded files (e.g., proof of payment)</li>
                                                 </ul>
@@ -1086,46 +1142,55 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                     <li>User authentication and administrative access controls</li>
                                                     <li>Secure encrypted file and data storage</li>
                                                     <li>Internal system logs and audit trails</li>
-                                                    <li>Routine backups and restricted access to authorized personnel
+                                                    <li>Routine backups and restricted access to authorized
+                                                        personnel
                                                         only</li>
                                                 </ul>
                                                 <h6><strong>4. Data Sharing</strong></h6>
-                                                <span>We do not sell or share personal information to third parties. All
+                                                <span>We do not sell or share personal information to third parties.
+                                                    All
                                                     access is governed by a need-to-know basis. Data
                                                     is accessed ony by:</span>
                                                 <ul>
                                                     <li>HOA administrative staff</li>
                                                     <li>Authorized clubhouse personnel</li>
-                                                    <li>Finance and accounting officers for verification and reporting
+                                                    <li>Finance and accounting officers for verification and
+                                                        reporting
                                                     </li>
                                                 </ul>
                                                 <h6><strong>5. Retention of Records</strong></h6>
-                                                <span>Personal and booking data is retained for as long as necessary to:
+                                                <span>Personal and booking data is retained for as long as necessary
+                                                    to:
                                                 </span>
                                                 <ul>
                                                     <li>Manage amenity usage history</li>
                                                     <li>Maintain accounting and audit records</li>
                                                     <li>Comply with legal or regulatory obligations</li>
-                                                    <li>Records are periodically reviewed and securely deleted when no
+                                                    <li>Records are periodically reviewed and securely deleted when
+                                                        no
                                                         longer required.</li>
                                                 </ul>
                                                 <h6><strong>6. Your Data Privacy Rights</strong></h6>
                                                 <span>You have the right to:</span>
                                                 <ul class="mb-0">
-                                                    <li>Request access to your personal booking and payment information
+                                                    <li>Request access to your personal booking and payment
+                                                        information
                                                     </li>
                                                     <li>Request correction of any inaccuracies</li>
                                                     <li>Request deletion of your personal data, subject to HOA
                                                         guidelines</li>
                                                     <li>Withdraw consent for data processing where applicable</li>
                                                 </ul>
-                                                <p>To exercise any of these rights, you may contact our HOA Admin Office
+                                                <p>To exercise any of these rights, you may contact our HOA Admin
+                                                    Office
                                                     at:
                                                     8-2457647</p>
                                                 <h6><strong>7. Policy Updates</strong></h6>
-                                                <span>We reserve the right to update this Privacy Policy. Updates will
+                                                <span>We reserve the right to update this Privacy Policy. Updates
+                                                    will
                                                     be
-                                                    reflected on our official system and communicated to residents as
+                                                    reflected on our official system and communicated to residents
+                                                    as
                                                     necessary.</span>
                                             </div>
                                             <div class="modal-footer">
@@ -1244,7 +1309,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         // ============================================
         // CALENDAR & BOOKING DATES FUNCTIONALITY
         // ============================================
-        let bookedDates = [];
+        let bookedDates = {}; // Changed to object: { "2025-08-30": { day: true, night: false }, ... }
         let currentDate = new Date();
         let selectedDate = null;
         const amenity = "<?php echo htmlspecialchars($amenity); ?>";
@@ -1281,16 +1346,27 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 console.log('Fetched data:', data);
 
                 if (data.success) {
-                    bookedDates = data.dates || [];
-                    console.log('Booked dates array:', bookedDates);
+                    // Convert array of bookings to object structure
+                    bookedDates = {};
+                    (data.bookings || []).forEach(booking => {
+                        const dateKey = booking.date;
+                        const rate = booking.rate; // 'day' or 'night'
+
+                        if (!bookedDates[dateKey]) {
+                            bookedDates[dateKey] = { day: false, night: false };
+                        }
+                        bookedDates[dateKey][rate] = true;
+                    });
+
+                    console.log('Processed booked dates:', bookedDates);
                     renderCalendar();
                 } else {
                     console.error('API returned error:', data.error);
-                    renderCalendar(); // Still render calendar even if fetch fails
+                    renderCalendar();
                 }
             } catch (error) {
                 console.error('Error fetching booked dates:', error);
-                renderCalendar(); // Still render calendar even if fetch fails
+                renderCalendar();
             }
         }
 
@@ -1349,26 +1425,41 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 // Use timezone-safe date formatting
                 const dateString = formatDate(cellDate);
 
-                // Debug: Log date checking for first few days
-                if (day <= 3) {
-                    console.log(`Day ${day}: ${dateString}, Is booked:`, bookedDates.includes(dateString));
-                }
-
                 // Check if past date
                 if (cellDate < today) {
                     dayElement.classList.add('disabled');
                     dayElement.title = 'Past date';
-                }
-                // Check if booked
-                else if (bookedDates.includes(dateString)) {
-                    dayElement.classList.add('booked');
-                    dayElement.title = 'This date is already booked';
-                    console.log(`Marking ${dateString} as booked`);
-                }
-                // Check if today
-                else if (cellDate.getTime() === today.getTime()) {
-                    dayElement.classList.add('today');
-                    dayElement.title = 'Today';
+                } else {
+                    // Check booking status
+                    const booking = bookedDates[dateString];
+
+                    if (booking) {
+                        const dayBooked = booking.day;
+                        const nightBooked = booking.night;
+
+                        // Both rates booked - fully booked
+                        if (dayBooked && nightBooked) {
+                            dayElement.classList.add('booked');
+                            dayElement.title = 'Fully booked (Day & Night)';
+                        }
+                        // Partially booked - still selectable
+                        else if (dayBooked || nightBooked) {
+                            dayElement.classList.add('partial-booked');
+                            const available = dayBooked ? 'Night' : 'Day';
+                            dayElement.title = `Partially booked - ${available} available`;
+
+                            // Add a small indicator
+                            const indicator = document.createElement('span');
+                            indicator.className = 'partial-indicator';
+                            indicator.textContent = '◐';
+                            dayElement.appendChild(indicator);
+                        }
+                    }
+
+                    // Check if today
+                    if (cellDate.getTime() === today.getTime()) {
+                        dayElement.classList.add('today');
+                    }
                 }
 
                 // Check if selected
@@ -1376,7 +1467,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     dayElement.classList.add('selected');
                 }
 
-                // Click handler
+                // Click handler - allow clicking on partially booked dates
                 if (!dayElement.classList.contains('disabled') && !dayElement.classList.contains('booked')) {
                     dayElement.addEventListener('click', () => selectDate(dateString, dayElement));
                 }
@@ -1386,6 +1477,16 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         }
 
         function selectDate(dateString, element) {
+            const selectedRateType = document.getElementById('selectedRate')?.value || 'day';
+            const booking = bookedDates[dateString];
+
+            // Check if the selected rate is available
+            if (booking && booking[selectedRateType]) {
+                // Show alert that this rate is not available
+                alert(`This date is already booked for ${selectedRateType}. Please select the other rate or choose a different date.`);
+                return;
+            }
+
             selectedDate = dateString;
             const dateInput = document.getElementById('reservationDate');
             if (dateInput) {
@@ -1399,6 +1500,30 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             // Add selection to clicked element
             element.classList.add('selected');
+
+            // If date is partially booked, show which rate is available
+            if (booking && (booking.day || booking.night)) {
+                const availableRate = booking.day ? 'night' : 'day';
+                showRateAvailabilityMessage(dateString, availableRate);
+            }
+        }
+
+        function showRateAvailabilityMessage(date, availableRate) {
+            const messageDiv = document.getElementById('dateMessage');
+            if (messageDiv) {
+                messageDiv.innerHTML = `<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Note: For ${date}, only <strong>${availableRate}</strong> rate is available.</div>`;
+
+                // Auto-select the available rate
+                const rateOption = document.querySelector(`[data-value="${availableRate}"]`);
+                if (rateOption) {
+                    selectRate(rateOption, availableRate);
+                }
+
+                // Remove message after 5 seconds
+                setTimeout(() => {
+                    messageDiv.innerHTML = '';
+                }, 5000);
+            }
         }
 
         // Calendar navigation
@@ -1428,13 +1553,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         const filePreview = document.getElementById('filePreview');
 
         if (fileDropArea && fileInput && browseLink && filePreview) {
-            // Prevent default drag behaviors
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                 fileDropArea.addEventListener(eventName, preventDefaults, false);
                 document.body.addEventListener(eventName, preventDefaults, false);
             });
 
-            // Highlight drop area when item is dragged over it
             ['dragenter', 'dragover'].forEach(eventName => {
                 fileDropArea.addEventListener(eventName, highlight, false);
             });
@@ -1443,16 +1566,13 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 fileDropArea.addEventListener(eventName, unhighlight, false);
             });
 
-            // Handle dropped files
             fileDropArea.addEventListener('drop', handleDrop, false);
 
-            // Handle browse link click
             browseLink.addEventListener('click', (e) => {
                 e.preventDefault();
                 fileInput.click();
             });
 
-            // Handle file input change
             fileInput.addEventListener('change', (e) => {
                 handleFiles(e.target.files);
             });
@@ -1506,30 +1626,24 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         const currentAmenity = "<?php echo $amenity; ?>";
         let userData = {};
 
-        // Chair and table prices
         const chairPrice = 12;
         const tablePrice = 20;
 
-        // Listen for userType change
         const userTypeSelect = document.getElementById('userType');
         if (userTypeSelect) {
             userTypeSelect.addEventListener('change', async function () {
                 const userType = this.value;
 
-                // Keep previously selected rate (default to 'day' if none)
                 let prevSelectedRate = document.getElementById('selectedRate')?.value || 'day';
 
-                // For Clubhouse, always default to 'day' since night option won't exist
                 if (currentAmenity === "Clubhouse") {
                     prevSelectedRate = 'day';
                 }
 
-                // Dynamic Dropdown Functionality
                 const userIdSelect = document.getElementById('userId');
                 const idLabel = document.getElementById('userIdLabel');
                 const loadingIndicator = document.getElementById('loadingIndicator');
 
-                // Reset the ID dropdown and user data
                 userData = {};
                 clearUserFields();
 
@@ -1621,7 +1735,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     }, 300);
                 }
 
-                // Update rates display
                 if (amenityRates[currentAmenity] && amenityRates[currentAmenity][userType]) {
                     const rates = amenityRates[currentAmenity][userType];
 
@@ -1635,7 +1748,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         nightRateElement.textContent = `Night • ${rates.night}`;
                     }
 
-                    // Restore the same rate (day/night) as before
                     const container = document.getElementById('ratesContainer');
                     if (container) {
                         const selectedOption = container.querySelector(`[data-value="${prevSelectedRate}"]`);
@@ -1650,7 +1762,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             }
                         }
 
-                        // Reset UI
                         container.querySelectorAll('.custom-radio-option').forEach(el => {
                             el.classList.remove('selected');
                             const circle = el.querySelector('.custom-radio-circle');
@@ -1670,7 +1781,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             });
         }
 
-        // User ID selection handler
         const userIdSelectElement = document.getElementById('userId');
         if (userIdSelectElement) {
             userIdSelectElement.addEventListener('change', function () {
@@ -1726,6 +1836,12 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         // RATE & PAYMENT SELECTION
         // ============================================
         function selectRate(option, value) {
+            // Check if selected date has this rate booked
+            if (selectedDate && bookedDates[selectedDate] && bookedDates[selectedDate][value]) {
+                alert(`The ${value} rate is already booked for ${selectedDate}. Please select the other rate or choose a different date.`);
+                return;
+            }
+
             const container = document.getElementById('ratesContainer');
             if (container) {
                 container.querySelectorAll('.custom-radio-option').forEach(el => {
@@ -1766,7 +1882,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 selectedPaymentInput.value = value;
             }
 
-            // Toggle Payment Info
             const bankInfo = document.getElementById("bankInfo");
             const cashInfo = document.getElementById("cashInfo");
             const referenceNumber = document.getElementById("referenceNumber");
@@ -1815,24 +1930,20 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             let chairs = parseInt(document.getElementById("chairs")?.value || 0);
             let tables = parseInt(document.getElementById("tables")?.value || 0);
 
-            // Get amenity rate
             let rateStr = amenityRates[currentAmenity]?.[userType]?.[rateType] || "₱0";
             let rateValue = extractPrice(rateStr);
 
             let total = 0;
 
-            // Check if rate is per person
             if (rateStr.includes("per person")) {
                 total += rateValue * guests;
             } else {
                 total += rateValue;
             }
 
-            // Add chairs and tables
             total += chairs * chairPrice;
             total += tables * tablePrice;
 
-            // Format with commas and 2 decimals
             const formattedTotal = total.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
@@ -1844,7 +1955,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
         }
 
-        // Recalculate total when fields change
         ["guests", "chairs", "tables", "userType"].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -1865,14 +1975,12 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const totalValue = parseFloat(totalField.value.replace(/,/g, '')) || 0;
             const amountPaidValue = parseFloat(amountPaidField.value) || 0;
 
-            // Remove existing validation
             amountPaidField.classList.remove('border-danger', 'is-invalid');
             const existingFeedback = amountPaidField.parentNode.parentNode.querySelector('.invalid-feedback');
             if (existingFeedback) {
                 existingFeedback.remove();
             }
 
-            // Check if amount paid exceeds total
             if (amountPaidValue > totalValue && totalValue > 0) {
                 amountPaidField.classList.add('border-danger', 'is-invalid');
 
@@ -2052,33 +2160,24 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         document.addEventListener("DOMContentLoaded", function () {
             console.log('Page loaded, initializing...');
 
-            // Fetch booked dates for calendar
             fetchBookedDates();
 
-            // Initialize amount paid validation
             const amountPaidField = document.getElementById("amountPaid");
             if (amountPaidField) {
                 amountPaidField.addEventListener('input', validateAmountPaid);
                 amountPaidField.addEventListener('blur', validateAmountPaid);
             }
 
-            // Initialize form submission
             initializeFormSubmission();
-
-            // Initialize vehicle field
             initializeVehicleField();
-
-            // Initialize modals
             initializeModals();
 
-            // Set minimum date to today
             const today = new Date().toISOString().split("T")[0];
             const dateInput = document.getElementById("reservationDate");
             if (dateInput) {
                 dateInput.min = today;
             }
 
-            // Initial calculation
             calculateTotal();
 
             console.log('Initialization complete');
