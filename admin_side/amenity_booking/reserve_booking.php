@@ -116,24 +116,27 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_visitors') {
 // Handle AJAX request to get booked dates for an amenity
 if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
     header('Content-Type: application/json');
+    
     try {
         $amenity = $_GET['amenity'] ?? '';
-
+        
         if (empty($amenity)) {
             echo json_encode(['success' => false, 'error' => 'Amenity required']);
             exit;
         }
-
-        $stmt = $conn->prepare("SELECT reservation_date FROM amenity_bookings WHERE amenity = ? AND status IN ('pending', 'partial', 'paid')");
+        
+        // Make sure $conn is your database connection
+        $stmt = $conn->prepare("SELECT reservation_date FROM amenity_bookings WHERE amenity = ? AND (status = 'pending' OR status = 'partial' OR status = 'paid')");
         $stmt->bind_param("s", $amenity);
         $stmt->execute();
         $result = $stmt->get_result();
-
+        
         $booked_dates = [];
         while ($row = $result->fetch_assoc()) {
+            // Format as YYYY-MM-DD
             $booked_dates[] = date('Y-m-d', strtotime($row['reservation_date']));
         }
-
+        
         echo json_encode(['success' => true, 'dates' => $booked_dates]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
@@ -1263,7 +1266,9 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
 
             try {
-                const url = `reservation_form.php?action=get_booked_dates&amenity=${encodeURIComponent(amenity)}`;
+                // Use current page URL instead of hardcoded filename
+                const currentPage = window.location.pathname.split('/').pop() || 'reserve_booking.php';
+                const url = `${currentPage}?action=get_booked_dates&amenity=${encodeURIComponent(amenity)}`;
                 console.log('Fetch URL:', url);
 
                 const response = await fetch(url);
