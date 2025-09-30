@@ -521,29 +521,24 @@ if (!empty($admin['profile_picture'])) {
             const paymentDate = document.getElementById('due_date');
 
             function updatePaymentDate() {
-                if (billingMonth.value) {
-                    const [year, month] = billingMonth.value.split('-');
-                    const today = new Date();
+    if (billingMonth.value) {
+        const [year, month] = billingMonth.value.split('-');
+        
+        // Always set due date to the 28th of the SELECTED billing month
+        // Don't push it forward - let PHP validation handle past dates
+        let dueDate = new Date(year, month - 1, 28);
 
-                    // Create the proposed due date (28th of selected month)
-                    let dueDate = new Date(year, month - 1, 28);
-
-                    // If the 28th has already passed, use next month's 28th
-                    if (dueDate <= today) {
-                        dueDate.setMonth(dueDate.getMonth() + 1);
-                    }
-
-                    // Format as YYYY-MM-DD without timezone conversion
-                    const year_str = dueDate.getFullYear();
-                    const month_str = String(dueDate.getMonth() + 1).padStart(2, '0');
-                    const day_str = String(dueDate.getDate()).padStart(2, '0');
-                    const dueDateStr = `${year_str}-${month_str}-${day_str}`;
-                    
-                    paymentDate.value = dueDateStr;
-                } else {
-                    paymentDate.value = '';
-                }
-            }
+        // Format as YYYY-MM-DD without timezone conversion
+        const year_str = dueDate.getFullYear();
+        const month_str = String(dueDate.getMonth() + 1).padStart(2, '0');
+        const day_str = String(dueDate.getDate()).padStart(2, '0');
+        const dueDateStr = `${year_str}-${month_str}-${day_str}`;
+        
+        paymentDate.value = dueDateStr;
+    } else {
+        paymentDate.value = '';
+    }
+}
 
             // Set default on page load
             updatePaymentDate();
