@@ -4,6 +4,7 @@ class ResidentPaymentManager {
     constructor() {
         this.initializeElements();
         this.initializeModals();
+        this.disableInOfficePayment(); // Disable in-office payment for residents
         this.autoPopulateUserInfo(); // Auto-populate on load
         this.attachEventListeners();
     }
@@ -112,10 +113,33 @@ class ResidentPaymentManager {
         }
     }
 
+    disableInOfficePayment() {
+        // Disable in-office payment option for residents
+        this.inOffice.style.opacity = '0.5';
+        this.inOffice.style.cursor = 'not-allowed';
+        this.inOffice.style.pointerEvents = 'none';
+        this.inOffice.style.backgroundColor = '#f5f5f5';
+        
+        // Add a disabled badge or text
+        const disabledText = document.createElement('small');
+        disabledText.className = 'text-muted d-block mt-1';
+        disabledText.textContent = '(Residents Only: Bank Transfer)';
+        disabledText.style.fontSize = '0.75rem';
+        
+        // Append to the in-office card if not already present
+        if (!this.inOffice.querySelector('.text-muted')) {
+            this.inOffice.appendChild(disabledText);
+        }
+        
+        // Ensure bank transfer is selected by default
+        this.selectPaymentMethod('bank');
+    }
+
     attachEventListeners() {
         // Payment method selection
         this.bankTransfer.addEventListener('click', () => this.selectPaymentMethod('bank'));
-        this.inOffice.addEventListener('click', () => this.selectPaymentMethod('office'));
+        // In-office payment is disabled for residents
+        // this.inOffice.addEventListener('click', () => this.selectPaymentMethod('office'));
         
         // Form field changes
         this.categorySelect.addEventListener('change', () => this.handleCategoryChange());
