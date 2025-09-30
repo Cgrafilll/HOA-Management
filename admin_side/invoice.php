@@ -570,7 +570,7 @@ function getNumericAmount($amountStr)
                                                 if ($status === 'pending') {
                                                     echo 'text-warning';
                                                 } elseif ($status === 'partial') {
-                                                    echo 'text-info';
+                                                    echo 'text-primary';
                                                 } else {
                                                     echo 'text-success';
                                                 }
@@ -597,7 +597,7 @@ function getNumericAmount($amountStr)
                                             if ($status === 'pending') {
                                                 $statusColor = 'text-warning';
                                             } elseif ($status === 'partial') {
-                                                $statusColor = 'text-info';
+                                                $statusColor = 'text-primary';
                                             }
                                             echo $statusColor;
                                             ?>"><?= strtoupper($selectedInvoice['status']); ?></span>
