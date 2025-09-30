@@ -7,8 +7,6 @@ ini_set('error_log', __DIR__ . '/payment_email_debug.log');
 
 session_start();
 require '../../rfid-api/db.php';
-session_start();
-require '../../rfid-api/db.php';
 
 // Include PHPMailer
 use PHPMailer\PHPMailer\PHPMailer;
