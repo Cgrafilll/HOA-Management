@@ -14,9 +14,9 @@ use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
 // Include PHPMailer files (adjust path based on your installation)
-require_once '../../admin_side/amenity_booking/PHPMailer/src/Exception.php';
-require_once '../../admin_side/amenity_booking/PHPMailer/src/PHPMailer.php';
-require_once '../../admin_side/amenity_booking/PHPMailer/src/SMTP.php';
+require_once '../admin_side/amenity_booking/PHPMailer/src/Exception.php';
+require_once '../admin_side/amenity_booking/PHPMailer/src/PHPMailer.php';
+require_once '../admin_side/amenity_booking/PHPMailer/src/SMTP.php';
 
 // Email configuration - UPDATE THESE WITH YOUR DETAILS
 class EmailConfig
