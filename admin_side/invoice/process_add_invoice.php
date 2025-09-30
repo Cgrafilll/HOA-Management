@@ -1,17 +1,72 @@
 <?php
+// Start output buffering to catch any errors
+ob_start();
+
 session_start();
-require '../../rfid-api/db.php';
 
-// Include PHPMailer
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
-use PHPMailer\PHPMailer\Exception;
+// Set JSON header early
+header('Content-Type: application/json');
 
-// Include PHPMailer files - adjust path based on your structure
-require_once '../amenity_booking/PHPMailer/src/Exception.php';
-require_once '../amenity_booking/PHPMailer/src/PHPMailer.php';
-require_once '../amenity_booking/PHPMailer/src/SMTP.php';
+// Enable error logging for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display errors to user
+ini_set('log_errors', 1);
 
+try {
+    // Try to include database
+    if (!file_exists('../../rfid-api/db.php')) {
+        throw new Exception('Database connection file not found at: ../../rfid-api/db.php');
+    }
+    require '../../rfid-api/db.php';
+    
+    // Try to include PHPMailer files
+    $phpmailerBase = '../amenity_booking/PHPMailer/src/';
+    $phpmailerFiles = [
+        'Exception.php',
+        'PHPMailer.php',
+        'SMTP.php'
+    ];
+    
+    foreach ($phpmailerFiles as $file) {
+        $fullPath = $phpmailerBase . $file;
+        if (!file_exists($fullPath)) {
+            throw new Exception("PHPMailer file not found: $fullPath");
+        }
+    }
+    
+    // Include PHPMailer - MUST be before 'use' statements
+    require_once $phpmailerBase . 'Exception.php';
+    require_once $phpmailerBase . 'PHPMailer.php';
+    require_once $phpmailerBase . 'SMTP.php';
+    
+    // NOW use the classes
+    use PHPMailer\PHPMailer\PHPMailer;
+    use PHPMailer\PHPMailer\SMTP;
+    use PHPMailer\PHPMailer\Exception;
+    
+} catch (Exception $e) {
+    ob_clean();
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Server configuration error: ' . $e->getMessage()
+    ]);
+    exit;
+}
+
+// Clear any output buffering
+ob_clean();
+
+// Show errors during dev
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+    exit;
+}
+
+// Rest of your code continues here...
 // Email configuration - UPDATE THESE WITH YOUR DETAILS
 class EmailConfig
 {
@@ -332,20 +387,21 @@ function generateInvoicePlainTextEmail($recipientName, $invoiceDetails)
     $text .= "- Late payments may incur additional charges\n";
     $text .= "- Contact us at 8-2457647 for questions\n";
     $text .= "- Payment confirmations will be sent via email\n\n";
-    
+
     $text .= "Contact Information:\n";
     $text .= "Phone: 8-2457647\n";
     $text .= "Email: admin@nsshai.com\n";
     $text .= "Address: NSSHAI Clubhouse, Narra St., Neopolitan Sitio Seville\n\n";
-    
+
     $text .= "Best regards,\nNSSHAI Administration Team";
 
     return $text;
 }
 
 // Generate invoice number
-function generateInvoiceNumber($conn) {
-    $date = date('Ymd'); 
+function generateInvoiceNumber($conn)
+{
+    $date = date('Ymd');
     $prefix = "INV-$date";
 
     $stmt = $conn->prepare("SELECT COUNT(*) as count FROM monthly_dues WHERE invoice_number LIKE CONCAT(?, '%')");
@@ -359,10 +415,10 @@ function generateInvoiceNumber($conn) {
 }
 
 try {
-    $household_id       = $_POST['household_id'];
+    $household_id = $_POST['household_id'];
     $billing_month_input = $_POST['billing_month']; // This is YYYY-MM format
-    $balance_remaining  = $_POST['balance_remaining'];
-    $due_date           = $_POST['due_date'];
+    $balance_remaining = $_POST['balance_remaining'];
+    $due_date = $_POST['due_date'];
 
     // Convert billing_month from YYYY-MM to YYYY-MM-01 for DATE field
     $billing_month = $billing_month_input . '-01';
@@ -371,7 +427,7 @@ try {
     if (empty($household_id) || empty($billing_month_input) || empty($balance_remaining) || empty($due_date)) {
         http_response_code(400);
         echo json_encode([
-            'success' => false, 
+            'success' => false,
             'error_type' => 'validation',
             'error' => 'All fields are required.'
         ]);
@@ -381,11 +437,11 @@ try {
     // ✅ VALIDATION 1: Check if due date has already passed
     $today = date('Y-m-d');
     $due_date_formatted = date('Y-m-d', strtotime($due_date));
-    
+
     if ($due_date_formatted <= $today) {
         http_response_code(400);
         echo json_encode([
-            'success' => false, 
+            'success' => false,
             'error_type' => 'validation',
             'error' => 'Cannot create invoice with a due date that has already passed (' . date('F j, Y', strtotime($due_date)) . '). Due date must be in the future.'
         ]);
@@ -398,12 +454,12 @@ try {
     $stmt->bind_param("ss", $household_id, $due_date);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     if ($result->num_rows > 0) {
         $existingInvoice = $result->fetch_assoc();
         http_response_code(400);
         echo json_encode([
-            'success' => false, 
+            'success' => false,
             'error_type' => 'validation',
             'error' => 'An invoice for this household already exists with the same due date (' . date('F j, Y', strtotime($due_date)) . '). Existing invoice: ' . $existingInvoice['invoice_number']
         ]);
@@ -416,7 +472,7 @@ try {
     if (!$householdDetails) {
         http_response_code(400);
         echo json_encode([
-            'success' => false, 
+            'success' => false,
             'error_type' => 'validation',
             'error' => 'Household not found.'
         ]);
@@ -429,7 +485,7 @@ try {
     // Insert with amount_paid defaulting to 0.00 and status as 'Pending'
     $amount_paid = 0.00;
     $status = 'Pending';
-    
+
     $stmt = $conn->prepare("INSERT INTO monthly_dues 
         (invoice_number, household_id, billing_month, amount_paid, balance_remaining, due_date, status) 
         VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -460,11 +516,11 @@ try {
         // Send invoice notification email
         $recipientName = trim($householdDetails['first_name'] . ' ' . ($householdDetails['middle_name'] ? $householdDetails['middle_name'] . ' ' : '') . $householdDetails['last_name']);
         $recipientEmail = $householdDetails['email_address'];
-        
+
         $emailSent = false;
         if (!empty($recipientEmail)) {
             $emailSent = sendMonthlyDuesInvoice($recipientEmail, $recipientName, $invoiceDetails);
-            
+
             if ($emailSent) {
                 error_log("✅ Monthly dues invoice email sent successfully to: " . $recipientEmail . " [Invoice: " . $invoice_number . "]");
             } else {
@@ -476,7 +532,7 @@ try {
 
         http_response_code(200);
         echo json_encode([
-            'success' => true, 
+            'success' => true,
             'message' => 'Invoice created successfully',
             'invoice_number' => $invoice_number,
             'email_sent' => $emailSent,
@@ -485,7 +541,7 @@ try {
     } else {
         http_response_code(500);
         echo json_encode([
-            'success' => false, 
+            'success' => false,
             'error' => 'Database insert failed: ' . $stmt->error
         ]);
     }
@@ -493,7 +549,7 @@ try {
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode([
-        'success' => false, 
+        'success' => false,
         'error' => 'Error: ' . $e->getMessage()
     ]);
 }

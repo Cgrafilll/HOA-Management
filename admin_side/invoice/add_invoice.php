@@ -547,21 +547,11 @@ if (!empty($admin['profile_picture'])) {
             // Function to set payment date to 28th of the selected month
             function updatePaymentDate() {
                 if (billingMonth.value) {
+                    // billingMonth.value format: YYYY-MM
                     const [year, month] = billingMonth.value.split('-');
-                    const today = new Date();
-
-                    // Create the proposed due date (28th of selected month)
-                    let dueDate = new Date(year, month - 1, 28);
-
-                    // If the 28th has already passed, use next month's 28th
-                    if (dueDate <= today) {
-                        dueDate.setMonth(dueDate.getMonth() + 1);
-                    }
-
-                    // Format as YYYY-MM-DD
-                    const dueDateStr = dueDate.toISOString().split('T')[0];
-                    paymentDate.value = dueDateStr;
+                    paymentDate.value = `${year}-${month}-28`;
                 } else {
+                    // If no month selected, leave payment_date empty
                     paymentDate.value = '';
                 }
             }
