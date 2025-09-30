@@ -544,7 +544,7 @@ while ($row = $calendar_result->fetch_assoc()) {
                                                     <td>{$fullName}</td>
                                                     <td>{$amenity}</td>
                                                     <td>{$resCode}</td>
-                                                    <td class='d-flex align-items-center {$statusClass} fw-bold'>" . ucfirst($row['status']) . "</td>
+                                                    <td class='d-flex align-items-center justify-content-center {$statusClass} fw-bold'>" . ucfirst($row['status']) . "</td>
                                                     <td class='text-center'>
                                                         <div class='text-center'>
                                                             <!-- View button -->
