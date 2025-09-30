@@ -2,15 +2,15 @@
 session_start();
 require '../../rfid-api/db.php';
 
-// ✅ FIRST: Include PHPMailer files
-require_once '../amenity_booking/PHPMailer/src/Exception.php';
-require_once '../amenity_booking/PHPMailer/src/PHPMailer.php';
-require_once '../amenity_booking/PHPMailer/src/SMTP.php';
-
-// ✅ THEN: Use the classes (AFTER they're loaded)
+// Include PHPMailer
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
+
+// Include PHPMailer files - adjust path based on your structure
+require_once '../amenity_booking/PHPMailer/src/Exception.php';
+require_once '../amenity_booking/PHPMailer/src/PHPMailer.php';
+require_once '../amenity_booking/PHPMailer/src/SMTP.php';
 
 // Email configuration - UPDATE THESE WITH YOUR DETAILS
 class EmailConfig

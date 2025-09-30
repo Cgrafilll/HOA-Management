@@ -50,13 +50,13 @@ if (!$admin) {
 }
 
 // Initialize user details
-$username = $admin['first_name']; // <- Set username directly from household query
-$photo = ''; // Initialize photo; your existing profile photo block will set this later
+$username = $admin['first_name'];
+$photo = '';
 // Only set $photo if profile_pic exists and is not null
 if (!empty($admin['profile_picture'])) {
     $photo = 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']);
 } else {
-    $photo = ''; // Explicitly empty if no image is saved
+    $photo = '';
 }
 
 ?>
@@ -288,7 +288,7 @@ if (!empty($admin['profile_picture'])) {
                 <hr class="my-0">
 
                 <!-- Form -->
-                <form action="process_add_invoice.php" method="POST" enctype="multipart/form-data" class="p-4">
+                <form id="invoiceForm" class="p-4">
                     <div class="row g-3">
 
                         <!-- Household ID (FK) -->
@@ -321,14 +321,14 @@ if (!empty($admin['profile_picture'])) {
 
                         <!-- Payment Date -->
                         <div class="col-md-6">
-                            <label for="payment_date" class="form-label fw-semibold">Due Date:</label>
+                            <label for="due_date" class="form-label fw-semibold">Due Date:</label>
                             <input type="date" class="form-control" id="due_date" name="due_date" readonly>
                         </div>
                     </div>
 
                     <!-- Submit -->
                     <div class="mt-4 text-end">
-                        <button type="submit" class="btn btn-success">
+                        <button type="submit" class="btn btn-success" id="submitBtn">
                             <i class="bi bi-save me-1"></i> Save Invoice
                         </button>
                     </div>
@@ -369,7 +369,7 @@ if (!empty($admin['profile_picture'])) {
                                 <p class="mt-3 mb-2"><b>Invoice created successfully!</b></p>
                                 <p class="mb-3" id="successMessage">The invoice has been created and email notification
                                     sent.</p>
-                                <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                                <button type="button" class="btn btn-success" id="okButton">OK</button>
                             </div>
                         </div>
                     </div>
@@ -419,14 +419,18 @@ if (!empty($admin['profile_picture'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const form = document.querySelector("form");
+            const form = document.getElementById('invoiceForm');
             const requiredFields = Array.from(form.querySelectorAll("input:not([type='file']), select"));
             const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            const errorInvoiceModal = new bootstrap.Modal(document.getElementById('errorInvoiceModal'));
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
             const confirmPublishBtn = document.getElementById('confirmPublish');
+            const submitBtn = document.getElementById('submitBtn');
 
             // Form submission handler
             form.addEventListener("submit", function (e) {
-                e.preventDefault(); // Always prevent default submission first
+                e.preventDefault();
 
                 let valid = true;
 
@@ -445,81 +449,65 @@ if (!empty($admin['profile_picture'])) {
                     return;
                 }
 
-                // If validation passes, show confirmation modal
+                // Show confirmation modal
                 confirmModal.show();
             });
 
-            // Handle confirmation modal "Yes, Create Invoice" button
+            // Handle confirmation - submit via AJAX
             confirmPublishBtn.addEventListener("click", function () {
                 confirmModal.hide();
 
                 // Show loading state
-                const submitBtn = form.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
                 submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Creating...';
                 submitBtn.disabled = true;
 
-                // Create FormData and submit via AJAX
+                // Prepare form data
                 const formData = new FormData(form);
 
+                // Submit via AJAX
                 fetch('process_add_invoice.php', {
                     method: 'POST',
                     body: formData
                 })
-                    .then(response => {
-                        // Handle both success and error responses
-                        return response.json().then(data => {
-                            return {
-                                status: response.status,
-                                ok: response.ok,
-                                data: data
-                            };
-                        });
-                    })
-                    .then(result => {
-                        if (result.ok && result.data.success) {
-                            // Show success modal with custom message
-                            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                            let message = 'Invoice created successfully!';
-                            if (result.data.email_sent) {
-                                message += ' Email notification has been sent to the homeowner.';
-                            } else if (result.data.recipient_email) {
-                                message += ' Note: Email notification could not be sent.';
-                            }
-                            document.getElementById('successMessage').innerText = message;
+                    .then(response => response.json())
+                    .then(data => {
+                        // Reset button
+                        submitBtn.innerHTML = '<i class="bi bi-save me-1"></i> Save Invoice';
+                        submitBtn.disabled = false;
+
+                        if (data.success) {
+                            // Show success message
+                            const emailStatus = data.email_sent ?
+                                `Invoice ${data.invoice_number} created successfully! Email notification sent to ${data.recipient_email}.` :
+                                `Invoice ${data.invoice_number} created successfully! (Email notification could not be sent)`;
+
+                            document.getElementById('successMessage').textContent = emailStatus;
                             successModal.show();
-
-                            // Reset form after success
-                            form.reset();
-                            updatePaymentDate(); // Reset due date field
                         } else {
-                            // Handle error responses (including 400 status codes)
-                            const errorData = result.data;
-
-                            if (errorData.error_type === 'validation') {
-                                // Show validation error in invoice error modal
-                                const errorInvoiceModal = new bootstrap.Modal(document.getElementById('errorInvoiceModal'));
-                                document.getElementById('invoiceErrorMessage').innerText = errorData.error;
+                            // Show error
+                            if (data.error_type === 'validation') {
+                                document.getElementById('invoiceErrorMessage').textContent = data.error;
                                 errorInvoiceModal.show();
                             } else {
-                                // Show general error
-                                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                                document.getElementById('errorMessage').innerText = errorData.error || 'An error occurred. Please try again.';
+                                document.getElementById('errorMessage').textContent = data.error || 'An unexpected error occurred.';
                                 errorModal.show();
                             }
                         }
                     })
                     .catch(error => {
-                        // Show general error modal for network/parsing errors
-                        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                        document.getElementById('errorMessage').innerText = 'Network error. Please check your connection and try again.';
-                        errorModal.show();
-                    })
-                    .finally(() => {
-                        // Restore button state
-                        submitBtn.innerHTML = originalText;
+                        // Reset button
+                        submitBtn.innerHTML = '<i class="bi bi-save me-1"></i> Save Invoice';
                         submitBtn.disabled = false;
+
+                        console.error('Error:', error);
+                        document.getElementById('errorMessage').textContent = 'Network error: ' + error.message;
+                        errorModal.show();
                     });
+            });
+
+            // Redirect to invoice list on success
+            document.getElementById('okButton').addEventListener('click', function () {
+                window.location.href = '../invoice.php';
             });
 
             // Remove red border when user types or selects
@@ -528,30 +516,27 @@ if (!empty($admin['profile_picture'])) {
                 field.addEventListener("change", () => field.classList.remove("border", "border-danger"));
             });
 
-            // Handle success/error modals from PHP session
-            <?php if (isset($_SESSION['modal'])): ?>
-                var modalId = "<?php echo $_SESSION['modal']; ?>Modal";
-                <?php if ($_SESSION['modal'] === 'error' && isset($_SESSION['error_message'])): ?>
-                    document.getElementById("errorMessage").innerText = "<?php echo addslashes($_SESSION['error_message']); ?>";
-                <?php endif; ?>
-                var myModal = new bootstrap.Modal(document.getElementById(modalId));
-                myModal.show();
-                <?php unset($_SESSION['modal']);
-                unset($_SESSION['error_message']); ?>
-            <?php endif; ?>
-
             // Billing month and due date logic
             const billingMonth = document.getElementById('billing_month');
             const paymentDate = document.getElementById('due_date');
 
-            // Function to set payment date to 28th of the selected month
             function updatePaymentDate() {
                 if (billingMonth.value) {
-                    // billingMonth.value format: YYYY-MM
                     const [year, month] = billingMonth.value.split('-');
-                    paymentDate.value = `${year}-${month}-28`;
+                    const today = new Date();
+
+                    // Create the proposed due date (28th of selected month)
+                    let dueDate = new Date(year, month - 1, 28);
+
+                    // If the 28th has already passed, use next month's 28th
+                    if (dueDate <= today) {
+                        dueDate.setMonth(dueDate.getMonth() + 1);
+                    }
+
+                    // Format as YYYY-MM-DD
+                    const dueDateStr = dueDate.toISOString().split('T')[0];
+                    paymentDate.value = dueDateStr;
                 } else {
-                    // If no month selected, leave payment_date empty
                     paymentDate.value = '';
                 }
             }
@@ -563,6 +548,7 @@ if (!empty($admin['profile_picture'])) {
             billingMonth.addEventListener('change', updatePaymentDate);
         });
     </script>
+
 </body>
 
 </html>
