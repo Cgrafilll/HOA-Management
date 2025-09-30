@@ -566,7 +566,7 @@ function getNumericAmount($amountStr)
                                                     <?= htmlspecialchars($inv['full_name'] ?? 'No Name'); ?>
                                                 </p>
                                                 <small
-                                                    class="fw-bold <?= ($inv['status'] === 'Pending') ? 'text-secondary' : (($inv['status'] === 'Partial') ? 'text-warning' : 'text-success'); ?>">
+                                                    class="fw-bold <?= ($inv['status'] === 'Pending') ? 'text-warning' : (($inv['status'] === 'Partial') ? 'text-info' : 'text-success'); ?>">
                                                     <?= htmlspecialchars(ucfirst($inv['status'])); ?>
                                                 </small>
                                             </a>
@@ -584,11 +584,12 @@ function getNumericAmount($amountStr)
                                     <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
                                         <div class="fw-bold text-uppercase small">
                                             STATUS: <span class="<?php
-                                            $statusColor = 'text-success';
-                                            if ($selectedInvoice['status'] === 'Pending')
-                                                $statusColor = 'text-secondary';
-                                            if ($selectedInvoice['status'] === 'Partial')
+                                            $statusColor = 'text-success'; // Default for 'Paid'
+                                            if ($selectedInvoice['status'] === 'Pending') {
                                                 $statusColor = 'text-warning';
+                                            } elseif ($selectedInvoice['status'] === 'Partial') {
+                                                $statusColor = 'text-info';
+                                            }
                                             echo $statusColor;
                                             ?>"><?= strtoupper($selectedInvoice['status']); ?></span>
                                         </div>
