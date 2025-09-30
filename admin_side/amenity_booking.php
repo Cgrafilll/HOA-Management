@@ -531,30 +531,41 @@ while ($row = $calendar_result->fetch_assoc()) {
                                         while ($row = $bookings_result->fetch_assoc()) {
                                             $id = $row['id'];
 
-                                            // Construct full name from joined data
+                                            // Construct full name
                                             $fullName = ucwords(trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']));
 
                                             $amenity = $row['amenity'];
                                             $bookingDate = $row['reservation_date'];
                                             $resCode = $row['reservation_code'];
-                                            $statusClass = $row['status'] === 'paid' ? 'text-success' : ($row['status'] === 'partial' ? 'text-warning' : 'text-muted');
+                                            $statusClass = $row['status'] === 'paid'
+                                                ? 'badge bg-success text-white'
+                                                : ($row['status'] === 'partial'
+                                                    ? 'badge bg-primary text-white'
+                                                    : 'badge bg-warning text-dark');
 
                                             echo "<tr>
-                                                    <td>{$bookingDate}</td>
-                                                    <td>{$fullName}</td>
-                                                    <td>{$amenity}</td>
-                                                    <td>{$resCode}</td>
-                                                    <td class='{$statusClass} fw-bold'>" . ucfirst($row['status']) . "</td>
-                                                    <td class='text-center'>
-                                                        <div class='dropdown'>
-                                                            <button class='btn btn-sm btn-secondary dropdown-toggle' data-bs-toggle='dropdown'>Action</button>
-                                                            <ul class='dropdown-menu'>
-                                                                <li><a class='dropdown-item' href='#'>View Details</a></li>
-                                                                <li><a class='dropdown-item' href='#'>Edit Booking</a></li>
-                                                            </ul>
-                                                        </div>
-                                                    </td>
-                                                </tr>";
+                <td>{$bookingDate}</td>
+                <td>{$fullName}</td>
+                <td>{$amenity}</td>
+                <td>{$resCode}</td>
+                <td class='text-center'>
+                    <span class='" . $statusClass . " fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>
+                        " . ucfirst($row['status']) . "
+                    </span>
+                </td>
+                <td class='text-center'>
+                    <div class='text-center'>
+                        <!-- View button -->
+                        <a class='btn btn-sm btn-outline-success me-1' title='View' style='padding: 2px 6px; font-size: 0.9rem;'>
+                            <i class='bi bi-eye'></i>
+                        </a>
+                        <!-- Reschedule button -->
+                        <a class='btn btn-sm btn-outline-primary me-1' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'>
+                            <i class='bi bi-calendar2-week'></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>";
                                         }
                                     } else {
                                         echo "<tr><td colspan='6' class='text-center text-muted'>No bookings found.</td></tr>";
