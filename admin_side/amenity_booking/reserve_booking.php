@@ -1156,6 +1156,63 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let bookedDates = [];
+        const amenity = "<?php echo htmlspecialchars($amenity); ?>";
+
+        // Fetch booked dates
+        async function fetchBookedDates() {
+            try {
+                const response = await fetch(`reservation_form.php?action=get_booked_dates&amenity=${encodeURIComponent(amenity)}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    bookedDates = data.dates;
+                    setupDateValidation();
+                }
+            } catch (error) {
+                console.error('Error fetching booked dates:', error);
+            }
+        }
+
+        function setupDateValidation() {
+            const dateInput = document.getElementById('reservationDate');
+            const dateAlert = document.getElementById('dateAlert');
+            const dateMessage = document.getElementById('dateMessage');
+
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.setAttribute('min', today);
+
+            dateInput.addEventListener('change', function () {
+                const selectedDate = this.value;
+
+                if (bookedDates.includes(selectedDate)) {
+                    // Date is booked - show error
+                    this.classList.add('is-invalid');
+                    this.classList.remove('is-valid');
+                    dateAlert.classList.remove('alert-success');
+                    dateAlert.classList.add('alert-danger');
+                    dateAlert.classList.remove('d-none');
+                    dateMessage.innerHTML = '<strong>This date is already booked!</strong> Please select another date.';
+                    this.value = ''; // Clear invalid selection
+                } else if (selectedDate) {
+                    // Date is available - show success
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                    dateAlert.classList.remove('alert-danger');
+                    dateAlert.classList.add('alert-success');
+                    dateAlert.classList.remove('d-none');
+                    dateMessage.innerHTML = '<strong>This date is available!</strong> You can proceed with your reservation.';
+                }
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchBookedDates();
+        });
+    </script>
+    <script>
         // File upload functionality
         const fileDropArea = document.getElementById('fileDropArea');
         const fileInput = document.getElementById('fileInput');
@@ -1231,62 +1288,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             fileInput.value = '';
             filePreview.innerHTML = '';
         }
-
-        let bookedDates = [];
-        const amenity = "<?php echo htmlspecialchars($amenity); ?>";
-
-        // Fetch booked dates
-        async function fetchBookedDates() {
-            try {
-                const response = await fetch(`reservation_form.php?action=get_booked_dates&amenity=${encodeURIComponent(amenity)}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    bookedDates = data.dates;
-                    setupDateValidation();
-                }
-            } catch (error) {
-                console.error('Error fetching booked dates:', error);
-            }
-        }
-
-        function setupDateValidation() {
-            const dateInput = document.getElementById('reservationDate');
-            const dateAlert = document.getElementById('dateAlert');
-            const dateMessage = document.getElementById('dateMessage');
-
-            // Set minimum date to today
-            const today = new Date().toISOString().split('T')[0];
-            dateInput.setAttribute('min', today);
-
-            dateInput.addEventListener('change', function () {
-                const selectedDate = this.value;
-
-                if (bookedDates.includes(selectedDate)) {
-                    // Date is booked - show error
-                    this.classList.add('is-invalid');
-                    this.classList.remove('is-valid');
-                    dateAlert.classList.remove('alert-success');
-                    dateAlert.classList.add('alert-danger');
-                    dateAlert.classList.remove('d-none');
-                    dateMessage.innerHTML = '<strong>This date is already booked!</strong> Please select another date.';
-                    this.value = ''; // Clear invalid selection
-                } else if (selectedDate) {
-                    // Date is available - show success
-                    this.classList.remove('is-invalid');
-                    this.classList.add('is-valid');
-                    dateAlert.classList.remove('alert-danger');
-                    dateAlert.classList.add('alert-success');
-                    dateAlert.classList.remove('d-none');
-                    dateMessage.innerHTML = '<strong>This date is available!</strong> You can proceed with your reservation.';
-                }
-            });
-        }
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function () {
-            fetchBookedDates();
-        });
 
         // Store rates from PHP into JS
         const amenityRates = <?php echo json_encode($amenityRates); ?>;
