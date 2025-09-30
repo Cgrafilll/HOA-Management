@@ -45,8 +45,8 @@ if (!$admin) {
 
 // Initialize user details
 $username = $admin['first_name'];
-$photo = !empty($admin['profile_picture']) 
-    ? 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']) 
+$photo = !empty($admin['profile_picture'])
+    ? 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture'])
     : '';
 
 // Define rates
@@ -94,7 +94,8 @@ $amenityRates = [
 ];
 
 // Helper function to extract numeric value from rate string
-function extractNumericRate($rateString) {
+function extractNumericRate($rateString)
+{
     // Remove currency symbols and extract numeric value
     $cleaned = preg_replace('/[₱,]/', '', $rateString);
     $cleaned = preg_replace('/\s*\/.*$/', '', $cleaned); // Remove "/ per person" etc.
@@ -102,56 +103,59 @@ function extractNumericRate($rateString) {
 }
 
 // Helper function to get amenity rate from the rates array
-function getAmenityRate($amenity, $userType, $timeOfDay = 'day') {
+function getAmenityRate($amenity, $userType, $timeOfDay = 'day')
+{
     global $amenityRates;
-    
+
     $bookingUserType = ($userType === 'Homeowner/Resident') ? 'homeowner' : 'visitor';
-    
+
     if (isset($amenityRates[$amenity][$bookingUserType][$timeOfDay])) {
         return $amenityRates[$amenity][$bookingUserType][$timeOfDay];
     }
-    
+
     // Fallback to day rate if night not found
     if ($timeOfDay === 'night' && isset($amenityRates[$amenity][$bookingUserType]['day'])) {
         return $amenityRates[$amenity][$bookingUserType]['day'];
     }
-    
+
     return null; // Default if not found
 }
 
 // Helper function to check if amenity is per person
-function isPerPersonRate($rateString) {
+function isPerPersonRate($rateString)
+{
     return strpos($rateString, '/ per person') !== false;
 }
 
 // Helper function to handle file upload
-function handleFileUpload($file, $uploadDir = '../uploads/payments/') {
+function handleFileUpload($file, $uploadDir = '../uploads/payments/')
+{
     if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
         return null;
     }
-    
+
     // Create upload directory if it doesn't exist
     if (!file_exists($uploadDir)) {
         mkdir($uploadDir, 0755, true);
     }
-    
+
     // Generate unique filename
     $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
     $filename = 'payment_' . uniqid() . '.' . $extension;
     $filepath = $uploadDir . $filename;
-    
+
     // Move uploaded file
     if (move_uploaded_file($file['tmp_name'], $filepath)) {
         return $filename;
     }
-    
+
     return null;
 }
 
 // Handle AJAX requests
 if (isset($_GET['action'])) {
     header('Content-Type: application/json');
-    
+
     try {
         switch ($_GET['action']) {
             case 'get_households':
@@ -163,7 +167,7 @@ if (isset($_GET['action'])) {
                 ");
                 $stmt->execute();
                 $result = $stmt->get_result();
-                
+
                 $data = [];
                 while ($row = $result->fetch_assoc()) {
                     $data[] = [
@@ -171,10 +175,10 @@ if (isset($_GET['action'])) {
                         'name' => trim("{$row['first_name']} {$row['middle_name']} {$row['last_name']}")
                     ];
                 }
-                
+
                 echo json_encode(['success' => true, 'data' => $data]);
                 break;
-                
+
             case 'get_visitors':
                 $stmt = $conn->prepare("
                     SELECT visitor_id, first_name, middle_name, last_name 
@@ -184,7 +188,7 @@ if (isset($_GET['action'])) {
                 ");
                 $stmt->execute();
                 $result = $stmt->get_result();
-                
+
                 $data = [];
                 while ($row = $result->fetch_assoc()) {
                     $data[] = [
@@ -192,31 +196,31 @@ if (isset($_GET['action'])) {
                         'name' => trim("{$row['first_name']} {$row['middle_name']} {$row['last_name']}")
                     ];
                 }
-                
+
                 echo json_encode(['success' => true, 'data' => $data]);
                 break;
-                
+
             case 'get_amenity_booking_by_invoice':
                 $invoice_number = $_GET['invoice_number'] ?? '';
                 $user_id = $_GET['user_id'] ?? '';
                 $user_type = $_GET['user_type'] ?? '';
-                
+
                 if (empty($invoice_number) || empty($user_id) || empty($user_type)) {
                     echo json_encode(['success' => false, 'error' => 'Missing required parameters']);
                     exit;
                 }
-                
+
                 // Get user details and booking based on user type
                 $user_table = ($user_type === 'Homeowner/Resident') ? 'household_accounts' : 'visitor_details';
                 $user_id_field = ($user_type === 'Homeowner/Resident') ? 'household_id' : 'visitor_id';
                 $booking_id_field = ($user_type === 'Homeowner/Resident') ? 'homeowner_id' : 'visitor_id';
-                
+
                 // Get user details
                 $stmt = $conn->prepare("SELECT first_name, middle_name, last_name FROM $user_table WHERE $user_id_field = ?");
                 $stmt->bind_param("s", $user_id);
                 $stmt->execute();
                 $user_data = $stmt->get_result()->fetch_assoc();
-                
+
                 // Get complete booking details including amenity info
                 $stmt = $conn->prepare("
                     SELECT 
@@ -240,20 +244,20 @@ if (isset($_GET['action'])) {
                 $stmt->bind_param("ss", $user_id, $invoice_number);
                 $stmt->execute();
                 $booking = $stmt->get_result()->fetch_assoc();
-                
+
                 if ($booking && $user_data) {
                     // Calculate balance
                     $balance_due = $booking['total_amount'] - $booking['amount_paid'];
-                    
+
                     // Build items array for table population
                     $items = [];
-                    
+
                     // Use the rate field from database (contains "day" or "night")
                     $timeOfDay = strtolower($booking['rate']); // Convert to lowercase for consistency
-                    
+
                     // Get proper amenity rate from rates array using database rate field
                     $rateString = getAmenityRate($booking['amenity'], $user_type, $timeOfDay);
-                    
+
                     // If rate not found in array, fallback to a default or error handling
                     if ($rateString === null) {
                         // Fallback: try to construct a basic rate or use a default
@@ -262,10 +266,10 @@ if (isset($_GET['action'])) {
                     } else {
                         $numericRate = extractNumericRate($rateString);
                     }
-                    
+
                     // Check if this is a per-person rate
                     $isPerPerson = isPerPersonRate($rateString);
-                    
+
                     // Determine quantity and rate display
                     if ($isPerPerson) {
                         // For per-person rates, use guests count directly from database
@@ -278,7 +282,7 @@ if (isset($_GET['action'])) {
                         $rateDisplay = number_format($numericRate, 2);
                         $amount = $numericRate;
                     }
-                    
+
                     // Main amenity item
                     $items[] = [
                         'category' => 'Amenity',
@@ -287,7 +291,7 @@ if (isset($_GET['action'])) {
                         'qty' => $quantity,
                         'amount' => number_format($amount, 2)
                     ];
-                    
+
                     // Add chairs if any exist
                     if ($booking['chairs'] > 0) {
                         $chairRate = 12.00; // Fixed rate: ₱12 per chair
@@ -299,7 +303,7 @@ if (isset($_GET['action'])) {
                             'amount' => number_format($booking['chairs'] * $chairRate, 2)
                         ];
                     }
-                    
+
                     // Add tables if any
                     if ($booking['tables'] > 0) {
                         $tableRate = 20.00; // Fixed rate: ₱20 per table
@@ -311,7 +315,7 @@ if (isset($_GET['action'])) {
                             'amount' => number_format($booking['tables'] * $tableRate, 2)
                         ];
                     }
-                    
+
                     echo json_encode([
                         'success' => true,
                         'data' => [
@@ -333,29 +337,29 @@ if (isset($_GET['action'])) {
                     echo json_encode(['success' => false, 'error' => 'No booking found']);
                 }
                 break;
-                
+
             case 'get_monthly_dues_by_invoice':
                 $invoice_number = $_GET['invoice_number'] ?? '';
                 $user_id = $_GET['user_id'] ?? '';
                 $user_type = $_GET['user_type'] ?? '';
-                
+
                 if (empty($invoice_number) || empty($user_id) || empty($user_type)) {
                     echo json_encode(['success' => false, 'error' => 'Missing required parameters']);
                     exit;
                 }
-                
+
                 // Monthly dues only apply to homeowners/residents
                 if ($user_type !== 'Homeowner/Resident') {
                     echo json_encode(['success' => false, 'error' => 'Monthly dues only apply to homeowners/residents']);
                     exit;
                 }
-                
+
                 // Get user details
                 $stmt = $conn->prepare("SELECT first_name, middle_name, last_name FROM household_accounts WHERE household_id = ?");
                 $stmt->bind_param("s", $user_id);
                 $stmt->execute();
                 $user_data = $stmt->get_result()->fetch_assoc();
-                
+
                 // Get monthly dues details
                 $stmt = $conn->prepare("
                     SELECT 
@@ -373,17 +377,17 @@ if (isset($_GET['action'])) {
                 $stmt->bind_param("ss", $user_id, $invoice_number);
                 $stmt->execute();
                 $dues = $stmt->get_result()->fetch_assoc();
-                
+
                 if ($dues && $user_data) {
                     // Calculate total amount (amount_paid + balance_remaining)
                     $total_amount = $dues['amount_paid'] + $dues['balance_remaining'];
-                    
+
                     // Build items array for table population
                     $items = [];
-                    
+
                     // Format billing month for display
                     $billing_month = date('F Y', strtotime($dues['billing_month']));
-                    
+
                     // Main monthly dues item
                     $items[] = [
                         'category' => 'Monthly Dues',
@@ -392,7 +396,7 @@ if (isset($_GET['action'])) {
                         'qty' => 1,
                         'amount' => number_format($total_amount, 2)
                     ];
-                    
+
                     echo json_encode([
                         'success' => true,
                         'data' => [
@@ -414,13 +418,13 @@ if (isset($_GET['action'])) {
                     echo json_encode(['success' => false, 'error' => 'No monthly dues record found']);
                 }
                 break;
-                
+
             case 'process_payment':
                 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                     echo json_encode(['success' => false, 'error' => 'Invalid request method']);
                     exit;
                 }
-                
+
                 $category = $_POST['category'] ?? '';
                 $user_type = $_POST['user_type'] ?? '';
                 $user_id = $_POST['user_id'] ?? '';
@@ -428,13 +432,13 @@ if (isset($_GET['action'])) {
                 $amount = floatval($_POST['amount'] ?? 0);
                 $payment_method = ($_POST['payment_method'] === 'Bank Transfer') ? 'bank' : 'cash';
                 $reference_number = $_POST['reference_number'] ?? '';
-                
+
                 // Validate required fields
                 if (empty($category) || empty($user_type) || empty($user_id) || empty($invoice_number) || $amount <= 0) {
                     echo json_encode(['success' => false, 'error' => 'Missing required fields']);
                     exit;
                 }
-                
+
                 // Handle file upload
                 $proof_filename = null;
                 if (isset($_FILES['proof_of_payment']) && $_FILES['proof_of_payment']['error'] === UPLOAD_ERR_OK) {
@@ -444,15 +448,15 @@ if (isset($_GET['action'])) {
                         exit;
                     }
                 }
-                
+
                 $conn->begin_transaction();
-                
+
                 try {
                     $reference_id = null;
                     $db_user_type = ($user_type === 'Homeowner/Resident') ? 'homeowner' : 'visitor';
                     $household_id = ($user_type === 'Homeowner/Resident') ? $user_id : null;
                     $visitor_id = ($user_type === 'Visitor') ? $user_id : null;
-                    
+
                     if ($category === 'Amenity Fee') {
                         // Get amenity booking details
                         $booking_id_field = ($user_type === 'Homeowner/Resident') ? 'homeowner_id' : 'visitor_id';
@@ -460,15 +464,15 @@ if (isset($_GET['action'])) {
                         $stmt->bind_param("ss", $user_id, $invoice_number);
                         $stmt->execute();
                         $booking = $stmt->get_result()->fetch_assoc();
-                        
+
                         if (!$booking) {
                             throw new Exception('Amenity booking not found');
                         }
-                        
+
                         $reference_id = $booking['id'];
                         $new_amount_paid = $booking['amount_paid'] + $amount;
                         $balance = $booking['total_amount'] - $new_amount_paid;
-                        
+
                         // Determine new status
                         if ($balance <= 0) {
                             $new_status = 'paid';
@@ -477,36 +481,36 @@ if (isset($_GET['action'])) {
                         } else {
                             $new_status = 'pending';
                         }
-                        
+
                         // Update amenity booking
                         $stmt = $conn->prepare("UPDATE amenity_bookings SET amount_paid = ?, status = ? WHERE id = ?");
                         $stmt->bind_param("dsi", $new_amount_paid, $new_status, $reference_id);
                         $stmt->execute();
-                        
+
                     } elseif ($category === 'Monthly Dues') {
                         if ($user_type !== 'Homeowner/Resident') {
                             throw new Exception('Monthly dues only apply to homeowners/residents');
                         }
-                        
+
                         // Get monthly dues details
                         $stmt = $conn->prepare("SELECT id, amount_paid, balance_remaining FROM monthly_dues WHERE household_id = ? AND invoice_number = ?");
                         $stmt->bind_param("ss", $user_id, $invoice_number);
                         $stmt->execute();
                         $dues = $stmt->get_result()->fetch_assoc();
-                        
+
                         if (!$dues) {
                             throw new Exception('Monthly dues record not found');
                         }
-                        
+
                         $reference_id = $dues['id'];
                         $new_amount_paid = $dues['amount_paid'] + $amount;
                         $new_balance = $dues['balance_remaining'] - $amount;
-                        
+
                         // Ensure balance doesn't go negative
                         if ($new_balance < 0) {
                             $new_balance = 0;
                         }
-                        
+
                         // Determine new status
                         if ($new_balance <= 0) {
                             $new_status = 'Completed';
@@ -515,13 +519,13 @@ if (isset($_GET['action'])) {
                         } else {
                             $new_status = 'Pending';
                         }
-                        
+
                         // Update monthly dues
                         $stmt = $conn->prepare("UPDATE monthly_dues SET amount_paid = ?, balance_remaining = ?, status = ? WHERE id = ?");
                         $stmt->bind_param("ddsi", $new_amount_paid, $new_balance, $new_status, $reference_id);
                         $stmt->execute();
                     }
-                    
+
                     // Insert payment record
                     $db_category = ($category === 'Amenity Fee') ? 'amenity' : 'monthly_dues';
                     $stmt = $conn->prepare("
@@ -530,23 +534,23 @@ if (isset($_GET['action'])) {
                     ");
                     $stmt->bind_param("sisssdssss", $db_category, $reference_id, $invoice_number, $db_user_type, $household_id, $visitor_id, $amount, $payment_method, $reference_number, $proof_filename);
                     $stmt->execute();
-                    
+
                     $payment_id = $conn->insert_id;
-                    
+
                     $conn->commit();
-                    
+
                     echo json_encode([
-                        'success' => true, 
+                        'success' => true,
                         'message' => 'Payment processed successfully',
                         'payment_id' => $payment_id
                     ]);
-                    
+
                 } catch (Exception $e) {
                     $conn->rollback();
                     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
                 }
                 break;
-                
+
             default:
                 echo json_encode(['success' => false, 'error' => 'Invalid action']);
         }
@@ -555,10 +559,11 @@ if (isset($_GET['action'])) {
     }
     exit; // THIS IS CRUCIAL - prevents HTML from being sent with AJAX responses
 }
-            
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -568,15 +573,17 @@ if (isset($_GET['action'])) {
     <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap');
-        
-        * { font-family: "Montserrat", sans-serif; }
-        
+
+        * {
+            font-family: "Montserrat", sans-serif;
+        }
+
         header {
             position: sticky;
             top: 0;
             z-index: 1030;
         }
-        
+
         .sidebar {
             width: 250px;
             height: 100vh;
@@ -586,28 +593,34 @@ if (isset($_GET['action'])) {
             background-color: #1F2937;
             overflow-y: auto;
         }
-        
-        main { margin-left: 250px; }
-        
-        .sidebar a, .sidebar button {
+
+        main {
+            margin-left: 250px;
+        }
+
+        .sidebar a,
+        .sidebar button {
             color: #ffffff;
             text-decoration: none;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
-        
-        .sidebar a:hover, .sidebar button:hover,
-        .collapse ul li a:hover, .collapse ul li a.actived {
+
+        .sidebar a:hover,
+        .sidebar button:hover,
+        .collapse ul li a:hover,
+        .collapse ul li a.actived {
             color: #80ed99;
         }
-        
-        .sidebar .nav-link.active, .sidebar .btn-toggle:not(.collapsed),
+
+        .sidebar .nav-link.active,
+        .sidebar .btn-toggle:not(.collapsed),
         .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
         }
-        
+
         .sidebar .btn-toggle {
             display: flex;
             align-items: center;
@@ -617,19 +630,26 @@ if (isset($_GET['action'])) {
             background: none;
             border: none;
         }
-        
-        .sidebar .btn-toggle i { margin-right: 8px; }
-        
+
+        .sidebar .btn-toggle i {
+            margin-right: 8px;
+        }
+
         .sidebar .btn-toggle::after {
             content: "▼";
             font-size: 10px;
             transition: transform 0.3s;
             margin-left: auto;
         }
-        
-        .sidebar .btn-toggle.collapsed::after { transform: rotate(0deg); }
-        .sidebar .btn-toggle:not(.collapsed)::after { transform: rotate(180deg); }
-        
+
+        .sidebar .btn-toggle.collapsed::after {
+            transform: rotate(0deg);
+        }
+
+        .sidebar .btn-toggle:not(.collapsed)::after {
+            transform: rotate(180deg);
+        }
+
         .file-drop-area {
             border: 2px dashed #d1d5db;
             border-radius: 8px;
@@ -638,56 +658,66 @@ if (isset($_GET['action'])) {
             background-color: #f9fafb;
             transition: all 0.3s ease;
         }
-        
+
         .file-drop-area:hover {
             border-color: #6b7280;
             background-color: #f3f4f6;
         }
-        
+
         .file-drop-area.dragover {
             border-color: #3b82f6;
             background-color: #eff6ff;
         }
-        
+
         .cloud-icon {
             font-size: 48px;
             color: #9ca3af;
             margin-bottom: 16px;
         }
-        
+
         .method-card {
             cursor: pointer;
             transition: 0.3s;
         }
-        
+
         .method-card.active {
             border: 2px solid #007bff;
             background-color: #e9f2ff;
         }
-        
-        .method-card:hover { border-color: #007bff; }
-        
+
+        .method-card:hover {
+            border-color: #007bff;
+        }
+
         .loading {
             color: #6c757d;
             font-size: 14px;
             margin-top: 5px;
         }
-        
+
         .form-select:disabled {
             background-color: #f8f9fa;
             opacity: 0.8;
         }
-        
+
         .fade-in {
             animation: fadeIn 0.3s ease-in;
         }
-        
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
+
 <body class="bg-light">
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
@@ -697,13 +727,14 @@ if (isset($_GET['action'])) {
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">ACCOUNTING</h1>
             <div class="dropdown">
-                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" 
-                     data-bs-toggle="dropdown" aria-expanded="false" role="button" style="cursor: pointer;">
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
+                    aria-expanded="false" role="button" style="cursor: pointer;">
                     <span>Hello, <?= htmlspecialchars($username) ?></span>
-                    <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5" 
-                         style="height: 40px; width: 40px; color: #aaa;">
+                    <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                        style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
-                            <img src="<?= htmlspecialchars($photo) ?>" style="width: 40px; height: 40px; object-fit: cover;">
+                            <img src="<?= htmlspecialchars($photo) ?>"
+                                style="width: 40px; height: 40px; object-fit: cover;">
                         <?php else: ?>
                             <i class="bi bi-person-circle" style="font-size: 32px;"></i>
                         <?php endif; ?>
@@ -711,26 +742,29 @@ if (isset($_GET['action'])) {
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li><a class="dropdown-item" href="admin/view_admin.php?id=<?= $admin_id ?>">
-                        <i class="bi bi-person me-2"></i>Profile</a></li>
-                    <li><hr class="dropdown-divider"></li>
+                            <i class="bi bi-person me-2"></i>Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
                     <li><a class="dropdown-item" href="login/logout.php">
-                        <i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                            <i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                 </ul>
             </div>
         </div>
     </header>
-    
+
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav d-flex flex-column gap-1">
-                <a href="admin_dashboard.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                <a href="admin_dashboard.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
                 <!-- Accounts -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse" 
-                            data-bs-target="#accountsCollapse">
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#accountsCollapse">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-person-lines-fill me-2"></i> Accounts
                         </span>
@@ -743,11 +777,11 @@ if (isset($_GET['action'])) {
                         </ul>
                     </div>
                 </div>
-                
+
                 <!-- Record Keeping -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse" 
-                            data-bs-target="#recordCollapse">
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#recordCollapse">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-book me-2"></i> Record Keeping
                         </span>
@@ -760,11 +794,11 @@ if (isset($_GET['action'])) {
                         </ul>
                     </div>
                 </div>
-                
+
                 <!-- Communication -->
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse" 
-                            data-bs-target="#commCollapse">
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#commCollapse">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-chat-left-text me-2"></i> Communication
                         </span>
@@ -777,11 +811,11 @@ if (isset($_GET['action'])) {
                         </ul>
                     </div>
                 </div>
-                
+
                 <!-- Accounting (Active) -->
                 <div>
-                    <button class="btn btn-toggle px-3 py-2 active" data-bs-toggle="collapse" 
-                            data-bs-target="#acctCollapse">
+                    <button class="btn btn-toggle px-3 py-2 active" data-bs-toggle="collapse"
+                        data-bs-target="#acctCollapse">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-cash-coin me-2"></i> Accounting
                         </span>
@@ -793,27 +827,27 @@ if (isset($_GET['action'])) {
                         </ul>
                     </div>
                 </div>
-                
-                <a href="login/logout.php" class="nav-link mb-3 px-3 py-2 rounded logout" 
-                   style="position: fixed; bottom: 0; width: 220px;">
+
+                <a href="login/logout.php" class="nav-link mb-3 px-3 py-2 rounded logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
-        
+
         <!-- Main Content -->
         <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-4">
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Payments</h5>
                 </div>
-                
+
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">Payment Management</span>
                     </div>
                     <hr class="mb-3 mt-0">
-                    
+
                     <div class="row">
                         <!-- Left Column -->
                         <div class="col-md-8">
@@ -828,12 +862,13 @@ if (isset($_GET['action'])) {
                                     <h6 class="mt-2">In-Office Payment</h6>
                                 </div>
                             </div>
-                            
+
                             <!-- Payment Form -->
                             <form id="paymentForm">
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">User Type<small class="fw-bold text-danger">*</small></label>
+                                        <label class="form-label">User Type<small
+                                                class="fw-bold text-danger">*</small></label>
                                         <select class="form-select" id="userTypeSelect" required>
                                             <option value="">Select User Type</option>
                                             <option value="Homeowner/Resident">Homeowner/Resident</option>
@@ -841,7 +876,8 @@ if (isset($_GET['action'])) {
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label" id="idLabel">Select ID<small class="fw-bold text-danger">*</small></label>
+                                        <label class="form-label" id="idLabel">Select ID<small
+                                                class="fw-bold text-danger">*</small></label>
                                         <select class="form-select" id="userIdSelect" disabled required>
                                             <option value="">First select user type</option>
                                         </select>
@@ -850,10 +886,11 @@ if (isset($_GET['action'])) {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Category<small class="fw-bold text-danger">*</small></label>
+                                        <label class="form-label">Category<small
+                                                class="fw-bold text-danger">*</small></label>
                                         <select class="form-select" id="categorySelect" required>
                                             <option value="">Select Category</option>
                                             <option value="Monthly Dues">Monthly Dues</option>
@@ -862,32 +899,38 @@ if (isset($_GET['action'])) {
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Invoice Number<small class="fw-bold text-danger">*</small></label>
-                                        <input type="text" class="form-control" id="invoiceInput" placeholder="Enter Invoice Number" required>
+                                        <label class="form-label">Invoice Number<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <input type="text" class="form-control" id="invoiceInput"
+                                            placeholder="Enter Invoice Number" required>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-3">
-                                    <label class="form-label">Amount Paid<small class="fw-bold text-danger">*</small></label>
+                                    <label class="form-label">Amount Paid<small
+                                            class="fw-bold text-danger">*</small></label>
                                     <div class="input-group">
                                         <span class="input-group-text">₱</span>
-                                        <input type="number" class="form-control" id="amountPaid" placeholder="0.00" min="0" step="0.01" required>
+                                        <input type="number" class="form-control" id="amountPaid" placeholder="0.00"
+                                            min="0" step="0.01" required>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-3" id="referenceNumberGroup" style="display: none;">
                                     <label class="form-label">Reference Number</label>
-                                    <input type="text" class="form-control" id="referenceNumber" placeholder="Bank transfer reference number">
+                                    <input type="text" class="form-control" id="referenceNumber"
+                                        placeholder="Bank transfer reference number">
                                 </div>
-                                
+
                                 <!-- Summary Display -->
                                 <div class="bg-light rounded p-3 mb-3">
                                     <p class="mb-1"><strong>Reference No.:</strong> <span id="refNo"></span></p>
                                     <p class="mb-1"><strong>Name:</strong> <span id="residentName"></span></p>
                                     <p class="mb-1"><strong>Issue Date:</strong> <span id="issueDate"></span></p>
-                                    <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank Transfer</span></p>
+                                    <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank
+                                            Transfer</span></p>
                                 </div>
-                                
+
                                 <!-- Invoice Details Table -->
                                 <table class="table table-bordered">
                                     <thead class="table-success">
@@ -900,22 +943,26 @@ if (isset($_GET['action'])) {
                                         </tr>
                                     </thead>
                                     <tbody id="invoiceTableBody">
-                                        <tr><td colspan="5" class="text-center text-muted">No invoice data loaded</td></tr>
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No invoice data loaded</td>
+                                        </tr>
                                     </tbody>
                                 </table>
-                                
+
                                 <div class="d-flex justify-content-end mb-3">
                                     <div>
                                         <p class="mb-1"><strong>Subtotal:</strong> <span id="subtotal">₱0.00</span></p>
-                                        <p class="mb-1"><strong>Previously Paid:</strong> <span id="previouslyPaid">₱0.00</span></p>
-                                        <p class="fw-bold text-success">Balance Due: <span id="balanceDue">₱0.00</span></p>
+                                        <p class="mb-1"><strong>Previously Paid:</strong> <span
+                                                id="previouslyPaid">₱0.00</span></p>
+                                        <p class="fw-bold text-success">Balance Due: <span id="balanceDue">₱0.00</span>
+                                        </p>
                                     </div>
                                 </div>
-                                
+
                                 <button type="submit" class="btn btn-primary w-100">Make Payment</button>
                             </form>
                         </div>
-                        
+
                         <!-- Right Column -->
                         <div class="col-md-4">
                             <!-- Payment Methods Info -->
@@ -936,7 +983,7 @@ if (isset($_GET['action'])) {
                                     </ul>
                                 </div>
                             </div>
-                            
+
                             <!-- Upload Section -->
                             <div class="border rounded p-3 text-center">
                                 <h6 class="fw-bold">Upload Proof of Payment</h6>
@@ -950,8 +997,8 @@ if (isset($_GET['action'])) {
                                     <div class="small text-muted">
                                         Supported formats: JPEG, PNG, GIF, PDF
                                     </div>
-                                    <input type="file" id="fileInput" name="evidence" class="d-none" 
-                                           accept="image/jpeg,image/png,image/gif,application/pdf">
+                                    <input type="file" id="fileInput" name="evidence" class="d-none"
+                                        accept="image/jpeg,image/png,image/gif,application/pdf">
                                 </div>
                                 <div id="filePreview" class="mt-2"></div>
                             </div>
@@ -1060,4 +1107,5 @@ if (isset($_GET['action'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="javascripts/payment.js"></script>
 </body>
+
 </html>

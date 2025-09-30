@@ -566,7 +566,7 @@ function getNumericAmount($amountStr)
                                                     <?= htmlspecialchars($inv['full_name'] ?? 'No Name'); ?>
                                                 </p>
                                                 <small
-                                                    class="fw-bold <?= ($inv['status'] === 'Pending') ? 'text-warning' : (($inv['status'] === 'Partial') ? 'text-info' : 'text-success'); ?>">
+                                                    class="fw-bold <?= ($inv['status'] === 'Pending') ? 'text-secondary' : (($inv['status'] === 'Partial') ? 'text-warning' : 'text-success'); ?>">
                                                     <?= htmlspecialchars(ucfirst($inv['status'])); ?>
                                                 </small>
                                             </a>
@@ -586,9 +586,9 @@ function getNumericAmount($amountStr)
                                             STATUS: <span class="<?php
                                             $statusColor = 'text-success';
                                             if ($selectedInvoice['status'] === 'Pending')
-                                                $statusColor = 'text-warning';
+                                                $statusColor = 'text-secondary';
                                             if ($selectedInvoice['status'] === 'Partial')
-                                                $statusColor = 'text-info';
+                                                $statusColor = 'text-warning';
                                             echo $statusColor;
                                             ?>"><?= strtoupper($selectedInvoice['status']); ?></span>
                                         </div>
@@ -781,7 +781,7 @@ function getNumericAmount($amountStr)
                                                     </tbody>
                                                 </table>
                                             </div>
-                                           <!-- Amenity Summary -->
+                                            <!-- Amenity Summary -->
                                             <div class="d-flex justify-content-end">
                                                 <div class="text-end small" style="min-width: 200px;">
                                                     <?php
