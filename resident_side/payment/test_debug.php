@@ -1,55 +1,63 @@
 <?php
-// Create this file in the same directory as process_payment.php
-// Access it via browser to test logging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-header('Content-Type: text/plain');
-
-echo "=== DEBUG TEST ===\n\n";
-
-// Test 1: Check current directory
-$currentDir = __DIR__;
-echo "Current directory: $currentDir\n";
-
-// Test 2: Check if directory is writable
-$isWritable = is_writable($currentDir);
-echo "Directory writable: " . ($isWritable ? 'YES' : 'NO') . "\n";
-
-// Test 3: Try to create a test log file
-$testLogFile = $currentDir . '/test_log.txt';
-$testContent = "Test log entry at " . date('Y-m-d H:i:s') . "\n";
-
-if (file_put_contents($testLogFile, $testContent, FILE_APPEND)) {
-    echo "Test log file created: $testLogFile\n";
-    echo "Content written successfully\n";
-    
-    // Read it back
-    if (file_exists($testLogFile)) {
-        echo "\nTest log content:\n";
-        echo file_get_contents($testLogFile);
-    }
-} else {
-    echo "FAILED to create test log file\n";
-    echo "Possible reasons:\n";
-    echo "- Directory not writable\n";
-    echo "- PHP safe_mode restrictions\n";
-    echo "- SELinux or similar security restrictions\n";
-}
-
-// Test 4: Check PHP error log location
-echo "\nPHP error_log setting: " . ini_get('error_log') . "\n";
-
-// Test 5: Alternative log locations
-$alternativeLocations = [
-    sys_get_temp_dir() . '/payment_debug.log',
-    '/tmp/payment_debug.log',
-    '../payment_debug.log'
+// Test 1: Check if PHPMailer exists
+echo "<h3>Test 1: PHPMailer Files</h3>";
+$paths = [
+    '../../admin_side/amenity_booking/PHPMailer/src/Exception.php',
+    '../../admin_side/amenity_booking/PHPMailer/src/PHPMailer.php',
+    '../../admin_side/amenity_booking/PHPMailer/src/SMTP.php'
 ];
 
-echo "\nAlternative log locations to try:\n";
-foreach ($alternativeLocations as $location) {
-    $testWrite = @file_put_contents($location, "test\n", FILE_APPEND);
-    echo "- $location: " . ($testWrite ? 'WRITABLE' : 'NOT WRITABLE') . "\n";
+foreach ($paths as $path) {
+    $fullPath = __DIR__ . '/' . $path;
+    echo $path . ": " . (file_exists($fullPath) ? "✅ EXISTS" : "❌ NOT FOUND") . "<br>";
 }
 
-echo "\n=== END TEST ===\n";
+// Test 2: Try to load PHPMailer
+echo "<h3>Test 2: Load PHPMailer</h3>";
+try {
+    require_once '../../admin_side/amenity_booking/PHPMailer/src/Exception.php';
+    require_once '../../admin_side/amenity_booking/PHPMailer/src/PHPMailer.php';
+    require_once '../../admin_side/amenity_booking/PHPMailer/src/SMTP.php';
+    echo "✅ PHPMailer loaded successfully<br>";
+} catch (Exception $e) {
+    echo "❌ Failed to load PHPMailer: " . $e->getMessage() . "<br>";
+    exit;
+}
+
+// Test 3: Test email sending
+echo "<h3>Test 3: Send Test Email</h3>";
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+$mail = new PHPMailer(true);
+
+try {
+    $mail->SMTPDebug = 2; // Enable verbose debug
+    $mail->isSMTP();
+    $mail->Host = 'smtp.gmail.com';
+    $mail->SMTPAuth = true;
+    $mail->Username = 'lukemia19@gmail.com';
+    $mail->Password = 'uezbntejweozhniv';
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port = 587;
+    $mail->Timeout = 30;
+    
+    $mail->setFrom('noreply@nsshai.com', 'NSSHAI Test');
+    $mail->addAddress('lukemia19@gmail.com', 'Test Recipient'); // Send to yourself
+    
+    $mail->isHTML(true);
+    $mail->Subject = 'Test Email from Hostinger';
+    $mail->Body = '<h1>Test Successful!</h1><p>If you receive this, PHPMailer is working.</p>';
+    
+    $mail->send();
+    echo "✅ Email sent successfully!";
+    
+} catch (Exception $e) {
+    echo "❌ Email failed: {$mail->ErrorInfo}<br>";
+    echo "Exception: " . $e->getMessage();
+}
 ?>
