@@ -1238,6 +1238,9 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // ============================================
+        // CALENDAR & BOOKING DATES FUNCTIONALITY
+        // ============================================
         let bookedDates = [];
         let currentDate = new Date();
         let selectedDate = null;
@@ -1252,16 +1255,37 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         }
 
         async function fetchBookedDates() {
+            console.log('Fetching booked dates for amenity:', amenity);
+
+            if (!amenity) {
+                console.error('Amenity is not defined!');
+                return;
+            }
+
             try {
-                const response = await fetch(`reservation_form.php?action=get_booked_dates&amenity=${encodeURIComponent(amenity)}`);
+                const url = `reservation_form.php?action=get_booked_dates&amenity=${encodeURIComponent(amenity)}`;
+                console.log('Fetch URL:', url);
+
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
+                console.log('Fetched data:', data);
 
                 if (data.success) {
-                    bookedDates = data.dates;
+                    bookedDates = data.dates || [];
+                    console.log('Booked dates array:', bookedDates);
                     renderCalendar();
+                } else {
+                    console.error('API returned error:', data.error);
+                    renderCalendar(); // Still render calendar even if fetch fails
                 }
             } catch (error) {
                 console.error('Error fetching booked dates:', error);
+                renderCalendar(); // Still render calendar even if fetch fails
             }
         }
 
@@ -1269,11 +1293,19 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const grid = document.getElementById('calendarGrid');
             const monthDisplay = document.getElementById('currentMonth');
 
+            if (!grid || !monthDisplay) {
+                console.error('Calendar elements not found');
+                return;
+            }
+
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
 
             // Set month display
-            monthDisplay.textContent = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            monthDisplay.textContent = new Date(year, month).toLocaleDateString('en-US', {
+                month: 'long',
+                year: 'numeric'
+            });
 
             // Clear grid
             grid.innerHTML = '';
@@ -1312,18 +1344,26 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 // Use timezone-safe date formatting
                 const dateString = formatDate(cellDate);
 
+                // Debug: Log date checking for first few days
+                if (day <= 3) {
+                    console.log(`Day ${day}: ${dateString}, Is booked:`, bookedDates.includes(dateString));
+                }
+
                 // Check if past date
                 if (cellDate < today) {
                     dayElement.classList.add('disabled');
+                    dayElement.title = 'Past date';
                 }
                 // Check if booked
                 else if (bookedDates.includes(dateString)) {
                     dayElement.classList.add('booked');
                     dayElement.title = 'This date is already booked';
+                    console.log(`Marking ${dateString} as booked`);
                 }
                 // Check if today
                 else if (cellDate.getTime() === today.getTime()) {
                     dayElement.classList.add('today');
+                    dayElement.title = 'Today';
                 }
 
                 // Check if selected
@@ -1342,7 +1382,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
         function selectDate(dateString, element) {
             selectedDate = dateString;
-            document.getElementById('reservationDate').value = dateString;
+            const dateInput = document.getElementById('reservationDate');
+            if (dateInput) {
+                dateInput.value = dateString;
+            }
 
             // Remove previous selection
             document.querySelectorAll('.calendar-day.selected').forEach(el => {
@@ -1353,56 +1396,62 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             element.classList.add('selected');
         }
 
-        document.getElementById('prevMonth').addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            renderCalendar();
-        });
+        // Calendar navigation
+        const prevMonthBtn = document.getElementById('prevMonth');
+        const nextMonthBtn = document.getElementById('nextMonth');
 
-        document.getElementById('nextMonth').addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            renderCalendar();
-        });
+        if (prevMonthBtn) {
+            prevMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
+        }
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function () {
-            fetchBookedDates();
-        });
-    </script>
-    <script>
-        // File upload functionality
+        if (nextMonthBtn) {
+            nextMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
+        }
+
+        // ============================================
+        // FILE UPLOAD FUNCTIONALITY
+        // ============================================
         const fileDropArea = document.getElementById('fileDropArea');
         const fileInput = document.getElementById('fileInput');
         const browseLink = document.getElementById('browseLink');
         const filePreview = document.getElementById('filePreview');
 
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            fileDropArea.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
+        if (fileDropArea && fileInput && browseLink && filePreview) {
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                fileDropArea.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
 
-        // Highlight drop area when item is dragged over it
-        ['dragenter', 'dragover'].forEach(eventName => {
-            fileDropArea.addEventListener(eventName, highlight, false);
-        });
+            // Highlight drop area when item is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                fileDropArea.addEventListener(eventName, highlight, false);
+            });
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            fileDropArea.addEventListener(eventName, unhighlight, false);
-        });
+            ['dragleave', 'drop'].forEach(eventName => {
+                fileDropArea.addEventListener(eventName, unhighlight, false);
+            });
 
-        // Handle dropped files
-        fileDropArea.addEventListener('drop', handleDrop, false);
+            // Handle dropped files
+            fileDropArea.addEventListener('drop', handleDrop, false);
 
-        // Handle browse link click
-        browseLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            fileInput.click();
-        });
+            // Handle browse link click
+            browseLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                fileInput.click();
+            });
 
-        // Handle file input change
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
-        });
+            // Handle file input change
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+        }
 
         function preventDefaults(e) {
             e.preventDefault();
@@ -1428,219 +1477,212 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (files.length > 0) {
                 const file = files[0];
                 filePreview.innerHTML = `
-                    <div class="alert alert-success d-flex align-items-center">
-                        <i class="bi bi-file-earmark-check me-2"></i>
-                        <div>
-                            <strong>${file.name}</strong><br>
-                            <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
-                        </div>
-                        <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
-                    </div>
-                `;
+            <div class="alert alert-success d-flex align-items-center">
+                <i class="bi bi-file-earmark-check me-2"></i>
+                <div>
+                    <strong>${file.name}</strong><br>
+                    <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                </div>
+                <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
+            </div>
+        `;
             }
         }
 
         function clearFile() {
-            fileInput.value = '';
-            filePreview.innerHTML = '';
+            if (fileInput) fileInput.value = '';
+            if (filePreview) filePreview.innerHTML = '';
         }
 
-        // Store rates from PHP into JS
+        // ============================================
+        // RATES & USER TYPE FUNCTIONALITY
+        // ============================================
         const amenityRates = <?php echo json_encode($amenityRates); ?>;
         const currentAmenity = "<?php echo $amenity; ?>";
-
-        // Store user data for auto-population
         let userData = {};
 
+        // Chair and table prices
+        const chairPrice = 12;
+        const tablePrice = 20;
+
         // Listen for userType change
-        document.getElementById('userType').addEventListener('change', async function () {
-            const userType = this.value;
+        const userTypeSelect = document.getElementById('userType');
+        if (userTypeSelect) {
+            userTypeSelect.addEventListener('change', async function () {
+                const userType = this.value;
 
-            // ✅ Keep previously selected rate (default to 'day' if none)
-            let prevSelectedRate = document.getElementById('selectedRate').value || 'day';
+                // Keep previously selected rate (default to 'day' if none)
+                let prevSelectedRate = document.getElementById('selectedRate')?.value || 'day';
 
-            // ✅ For Clubhouse, always default to 'day' since night option won't exist
-            if (currentAmenity === "Clubhouse") {
-                prevSelectedRate = 'day';
-            }
-
-            // Dynamic Dropdown Functionality
-            const userIdSelect = document.getElementById('userId');
-            const idLabel = document.getElementById('userIdLabel');
-            const loadingIndicator = document.getElementById('loadingIndicator');
-
-            // Reset the ID dropdown and user data
-            userData = {}; // Clear previous user data
-            clearUserFields(); // Clear form fields
-
-            if (userIdSelect) {
-                userIdSelect.innerHTML = '<option value="">Loading...</option>';
-                userIdSelect.disabled = true;
-                if (loadingIndicator) {
-                    loadingIndicator.classList.remove('d-none');
-                }
-
-                if (userType === 'homeowner') {
-                    if (idLabel) {
-                        idLabel.innerHTML = 'Resident ID<span class="text-danger">*</span>';
-                    }
-
-                    try {
-                        const response = await fetch(`?action=get_households`);
-                        const result = await response.json();
-
-                        if (result.success) {
-                            userIdSelect.innerHTML = '<option value="" selected disabled>Select Resident ID</option>';
-                            result.data.forEach(household => {
-                                // Store user data for later use
-                                userData[household.household_id] = {
-                                    first_name: household.first_name,
-                                    middle_name: household.middle_name,
-                                    last_name: household.last_name,
-                                    email: household.email,
-                                    cellphone_number: household.cellphone_number || '' // Add if available in your data
-                                };
-
-                                const option = document.createElement('option');
-                                option.value = household.household_id;
-                                option.textContent = `${household.household_id} - ${household.name}`;
-                                option.setAttribute('data-address', household.address);
-                                userIdSelect.appendChild(option);
-                            });
-                        } else {
-                            userIdSelect.innerHTML = '<option value="">Error loading data</option>';
-                            console.error('Error:', result.error);
-                        }
-
-                    } catch (error) {
-                        console.error('Error fetching household data:', error);
-                        userIdSelect.innerHTML = '<option value="">Error loading data</option>';
-                    }
-
-                } else if (userType === 'visitor') {
-                    if (idLabel) {
-                        idLabel.innerHTML = 'Visitor ID<span class="text-danger">*</span>';
-                    }
-
-                    try {
-                        const response = await fetch(`?action=get_visitors`);
-                        const result = await response.json();
-
-                        if (result.success) {
-                            userIdSelect.innerHTML = '<option value="" selected disabled>Select Visitor ID</option>';
-                            result.data.forEach(visitor => {
-                                // Store user data for later use
-                                userData[visitor.visitor_id] = {
-                                    first_name: visitor.first_name,
-                                    middle_name: visitor.middle_name,
-                                    last_name: visitor.last_name,
-                                    email: visitor.email,
-                                    cellphone_number: visitor.cellphone_number || '' // Add if available in your data
-                                };
-
-                                const option = document.createElement('option');
-                                option.value = visitor.visitor_id;
-                                option.textContent = `${visitor.visitor_id} - ${visitor.name}`;
-                                option.setAttribute('data-purpose', visitor.purpose);
-                                userIdSelect.appendChild(option);
-                            });
-                        } else {
-                            userIdSelect.innerHTML = '<option value="">Error loading data</option>';
-                            console.error('Error:', result.error);
-                        }
-
-                    } catch (error) {
-                        console.error('Error fetching visitor data:', error);
-                        userIdSelect.innerHTML = '<option value="">Error loading data</option>';
-                    }
-                }
-
-                if (loadingIndicator) {
-                    loadingIndicator.classList.add('d-none');
-                }
-                userIdSelect.disabled = false;
-                userIdSelect.classList.add('fade-in');
-
-                setTimeout(() => {
-                    userIdSelect.classList.remove('fade-in');
-                }, 300);
-            }
-
-            if (amenityRates[currentAmenity] && amenityRates[currentAmenity][userType]) {
-                const rates = amenityRates[currentAmenity][userType];
-
-                // Update labels
-                document.getElementById('dayRate').textContent = `Day • ${rates.day}`;
-
-                // Only update night rate if it exists in the DOM
-                const nightRateElement = document.getElementById('nightRate');
-                if (nightRateElement) {
-                    nightRateElement.textContent = `Night • ${rates.night}`;
-                }
-
-                // ✅ Restore the same rate (day/night) as before, but ensure it exists
-                const container = document.getElementById('ratesContainer');
-                const selectedOption = container.querySelector(`[data-value="${prevSelectedRate}"]`);
-
-                if (selectedOption) {
-                    document.getElementById('selectedRate').value = prevSelectedRate;
-                } else {
-                    // If the previously selected rate doesn't exist (e.g., night for Clubhouse), default to day
-                    document.getElementById('selectedRate').value = 'day';
+                // For Clubhouse, always default to 'day' since night option won't exist
+                if (currentAmenity === "Clubhouse") {
                     prevSelectedRate = 'day';
                 }
 
-                // Reset UI
-                container.querySelectorAll('.custom-radio-option').forEach(el => {
-                    el.classList.remove('selected');
-                    el.querySelector('.custom-radio-circle').classList.remove('selected');
-                });
+                // Dynamic Dropdown Functionality
+                const userIdSelect = document.getElementById('userId');
+                const idLabel = document.getElementById('userIdLabel');
+                const loadingIndicator = document.getElementById('loadingIndicator');
 
-                const finalSelectedOption = container.querySelector(`[data-value="${prevSelectedRate}"]`);
-                if (finalSelectedOption) {
-                    finalSelectedOption.classList.add('selected');
-                    finalSelectedOption.querySelector('.custom-radio-circle').classList.add('selected');
+                // Reset the ID dropdown and user data
+                userData = {};
+                clearUserFields();
+
+                if (userIdSelect) {
+                    userIdSelect.innerHTML = '<option value="">Loading...</option>';
+                    userIdSelect.disabled = true;
+                    if (loadingIndicator) {
+                        loadingIndicator.classList.remove('d-none');
+                    }
+
+                    if (userType === 'homeowner') {
+                        if (idLabel) {
+                            idLabel.innerHTML = 'Resident ID<span class="text-danger">*</span>';
+                        }
+
+                        try {
+                            const response = await fetch(`?action=get_households`);
+                            const result = await response.json();
+
+                            if (result.success) {
+                                userIdSelect.innerHTML = '<option value="" selected disabled>Select Resident ID</option>';
+                                result.data.forEach(household => {
+                                    userData[household.household_id] = {
+                                        first_name: household.first_name,
+                                        middle_name: household.middle_name,
+                                        last_name: household.last_name,
+                                        email: household.email,
+                                        cellphone_number: household.cellphone_number || ''
+                                    };
+
+                                    const option = document.createElement('option');
+                                    option.value = household.household_id;
+                                    option.textContent = `${household.household_id} - ${household.name}`;
+                                    option.setAttribute('data-address', household.address);
+                                    userIdSelect.appendChild(option);
+                                });
+                            } else {
+                                userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                                console.error('Error:', result.error);
+                            }
+                        } catch (error) {
+                            console.error('Error fetching household data:', error);
+                            userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                        }
+                    } else if (userType === 'visitor') {
+                        if (idLabel) {
+                            idLabel.innerHTML = 'Visitor ID<span class="text-danger">*</span>';
+                        }
+
+                        try {
+                            const response = await fetch(`?action=get_visitors`);
+                            const result = await response.json();
+
+                            if (result.success) {
+                                userIdSelect.innerHTML = '<option value="" selected disabled>Select Visitor ID</option>';
+                                result.data.forEach(visitor => {
+                                    userData[visitor.visitor_id] = {
+                                        first_name: visitor.first_name,
+                                        middle_name: visitor.middle_name,
+                                        last_name: visitor.last_name,
+                                        email: visitor.email,
+                                        cellphone_number: visitor.cellphone_number || ''
+                                    };
+
+                                    const option = document.createElement('option');
+                                    option.value = visitor.visitor_id;
+                                    option.textContent = `${visitor.visitor_id} - ${visitor.name}`;
+                                    option.setAttribute('data-purpose', visitor.purpose);
+                                    userIdSelect.appendChild(option);
+                                });
+                            } else {
+                                userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                                console.error('Error:', result.error);
+                            }
+                        } catch (error) {
+                            console.error('Error fetching visitor data:', error);
+                            userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                        }
+                    }
+
+                    if (loadingIndicator) {
+                        loadingIndicator.classList.add('d-none');
+                    }
+                    userIdSelect.disabled = false;
+                    userIdSelect.classList.add('fade-in');
+
+                    setTimeout(() => {
+                        userIdSelect.classList.remove('fade-in');
+                    }, 300);
                 }
-            } else {
-                console.warn("No rates found for:", currentAmenity, userType);
-            }
 
-            calculateTotal();
-        });
+                // Update rates display
+                if (amenityRates[currentAmenity] && amenityRates[currentAmenity][userType]) {
+                    const rates = amenityRates[currentAmenity][userType];
 
-        // Add visual feedback for ID selection
-        const userIdSelect = document.getElementById('userId'); // Changed from 'userIdSelect' to 'userId'
-        if (userIdSelect) {
-            userIdSelect.addEventListener('change', function () {
-                if (this.value) {
+                    const dayRateElement = document.getElementById('dayRate');
+                    if (dayRateElement) {
+                        dayRateElement.textContent = `Day • ${rates.day}`;
+                    }
+
+                    const nightRateElement = document.getElementById('nightRate');
+                    if (nightRateElement) {
+                        nightRateElement.textContent = `Night • ${rates.night}`;
+                    }
+
+                    // Restore the same rate (day/night) as before
+                    const container = document.getElementById('ratesContainer');
+                    if (container) {
+                        const selectedOption = container.querySelector(`[data-value="${prevSelectedRate}"]`);
+
+                        const selectedRateInput = document.getElementById('selectedRate');
+                        if (selectedRateInput) {
+                            if (selectedOption) {
+                                selectedRateInput.value = prevSelectedRate;
+                            } else {
+                                selectedRateInput.value = 'day';
+                                prevSelectedRate = 'day';
+                            }
+                        }
+
+                        // Reset UI
+                        container.querySelectorAll('.custom-radio-option').forEach(el => {
+                            el.classList.remove('selected');
+                            const circle = el.querySelector('.custom-radio-circle');
+                            if (circle) circle.classList.remove('selected');
+                        });
+
+                        const finalSelectedOption = container.querySelector(`[data-value="${prevSelectedRate}"]`);
+                        if (finalSelectedOption) {
+                            finalSelectedOption.classList.add('selected');
+                            const circle = finalSelectedOption.querySelector('.custom-radio-circle');
+                            if (circle) circle.classList.add('selected');
+                        }
+                    }
+                }
+
+                calculateTotal();
+            });
+        }
+
+        // User ID selection handler
+        const userIdSelectElement = document.getElementById('userId');
+        if (userIdSelectElement) {
+            userIdSelectElement.addEventListener('change', function () {
+                const selectedUserId = this.value;
+
+                if (selectedUserId && userData[selectedUserId]) {
+                    populateUserFields(userData[selectedUserId]);
                     this.style.borderColor = '#198754';
                     this.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
                 } else {
+                    clearUserFields();
                     this.style.borderColor = '#dee2e6';
                     this.style.boxShadow = 'none';
                 }
             });
         }
 
-        // Add event listener for user ID selection
-        document.getElementById('userId').addEventListener('change', function () {
-            const selectedUserId = this.value;
-
-            if (selectedUserId && userData[selectedUserId]) {
-                // Populate form fields with user data
-                populateUserFields(userData[selectedUserId]);
-                // Visual feedback
-                this.style.borderColor = '#198754';
-                this.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
-            } else {
-                // Clear form fields if no valid selection
-                clearUserFields();
-                this.style.borderColor = '#dee2e6';
-                this.style.boxShadow = 'none';
-            }
-        });
-
-        // Function to populate user fields
         function populateUserFields(user) {
             const fields = [
                 { id: 'firstName', value: user.first_name || '' },
@@ -1655,22 +1697,12 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 if (element) {
                     element.value = field.value;
                     element.readOnly = true;
-                    element.style.backgroundColor = '#f8f9fa'; // Light gray background to indicate readonly
+                    element.style.backgroundColor = '#f8f9fa';
                     element.style.opacity = '0.8';
                 }
             });
-
-            // Special handling for cellphone_number field (it might have a different name attribute)
-            const cellphoneField = document.querySelector('[name="cellphone_number"]');
-            if (cellphoneField) {
-                cellphoneField.value = user.cellphone_number || '';
-                cellphoneField.readOnly = true;
-                cellphoneField.style.backgroundColor = '#f8f9fa';
-                cellphoneField.style.opacity = '0.8';
-            }
         }
 
-        // Function to clear and enable user fields
         function clearUserFields() {
             const fieldNames = ['firstName', 'middleName', 'lastName', 'emailAddress', 'cellphone_number'];
 
@@ -1683,97 +1715,108 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     element.style.opacity = '';
                 }
             });
-
-            // Special handling for cellphone_number field
-            const cellphoneField = document.querySelector('[name="cellphone_number"]');
-            if (cellphoneField) {
-                cellphoneField.value = '';
-                cellphoneField.readOnly = false;
-                cellphoneField.style.backgroundColor = '';
-                cellphoneField.style.opacity = '';
-            }
         }
 
+        // ============================================
+        // RATE & PAYMENT SELECTION
+        // ============================================
         function selectRate(option, value) {
             const container = document.getElementById('ratesContainer');
-            container.querySelectorAll('.custom-radio-option').forEach(el => {
-                el.classList.remove('selected');
-                el.querySelector('.custom-radio-circle').classList.remove('selected');
-            });
+            if (container) {
+                container.querySelectorAll('.custom-radio-option').forEach(el => {
+                    el.classList.remove('selected');
+                    const circle = el.querySelector('.custom-radio-circle');
+                    if (circle) circle.classList.remove('selected');
+                });
+            }
+
             option.classList.add('selected');
-            option.querySelector('.custom-radio-circle').classList.add('selected');
-            document.getElementById('selectedRate').value = value;
+            const circle = option.querySelector('.custom-radio-circle');
+            if (circle) circle.classList.add('selected');
+
+            const selectedRateInput = document.getElementById('selectedRate');
+            if (selectedRateInput) {
+                selectedRateInput.value = value;
+            }
 
             calculateTotal();
         }
 
         function selectPayment(option, value) {
             const container = option.closest('.custom-radio-container');
-            container.querySelectorAll('.custom-radio-option').forEach(el => {
-                el.classList.remove('selected');
-                el.querySelector('.custom-radio-circle').classList.remove('selected');
-            });
+            if (container) {
+                container.querySelectorAll('.custom-radio-option').forEach(el => {
+                    el.classList.remove('selected');
+                    const circle = el.querySelector('.custom-radio-circle');
+                    if (circle) circle.classList.remove('selected');
+                });
+            }
 
-            // Apply selected styling
             option.classList.add('selected');
-            option.querySelector('.custom-radio-circle').classList.add('selected');
+            const circle = option.querySelector('.custom-radio-circle');
+            if (circle) circle.classList.add('selected');
 
-            // Save selected value
-            document.getElementById('selectedPayment').value = value;
+            const selectedPaymentInput = document.getElementById('selectedPayment');
+            if (selectedPaymentInput) {
+                selectedPaymentInput.value = value;
+            }
 
-            // Toggle Payment Info + Reference + File Upload
+            // Toggle Payment Info
             const bankInfo = document.getElementById("bankInfo");
             const cashInfo = document.getElementById("cashInfo");
             const referenceNumber = document.getElementById("referenceNumber");
-            const fileInput = document.getElementById("fileInput");
+            const fileInputElement = document.getElementById("fileInput");
 
             if (value === "cash") {
-                cashInfo.classList.remove("d-none");
-                bankInfo.classList.add("d-none");
+                if (cashInfo) cashInfo.classList.remove("d-none");
+                if (bankInfo) bankInfo.classList.add("d-none");
 
-                // Hide & remove required
-                referenceNumber.closest(".form-floating").classList.add("d-none");
-                fileInput.closest("#fileDropArea").classList.add("d-none");
-                referenceNumber.removeAttribute("required");
-                fileInput.removeAttribute("required");
-
+                if (referenceNumber) {
+                    referenceNumber.closest(".form-floating")?.classList.add("d-none");
+                    referenceNumber.removeAttribute("required");
+                }
+                if (fileInputElement) {
+                    fileInputElement.closest("#fileDropArea")?.classList.add("d-none");
+                    fileInputElement.removeAttribute("required");
+                }
             } else {
-                bankInfo.classList.remove("d-none");
-                cashInfo.classList.add("d-none");
+                if (bankInfo) bankInfo.classList.remove("d-none");
+                if (cashInfo) cashInfo.classList.add("d-none");
 
-                // Show & add required
-                referenceNumber.closest(".form-floating").classList.remove("d-none");
-                fileInput.closest("#fileDropArea").classList.remove("d-none");
-                referenceNumber.setAttribute("required", "required");
-                fileInput.setAttribute("required", "required");
+                if (referenceNumber) {
+                    referenceNumber.closest(".form-floating")?.classList.remove("d-none");
+                    referenceNumber.setAttribute("required", "required");
+                }
+                if (fileInputElement) {
+                    fileInputElement.closest("#fileDropArea")?.classList.remove("d-none");
+                    fileInputElement.setAttribute("required", "required");
+                }
             }
         }
 
-        // Prices for add-ons
-        const chairPrice = 12;
-        const tablePrice = 20;
-
+        // ============================================
+        // TOTAL CALCULATION
+        // ============================================
         function extractPrice(priceStr) {
-            // Extract numbers from something like "₱100.00 / per person"
             const match = priceStr.replace(/,/g, '').match(/[\d.]+/);
             return match ? parseFloat(match[0]) : 0;
         }
 
         function calculateTotal() {
-            const userType = document.getElementById("userType").value;
-            const rateType = document.getElementById("selectedRate").value;
+            const userType = document.getElementById("userType")?.value;
+            const rateType = document.getElementById("selectedRate")?.value;
 
             let guests = parseInt(document.getElementById("guests")?.value || 0);
-            let chairs = parseInt(document.getElementById("chairs").value || 0);
-            let tables = parseInt(document.getElementById("tables").value || 0);
+            let chairs = parseInt(document.getElementById("chairs")?.value || 0);
+            let tables = parseInt(document.getElementById("tables")?.value || 0);
 
-            // Get amenity rate from PHP rates
+            // Get amenity rate
             let rateStr = amenityRates[currentAmenity]?.[userType]?.[rateType] || "₱0";
             let rateValue = extractPrice(rateStr);
 
             let total = 0;
 
-            // Some amenities are per person (e.g., Swimming Pool, Basketball Court)
+            // Check if rate is per person
             if (rateStr.includes("per person")) {
                 total += rateValue * guests;
             } else {
@@ -1784,14 +1827,16 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             total += chairs * chairPrice;
             total += tables * tablePrice;
 
-            // ✅ Format with commas and 2 decimals
+            // Format with commas and 2 decimals
             const formattedTotal = total.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
 
-            // Display in Total field
-            document.getElementById("total").value = formattedTotal;
+            const totalElement = document.getElementById("total");
+            if (totalElement) {
+                totalElement.value = formattedTotal;
+            }
         }
 
         // Recalculate total when fields change
@@ -1803,28 +1848,19 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
         });
 
-        // Run on load
-        document.addEventListener("DOMContentLoaded", calculateTotal);
-
-        // Set minimum date to today
-        document.addEventListener("DOMContentLoaded", function () {
-            const today = new Date().toISOString().split("T")[0];
-            const dateInput = document.getElementById("reservationDate");
-            dateInput.min = today; // disables all past options
-        });
-
-        // Amount Paid Validation - Consolidated and fixed
+        // ============================================
+        // AMOUNT PAID VALIDATION
+        // ============================================
         function validateAmountPaid() {
             const totalField = document.getElementById("total");
             const amountPaidField = document.getElementById("amountPaid");
 
             if (!totalField || !amountPaidField) return true;
 
-            // Get values and clean them
             const totalValue = parseFloat(totalField.value.replace(/,/g, '')) || 0;
             const amountPaidValue = parseFloat(amountPaidField.value) || 0;
 
-            // Remove any existing validation classes and messages
+            // Remove existing validation
             amountPaidField.classList.remove('border-danger', 'is-invalid');
             const existingFeedback = amountPaidField.parentNode.parentNode.querySelector('.invalid-feedback');
             if (existingFeedback) {
@@ -1833,193 +1869,48 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             // Check if amount paid exceeds total
             if (amountPaidValue > totalValue && totalValue > 0) {
-                // Add danger border and invalid class
                 amountPaidField.classList.add('border-danger', 'is-invalid');
 
-                // Create and add error message
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'invalid-feedback';
                 errorDiv.style.display = 'block';
                 errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>Amount paid cannot exceed total amount (₱${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
 
-                // Insert error message after the input group
                 amountPaidField.parentNode.parentNode.insertAdjacentElement('beforeend', errorDiv);
-
-                return false; // Validation failed
+                return false;
             }
 
-            return true; // Validation passed
+            return true;
         }
 
-        // Initialize amount paid validation - FIXED to prevent duplicates
-        let amountPaidInitialized = false;
-
-        function initializeAmountPaidValidation() {
-            if (amountPaidInitialized) return; // Prevent duplicate initialization
-            amountPaidInitialized = true;
-
-            const amountPaidField = document.getElementById("amountPaid");
-
-            if (amountPaidField) {
-                // Validate on input (real-time)
-                amountPaidField.addEventListener('input', validateAmountPaid);
-
-                // Validate on blur (when field loses focus)
-                amountPaidField.addEventListener('blur', validateAmountPaid);
-            }
-        }
-
-        // Form submission with confirmation modal
-        let formSubmissionInitialized = false;
-
-        function initializeFormSubmission() {
-            if (formSubmissionInitialized) return; // Prevent duplicate initialization
-            formSubmissionInitialized = true;
-
-            const form = document.getElementById('reservationForm');
-            const submitButton = form.querySelector('button[type="submit"]');
-
-            if (submitButton) {
-                submitButton.addEventListener('click', function (e) {
-                    e.preventDefault(); // Always prevent default submission
-
-                    // Run form validation first
-                    if (!form.checkValidity()) {
-                        form.classList.add('was-validated');
-                        return;
-                    }
-
-                    // Run amount paid validation
-                    if (!validateAmountPaid()) {
-                        const amountPaidField = document.getElementById("amountPaid");
-                        amountPaidField.focus();
-                        return;
-                    }
-
-                    // If all validations pass, show confirmation modal
-                    showConfirmationModal();
-                });
-            }
-        }
-
-        function showConfirmationModal() {
-            // Populate confirmation modal with form data
-            const amenity = "<?php echo htmlspecialchars($amenity); ?>";
-            const date = document.getElementById('reservationDate').value;
-            const firstName = document.getElementById('firstName').value;
-            const lastName = document.getElementById('lastName').value;
-            const total = document.getElementById('total').value;
-
-            document.getElementById('confirmAmenity').textContent = amenity;
-            document.getElementById('confirmDate').textContent = date || '-';
-            document.getElementById('confirmName').textContent = (firstName + ' ' + lastName).trim() || '-';
-            document.getElementById('confirmTotal').textContent = total ? '₱' + total : '-';
-
-            // Show confirmation modal
-            const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-            confirmModal.show();
-
-            // Handle confirmation
-            document.getElementById('confirmProceed').onclick = function () {
-                confirmModal.hide();
-                // Actually submit the form
-                document.getElementById('reservationForm').submit();
-            };
-        }
-
-        // Update calculateTotal to trigger validation
-        const originalCalculateTotal = window.calculateTotal;
-        if (originalCalculateTotal) {
-            window.calculateTotal = function () {
-                originalCalculateTotal();
-                setTimeout(validateAmountPaid, 50); // Small delay to ensure total is updated first
-            };
-        }
-
-        // Initialize everything when DOM is ready
-        document.addEventListener("DOMContentLoaded", function () {
-            initializeAmountPaidValidation();
-            initializeFormSubmission();
-        });
-
-        // Modal Handler - Updated for confirmation flow
-        document.addEventListener("DOMContentLoaded", function () {
-            // Check URL parameters for success/error messages
-            const urlParams = new URLSearchParams(window.location.search);
-
-            if (urlParams.has('success') && urlParams.get('success') === '1') {
-                // Show success modal
-                const reservationCode = urlParams.get('code');
-
-                if (reservationCode) {
-                    document.getElementById('reservationCode').textContent = reservationCode;
-                }
-
-                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                successModal.show();
-
-                // Handle Done button click
-                document.getElementById('doneButton').addEventListener('click', function () {
-                    // Clear URL parameters and redirect to amenity booking page
-                    window.location.href = '../amenity_booking.php';
-                });
-
-                // Clear URL parameters when modal is closed
-                document.getElementById('successModal').addEventListener('hidden.bs.modal', function () {
-                    const amenity = urlParams.get('reserve');
-                    window.history.replaceState({}, document.title, window.location.pathname + (amenity ? '?reserve=' + encodeURIComponent(amenity) : ''));
-                });
-            }
-
-            if (urlParams.has('error') && urlParams.get('error') === '1') {
-                // Show error modal
-                const errorMessage = urlParams.get('message') || 'An unknown error occurred.';
-
-                document.getElementById('errorMessage').innerHTML =
-                    '<i class="bi bi-exclamation-triangle me-2"></i>' + decodeURIComponent(errorMessage);
-
-                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                errorModal.show();
-
-                // Clear URL parameters when modal is closed
-                document.getElementById('errorModal').addEventListener('hidden.bs.modal', function () {
-                    const amenity = urlParams.get('reserve');
-                    window.history.replaceState({}, document.title, window.location.pathname + (amenity ? '?reserve=' + encodeURIComponent(amenity) : ''));
-                });
-            }
-        });
-
-        // Vehicle and plate number functionality
-        document.addEventListener("DOMContentLoaded", function () {
+        // ============================================
+        // VEHICLE & PLATE NUMBER FUNCTIONALITY
+        // ============================================
+        function initializeVehicleField() {
             const carsField = document.getElementById('cars');
             const platesField = document.getElementById('plates');
 
             if (carsField && platesField) {
-                // Function to toggle plate number field based on number of cars
                 function togglePlateField() {
                     const numberOfCars = parseInt(carsField.value) || 0;
 
                     if (numberOfCars === 0) {
-                        // Disable and clear the plate field
                         platesField.disabled = true;
                         platesField.value = '';
                         platesField.style.backgroundColor = '#f8f9fa';
                         platesField.style.opacity = '0.6';
                         platesField.removeAttribute('required');
 
-                        // Update the existing instruction text
                         const instructionDiv = platesField.parentNode.nextElementSibling;
                         if (instructionDiv && instructionDiv.classList.contains('form-text')) {
                             instructionDiv.innerHTML = '<small class="text-muted"><i class="bi bi-info-circle me-1"></i>Enter number of vehicles first to enable plate number field</small>';
                         }
                     } else {
-                        // Enable the plate field
                         platesField.disabled = false;
                         platesField.style.backgroundColor = '';
                         platesField.style.opacity = '';
                         platesField.setAttribute('required', 'required');
 
-                        // Update instruction text based on number of cars
                         const instructionDiv = platesField.parentNode.nextElementSibling;
                         if (instructionDiv && instructionDiv.classList.contains('form-text')) {
                             if (numberOfCars === 1) {
@@ -2031,15 +1922,162 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     }
                 }
 
-                // Initialize the field state on page load
                 togglePlateField();
-
-                // Add event listeners to monitor changes in the cars field
                 carsField.addEventListener('input', togglePlateField);
                 carsField.addEventListener('change', togglePlateField);
             }
-        });
+        }
 
+        // ============================================
+        // FORM SUBMISSION
+        // ============================================
+        function initializeFormSubmission() {
+            const form = document.getElementById('reservationForm');
+            const submitButton = form?.querySelector('button[type="submit"]');
+
+            if (submitButton) {
+                submitButton.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    if (!form.checkValidity()) {
+                        form.classList.add('was-validated');
+                        return;
+                    }
+
+                    if (!validateAmountPaid()) {
+                        const amountPaidField = document.getElementById("amountPaid");
+                        if (amountPaidField) amountPaidField.focus();
+                        return;
+                    }
+
+                    showConfirmationModal();
+                });
+            }
+        }
+
+        function showConfirmationModal() {
+            const date = document.getElementById('reservationDate')?.value;
+            const firstName = document.getElementById('firstName')?.value;
+            const lastName = document.getElementById('lastName')?.value;
+            const total = document.getElementById('total')?.value;
+
+            const confirmAmenity = document.getElementById('confirmAmenity');
+            const confirmDate = document.getElementById('confirmDate');
+            const confirmName = document.getElementById('confirmName');
+            const confirmTotal = document.getElementById('confirmTotal');
+
+            if (confirmAmenity) confirmAmenity.textContent = amenity;
+            if (confirmDate) confirmDate.textContent = date || '-';
+            if (confirmName) confirmName.textContent = (firstName + ' ' + lastName).trim() || '-';
+            if (confirmTotal) confirmTotal.textContent = total ? '₱' + total : '-';
+
+            const confirmModalElement = document.getElementById('confirmModal');
+            if (confirmModalElement) {
+                const confirmModal = new bootstrap.Modal(confirmModalElement);
+                confirmModal.show();
+
+                const confirmProceed = document.getElementById('confirmProceed');
+                if (confirmProceed) {
+                    confirmProceed.onclick = function () {
+                        confirmModal.hide();
+                        const form = document.getElementById('reservationForm');
+                        if (form) form.submit();
+                    };
+                }
+            }
+        }
+
+        // ============================================
+        // MODAL HANDLERS
+        // ============================================
+        function initializeModals() {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            if (urlParams.has('success') && urlParams.get('success') === '1') {
+                const reservationCode = urlParams.get('code');
+                const reservationCodeElement = document.getElementById('reservationCode');
+
+                if (reservationCode && reservationCodeElement) {
+                    reservationCodeElement.textContent = reservationCode;
+                }
+
+                const successModalElement = document.getElementById('successModal');
+                if (successModalElement) {
+                    const successModal = new bootstrap.Modal(successModalElement);
+                    successModal.show();
+
+                    const doneButton = document.getElementById('doneButton');
+                    if (doneButton) {
+                        doneButton.addEventListener('click', function () {
+                            window.location.href = '../amenity_booking.php';
+                        });
+                    }
+
+                    successModalElement.addEventListener('hidden.bs.modal', function () {
+                        const amenityParam = urlParams.get('reserve');
+                        window.history.replaceState({}, document.title, window.location.pathname + (amenityParam ? '?reserve=' + encodeURIComponent(amenityParam) : ''));
+                    });
+                }
+            }
+
+            if (urlParams.has('error') && urlParams.get('error') === '1') {
+                const errorMessage = urlParams.get('message') || 'An unknown error occurred.';
+                const errorMessageElement = document.getElementById('errorMessage');
+
+                if (errorMessageElement) {
+                    errorMessageElement.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>' + decodeURIComponent(errorMessage);
+                }
+
+                const errorModalElement = document.getElementById('errorModal');
+                if (errorModalElement) {
+                    const errorModal = new bootstrap.Modal(errorModalElement);
+                    errorModal.show();
+
+                    errorModalElement.addEventListener('hidden.bs.modal', function () {
+                        const amenityParam = urlParams.get('reserve');
+                        window.history.replaceState({}, document.title, window.location.pathname + (amenityParam ? '?reserve=' + encodeURIComponent(amenityParam) : ''));
+                    });
+                }
+            }
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener("DOMContentLoaded", function () {
+            console.log('Page loaded, initializing...');
+
+            // Fetch booked dates for calendar
+            fetchBookedDates();
+
+            // Initialize amount paid validation
+            const amountPaidField = document.getElementById("amountPaid");
+            if (amountPaidField) {
+                amountPaidField.addEventListener('input', validateAmountPaid);
+                amountPaidField.addEventListener('blur', validateAmountPaid);
+            }
+
+            // Initialize form submission
+            initializeFormSubmission();
+
+            // Initialize vehicle field
+            initializeVehicleField();
+
+            // Initialize modals
+            initializeModals();
+
+            // Set minimum date to today
+            const today = new Date().toISOString().split("T")[0];
+            const dateInput = document.getElementById("reservationDate");
+            if (dateInput) {
+                dateInput.min = today;
+            }
+
+            // Initial calculation
+            calculateTotal();
+
+            console.log('Initialization complete');
+        });
     </script>
 
 </body>
