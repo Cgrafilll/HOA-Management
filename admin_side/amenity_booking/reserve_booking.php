@@ -1243,6 +1243,14 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         let selectedDate = null;
         const amenity = "<?php echo htmlspecialchars($amenity); ?>";
 
+        // Helper function to format date without timezone issues
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         async function fetchBookedDates() {
             try {
                 const response = await fetch(`reservation_form.php?action=get_booked_dates&amenity=${encodeURIComponent(amenity)}`);
@@ -1300,7 +1308,9 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
                 const cellDate = new Date(year, month, day);
                 cellDate.setHours(0, 0, 0, 0);
-                const dateString = cellDate.toISOString().split('T')[0];
+
+                // Use timezone-safe date formatting
+                const dateString = formatDate(cellDate);
 
                 // Check if past date
                 if (cellDate < today) {
