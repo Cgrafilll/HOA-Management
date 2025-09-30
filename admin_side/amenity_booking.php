@@ -521,7 +521,7 @@ while ($row = $calendar_result->fetch_assoc()) {
                                         <th>Full Name</th>
                                         <th>Amenity</th>
                                         <th>Reservation Code</th>
-                                        <th>Payment Status</th>
+                                        <th class="text-center">Payment Status</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -544,28 +544,38 @@ while ($row = $calendar_result->fetch_assoc()) {
                                                     : 'badge bg-warning text-dark');
 
                                             echo "<tr>
-                <td>{$bookingDate}</td>
-                <td>{$fullName}</td>
-                <td>{$amenity}</td>
-                <td>{$resCode}</td>
-                <td class='text-center'>
-                    <span class='" . $statusClass . " fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>
-                        " . ucfirst($row['status']) . "
-                    </span>
-                </td>
-                <td class='text-center'>
-                    <div class='text-center'>
-                        <!-- View button -->
-                        <a class='btn btn-sm btn-outline-success me-1' title='View' style='padding: 2px 6px; font-size: 0.9rem;'>
-                            <i class='bi bi-eye'></i>
-                        </a>
-                        <!-- Reschedule button -->
-                        <a class='btn btn-sm btn-outline-primary me-1' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'>
-                            <i class='bi bi-calendar2-week'></i>
-                        </a>
-                    </div>
-                </td>
-            </tr>";
+                                                <td>{$bookingDate}</td>
+                                                <td>{$fullName}</td>
+                                                <td>{$amenity}</td>
+                                                <td>{$resCode}</td>
+                                                <td class='text-center'>
+                                                    <span class='" . $statusClass . " fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>
+                                                        " . ucfirst($row['status']) . "
+                                                    </span>
+                                                </td>
+                                                <td class='text-center'>
+                                                    <div class='text-center'>
+                                                        <!-- View button -->
+                                                        <a href='#' class='btn btn-sm btn-outline-success me-1' title='View' style='padding: 2px 6px; font-size: 0.9rem;' onclick='viewBookingDetails(" . json_encode([
+                                                    "id" => $row["id"],
+                                                    "fullName" => $fullName,
+                                                    "amenity" => $amenity,
+                                                    "date" => $bookingDate,
+                                                    "reservationCode" => $resCode,
+                                                    "paymentStatus" => ucfirst($row["status"]),
+                                                    "amount" => "₱" . number_format($row["amount_paid"], 2) . ($row["status"] === "partial" ? " / ₱" . number_format($row["total_amount"], 2) : ""),
+                                                    "time" => ($row["rate"] === "day" ? "9:00 AM - 5:00 PM" : ($row["rate"] === "night" ? "5:00 PM - 10:00 PM" : "N/A")),
+                                                    "userType" => ucfirst($row["user_type"])
+                                                ]) . "); return false;'>
+                                                            <i class='bi bi-eye'></i>
+                                                        </a>
+                                                        <!-- Reschedule button -->
+                                                        <a class='btn btn-sm btn-outline-primary me-1' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'>
+                                                            <i class='bi bi-calendar2-week'></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>";
                                         }
                                     } else {
                                         echo "<tr><td colspan='6' class='text-center text-muted'>No bookings found.</td></tr>";
@@ -669,7 +679,6 @@ while ($row = $calendar_result->fetch_assoc()) {
                             </div>
                         </div>
                     </div>
-
                     <!-- Reschedule Requests -->
                     <div class="tab-pane fade" id="reschedule" role="tabpanel">
                         <!-- Bookings Table -->
@@ -964,6 +973,10 @@ while ($row = $calendar_result->fetch_assoc()) {
             `;
 
             new bootstrap.Modal(document.getElementById('bookingModal')).show();
+        }
+
+        function viewBookingDetails(booking) {
+            showBookingDetails(booking);
         }
 
         function previousMonth() {
