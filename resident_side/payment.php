@@ -691,6 +691,19 @@ if (isset($_GET['action'])) {
             color: #9ca3af;
             margin-bottom: 16px;
         }
+        /* Force disable in-office payment for residents */
+        #inOffice.disabled {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+            pointer-events: none !important;
+            background-color: #e9ecef !important;
+            filter: grayscale(100%) !important;
+        }
+
+        #inOffice.disabled:hover {
+            opacity: 0.5 !important;
+            background-color: #e9ecef !important;
+        }
     </style>
 </head>
 

@@ -115,24 +115,15 @@ class ResidentPaymentManager {
     }
 
     disableInOfficePayment() {
-        // Disable in-office payment option for residents with important CSS flags
-        this.inOffice.style.setProperty('opacity', '0.5', 'important');
-        this.inOffice.style.setProperty('cursor', 'not-allowed', 'important');
-        this.inOffice.style.setProperty('pointer-events', 'none', 'important');
-        this.inOffice.style.setProperty('background-color', '#e9ecef', 'important');
-        this.inOffice.style.setProperty('filter', 'grayscale(100%)', 'important');
-        
-        // Add disabled class for additional styling
+        // Add disabled class
         this.inOffice.classList.add('disabled');
         
         // Add a disabled badge or text
-        const disabledText = document.createElement('small');
-        disabledText.className = 'text-muted d-block mt-1';
-        disabledText.textContent = '(Disabled: Only Available for Walk-in Payments)';
-        disabledText.style.fontSize = '0.75rem';
-        
-        // Append to the in-office card if not already present
         if (!this.inOffice.querySelector('.text-muted')) {
+            const disabledText = document.createElement('small');
+            disabledText.className = 'text-muted d-block mt-1';
+            disabledText.textContent = '(Residents Only: Bank Transfer)';
+            disabledText.style.fontSize = '0.75rem';
             this.inOffice.appendChild(disabledText);
         }
         
