@@ -657,28 +657,7 @@ while ($row = $calendar_result->fetch_assoc()) {
                                 <!-- Calendar will be generated here -->
                             </div>
                         </div>
-                        <!-- Booking Details Modal -->
-                        <div class="modal fade booking-modal" id="bookingModal" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header bg-success text-white">
-                                        <h5 class="modal-title">Booking Details</h5>
-                                        <button type="button" class="btn-close btn-close-white"
-                                            data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body" id="modalContent">
-                                        <!-- Booking details will be populated here -->
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-primary">Edit Booking</button>
-                                        <button type="button" class="btn btn-secondary"
-                                            data-bs-dismiss="modal">Close</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
-
                     <!-- Reschedule Requests -->
                     <div class="tab-pane fade" id="reschedule" role="tabpanel">
                         <!-- Bookings Table -->
@@ -751,6 +730,24 @@ while ($row = $calendar_result->fetch_assoc()) {
                 </div>
             </div>
         </main>
+        <!-- Booking Details Modal -->
+        <div class="modal fade booking-modal" id="bookingModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">Booking Details</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="modalContent">
+                        <!-- Booking details will be populated here -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary">Edit Booking</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -986,8 +983,8 @@ while ($row = $calendar_result->fetch_assoc()) {
                 <div class="booking-detail">
                     <strong>Amenity:</strong>
                     <span class="badge bg-${booking.amenity.toLowerCase() === 'clubhouse' ? 'danger' :
-                            booking.amenity.toLowerCase() === 'swimming pool' ? 'primary' :
-                                booking.amenity.toLowerCase() === 'gazebo' ? 'warning text-dark' : booking.amenity.toLowerCase() === 'basketball court' ? 'info' : 'secondary'}">${booking.amenity}</span>
+                    booking.amenity.toLowerCase() === 'swimming pool' ? 'primary' :
+                        booking.amenity.toLowerCase() === 'gazebo' ? 'warning text-dark' : booking.amenity.toLowerCase() === 'basketball court' ? 'info' : 'secondary'}">${booking.amenity}</span>
                 </div>
                 <div class="booking-detail">
                     <strong>Date:</strong>
