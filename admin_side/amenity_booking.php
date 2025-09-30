@@ -428,10 +428,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         }
 
         .calendar-grid-reschedule .calendar-day.empty {
-            background-color: #fff3cd;
-            border-color: #ffc107;
-            cursor: pointer;
-            position: relative;
+            background: transparent;
+            border: none;
+            cursor: default;
         }
 
         .calendar-grid-reschedule .partial-indicator {
@@ -447,7 +446,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             -moz-user-select: none;
             -ms-user-select: none;
         }
-
 
         #selected_date_display {
             background: #198754;
