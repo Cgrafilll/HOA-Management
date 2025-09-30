@@ -533,8 +533,12 @@ if (!empty($admin['profile_picture'])) {
                         dueDate.setMonth(dueDate.getMonth() + 1);
                     }
 
-                    // Format as YYYY-MM-DD
-                    const dueDateStr = dueDate.toISOString().split('T')[0];
+                    // Format as YYYY-MM-DD without timezone conversion
+                    const year_str = dueDate.getFullYear();
+                    const month_str = String(dueDate.getMonth() + 1).padStart(2, '0');
+                    const day_str = String(dueDate.getDate()).padStart(2, '0');
+                    const dueDateStr = `${year_str}-${month_str}-${day_str}`;
+                    
                     paymentDate.value = dueDateStr;
                 } else {
                     paymentDate.value = '';
