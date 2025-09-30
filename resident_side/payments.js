@@ -59,6 +59,7 @@ class ResidentPaymentManager {
         // Initialize Bootstrap modals
         const confirmModalElement = document.getElementById('confirmPaymentModal');
         const successModalElement = document.getElementById('successPaymentModal');
+        const errorModalElement = document.getElementById('errorPaymentModal');
         
         if (confirmModalElement) {
             this.confirmModal = new bootstrap.Modal(confirmModalElement);
@@ -70,6 +71,13 @@ class ResidentPaymentManager {
             this.successModal = new bootstrap.Modal(successModalElement);
         } else {
             console.error('Success modal not found');
+        }
+        
+        if (errorModalElement) {
+            this.errorModal = new bootstrap.Modal(errorModalElement);
+            this.errorMessage = document.getElementById('errorMessage');
+        } else {
+            console.error('Error modal not found');
         }
     }
 
@@ -535,7 +543,7 @@ class ResidentPaymentManager {
         // Additional validation for Amenity Fee and Monthly Dues
         if (this.categorySelect.value === 'Amenity Fee' || this.categorySelect.value === 'Monthly Dues') {
             if (!this.currentInvoiceData) {
-                alert(`Please enter a valid invoice number for ${this.categorySelect.value} payments.`);
+                this.showErrorModal(`Please enter a valid invoice number for ${this.categorySelect.value} payments.`);
                 return;
             }
             
@@ -543,7 +551,7 @@ class ResidentPaymentManager {
             const balanceDue = parseFloat(this.currentInvoiceData.balance_due.replace(/,/g, ''));
             
             if (amountPaid > balanceDue) {
-                alert(`The amount entered (₱${amountPaid.toFixed(2)}) exceeds the balance due (₱${balanceDue.toFixed(2)}). Please enter a valid amount.`);
+                this.showErrorModal(`The amount entered (₱${amountPaid.toFixed(2)}) exceeds the balance due (₱${balanceDue.toFixed(2)}). Please enter a valid amount.`);
                 return;
             }
         }
@@ -570,6 +578,15 @@ class ResidentPaymentManager {
         } else {
             console.error('Confirmation modal not initialized');
             alert('Error: Unable to show confirmation dialog');
+        }
+    }
+    showErrorModal(message) {
+        if (this.errorMessage && this.errorModal) {
+            this.errorMessage.textContent = message;
+            this.errorModal.show();
+        } else {
+            console.error('Error modal not initialized');
+            alert(message); // Fallback to alert if modal not available
         }
     }
 
@@ -641,13 +658,16 @@ class ResidentPaymentManager {
             console.error('Payment processing error:', error);
             
             // Hide confirmation modal
-            if (this.confirmModal) {
-                this.confirmModal.hide();
-            }
-            
-            // Show error
-            alert('Error processing payment: ' + error.message);
-            
+        if (this.confirmModal) {
+            this.confirmModal.hide();
+        }
+        
+        // Wait for modal to hide, then show error
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Show error modal instead of alert
+        this.showErrorModal('Error processing payment: ' + error.message);
+        
         } finally {
             // Re-enable the confirm button
             if (this.confirmPaymentBtn) {
