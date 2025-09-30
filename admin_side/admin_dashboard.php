@@ -107,6 +107,64 @@ try {
     error_log("Error fetching violations count: " . $e->getMessage());
 }
 
+// Fetch analytics data
+// 1. Monthly Dues Status Breakdown
+$status_query = "SELECT status, COUNT(*) as count, SUM(balance_remaining) as total_amount FROM monthly_dues GROUP BY status";
+$status_result = $conn->query($status_query);
+$status_data = ['Pending' => 0, 'Partial' => 0, 'Paid' => 0];
+$status_amounts = ['Pending' => 0, 'Partial' => 0, 'Paid' => 0];
+while ($row = $status_result->fetch_assoc()) {
+    $status_data[$row['status']] = $row['count'];
+    $status_amounts[$row['status']] = $row['total_amount'];
+}
+
+// 2. Total Revenue by Month (Last 6 months)
+$revenue_query = "SELECT DATE_FORMAT(created_at, '%Y-%m') as month, SUM(amount) as total FROM payments WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH) GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY month ASC";
+$revenue_result = $conn->query($revenue_query);
+$revenue_months = [];
+$revenue_amounts = [];
+while ($row = $revenue_result->fetch_assoc()) {
+    $revenue_months[] = date('M Y', strtotime($row['month'] . '-01'));
+    $revenue_amounts[] = floatval($row['total']);
+}
+
+// 3. Payment Category Breakdown
+$category_query = "SELECT category, SUM(amount) as total FROM payments GROUP BY category";
+$category_result = $conn->query($category_query);
+$category_data = [];
+$category_labels = [];
+while ($row = $category_result->fetch_assoc()) {
+    $category_labels[] = ucfirst(str_replace('_', ' ', $row['category']));
+    $category_data[] = floatval($row['total']);
+}
+
+// 4. Collection Rate (Paid vs Outstanding)
+$collection_query = "SELECT SUM(amount_paid) as total_paid, SUM(balance_remaining) as total_outstanding FROM monthly_dues";
+$collection_result = $conn->query($collection_query);
+$collection = $collection_result->fetch_assoc();
+$total_paid = floatval($collection['total_paid']);
+$total_outstanding = floatval($collection['total_outstanding']);
+
+// 5. Key Metrics
+$total_revenue_query = "SELECT SUM(amount) as total FROM payments";
+$total_revenue_result = $conn->query($total_revenue_query);
+$total_revenue = floatval($total_revenue_result->fetch_assoc()['total']);
+
+$pending_count = $status_data['Pending'];
+$paid_count = $status_data['Paid'];
+
+// 6. Monthly Dues Trend (Last 6 months)
+$dues_trend_query = "SELECT DATE_FORMAT(billing_month, '%Y-%m') as month, SUM(amount_paid) as paid, SUM(balance_remaining) as remaining FROM monthly_dues WHERE billing_month >= DATE_SUB(NOW(), INTERVAL 6 MONTH) GROUP BY DATE_FORMAT(billing_month, '%Y-%m') ORDER BY month ASC";
+$dues_trend_result = $conn->query($dues_trend_query);
+$dues_months = [];
+$dues_paid = [];
+$dues_remaining = [];
+while ($row = $dues_trend_result->fetch_assoc()) {
+    $dues_months[] = date('M Y', strtotime($row['month'] . '-01'));
+    $dues_paid[] = floatval($row['paid']);
+    $dues_remaining[] = floatval($row['remaining']);
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -353,6 +411,107 @@ try {
                     </div>
                 </div>
             </div>
+            <!-- Key Metrics -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <h6 class="mb-2"><i class="bi bi-cash-stack me-2"></i>Total Revenue</h6>
+                        <h3 class="mb-0">₱<?php echo number_format($total_revenue, 2); ?></h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card green">
+                        <h6 class="mb-2"><i class="bi bi-check-circle me-2"></i>Paid Invoices</h6>
+                        <h3 class="mb-0"><?php echo $paid_count; ?></h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card orange">
+                        <h6 class="mb-2"><i class="bi bi-clock-history me-2"></i>Pending</h6>
+                        <h3 class="mb-0"><?php echo $pending_count; ?></h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card blue">
+                        <h6 class="mb-2"><i class="bi bi-exclamation-circle me-2"></i>Outstanding</h6>
+                        <h3 class="mb-0">₱<?php echo number_format($total_outstanding, 2); ?></h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row 1 -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white fw-semibold">
+                            <i class="bi bi-graph-up me-2"></i>Revenue Trend (Last 6 Months)
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="revenueTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white fw-semibold">
+                            <i class="bi bi-pie-chart me-2"></i>Invoice Status
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="statusPieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row 2 -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white fw-semibold">
+                            <i class="bi bi-bar-chart me-2"></i>Monthly Dues Collection
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="duesCollectionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white fw-semibold">
+                            <i class="bi bi-pie-chart-fill me-2"></i>Collection Rate
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="collectionRateChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row 3 -->
+            <?php if (!empty($category_data)): ?>
+                <div class="row g-4">
+                    <div class="col-md-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-success text-white fw-semibold">
+                                <i class="bi bi-tags me-2"></i>Payment Category Breakdown
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="categoryChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
             <!-- Announcements and Events -->
             <div class="row g-4">
                 <div class="col-6">
@@ -439,7 +598,173 @@ try {
             </div>
         </main>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Revenue Trend Chart
+        const revenueTrendCtx = document.getElementById('revenueTrendChart').getContext('2d');
+        new Chart(revenueTrendCtx, {
+            type: 'line',
+            data: {
+                labels: <?php echo json_encode($revenue_months); ?>,
+                datasets: [{
+                    label: 'Revenue',
+                    data: <?php echo json_encode($revenue_amounts); ?>,
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => '₱' + context.parsed.y.toLocaleString('en-PH', { minimumFractionDigits: 2 })
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (value) => '₱' + value.toLocaleString('en-PH')
+                        }
+                    }
+                }
+            }
+        });
+
+        // Status Pie Chart
+        const statusPieCtx = document.getElementById('statusPieChart').getContext('2d');
+        new Chart(statusPieCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pending', 'Partial', 'Paid'],
+                datasets: [{
+                    data: [<?php echo $status_data['Pending']; ?>, <?php echo $status_data['Partial']; ?>, <?php echo $status_data['Paid']; ?>],
+                    backgroundColor: ['#ffc107', '#17a2b8', '#198754'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        // Dues Collection Chart
+        const duesCollectionCtx = document.getElementById('duesCollectionChart').getContext('2d');
+        new Chart(duesCollectionCtx, {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($dues_months); ?>,
+                datasets: [
+                    {
+                        label: 'Paid',
+                        data: <?php echo json_encode($dues_paid); ?>,
+                        backgroundColor: '#198754',
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Outstanding',
+                        data: <?php echo json_encode($dues_remaining); ?>,
+                        backgroundColor: '#dc3545',
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => context.dataset.label + ': ₱' + context.parsed.y.toLocaleString('en-PH', { minimumFractionDigits: 2 })
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (value) => '₱' + value.toLocaleString('en-PH')
+                        }
+                    }
+                }
+            }
+        });
+
+        // Collection Rate Chart
+        const collectionRateCtx = document.getElementById('collectionRateChart').getContext('2d');
+        new Chart(collectionRateCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Collected', 'Outstanding'],
+                datasets: [{
+                    data: [<?php echo $total_paid; ?>, <?php echo $total_outstanding; ?>],
+                    backgroundColor: ['#198754', '#dc3545'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => context.label + ': ₱' + context.parsed.toLocaleString('en-PH', { minimumFractionDigits: 2 })
+                        }
+                    }
+                }
+            }
+        });
+
+        <?php if (!empty($category_data)): ?>
+            // Category Chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            new Chart(categoryCtx, {
+                type: 'bar',
+                data: {
+                    labels: <?php echo json_encode($category_labels); ?>,
+                    datasets: [{
+                        label: 'Total Amount',
+                        data: <?php echo json_encode($category_data); ?>,
+                        backgroundColor: ['#198754', '#17a2b8'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => '₱' + context.parsed.y.toLocaleString('en-PH', { minimumFractionDigits: 2 })
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: (value) => '₱' + value.toLocaleString('en-PH')
+                            }
+                        }
+                    }
+                }
+            });
+        <?php endif; ?>
+    </script>
 </body>
 
 </html>
