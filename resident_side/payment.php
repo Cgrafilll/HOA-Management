@@ -812,7 +812,7 @@ if (isset($_GET['action'])) {
                             <div class="d-flex gap-3 mb-3">
                                 <div class="card method-card flex-fill text-center p-3 border active" id="bankTransfer">
                                     <div><i class="bi bi-bank" style="font-size: 2rem;"></i></div>
-                                    <h6 class="mt-2">EastWest Bank Transfer</h6>
+                                    <h6 class="mt-2">EastWests Bank Transfer</h6>
                                 </div>
                                 <div class="card method-card flex-fill text-center p-3 border" id="inOffice">
                                     <div><i class="bi bi-building" style="font-size: 2rem;"></i></div>
