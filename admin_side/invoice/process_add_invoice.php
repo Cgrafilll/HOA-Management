@@ -8,7 +8,7 @@ ini_set('log_errors', 1);
     use PHPMailer\PHPMailer\PHPMailer;
     use PHPMailer\PHPMailer\SMTP;
     use PHPMailer\PHPMailer\Exception;
-    
+
 // Start output buffering to catch any accidental output
 ob_start();
 
@@ -379,9 +379,10 @@ try {
     {
         $date = date('Ymd');
         $prefix = "INV-$date";
+        $searchPattern = $prefix . '%';  // ✅ Build pattern in PHP
 
-        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM monthly_dues WHERE invoice_number LIKE CONCAT(?, '%')");
-        $stmt->bind_param("s", $prefix);
+        $stmt = $conn->prepare("SELECT COUNT(*) as count FROM monthly_dues WHERE invoice_number LIKE ?");  // ✅ No CONCAT
+        $stmt->bind_param("s", $searchPattern);  // ✅ Pass the complete pattern
         $stmt->execute();
         $result = $stmt->get_result()->fetch_assoc();
         $stmt->close();
