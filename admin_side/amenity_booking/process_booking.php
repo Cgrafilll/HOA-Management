@@ -281,7 +281,7 @@ function generateEmailTemplate($recipientName, $bookingDetails)
                         <span class="detail-label">🚗 Vehicles</span>
                         <span class="detail-value">' . $bookingDetails['vehicles'] . ' vehicle(s)</span>
                     </div>';
-        
+
         if (!empty($bookingDetails['plate_numbers'])) {
             $html .= '
                     <div class="detail-row">
@@ -336,13 +336,13 @@ function generateEmailTemplate($recipientName, $bookingDetails)
                         <li>You will receive another email once your booking is approved or if additional information is needed.</li>
                         <li>Minimum 50% down payment is required. Payment must be received before your scheduled date.</li>
                         <li>Rescheduling is allowed but must be requested at least 24 hours in advance.</li>';
-    
+
     // Add vehicle reminder if applicable
     if ($bookingDetails['vehicles'] > 0) {
         $html .= '
                         <li>Please ensure all registered vehicles (' . htmlspecialchars($bookingDetails['plate_numbers']) . ') are used during your visit.</li>';
     }
-    
+
     $html .= '
                     </ul>
                 </div>
@@ -398,7 +398,7 @@ function generatePlainTextEmail($recipientName, $bookingDetails)
     }
 
     $text .= "- Exclusive Booking: " . ucfirst($bookingDetails['exclusive_booking']) . "\n";
-    
+
     // Add vehicle information
     if ($bookingDetails['vehicles'] > 0) {
         $text .= "- Vehicles: " . $bookingDetails['vehicles'] . "\n";
@@ -406,7 +406,7 @@ function generatePlainTextEmail($recipientName, $bookingDetails)
             $text .= "- Plate Numbers: " . $bookingDetails['plate_numbers'] . "\n";
         }
     }
-    
+
     $text .= "- Payment Method: " . ucfirst($bookingDetails['payment_method']) . "\n";
     $text .= "- Total Amount: ₱" . number_format($bookingDetails['total_amount'], 2) . "\n";
     $text .= "- Amount Paid: ₱" . number_format($bookingDetails['amount_paid'], 2) . "\n";
@@ -420,11 +420,11 @@ function generatePlainTextEmail($recipientName, $bookingDetails)
     $text .= "- Keep your reservation code safe\n";
     $text .= "- You will receive updates via email\n";
     $text .= "- Contact us at 8-2457647 for questions\n";
-    
+
     if ($bookingDetails['vehicles'] > 0) {
         $text .= "- Use registered vehicles: " . $bookingDetails['plate_numbers'] . "\n";
     }
-    
+
     $text .= "\nBest regards,\nNSSHAI Administration Team";
 
     return $text;
@@ -491,7 +491,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $guests = isset($_POST['guests']) ? (int) $_POST['guests'] : 0;
     $chairs = isset($_POST['chairs']) ? (int) $_POST['chairs'] : 0;
     $tables = isset($_POST['tables']) ? (int) $_POST['tables'] : 0;
-    
+
     // Handle vehicle information
     $vehicles = isset($_POST['cars']) ? (int) $_POST['cars'] : 0;
     $plateNumbers = isset($_POST['plates']) ? trim($_POST['plates']) : '';
@@ -505,9 +505,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $amountPaid = isset($_POST['amountPaid']) ? (float) $_POST['amountPaid'] : 0.0;
 
-    // Always default to pending
-    $status = "Pending";
-
+    // Determine status based on payment method
+    if ($payment === 'cash') {
+        $status = "partial";
+    } else {
+        $status = "pending";
+    }
     // Get the appropriate user ID based on user type
     $homeowner_id = null;
     $visitor_id = null;

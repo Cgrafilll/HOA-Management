@@ -1052,9 +1052,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <i class="bi bi-x-circle text-danger" style="font-size: 64px;"></i>
-                            <p class="mb-2"><b>Oops! Something went wrong</b></p>
-                            <p class="mb-3">There was an error processing your reservation. Please try again.</p>
                             <div class="alert alert-danger text-start">
                                 <small id="errorMessage">
                                     <i class="bi bi-exclamation-triangle me-2"></i>
