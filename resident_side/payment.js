@@ -43,6 +43,9 @@ class ResidentPaymentManager {
         this.browseLink = document.getElementById('browseLink');
         this.filePreview = document.getElementById('filePreview');
         
+        // Get Monthly Dues option reference
+        this.monthlyOption = [...this.categorySelect.options].find(opt => opt.value === "Monthly Dues");
+        
         // Store current invoice data
         this.currentInvoiceData = null;
         
@@ -97,13 +100,10 @@ class ResidentPaymentManager {
             this.userIdSelect.style.backgroundColor = '#e9ecef';
             
             // Handle Monthly Dues visibility based on user type
-            const monthlyOption = [...this.categorySelect.options].find(opt => opt.value === "Monthly Dues");
-            if (monthlyOption) {
-                if (userType === 'Visitor') {
-                    monthlyOption.style.display = "none";
-                } else {
-                    monthlyOption.style.display = "block";
-                }
+            if (userType === 'Visitor') {
+                this.monthlyOption.style.display = "none";
+            } else {
+                this.monthlyOption.style.display = "block";
             }
             
             // Hide loading indicator
@@ -114,15 +114,11 @@ class ResidentPaymentManager {
     }
 
     disableInOfficePayment() {
-        // Disable in-office payment option for residents with important CSS flags
-        this.inOffice.style.setProperty('opacity', '0.5', 'important');
-        this.inOffice.style.setProperty('cursor', 'not-allowed', 'important');
-        this.inOffice.style.setProperty('pointer-events', 'none', 'important');
-        this.inOffice.style.setProperty('background-color', '#e9ecef', 'important');
-        this.inOffice.style.setProperty('filter', 'grayscale(100%)', 'important');
-        
-        // Add disabled class for additional styling
-        this.inOffice.classList.add('disabled');
+        // Disable in-office payment option for residents
+        this.inOffice.style.opacity = '0.5';
+        this.inOffice.style.cursor = 'not-allowed';
+        this.inOffice.style.pointerEvents = 'none';
+        this.inOffice.style.backgroundColor = '#f5f5f5';
         
         // Add a disabled badge or text
         const disabledText = document.createElement('small');
@@ -140,8 +136,10 @@ class ResidentPaymentManager {
     }
 
     attachEventListeners() {
-        // Payment method selection - only bank transfer is enabled for residents
+        // Payment method selection
         this.bankTransfer.addEventListener('click', () => this.selectPaymentMethod('bank'));
+        // In-office payment is disabled for residents
+        // this.inOffice.addEventListener('click', () => this.selectPaymentMethod('office'));
         
         // Form field changes
         this.categorySelect.addEventListener('change', () => this.handleCategoryChange());
@@ -182,8 +180,6 @@ class ResidentPaymentManager {
         // Show validation message if Monthly Dues is selected but user type is Visitor
         if (selectedCategory === 'Monthly Dues' && this.userTypeSelect.value === 'Visitor') {
             this.refNo.textContent = "Monthly dues only apply to homeowners/residents";
-            this.invoiceInput.style.borderColor = '#dc3545';
-            this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
             this.clearInvoiceTable();
         }
     }
@@ -532,7 +528,6 @@ class ResidentPaymentManager {
             }
         }
         
-        if (!isValid) return;
         
         // Additional validation for Amenity Fee and Monthly Dues payments
         if (this.categorySelect.value === 'Amenity Fee' || this.categorySelect.value === 'Monthly Dues') {
@@ -601,7 +596,7 @@ class ResidentPaymentManager {
                 formData.append('proof_of_payment', this.fileInput.files[0]);
             }
             
-            const response = await fetch('payment.php?action=process_payment', {
+            const response = await fetch('payment/process_payment.php', {
                 method: 'POST',
                 body: formData
             });
