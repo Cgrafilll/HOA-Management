@@ -369,16 +369,21 @@ while ($row = $calendar_result->fetch_assoc()) {
             border-bottom: none;
         }
 
-        /* Only essential custom styles that Bootstrap doesn't provide */
+        /* Reschedule Calendar - constrained width */
         .calendar-grid-reschedule {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
+            gap: 4px;
+            max-width: 100%;
+            overflow: hidden;
         }
 
         .calendar-grid-reschedule .calendar-day {
             aspect-ratio: 1;
             cursor: pointer;
+            font-size: 14px;
+            min-width: 0;
+            /* Allow items to shrink below their minimum content size */
         }
 
         .calendar-grid-reschedule .calendar-day.empty {
@@ -390,6 +395,16 @@ while ($row = $calendar_result->fetch_assoc()) {
             top: 2px;
             right: 2px;
             font-size: 10px;
+            pointer-events: none;
+            /* Allow clicks to pass through to parent */
+        }
+
+        /* Prevent text selection when clicking calendar */
+        .calendar-grid-reschedule .calendar-day {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
         .rate-options {
@@ -828,13 +843,11 @@ while ($row = $calendar_result->fetch_assoc()) {
                         <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                             <input type="hidden" id="reschedule_booking_id" name="booking_id">
                             <input type="hidden" id="reschedule_amenity" name="amenity">
-
                             <!-- Current Booking Info -->
                             <div class="alert alert-info">
                                 <strong>Current Booking:</strong>
                                 <div id="currentBookingInfo"></div>
                             </div>
-
                             <!-- Calendar for New Date -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Select New Date<span
@@ -870,15 +883,12 @@ while ($row = $calendar_result->fetch_assoc()) {
                                     </div>
                                     <div id="dateMessageReschedule" class="mt-2"></div>
                                 </div>
-
                                 <!-- Visible Date Input Below Calendar -->
                                 <input type="text" class="form-control" id="selected_date_display" readonly
                                     placeholder="Select a date from calendar above">
-
                                 <!-- Hidden input for form submission -->
                                 <input type="hidden" id="new_date" name="new_date" required>
                             </div>
-
                             <!-- New Time Slot -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Select New Time Slot<span
@@ -911,7 +921,6 @@ while ($row = $calendar_result->fetch_assoc()) {
                                 </div>
                                 <input type="hidden" id="new_rate" name="new_rate" required>
                             </div>
-
                             <!-- Reason -->
                             <div class="mb-3">
                                 <label for="reschedule_reason" class="form-label fw-bold">Reason for Rescheduling<span
@@ -1342,7 +1351,7 @@ while ($row = $calendar_result->fetch_assoc()) {
             const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             dayHeaders.forEach(day => {
                 const header = document.createElement('div');
-                header.className = 'text-center fw-semibold text-muted p-2 small bg-light rounded';
+                header.className = 'text-center fw-semibold text-muted p-1 small bg-light rounded';
                 header.textContent = day;
                 grid.appendChild(header);
             });
@@ -1363,6 +1372,7 @@ while ($row = $calendar_result->fetch_assoc()) {
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayElement = document.createElement('div');
                 dayElement.className = 'calendar-day d-flex align-items-center justify-content-center border rounded bg-white position-relative';
+                dayElement.style.minHeight = '40px';
                 dayElement.textContent = day;
 
                 const cellDate = new Date(year, month, day);
@@ -1370,10 +1380,13 @@ while ($row = $calendar_result->fetch_assoc()) {
 
                 const dateString = formatDateReschedule(cellDate);
 
+                let isDisabled = false;
+
                 if (cellDate < today) {
                     dayElement.classList.add('bg-secondary', 'bg-opacity-10', 'text-muted');
                     dayElement.style.cursor = 'not-allowed';
                     dayElement.title = 'Past date';
+                    isDisabled = true;
                 } else {
                     const booking = rescheduleBookedDates[dateString];
 
@@ -1385,11 +1398,13 @@ while ($row = $calendar_result->fetch_assoc()) {
                             dayElement.classList.add('bg-danger', 'bg-opacity-25', 'text-danger');
                             dayElement.style.cursor = 'not-allowed';
                             dayElement.title = 'Fully booked (Day & Night)';
+                            isDisabled = true;
 
                             const indicator = document.createElement('span');
-                            indicator.className = 'position-absolute top-0 end-0 badge bg-danger rounded-circle p-1';
+                            indicator.className = 'position-absolute top-0 end-0 badge bg-danger rounded-circle';
                             indicator.style.width = '8px';
                             indicator.style.height = '8px';
+                            indicator.style.pointerEvents = 'none';
                             dayElement.appendChild(indicator);
                         } else if (dayBooked || nightBooked) {
                             dayElement.classList.add('bg-warning', 'bg-opacity-25', 'border-warning');
@@ -1398,6 +1413,7 @@ while ($row = $calendar_result->fetch_assoc()) {
 
                             const indicator = document.createElement('span');
                             indicator.className = 'partial-indicator text-warning fw-bold';
+                            indicator.style.pointerEvents = 'none';
                             indicator.textContent = '◐';
                             dayElement.appendChild(indicator);
                         }
@@ -1407,28 +1423,31 @@ while ($row = $calendar_result->fetch_assoc()) {
                         dayElement.classList.add('border-primary', 'border-2', 'fw-bold');
                     }
 
-                    // Hover effect for available dates
-                    if (!dayElement.classList.contains('bg-danger')) {
-                        dayElement.addEventListener('mouseenter', () => {
-                            if (!dayElement.classList.contains('bg-primary')) {
-                                dayElement.classList.add('bg-success', 'bg-opacity-25', 'border-success');
+                    // Hover effect for available dates only
+                    if (!isDisabled) {
+                        dayElement.addEventListener('mouseenter', function () {
+                            if (!this.classList.contains('bg-primary')) {
+                                this.classList.add('bg-success', 'bg-opacity-25', 'border-success');
                             }
                         });
-                        dayElement.addEventListener('mouseleave', () => {
-                            if (!dayElement.classList.contains('bg-primary')) {
-                                dayElement.classList.remove('bg-success', 'bg-opacity-25', 'border-success');
+                        dayElement.addEventListener('mouseleave', function () {
+                            if (!this.classList.contains('bg-primary')) {
+                                this.classList.remove('bg-success', 'bg-opacity-25', 'border-success');
                             }
                         });
                     }
                 }
 
                 if (rescheduleSelectedDate && rescheduleSelectedDate === dateString) {
-                    dayElement.classList.remove('bg-warning', 'bg-opacity-25');
+                    dayElement.classList.remove('bg-warning', 'bg-opacity-25', 'bg-success');
                     dayElement.classList.add('bg-primary', 'text-white', 'border-primary');
                 }
 
-                if (!dayElement.style.cursor === 'not-allowed') {
-                    dayElement.addEventListener('click', () => selectRescheduleDate(dateString, dayElement));
+                // Add click event for available dates
+                if (!isDisabled) {
+                    dayElement.addEventListener('click', function () {
+                        selectRescheduleDate(dateString, this);
+                    });
                 }
 
                 grid.appendChild(dayElement);
@@ -1440,6 +1459,44 @@ while ($row = $calendar_result->fetch_assoc()) {
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
+        }
+
+        function selectRescheduleDate(dateString, element) {
+            console.log('Date selected:', dateString); // Debug log
+
+            rescheduleSelectedDate = dateString;
+            document.getElementById('new_date').value = dateString;
+
+            // Update the visible date input with formatted date
+            const formattedDate = new Date(dateString + 'T00:00:00').toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('selected_date_display').value = formattedDate;
+
+            console.log('Date input updated to:', formattedDate); // Debug log
+
+            // Remove selection from all days
+            document.querySelectorAll('.calendar-grid-reschedule .calendar-day').forEach(el => {
+                el.classList.remove('bg-primary', 'text-white', 'border-primary', 'bg-success', 'bg-opacity-25', 'border-success');
+            });
+
+            // Add selection to clicked element
+            element.classList.remove('bg-warning', 'bg-opacity-25');
+            element.classList.add('bg-primary', 'text-white', 'border-primary');
+
+            // Update rate options based on availability
+            const booking = rescheduleBookedDates[dateString];
+            updateRescheduleRateOptions(booking);
+
+            // Show availability message
+            if (booking && (booking.day || booking.night)) {
+                const availableRate = booking.day ? 'night' : 'day';
+                showRescheduleRateMessage(dateString, availableRate);
+            } else {
+                document.getElementById('dateMessageReschedule').innerHTML = '';
+            }
         }
 
         function selectRescheduleRate(element, rate) {
