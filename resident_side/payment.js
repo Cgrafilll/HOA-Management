@@ -43,8 +43,6 @@ class ResidentPaymentManager {
         this.browseLink = document.getElementById('browseLink');
         this.filePreview = document.getElementById('filePreview');
         
-        // Get Monthly Dues option reference
-        this.monthlyOption = [...this.categorySelect.options].find(opt => opt.value === "Monthly Dues");
         
         // Store current invoice data
         this.currentInvoiceData = null;
@@ -100,10 +98,13 @@ class ResidentPaymentManager {
             this.userIdSelect.style.backgroundColor = '#e9ecef';
             
             // Handle Monthly Dues visibility based on user type
-            if (userType === 'Visitor') {
-                this.monthlyOption.style.display = "none";
-            } else {
-                this.monthlyOption.style.display = "block";
+            const monthlyOption = [...this.categorySelect.options].find(opt => opt.value === "Monthly Dues");
+            if (monthlyOption) {
+                if (userType === 'Visitor') {
+                    monthlyOption.style.display = "none";
+                } else {
+                    monthlyOption.style.display = "block";
+                }
             }
             
             // Hide loading indicator
@@ -114,11 +115,15 @@ class ResidentPaymentManager {
     }
 
     disableInOfficePayment() {
-        // Disable in-office payment option for residents
-        this.inOffice.style.opacity = '0.5';
-        this.inOffice.style.cursor = 'not-allowed';
-        this.inOffice.style.pointerEvents = 'none';
-        this.inOffice.style.backgroundColor = '#f5f5f5';
+        // Disable in-office payment option for residents with important CSS flags
+        this.inOffice.style.setProperty('opacity', '0.5', 'important');
+        this.inOffice.style.setProperty('cursor', 'not-allowed', 'important');
+        this.inOffice.style.setProperty('pointer-events', 'none', 'important');
+        this.inOffice.style.setProperty('background-color', '#e9ecef', 'important');
+        this.inOffice.style.setProperty('filter', 'grayscale(100%)', 'important');
+        
+        // Add disabled class for additional styling
+        this.inOffice.classList.add('disabled');
         
         // Add a disabled badge or text
         const disabledText = document.createElement('small');
