@@ -537,7 +537,7 @@ while ($row = $calendar_result->fetch_assoc()) {
                                             $amenity = $row['amenity'];
                                             $bookingDate = $row['reservation_date'];
                                             $resCode = $row['reservation_code'];
-                                            $statusClass = $row['status'] === 'paid' ? 'text-success' : ($row['status'] === 'partial' ? 'text-primary' : 'text-secondary');
+                                            $statusClass = $row['status'] === 'paid' ? 'bg-success' : ($row['status'] === 'partial' ? 'bg-primary' : 'bg-warning');
 
                                             echo "<tr>
                                                     <td>{$bookingDate}</td>
