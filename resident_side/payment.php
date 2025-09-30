@@ -195,7 +195,7 @@ if (!empty($resident['profile_picture'])) {
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">REPORT VIOLATION</h1>
+            <h1 class="h5 mb-0 fw-bold">ACCOUNTING</h1>
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="residentDropdown"
                     data-bs-toggle="dropdown" aria-expanded="false" role="button" style="cursor: pointer;">
@@ -273,3 +273,277 @@ if (!empty($resident['profile_picture'])) {
                 </a>
             </nav>
         </aside>
+        <!-- Main Content -->
+        <main class="flex-fill p-4">
+            <div class="bg-white shadow rounded p-4">
+                <div class="bg-success text-white rounded-top p-3">
+                    <h5 class="mb-0 fw-bold">Payments</h5>
+                </div>
+
+                <div class="p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small">Payment Management</span>
+                    </div>
+                    <hr class="mb-3 mt-0">
+
+                    <div class="row">
+                        <!-- Left Column -->
+                        <div class="col-md-8">
+                            <!-- Payment Method Selection -->
+                            <div class="d-flex gap-3 mb-3">
+                                <div class="card method-card flex-fill text-center p-3 border active" id="bankTransfer">
+                                    <div><i class="bi bi-bank" style="font-size: 2rem;"></i></div>
+                                    <h6 class="mt-2">EastWest Bank Transfer</h6>
+                                </div>
+                                <div class="card method-card flex-fill text-center p-3 border" id="inOffice">
+                                    <div><i class="bi bi-building" style="font-size: 2rem;"></i></div>
+                                    <h6 class="mt-2">In-Office Payment</h6>
+                                </div>
+                            </div>
+
+                            <!-- Payment Form -->
+                            <form id="paymentForm">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">User Type<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <select class="form-select" id="userTypeSelect" required>
+                                            <option value="">Select User Type</option>
+                                            <option value="Homeowner/Resident">Homeowner/Resident</option>
+                                            <option value="Visitor">Visitor</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" id="idLabel">Select ID<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <select class="form-select" id="userIdSelect" disabled required>
+                                            <option value="">First select user type</option>
+                                        </select>
+                                        <div class="loading d-none" id="loadingIndicator">
+                                            <i class="bi bi-arrow-clockwise"></i> Loading available IDs...
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Category<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <select class="form-select" id="categorySelect" required>
+                                            <option value="">Select Category</option>
+                                            <option value="Monthly Dues">Monthly Dues</option>
+                                            <option value="Amenity Fee">Amenity Fee</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Invoice Number<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <input type="text" class="form-control" id="invoiceInput"
+                                            placeholder="Enter Invoice Number" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Amount Paid<small
+                                            class="fw-bold text-danger">*</small></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₱</span>
+                                        <input type="number" class="form-control" id="amountPaid" placeholder="0.00"
+                                            min="0" step="0.01" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3" id="referenceNumberGroup" style="display: none;">
+                                    <label class="form-label">Reference Number</label>
+                                    <input type="text" class="form-control" id="referenceNumber"
+                                        placeholder="Bank transfer reference number">
+                                </div>
+
+                                <!-- Summary Display -->
+                                <div class="bg-light rounded p-3 mb-3">
+                                    <p class="mb-1"><strong>Reference No.:</strong> <span id="refNo"></span></p>
+                                    <p class="mb-1"><strong>Name:</strong> <span id="residentName"></span></p>
+                                    <p class="mb-1"><strong>Issue Date:</strong> <span id="issueDate"></span></p>
+                                    <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank
+                                            Transfer</span></p>
+                                </div>
+
+                                <!-- Invoice Details Table -->
+                                <table class="table table-bordered">
+                                    <thead class="table-success">
+                                        <tr>
+                                            <th>Category</th>
+                                            <th>Item</th>
+                                            <th>Rate</th>
+                                            <th>Qty</th>
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="invoiceTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No invoice data loaded</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <div class="d-flex justify-content-end mb-3">
+                                    <div>
+                                        <p class="mb-1"><strong>Subtotal:</strong> <span id="subtotal">₱0.00</span></p>
+                                        <p class="mb-1"><strong>Previously Paid:</strong> <span
+                                                id="previouslyPaid">₱0.00</span></p>
+                                        <p class="fw-bold text-success">Balance Due: <span id="balanceDue">₱0.00</span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-100">Make Payment</button>
+                            </form>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="col-md-4">
+                            <!-- Payment Methods Info -->
+                            <div class="card border mb-3">
+                                <div class="card-body">
+                                    <h6 class="fw-bold">PAYMENT METHODS</h6>
+                                    <p class="mb-1"><strong>Bank Transfer Details</strong></p>
+                                    <ul class="mb-3">
+                                        <li><strong>Bank:</strong> EastWest Bank</li>
+                                        <li><strong>Account Name:</strong> Neopolitan Sitio Seville</li>
+                                        <li><strong>Account Number:</strong> 200049887271</li>
+                                    </ul>
+                                    <p class="mb-1"><strong>In-Office Payment</strong></p>
+                                    <ul>
+                                        <li><strong>Address:</strong> NSSHAI Clubhouse Narra St., Quezon City</li>
+                                        <li><strong>Office Hours:</strong> Mon–Fri, 8AM–5PM</li>
+                                        <li><strong>Accepted:</strong> Cash</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Upload Section -->
+                            <div class="border rounded p-3 text-center">
+                                <h6 class="fw-bold">Upload Proof of Payment</h6>
+                                <div class="file-drop-area" id="fileDropArea" style="height: 250px;">
+                                    <div class="cloud-icon">
+                                        <i class="bi bi-cloud-upload"></i>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Drag & drop files or <a href="#" id="browseLink">Browse</a></strong>
+                                    </div>
+                                    <div class="small text-muted">
+                                        Supported formats: JPEG, PNG, GIF, PDF
+                                    </div>
+                                    <input type="file" id="fileInput" name="evidence" class="d-none"
+                                        accept="image/jpeg,image/png,image/gif,application/pdf">
+                                </div>
+                                <div id="filePreview" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Payment Confirmation Modal -->
+    <div class="modal fade" id="confirmPaymentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Confirm Payment</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <i class="bi bi-question-circle text-primary" style="font-size: 64px;"></i>
+                    <p class="mt-3 mb-2"><b>Are you sure?</b></p>
+                    <p class="mb-3">Do you want to process this payment?</p>
+                    <div class="bg-light rounded p-3 mb-3 text-start">
+                        <div class="row">
+                            <div class="col-6"><strong>Name:</strong></div>
+                            <div class="col-6" id="confirmName"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6"><strong>Category:</strong></div>
+                            <div class="col-6" id="confirmCategory"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6"><strong>Invoice:</strong></div>
+                            <div class="col-6" id="confirmInvoice"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6"><strong>Amount:</strong></div>
+                            <div class="col-6" id="confirmAmount"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6"><strong>Method:</strong></div>
+                            <div class="col-6" id="confirmMethod"></div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="confirmPaymentBtn">Process Payment</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Success Modal -->
+    <div class="modal fade" id="successPaymentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Payment Successful</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <i class="bi bi-check-circle text-success" style="font-size: 64px;"></i>
+                    <p class="mt-3 mb-2"><b>Payment Processed Successfully!</b></p>
+                    <p class="mb-3">The payment has been recorded in the system.</p>
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Error Modal -->
+    <div class="modal fade" id="errorPaymentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Payment Error</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
+                    <p class="mt-3 mb-2"><b>Payment Error!</b></p>
+                    <p class="mb-3" id="errorMessage">An error occurred while processing your payment.</p>
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Error Modal -->
+    <div class="modal fade" id="errorPaymentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Payment Error</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
+                    <p class="mt-3 mb-2"><b>Payment Error!</b></p>
+                    <p class="mb-3" id="errorMessage">An error occurred while processing your payment.</p>
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="javascripts/payment.js"></script>
+</body>
+
+</html>
