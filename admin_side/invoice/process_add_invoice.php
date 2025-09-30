@@ -353,23 +353,38 @@ function generateInvoiceNumber($conn)
     $stmt->bind_param("s", $prefix);
     $stmt->execute();
     $result = $stmt->get_result()->fetch_assoc();
-    $count = $result['count'] + 1;
+    $stmt->close();
 
+    $count = $result['count'] + 1;
     $sequence = str_pad($count, 3, '0', STR_PAD_LEFT);
     return "$prefix-$sequence";
 }
 
 try {
-    $household_id = $_POST['household_id'];
-    $billing_month_input = $_POST['billing_month']; // This is YYYY-MM format
-    $balance_remaining = $_POST['balance_remaining'];
-    $due_date = $_POST['due_date'];
+    // Validate POST data exists
+    if (
+        !isset($_POST['household_id']) || !isset($_POST['billing_month']) ||
+        !isset($_POST['balance_remaining']) || !isset($_POST['due_date'])
+    ) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error_type' => 'validation',
+            'error' => 'Missing required fields.'
+        ]);
+        exit;
+    }
+
+    $household_id = trim($_POST['household_id']);
+    $billing_month_input = trim($_POST['billing_month']); // This is YYYY-MM format
+    $balance_remaining = floatval($_POST['balance_remaining']);
+    $due_date = trim($_POST['due_date']);
 
     // Convert billing_month from YYYY-MM to YYYY-MM-01 for DATE field
     $billing_month = $billing_month_input . '-01';
 
-    // Validate required fields
-    if (empty($household_id) || empty($billing_month_input) || empty($balance_remaining) || empty($due_date)) {
+    // Validate required fields are not empty
+    if (empty($household_id) || empty($billing_month_input) || empty($due_date)) {
         http_response_code(400);
         echo json_encode([
             'success' => false,
@@ -379,11 +394,33 @@ try {
         exit;
     }
 
+    // Validate balance_remaining is positive
+    if ($balance_remaining <= 0) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error_type' => 'validation',
+            'error' => 'Balance amount must be greater than zero.'
+        ]);
+        exit;
+    }
+
+    // Validate date format
+    $due_date_obj = DateTime::createFromFormat('Y-m-d', $due_date);
+    if (!$due_date_obj || $due_date_obj->format('Y-m-d') !== $due_date) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error_type' => 'validation',
+            'error' => 'Invalid due date format.'
+        ]);
+        exit;
+    }
+
     // ✅ VALIDATION 1: Check if due date has already passed
     $today = date('Y-m-d');
-    $due_date_formatted = date('Y-m-d', strtotime($due_date));
 
-    if ($due_date_formatted <= $today) {
+    if ($due_date <= $today) {
         http_response_code(400);
         echo json_encode([
             'success' => false,
@@ -393,20 +430,21 @@ try {
         exit;
     }
 
-    // ✅ VALIDATION 2: Check for duplicate monthly dues (same household + same due date)
-    // Since due_date is timestamp, we need to check for the same date regardless of time
-    $stmt = $conn->prepare("SELECT invoice_number FROM monthly_dues WHERE household_id = ? AND DATE(due_date) = ?");
-    $stmt->bind_param("ss", $household_id, $due_date);
+    // ✅ VALIDATION 2: Check for duplicate monthly dues (same household + same billing month)
+    // Changed to check billing_month instead of due_date for better duplicate detection
+    $stmt = $conn->prepare("SELECT invoice_number FROM monthly_dues WHERE household_id = ? AND billing_month = ?");
+    $stmt->bind_param("ss", $household_id, $billing_month);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
         $existingInvoice = $result->fetch_assoc();
+        $stmt->close();
         http_response_code(400);
         echo json_encode([
             'success' => false,
             'error_type' => 'validation',
-            'error' => 'An invoice for this household already exists with the same due date (' . date('F j, Y', strtotime($due_date)) . '). Existing invoice: ' . $existingInvoice['invoice_number']
+            'error' => 'An invoice for this household already exists for ' . date('F Y', strtotime($billing_month)) . '. Existing invoice: ' . $existingInvoice['invoice_number']
         ]);
         exit;
     }
@@ -435,6 +473,10 @@ try {
         (invoice_number, household_id, billing_month, amount_paid, balance_remaining, due_date, status) 
         VALUES (?, ?, ?, ?, ?, ?, ?)");
 
+    if (!$stmt) {
+        throw new Exception("Prepare failed: " . $conn->error);
+    }
+
     // Bind parameters - all 7 fields
     $stmt->bind_param(
         "sssddss",
@@ -448,6 +490,8 @@ try {
     );
 
     if ($stmt->execute()) {
+        $stmt->close();
+
         // Prepare invoice details for email
         $invoiceDetails = [
             'invoice_number' => $invoice_number,
@@ -484,10 +528,13 @@ try {
             'recipient_email' => $recipientEmail
         ]);
     } else {
+        $error = $stmt->error;
+        $stmt->close();
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'error' => 'Database insert failed: ' . $stmt->error
+            'error_type' => 'database',
+            'error' => 'Database insert failed: ' . $error
         ]);
     }
 
@@ -495,6 +542,7 @@ try {
     http_response_code(500);
     echo json_encode([
         'success' => false,
+        'error_type' => 'exception',
         'error' => 'Error: ' . $e->getMessage()
     ]);
 }

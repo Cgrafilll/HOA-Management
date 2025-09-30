@@ -508,7 +508,7 @@ function getNumericAmount($amountStr)
             <div class="bg-white shadow rounded p-3">
                 <!-- Top bar -->
                 <div class="bg-success text-white rounded-top p-3">
-                    <h5 class="mb-0 fw-bold">Payments</h5>
+                    <h5 class="mb-0 fw-bold">Invoice</h5>
                 </div>
                 <div class="p-3">
                     <!-- Button row -->
