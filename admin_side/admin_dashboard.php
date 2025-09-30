@@ -233,26 +233,6 @@ $total_outstanding = $dues_total;
             height: 300px;
             margin-bottom: 30px;
         }
-
-        .metric-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .metric-card.green {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        }
-
-        .metric-card.orange {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .metric-card.blue {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
     </style>
 </head>
 
@@ -375,7 +355,7 @@ $total_outstanding = $dues_total;
                     <div class="card shadow-sm">
                         <div class="card-body d-flex align-items-center gap-3">
                             <div class="bg-danger bg-opacity-10 rounded-5 p-3">
-                                <span class="text-danger fs-4">⚠️</span>
+                                <span class="text-danger fs-4"><i class="bi bi-exclamation-octagon"></i></span>
                             </div>
                             <div>
                                 <h5 class="mb-0"><?php echo number_format($violation_count); ?></h5>
@@ -535,22 +515,22 @@ $total_outstanding = $dues_total;
                 labels: ['Paid', 'Unpaid'],
                 datasets: [{
                     data: [<?php echo $amenity_paid; ?>, <?php echo $amenity_unpaid; ?>],
-            backgroundColor: ['#198754', '#ffc107'],
+                    backgroundColor: ['#198754', '#ffc107'],
                     borderWidth: 2
-        }]
+                }]
             },
             options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom' },
-                tooltip: {
-                    callbacks: {
-                        label: (context) => context.label + ': ₱' + context.parsed.toLocaleString('en-PH', { minimumFractionDigits: 2 })
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => context.label + ': ₱' + context.parsed.toLocaleString('en-PH', { minimumFractionDigits: 2 })
+                        }
                     }
                 }
             }
-        }
         });
 
         // Monthly Dues Chart
@@ -561,25 +541,25 @@ $total_outstanding = $dues_total;
                 labels: ['Collected', 'Outstanding'],
                 datasets: [{
                     data: [<?php echo $dues_paid; ?>, <?php echo $dues_total; ?>],
-            backgroundColor: ['#198754', '#dc3545'],
-            borderWidth: 2
-        }]
+                    backgroundColor: ['#198754', '#dc3545'],
+                    borderWidth: 2
+                }]
             },
             options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom' },
-                tooltip: {
-                    callbacks: {
-                         label: (context) => context.label + ': ₱' + context.parsed.toLocaleString('en - PH', {minimumFractionDigits: 2})
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => context.label + ': ₱' + context.parsed.toLocaleString('en - PH', { minimumFractionDigits: 2 })
+                        }
                     }
                 }
             }
-        }
         });
     </script>
-    
+
 </body>
 
 </html>
