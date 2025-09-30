@@ -505,17 +505,29 @@ class ResidentPaymentManager {
         
         // Check if proof of payment is uploaded for bank transfer
         if (this.selectedMethod.textContent === "Bank Transfer" && !this.fileInput.files.length) {
-            this.fileDropArea.style.borderColor = '#dc3545';
+            this.fileDropArea.style.border = '2px dashed #dc3545';
             this.fileDropArea.style.backgroundColor = '#f8d7da';
+            
+            // Add error message if not already present
+            if (!this.fileDropArea.querySelector('.upload-error')) {
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'upload-error text-danger small mt-2';
+                errorMsg.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>Proof of payment is required for bank transfers';
+                this.fileDropArea.appendChild(errorMsg);
+            }
+            
             isValid = false;
         } else {
-            this.fileDropArea.style.borderColor = '#d1d5db';
+            this.fileDropArea.style.border = '2px dashed #d1d5db';
             this.fileDropArea.style.backgroundColor = '#f9fafb';
+            
+            // Remove error message if exists
+            const errorMsg = this.fileDropArea.querySelector('.upload-error');
+            if (errorMsg) {
+                errorMsg.remove();
+            }
         }
         
-        if (!isValid) {
-            return;
-        }
         
         // Additional validation for Amenity Fee and Monthly Dues payments
         if (this.categorySelect.value === 'Amenity Fee' || this.categorySelect.value === 'Monthly Dues') {
