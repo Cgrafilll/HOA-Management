@@ -499,12 +499,12 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                     </div>
                 </div>
                 <a href="login/logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
-
         <!-- Main Content -->
         <main class="flex-grow-1 p-4">
             <div class="row g-3 mb-4">
@@ -822,7 +822,7 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
         });
     </script>
-    
+
 </body>
 
 </html>
