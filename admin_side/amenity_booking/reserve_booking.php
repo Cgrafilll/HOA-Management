@@ -59,33 +59,6 @@ if (!empty($admin['profile_picture'])) {
     $photo = ''; // Explicitly empty if no image is saved
 }
 
-// Handle AJAX request to get booked dates for an amenity
-if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
-    try {
-        $amenity = $_GET['amenity'] ?? '';
-
-        if (empty($amenity)) {
-            echo json_encode(['success' => false, 'error' => 'Amenity required']);
-            exit;
-        }
-
-        $stmt = $conn->prepare("SELECT reservation_date FROM amenity_bookings WHERE amenity = ? AND status IN ('pending', 'partial', 'paid')");
-        $stmt->bind_param("s", $amenity);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        $booked_dates = [];
-        while ($row = $result->fetch_assoc()) {
-            $booked_dates[] = date('Y-m-d', strtotime($row['reservation_date']));
-        }
-
-        echo json_encode(['success' => true, 'dates' => $booked_dates]);
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-    }
-    exit;
-}
-
 if (isset($_GET['action']) && $_GET['action'] === 'get_households') {
     try {
         // Include cellphone_number in the query
@@ -134,6 +107,34 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_visitors') {
         }
 
         echo json_encode(['success' => true, 'data' => $visitors]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// Handle AJAX request to get booked dates for an amenity
+if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
+    header('Content-Type: application/json');
+    try {
+        $amenity = $_GET['amenity'] ?? '';
+
+        if (empty($amenity)) {
+            echo json_encode(['success' => false, 'error' => 'Amenity required']);
+            exit;
+        }
+
+        $stmt = $conn->prepare("SELECT reservation_date FROM amenity_bookings WHERE amenity = ? AND status IN ('pending', 'partial', 'paid')");
+        $stmt->bind_param("s", $amenity);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $booked_dates = [];
+        while ($row = $result->fetch_assoc()) {
+            $booked_dates[] = date('Y-m-d', strtotime($row['reservation_date']));
+        }
+
+        echo json_encode(['success' => true, 'dates' => $booked_dates]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
@@ -405,39 +406,103 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
         }
 
-        .calendar-legend {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 10px;
-            font-size: 12px;
+        .calendar-view {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
         }
 
-        .calendar-legend-item {
+        .calendar-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .calendar-nav-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px 10px;
+            color: #198754;
+        }
+
+        .calendar-nav-btn:hover {
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
             gap: 5px;
         }
 
-        .calendar-legend-box {
-            width: 15px;
-            height: 15px;
-            border-radius: 3px;
+        .calendar-day-header {
+            text-align: center;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 8px;
+            color: #6c757d;
         }
 
-        .calendar-legend-box.available {
-            background-color: #198754;
-        }
-
-        .calendar-legend-box.booked {
-            background-color: #dc3545;
-        }
-
-        .date-info {
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-left: 4px solid #198754;
-            margin-top: 10px;
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid #dee2e6;
+            background: white;
+        }
+
+        .calendar-day:hover:not(.disabled):not(.booked) {
+            background: #e7f5ea;
+            border-color: #198754;
+        }
+
+        .calendar-day.today {
+            border: 2px solid #198754;
+            font-weight: 600;
+        }
+
+        .calendar-day.booked {
+            background: #f8d7da;
+            color: #721c24;
+            cursor: not-allowed;
+            position: relative;
+        }
+
+        .calendar-day.booked::after {
+            content: "●";
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 8px;
+            color: #dc3545;
+        }
+
+        .calendar-day.selected {
+            background: #198754;
+            color: white;
+            border-color: #198754;
+        }
+
+        .calendar-day.disabled {
+            background: #e9ecef;
+            color: #adb5bd;
+            cursor: not-allowed;
+        }
+
+        .calendar-day.empty {
+            background: transparent;
+            border: none;
+            cursor: default;
         }
     </style>
 </head>
@@ -651,25 +716,42 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 </div>
                                 <!-- Date -->
                                 <div class="mb-3">
-                                    <div class="d-flex gap-3 mb-2">
-                                        <small class="d-flex align-items-center">
-                                            <span class="badge bg-success me-1">●</span> Available
-                                        </small>
-                                        <small class="d-flex align-items-center">
-                                            <span class="badge bg-danger me-1">●</span> Booked
-                                        </small>
+                                    <label class="form-label fw-bold">Select Date<small
+                                            class="fw-bold text-danger">*</small></label>
+
+                                    <!-- Calendar View -->
+                                    <div class="calendar-view">
+                                        <div class="calendar-header">
+                                            <button type="button" class="calendar-nav-btn" id="prevMonth">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </button>
+                                            <div class="fw-bold" id="currentMonth">Loading...</div>
+                                            <button type="button" class="calendar-nav-btn" id="nextMonth">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                        <div class="calendar-grid" id="calendarGrid">
+                                            <!-- Calendar will be generated by JavaScript -->
+                                        </div>
+                                        <div class="d-flex gap-3 mt-2 justify-content-center">
+                                            <small class="d-flex align-items-center">
+                                                <span class="badge bg-success me-1">●</span> Available
+                                            </small>
+                                            <small class="d-flex align-items-center">
+                                                <span class="badge bg-danger me-1">●</span> Booked
+                                            </small>
+                                            <small class="d-flex align-items-center">
+                                                <span class="badge bg-secondary me-1">●</span> Past
+                                            </small>
+                                        </div>
                                     </div>
+
+                                    <!-- Hidden Date Input -->
                                     <div class="form-floating">
                                         <input type="date" class="form-control" id="reservationDate"
-                                            name="reservationDate" required>
-                                        <label for="reservationDate">Date<small
+                                            name="reservationDate" readonly required>
+                                        <label for="reservationDate">Selected Date<small
                                                 class="fw-bold text-danger">*</small></label>
-                                        <div class="invalid-feedback">This date is already booked!</div>
-                                    </div>
-                                    <div id="dateAlert"
-                                        class="alert alert-success alert-dismissible fade show mt-2 d-none"
-                                        role="alert">
-                                        <i class="bi bi-check-circle me-2"></i><span id="dateMessage"></span>
                                     </div>
                                 </div>
                                 <?php if ($amenity !== "Gazebo" && $amenity !== "Clubhouse"): ?>
@@ -1157,9 +1239,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let bookedDates = [];
+        let currentDate = new Date();
+        let selectedDate = null;
         const amenity = "<?php echo htmlspecialchars($amenity); ?>";
 
-        // Fetch booked dates
         async function fetchBookedDates() {
             try {
                 const response = await fetch(`reservation_form.php?action=get_booked_dates&amenity=${encodeURIComponent(amenity)}`);
@@ -1167,45 +1250,108 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
                 if (data.success) {
                     bookedDates = data.dates;
-                    setupDateValidation();
+                    renderCalendar();
                 }
             } catch (error) {
                 console.error('Error fetching booked dates:', error);
             }
         }
 
-        function setupDateValidation() {
-            const dateInput = document.getElementById('reservationDate');
-            const dateAlert = document.getElementById('dateAlert');
-            const dateMessage = document.getElementById('dateMessage');
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const monthDisplay = document.getElementById('currentMonth');
 
-            // Set minimum date to today
-            const today = new Date().toISOString().split('T')[0];
-            dateInput.setAttribute('min', today);
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
 
-            dateInput.addEventListener('change', function () {
-                const selectedDate = this.value;
+            // Set month display
+            monthDisplay.textContent = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-                if (bookedDates.includes(selectedDate)) {
-                    // Date is booked - show error
-                    this.classList.add('is-invalid');
-                    this.classList.remove('is-valid');
-                    dateAlert.classList.remove('alert-success');
-                    dateAlert.classList.add('alert-danger');
-                    dateAlert.classList.remove('d-none');
-                    dateMessage.innerHTML = '<strong>This date is already booked!</strong> Please select another date.';
-                    this.value = ''; // Clear invalid selection
-                } else if (selectedDate) {
-                    // Date is available - show success
-                    this.classList.remove('is-invalid');
-                    this.classList.add('is-valid');
-                    dateAlert.classList.remove('alert-danger');
-                    dateAlert.classList.add('alert-success');
-                    dateAlert.classList.remove('d-none');
-                    dateMessage.innerHTML = '<strong>This date is available!</strong> You can proceed with your reservation.';
-                }
+            // Clear grid
+            grid.innerHTML = '';
+
+            // Day headers
+            const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                header.textContent = day;
+                grid.appendChild(header);
             });
+
+            // Get first day of month and total days
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Empty cells before first day
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'calendar-day empty';
+                grid.appendChild(emptyDay);
+            }
+
+            // Days of month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                dayElement.textContent = day;
+
+                const cellDate = new Date(year, month, day);
+                cellDate.setHours(0, 0, 0, 0);
+                const dateString = cellDate.toISOString().split('T')[0];
+
+                // Check if past date
+                if (cellDate < today) {
+                    dayElement.classList.add('disabled');
+                }
+                // Check if booked
+                else if (bookedDates.includes(dateString)) {
+                    dayElement.classList.add('booked');
+                    dayElement.title = 'This date is already booked';
+                }
+                // Check if today
+                else if (cellDate.getTime() === today.getTime()) {
+                    dayElement.classList.add('today');
+                }
+
+                // Check if selected
+                if (selectedDate && selectedDate === dateString) {
+                    dayElement.classList.add('selected');
+                }
+
+                // Click handler
+                if (!dayElement.classList.contains('disabled') && !dayElement.classList.contains('booked')) {
+                    dayElement.addEventListener('click', () => selectDate(dateString, dayElement));
+                }
+
+                grid.appendChild(dayElement);
+            }
         }
+
+        function selectDate(dateString, element) {
+            selectedDate = dateString;
+            document.getElementById('reservationDate').value = dateString;
+
+            // Remove previous selection
+            document.querySelectorAll('.calendar-day.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            // Add selection to clicked element
+            element.classList.add('selected');
+        }
+
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function () {
