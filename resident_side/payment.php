@@ -247,21 +247,21 @@ if (!empty($resident['profile_picture'])) {
                     </div>
                 </div>
                 <a href="report.php"
-                    class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
                 <!-- Accounting -->
                 <div>
                     <button
-                        class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start"
-                        data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="false">
+                        class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start actuve"
+                        data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-cash-coin me-2"></i> Accounting
                         </span>
                     </button>
-                    <div class="collapse" id="acctCollapse">
+                    <div class="collapse show" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2">Payments</a></li>
+                            <li><a href="payment.php" class="nav-link px-2 actived">Payments</a></li>
                             <li><a href="#" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
