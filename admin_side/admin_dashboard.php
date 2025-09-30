@@ -525,7 +525,7 @@ while ($row = $dues_trend_result->fetch_assoc()) {
 
             <!-- Charts Row 3 -->
             <?php if (!empty($category_data)): ?>
-                <div class="row g-4">
+                <div class="row g-4 mb-4">
                     <div class="col-md-12">
                         <div class="card shadow-sm">
                             <div class="card-header bg-success text-white fw-semibold">
