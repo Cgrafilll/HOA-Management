@@ -128,7 +128,7 @@ class ResidentPaymentManager {
         // Add a disabled badge or text
         const disabledText = document.createElement('small');
         disabledText.className = 'text-muted d-block mt-1';
-        disabledText.textContent = '(Residents Only: Bank Transfer)';
+        disabledText.textContent = '(Disabled: Only Available for Walk-in Payments)';
         disabledText.style.fontSize = '0.75rem';
         
         // Append to the in-office card if not already present
@@ -580,13 +580,13 @@ class ResidentPaymentManager {
     }
 
     async processPayment() {
-        try {
-            // Disable the confirm button to prevent double submission
-            this.confirmPaymentBtn.disabled = true;
-            this.confirmPaymentBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Processing...';
-            
-            // Create FormData for file upload
-            const formData = new FormData();
+    try {
+        // Disable the confirm button to prevent double submission
+        this.confirmPaymentBtn.disabled = true;
+        this.confirmPaymentBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing payment and sending receipt...';
+        
+        // Create FormData for file upload
+        const formData = new FormData();
             formData.append('action', 'process_payment');
             formData.append('category', this.categorySelect.value);
             formData.append('user_type', this.userTypeSelect.value);
@@ -609,10 +609,20 @@ class ResidentPaymentManager {
             const result = await response.json();
             
             if (result.success) {
-                // Hide confirmation modal
+                // Hide confirmation modal first
                 this.confirmModal.hide();
                 
-                // Show success modal
+                // Wait a moment for modal to hide completely
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // Show success modal with email status
+                const successModalBody = document.querySelector('#successPaymentModal .modal-body p:last-child');
+                if (result.email_sent) {
+                    successModalBody.textContent = 'The payment has been recorded and receipt sent to your email.';
+                } else {
+                    successModalBody.textContent = 'The payment has been recorded. Email receipt could not be sent.';
+                }
+                
                 this.successModal.show();
                 
                 // Clear form after a short delay
@@ -627,7 +637,13 @@ class ResidentPaymentManager {
             
         } catch (error) {
             console.error('Payment processing error:', error);
+            
+            // Hide confirmation modal
+            this.confirmModal.hide();
+            
+            // Show error modal
             this.showErrorModal('Error processing payment: ' + error.message);
+            
         } finally {
             // Re-enable the confirm button
             this.confirmPaymentBtn.disabled = false;
