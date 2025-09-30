@@ -107,36 +107,118 @@ try {
     error_log("Error fetching violations count: " . $e->getMessage());
 }
 
-// Fetch analytics data
-// 1. Amenity Bookings - Total vs Paid
-$amenity_query = "SELECT SUM(total_amount) as total, SUM(amount_paid) as paid FROM amenity_bookings";
-$amenity_result = $conn->query($amenity_query);
-$amenity_data = $amenity_result->fetch_assoc();
-$amenity_total = floatval($amenity_data['total'] ?? 0);
-$amenity_paid = floatval($amenity_data['paid'] ?? 0);
-$amenity_unpaid = $amenity_total - $amenity_paid;
+// 1. Entry Logs - By Type
+$entry_type_query = "SELECT type, COUNT(*) as count FROM entry_logs GROUP BY type";
+$entry_type_result = $conn->query($entry_type_query);
+$entry_visitor = 0;
+$entry_household = 0;
+while ($row = $entry_type_result->fetch_assoc()) {
+    if ($row['type'] == 'visitor') {
+        $entry_visitor = intval($row['count']);
+    } else {
+        $entry_household = intval($row['count']);
+    }
+}
 
-// 2. Monthly Dues - Total vs Paid
-$dues_query = "SELECT SUM(balance_remaining) as total, SUM(amount_paid) as paid FROM monthly_dues";
-$dues_result = $conn->query($dues_query);
-$dues_data = $dues_result->fetch_assoc();
-$dues_total = floatval($dues_data['total'] ?? 0);
-$dues_paid = floatval($dues_data['paid'] ?? 0);
+// 2. Exit Logs - By Type
+$exit_type_query = "SELECT type, COUNT(*) as count FROM exit_logs GROUP BY type";
+$exit_type_result = $conn->query($exit_type_query);
+$exit_visitor = 0;
+$exit_household = 0;
+while ($row = $exit_type_result->fetch_assoc()) {
+    if ($row['type'] == 'visitor') {
+        $exit_visitor = intval($row['count']);
+    } else {
+        $exit_household = intval($row['count']);
+    }
+}
 
-// 3. Key Metrics for cards
+// 3. Entry/Exit Trend (Last 7 days)
+$entry_trend_query = "SELECT DATE(date_created) as day, type, COUNT(*) as count FROM entry_logs WHERE date_created >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY DATE(date_created), type ORDER BY day ASC";
+$entry_trend_result = $conn->query($entry_trend_query);
+$entry_days = [];
+$entry_visitor_trend = [];
+$entry_household_trend = [];
+$temp_entry = [];
+while ($row = $entry_trend_result->fetch_assoc()) {
+    $day = date('M d', strtotime($row['day']));
+    if (!in_array($day, $entry_days)) {
+        $entry_days[] = $day;
+    }
+    $temp_entry[$day][$row['type']] = intval($row['count']);
+}
+foreach ($entry_days as $day) {
+    $entry_visitor_trend[] = $temp_entry[$day]['visitor'] ?? 0;
+    $entry_household_trend[] = $temp_entry[$day]['household'] ?? 0;
+}
+
+// 4. Payment Method Breakdown
+$payment_method_query = "SELECT payment_method, COUNT(*) as count FROM payments GROUP BY payment_method";
+$payment_method_result = $conn->query($payment_method_query);
+$payment_methods = [];
+$payment_counts = [];
+while ($row = $payment_method_result->fetch_assoc()) {
+    $payment_methods[] = ucfirst($row['payment_method']);
+    $payment_counts[] = intval($row['count']);
+}
+
+// 5. Top 5 Amenities Booked
+$top_amenities_query = "SELECT amenity, COUNT(*) as bookings FROM amenity_bookings GROUP BY amenity ORDER BY bookings DESC LIMIT 5";
+$top_amenities_result = $conn->query($top_amenities_query);
+$amenity_names = [];
+$amenity_bookings = [];
+while ($row = $top_amenities_result->fetch_assoc()) {
+    $amenity_names[] = $row['amenity'];
+    $amenity_bookings[] = intval($row['bookings']);
+}
+
+// 6. Amenity Booking Status
+$amenity_status_query = "SELECT status, COUNT(*) as count FROM amenity_bookings GROUP BY status";
+$amenity_status_result = $conn->query($amenity_status_query);
+$amenity_pending = 0;
+$amenity_partial = 0;
+$amenity_paid = 0;
+while ($row = $amenity_status_result->fetch_assoc()) {
+    if ($row['status'] == 'pending')
+        $amenity_pending = intval($row['count']);
+    if ($row['status'] == 'partial')
+        $amenity_partial = intval($row['count']);
+    if ($row['status'] == 'paid')
+        $amenity_paid = intval($row['count']);
+}
+
+// 7. Monthly Dues Status
+$dues_status_query = "SELECT status, COUNT(*) as count FROM monthly_dues GROUP BY status";
+$dues_status_result = $conn->query($dues_status_query);
+$dues_pending = 0;
+$dues_partial = 0;
+$dues_paid = 0;
+while ($row = $dues_status_result->fetch_assoc()) {
+    if ($row['status'] == 'Pending')
+        $dues_pending = intval($row['count']);
+    if ($row['status'] == 'Partial')
+        $dues_partial = intval($row['count']);
+    if ($row['status'] == 'Paid')
+        $dues_paid = intval($row['count']);
+}
+
+// 8. Revenue by Category
+$revenue_category_query = "SELECT category, SUM(amount) as total FROM payments GROUP BY category";
+$revenue_category_result = $conn->query($revenue_category_query);
+$revenue_categories = [];
+$revenue_amounts = [];
+while ($row = $revenue_category_result->fetch_assoc()) {
+    $revenue_categories[] = ucfirst(str_replace('_', ' ', $row['category']));
+    $revenue_amounts[] = floatval($row['total']);
+}
+
+// 9. Key Metrics
+$total_entries = $entry_visitor + $entry_household;
+$total_exits = $exit_visitor + $exit_household;
 $total_revenue_query = "SELECT SUM(amount) as total FROM payments";
-$total_revenue_result = $conn->query($total_revenue_query);
-$total_revenue = floatval($total_revenue_result->fetch_assoc()['total'] ?? 0);
-
-$pending_dues = "SELECT COUNT(*) as count FROM monthly_dues WHERE status = 'Pending'";
-$pending_result = $conn->query($pending_dues);
-$pending_count = intval($pending_result->fetch_assoc()['count'] ?? 0);
-
-$paid_dues = "SELECT COUNT(*) as count FROM monthly_dues WHERE status = 'Paid'";
-$paid_result = $conn->query($paid_dues);
-$paid_count = intval($paid_result->fetch_assoc()['count'] ?? 0);
-
-$total_outstanding = $dues_total;
+$total_revenue = floatval($conn->query($total_revenue_query)->fetch_assoc()['total'] ?? 0);
+$total_outstanding_query = "SELECT SUM(balance_remaining) as total FROM monthly_dues";
+$total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_assoc()['total'] ?? 0);
 
 ?>
 
@@ -231,7 +313,25 @@ $total_outstanding = $dues_total;
         .chart-container {
             position: relative;
             height: 300px;
-            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .metric-card.green {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .metric-card.orange {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .metric-card.blue {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         }
     </style>
 </head>
@@ -394,16 +494,58 @@ $total_outstanding = $dues_total;
                     </div>
                 </div>
             </div>
-            <!-- Simple Charts -->
+            <!-- Key Metrics -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="metric-card">
+                        <h6 class="mb-2"><i class="bi bi-arrow-bar-right me-2"></i>Total Entries</h6>
+                        <h3 class="mb-0"><?php echo number_format($total_entries); ?></h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card green">
+                        <h6 class="mb-2"><i class="bi bi-arrow-bar-left me-2"></i>Total Exits</h6>
+                        <h3 class="mb-0"><?php echo number_format($total_exits); ?></h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card orange">
+                        <h6 class="mb-2"><i class="bi bi-cash-stack me-2"></i>Total Revenue</h6>
+                        <h3 class="mb-0">₱<?php echo number_format($total_revenue, 2); ?></h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card blue">
+                        <h6 class="mb-2"><i class="bi bi-exclamation-circle me-2"></i>Outstanding</h6>
+                        <h3 class="mb-0">₱<?php echo number_format($total_outstanding, 2); ?></h3>
+                    </div>
+                </div>
+            </div>
+            <!-- Entry Trend -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white fw-semibold">
+                            <i class="bi bi-graph-up me-2"></i>Entry Traffic (Last 7 Days)
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="entryTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Amenity & Dues -->
             <div class="row g-4 mb-4">
                 <div class="col-md-6">
                     <div class="card shadow-sm">
                         <div class="card-header bg-success text-white fw-semibold">
-                            <i class="bi bi-calendar-check me-2"></i>Amenity Bookings Payment Status
+                            <i class="bi bi-trophy me-2"></i>Top 5 Amenities Booked
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
-                                <canvas id="amenityChart"></canvas>
+                                <canvas id="topAmenitiesChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -411,11 +553,38 @@ $total_outstanding = $dues_total;
                 <div class="col-md-6">
                     <div class="card shadow-sm">
                         <div class="card-header bg-success text-white fw-semibold">
-                            <i class="bi bi-cash-coin me-2"></i>Monthly Dues Collection Status
+                            <i class="bi bi-tags me-2"></i>Revenue by Category
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
-                                <canvas id="duesChart"></canvas>
+                                <canvas id="revenueCategoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Status Charts -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white fw-semibold">
+                            <i class="bi bi-calendar-check me-2"></i>Amenity Booking Status
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="amenityStatusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white fw-semibold">
+                            <i class="bi bi-cash-coin me-2"></i>Monthly Dues Status
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="duesStatusChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -510,59 +679,93 @@ $total_outstanding = $dues_total;
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Amenity Bookings Chart
-        const amenityCtx = document.getElementById('amenityChart').getContext('2d');
-        new Chart(amenityCtx, {
-            type: 'doughnut',
+        // Entry Trend Chart
+        new Chart(document.getElementById('entryTrendChart'), {
+            type: 'line',
             data: {
-                labels: ['Paid', 'Unpaid'],
+                labels: <?php echo json_encode($entry_days); ?>,
                 datasets: [{
-                    data: [<?php echo $amenity_paid; ?>, <?php echo $amenity_unpaid; ?>],
-                    backgroundColor: ['#198754', '#ffc107'],
-                    borderWidth: 2
+                    label: 'Visitors',
+                    data: <?php echo json_encode($entry_visitor_trend); ?>,
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Households',
+                    data: <?php echo json_encode($entry_household_trend); ?>,
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+        });
+
+        // Top Amenities Chart
+        new Chart(document.getElementById('topAmenitiesChart'), {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($amenity_names); ?>,
+                datasets: [{
+                    label: 'Bookings',
+                    data: <?php echo json_encode($amenity_bookings); ?>,
+                    backgroundColor: '#198754',
+                    borderRadius: 6
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        });
+
+        // Revenue Category Chart
+        new Chart(document.getElementById('revenueCategoryChart'), {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($revenue_categories); ?>,
+                datasets: [{
+                    label: 'Revenue',
+                    data: <?php echo json_encode($revenue_amounts); ?>,
+                    backgroundColor: ['#198754', '#17a2b8'],
+                    borderRadius: 6
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => context.label + ': ₱' + context.parsed.toLocaleString('en-PH', { minimumFractionDigits: 2 })
-                        }
-                    }
-                }
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (c) => '₱' + c.parsed.y.toLocaleString('en-PH', { minimumFractionDigits: 2 }) } }
+                },
+                scales: { y: { beginAtZero: true } }
             }
         });
 
-        // Monthly Dues Chart
-        const duesCtx = document.getElementById('duesChart').getContext('2d');
-        new Chart(duesCtx, {
+        // Amenity Status Chart
+        new Chart(document.getElementById('amenityStatusChart'), {
             type: 'doughnut',
             data: {
-                labels: ['Collected', 'Outstanding'],
+                labels: ['Pending', 'Partial', 'Paid'],
                 datasets: [{
-                    data: [<?php echo $dues_paid; ?>, <?php echo $dues_total; ?>],
-                    backgroundColor: ['#198754', '#dc3545'],
-                    borderWidth: 2
+                    data: [<?php echo $amenity_pending; ?>, <?php echo $amenity_partial; ?>, <?php echo $amenity_paid; ?>],
+                    backgroundColor: ['#ffc107', '#17a2b8', '#198754']
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => context.label + ': ₱' + context.parsed.toLocaleString('en - PH', { minimumFractionDigits: 2 })
-                        }
-                    }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+
+        // Dues Status Chart
+        new Chart(document.getElementById('duesStatusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Pending', 'Partial', 'Paid'],
+                datasets: [{
+                    data: [<?php echo $dues_pending; ?>, <?php echo $dues_partial; ?>, <?php echo $dues_paid; ?>],
+                    backgroundColor: ['#ffc107', '#17a2b8', '#198754']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
         });
     </script>
-
+    
 </body>
 
 </html>
