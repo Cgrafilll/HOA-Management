@@ -1052,7 +1052,7 @@ if (isset($_GET['action'])) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
                         <!--updated check js-->
-    <script src="payments.js"></script>
+    <script src="resident_payment.js"></script>
 </body>
 
 </html>
