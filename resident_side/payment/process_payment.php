@@ -1,4 +1,12 @@
 <?php
+// Add at the very top, right after opening PHP tag
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/payment_email_debug.log');
+
+session_start();
+require '../../rfid-api/db.php';
 session_start();
 require '../../rfid-api/db.php';
 
@@ -78,9 +86,21 @@ function getUserDetails($conn, $userType, $userId)
 // Robust email sending function using PHPMailer
 function sendPaymentReceipt($recipientEmail, $recipientName, $paymentDetails)
 {
+    error_log("📧 Inside sendPaymentReceipt function");
+    error_log("   Email: " . $recipientEmail);
+    error_log("   Name: " . $recipientName);
+    
     $mail = new PHPMailer(true);
 
     try {
+        error_log("   Setting up SMTP...");
+        
+        // Enable verbose debug output
+        $mail->SMTPDebug = 2;
+        $mail->Debugoutput = function($str, $level) {
+            error_log("PHPMailer Debug: " . $str);
+        };
+        
         // Server settings
         $mail->isSMTP();
         $mail->Host = EmailConfig::SMTP_HOST;
@@ -90,32 +110,33 @@ function sendPaymentReceipt($recipientEmail, $recipientName, $paymentDetails)
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = EmailConfig::SMTP_PORT;
 
+        error_log("   SMTP configured: " . EmailConfig::SMTP_HOST);
+        
         // Recipients
         $mail->setFrom(EmailConfig::FROM_EMAIL, EmailConfig::FROM_NAME);
         $mail->addAddress($recipientEmail, $recipientName);
         $mail->addReplyTo(EmailConfig::REPLY_TO, 'NSSHAI Admin');
 
+        error_log("   Recipients configured");
+        
         // Content
         $mail->isHTML(true);
         $mail->Subject = 'Payment Receipt - NSSHAI [' . $paymentDetails['invoice_number'] . ']';
 
-        // Create beautiful HTML email content
+        error_log("   Generating email template...");
         $mail->Body = generatePaymentEmailTemplate($recipientName, $paymentDetails);
-
-        // Alternative plain text version
         $mail->AltBody = generatePaymentPlainTextEmail($recipientName, $paymentDetails);
 
-        // Send the email
+        error_log("   Sending email...");
         $result = $mail->send();
 
-        // Log success
         error_log("✅ PHPMailer: Payment receipt sent successfully to " . $recipientEmail);
         return true;
 
     } catch (Exception $e) {
-        // Log the error
         error_log("❌ PHPMailer Error: {$mail->ErrorInfo}");
         error_log("❌ Exception: {$e->getMessage()}");
+        error_log("❌ Exception trace: " . $e->getTraceAsString());
         return false;
     }
 }
@@ -588,16 +609,35 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
         // Send payment receipt email
         $recipientName = trim($userDetails['first_name'] . ' ' . $userDetails['last_name']);
         $recipientEmail = $userDetails['email_address'];
-        
+
+        // Log everything before attempting to send
+        error_log("========== EMAIL SENDING ATTEMPT ==========");
+        error_log("Recipient Name: " . $recipientName);
+        error_log("Recipient Email: " . ($recipientEmail ?? 'NULL/EMPTY'));
+        error_log("Email is empty: " . (empty($recipientEmail) ? 'YES' : 'NO'));
+        error_log("Payment details exist: " . ($paymentDetails ? 'YES' : 'NO'));
+        error_log("Payment details: " . print_r($paymentDetails, true));
+
         if (!empty($recipientEmail) && $paymentDetails) {
+            error_log("Calling sendPaymentReceipt function...");
             $emailSent = sendPaymentReceipt($recipientEmail, $recipientName, $paymentDetails);
             
             if ($emailSent) {
-                error_log("✅ Payment receipt email sent successfully to: " . $recipientEmail . " [Invoice: " . $invoice_number . "]");
+                error_log("✅ Email sent successfully");
             } else {
-                error_log("❌ Failed to send payment receipt email to: " . $recipientEmail . " [Invoice: " . $invoice_number . "]");
+                error_log("❌ Email sending returned FALSE");
             }
+        } else {
+            error_log("❌ Email NOT sent - conditions not met:");
+            if (empty($recipientEmail)) {
+                error_log("   - Recipient email is empty");
+            }
+            if (!$paymentDetails) {
+                error_log("   - Payment details is NULL");
+            }
+            $emailSent = false;
         }
+        error_log("========== END EMAIL ATTEMPT ==========");
         
         // Return success response
         header('Content-Type: application/json');
