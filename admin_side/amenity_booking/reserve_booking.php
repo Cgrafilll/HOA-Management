@@ -69,7 +69,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             exit;
         }
 
-        // Fetch all booked dates for this amenity
         $stmt = $conn->prepare("SELECT reservation_date FROM amenity_bookings WHERE amenity = ? AND status IN ('pending', 'partial', 'paid')");
         $stmt->bind_param("s", $amenity);
         $stmt->execute();
@@ -652,25 +651,25 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 </div>
                                 <!-- Date -->
                                 <div class="mb-3">
-                                    <div class="calendar-legend">
-                                        <div class="calendar-legend-item">
-                                            <div class="calendar-legend-box available"></div>
-                                            <span>Available</span>
-                                        </div>
-                                        <div class="calendar-legend-item">
-                                            <div class="calendar-legend-box booked"></div>
-                                            <span>Booked</span>
-                                        </div>
+                                    <div class="d-flex gap-3 mb-2">
+                                        <small class="d-flex align-items-center">
+                                            <span class="badge bg-success me-1">●</span> Available
+                                        </small>
+                                        <small class="d-flex align-items-center">
+                                            <span class="badge bg-danger me-1">●</span> Booked
+                                        </small>
                                     </div>
                                     <div class="form-floating">
                                         <input type="date" class="form-control" id="reservationDate"
                                             name="reservationDate" required>
                                         <label for="reservationDate">Date<small
                                                 class="fw-bold text-danger">*</small></label>
+                                        <div class="invalid-feedback">This date is already booked!</div>
                                     </div>
-                                    <div id="dateInfo" class="date-info d-none">
-                                        <small><i class="bi bi-info-circle me-2"></i><span
-                                                id="dateMessage"></span></small>
+                                    <div id="dateAlert"
+                                        class="alert alert-success alert-dismissible fade show mt-2 d-none"
+                                        role="alert">
+                                        <i class="bi bi-check-circle me-2"></i><span id="dateMessage"></span>
                                     </div>
                                 </div>
                                 <?php if ($amenity !== "Gazebo" && $amenity !== "Clubhouse"): ?>
@@ -1233,11 +1232,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             filePreview.innerHTML = '';
         }
 
-        // Store booked dates
         let bookedDates = [];
         const amenity = "<?php echo htmlspecialchars($amenity); ?>";
 
-        // Fetch booked dates when page loads
+        // Fetch booked dates
         async function fetchBookedDates() {
             try {
                 const response = await fetch(`reservation_form.php?action=get_booked_dates&amenity=${encodeURIComponent(amenity)}`);
@@ -1245,50 +1243,47 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
                 if (data.success) {
                     bookedDates = data.dates;
-                    setupDatePicker();
+                    setupDateValidation();
                 }
             } catch (error) {
                 console.error('Error fetching booked dates:', error);
             }
         }
 
-        // Setup date picker with disabled dates
-        function setupDatePicker() {
+        function setupDateValidation() {
             const dateInput = document.getElementById('reservationDate');
-            const dateInfo = document.getElementById('dateInfo');
+            const dateAlert = document.getElementById('dateAlert');
             const dateMessage = document.getElementById('dateMessage');
 
             // Set minimum date to today
             const today = new Date().toISOString().split('T')[0];
             dateInput.setAttribute('min', today);
 
-            // Listen for date selection
             dateInput.addEventListener('change', function () {
                 const selectedDate = this.value;
 
                 if (bookedDates.includes(selectedDate)) {
-                    // Date is booked
-                    dateInfo.classList.remove('d-none');
-                    dateInfo.style.borderLeftColor = '#dc3545';
-                    dateInfo.style.backgroundColor = '#f8d7da';
+                    // Date is booked - show error
+                    this.classList.add('is-invalid');
+                    this.classList.remove('is-valid');
+                    dateAlert.classList.remove('alert-success');
+                    dateAlert.classList.add('alert-danger');
+                    dateAlert.classList.remove('d-none');
                     dateMessage.innerHTML = '<strong>This date is already booked!</strong> Please select another date.';
-                    this.value = ''; // Clear the input
-                } else {
-                    // Date is available
-                    dateInfo.classList.remove('d-none');
-                    dateInfo.style.borderLeftColor = '#198754';
-                    dateInfo.style.backgroundColor = '#d1e7dd';
+                    this.value = ''; // Clear invalid selection
+                } else if (selectedDate) {
+                    // Date is available - show success
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                    dateAlert.classList.remove('alert-danger');
+                    dateAlert.classList.add('alert-success');
+                    dateAlert.classList.remove('d-none');
                     dateMessage.innerHTML = '<strong>This date is available!</strong> You can proceed with your reservation.';
                 }
             });
-
-            // Show booked dates count
-            if (bookedDates.length > 0) {
-                console.log(`${bookedDates.length} dates are already booked for ${amenity}`);
-            }
         }
 
-        // Initialize when page loads
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function () {
             fetchBookedDates();
         });
