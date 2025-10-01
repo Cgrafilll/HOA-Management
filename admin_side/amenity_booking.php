@@ -903,7 +903,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     <!-- Reschedule Requests -->
                     <div class="tab-pane fade" id="reschedule" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="small">List of Pending Reschedule Requests</span>
+                            <span class="small">List of Reschedule Requests</span>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
