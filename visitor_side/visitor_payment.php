@@ -1,13 +1,12 @@
 <?php
 // Session configuration
 ini_set('session.gc_maxlifetime', 7200);
-ini_set('session.cookie_lifetime', 7200);
 
 session_set_cookie_params([
     'lifetime' => 7200,
     'path' => '/',
     'domain' => '',
-    'secure' => isset($_SERVER['HTTPS']),
+    'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
     'httponly' => true,
     'samesite' => 'Strict'
 ]);
@@ -15,8 +14,8 @@ session_set_cookie_params([
 session_start();
 require '../rfid-api/db.php';
 
-// Authentication check - MODIFIED FOR RESIDENT SIDE
-if (!isset($_SESSION['household_id'])) {
+// Authentication check - FOR VISITOR SIDE
+if (!isset($_SESSION['visitor_id'])) {
     header("Location: login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
@@ -25,34 +24,37 @@ if (!isset($_SESSION['household_id'])) {
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
     session_unset();
     session_destroy();
-    header("Location: login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    header("Location: login.php?error=" . urlencode("Your session has expired. Please log in again."));
     exit;
 }
 
+// Update last activity time
 $_SESSION['last_activity'] = time();
 
-// Get resident data - MODIFIED FOR RESIDENT SIDE
-$household_id = $_SESSION['household_id'];
-$stmt = $conn->prepare("SELECT * FROM household_accounts WHERE household_id = ?");
-$stmt->bind_param("s", $household_id);
+// Get visitor details from session
+$visitor_id = $_SESSION['visitor_id'];
+$sql = "SELECT * FROM visitor_details WHERE visitor_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $visitor_id);
 $stmt->execute();
 $result = $stmt->get_result();
-$resident = $result->fetch_assoc();
+$visitor = $result->fetch_assoc();
 
-if (!$resident) {
-    exit("Resident not found.");
+if (!$visitor) {
+    echo "Visitor not found.";
+    exit;
 }
 
 // Initialize user details for display
-$residentname = $resident['first_name'];
-$photo = !empty($resident['profile_picture'])
-    ? 'data:image/jpeg;base64,' . base64_encode($resident['profile_picture'])
+$visitorname = $visitor['first_name'];
+$photo = !empty($visitor['profile_picture'])
+    ? 'data:image/jpeg;base64,' . base64_encode($visitor['profile_picture'])
     : '';
 
 // Prepare user information for auto-population in JavaScript
-$userType = 'Homeowner/Resident';
-$userId = $household_id;
-$userName = trim("{$resident['first_name']} {$resident['middle_name']} {$resident['last_name']}");
+$userType = 'Visitor';
+$userId = $visitor_id;
+$userName = trim("{$visitor['first_name']} {$visitor['middle_name']} {$visitor['last_name']}");
 
 // Define rates
 $amenityRates = [
@@ -716,9 +718,9 @@ if (isset($_GET['action'])) {
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">ACCOUNTING</h1>
             <div class="dropdown">
-                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="residentDropdown"
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="visitorDropdown"
                     data-bs-toggle="dropdown" aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($residentname); ?></span>
+                    <span>Hello, <?php echo htmlspecialchars($visitorname); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -729,9 +731,9 @@ if (isset($_GET['action'])) {
                         <?php endif; ?>
                     </div>
                 </div>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="residentDropdown">
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="visitorDropdown">
                     <li><a class="dropdown-item"
-                            href="resident_details/view_resident.php?id=<?php echo $household_id; ?>"><i
+                            href="visitor_details/view_visitor.php?id=<?php echo $visitor_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
@@ -750,25 +752,10 @@ if (isset($_GET['action'])) {
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                <!-- Record Keeping -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#recordCollapse">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-book me-2"></i> Record Keeping
-                        </span>
-                    </button>
-                    <div class="collapse" id="recordCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="amenity_booking/amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
-                            <li><a href="violations.php" class="nav-link px-2">Violations</a></li>
-                        </ul>
-                    </div>
-                </div>
                 <!-- Accounting -->
                 <div>
                     <button
-                        class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start actuve"
+                        class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start active"
                         data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-cash-coin me-2"></i> Accounting
@@ -1047,8 +1034,7 @@ if (isset($_GET['action'])) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-                        <!--updated check js-->
-    <script src="resident_payment.js"></script>
+    <script src="visitor_payment.js"></script>
 </body>
 
 </html>
