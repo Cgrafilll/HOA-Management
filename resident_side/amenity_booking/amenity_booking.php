@@ -257,8 +257,46 @@ $reschedule_stmt = $conn->prepare($reschedule_sql);
 $reschedule_stmt->bind_param("s", $household_id);
 $reschedule_stmt->execute();
 $reschedule_result = $reschedule_stmt->get_result();
-?>
 
+// Handle AJAX request to get booked dates with rates for an amenity
+if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
+    header('Content-Type: application/json');
+
+    try {
+        $amenity = $_GET['amenity'] ?? '';
+
+        if (empty($amenity)) {
+            echo json_encode(['success' => false, 'error' => 'Amenity required']);
+            exit;
+        }
+
+        // Query to get both date and rate for each booking
+        $stmt = $conn->prepare("
+            SELECT reservation_date, rate 
+            FROM amenity_bookings 
+            WHERE amenity = ? 
+            AND (status = 'pending' OR status = 'partial' OR status = 'paid')
+        ");
+        $stmt->bind_param("s", $amenity);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $bookings = [];
+        while ($row = $result->fetch_assoc()) {
+            $bookings[] = [
+                'date' => $row['reservation_date'],
+                'rate' => $row['rate'] // 'day' or 'night'
+            ];
+        }
+
+        echo json_encode(['success' => true, 'bookings' => $bookings]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -843,21 +881,6 @@ $reschedule_result = $reschedule_stmt->get_result();
                             </div>
                             <div class="calendar-grid" id="calendarGrid">
                                 <!-- Calendar will be generated here -->
-                            </div>
-                        </div>
-                        <!-- Booking Details Modal -->
-                        <div class="modal fade booking-modal" id="bookingModal" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header bg-success text-white">
-                                        <h5 class="modal-title">Booking Details</h5>
-                                        <button type="button" class="btn-close btn-close-white"
-                                            data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body" id="modalContent">
-                                        <!-- Booking details will be populated here -->
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
