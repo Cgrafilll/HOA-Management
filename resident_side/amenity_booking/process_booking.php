@@ -464,10 +464,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Convert and assign all form fields to variables
     $userType = $_POST['userType'] ?? '';
-    $firstName = $_POST['firstName'] ?? '';
-    $middleName = $_POST['middleName'] ?? '';
-    $lastName = $_POST['lastName'] ?? '';
-    $emailAddress = $_POST['emailAddress'] ?? '';
     $reservationDate = $_POST['reservationDate'] ?? '';
     $rate = $_POST['rate'] ?? '';
     $payment = $_POST['payment'] ?? '';
@@ -539,11 +535,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
-    // Prepare database statement (updated to include vehicles and plate_numbers)
+    // Prepare database statement - CORRECTED (removed name/email columns)
     $stmt = $conn->prepare("
         INSERT INTO amenity_bookings 
-        (reservation_code, admin_id, homeowner_id, amenity, user_type, first_name, middle_name, last_name, email_address, reservation_date, guests, rate, payment_method, exclusive_booking, chairs, tables, vehicles, plate_numbers, reference_number, total_amount, amount_paid, proof_of_payment, invoice_number, status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (reservation_code, admin_id, homeowner_id, amenity, user_type, reservation_date, guests, rate, payment_method, exclusive_booking, chairs, tables, vehicles, plate_numbers, reference_number, total_amount, amount_paid, proof_of_payment, invoice_number, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
     if (!$stmt) {
@@ -551,34 +547,29 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         die("Database prepare failed: " . $conn->error);
     }
 
-    // Bind parameters (updated to include vehicles and plate_numbers)
-    // Count: 24 parameters total
+    // Bind parameters - CORRECTED (20 parameters instead of 24)
     $bindResult = $stmt->bind_param(
-        "sssssssssissssiissddss", // 24 parameters
+        "ssssssississsddss", // 20 parameters
         $reservation_code,     // 1: s
         $admin_id,            // 2: s
         $homeowner_id,        // 3: s
         $amenity,             // 4: s
         $userType,            // 5: s
-        $firstName,           // 6: s
-        $middleName,          // 7: s
-        $lastName,            // 8: s
-        $emailAddress,        // 9: s
-        $reservationDate,     // 10: s
-        $guests,              // 11: i
-        $rate,                // 12: s
-        $payment,             // 13: s
-        $exclusiveBooking,    // 14: s
-        $chairs,              // 15: i
-        $tables,              // 16: i
-        $vehicles,            // 17: i (NEW)
-        $plateNumbers,        // 18: s (NEW)
-        $referenceNumber,     // 19: s
-        $total,               // 20: d
-        $amountPaid,          // 21: d
-        $proof_of_payment,    // 22: s
-        $invoice_number,      // 23: s
-        $status               // 24: s
+        $reservationDate,     // 6: s
+        $guests,              // 7: i
+        $rate,                // 8: s
+        $payment,             // 9: s
+        $exclusiveBooking,    // 10: s
+        $chairs,              // 11: i
+        $tables,              // 12: i
+        $vehicles,            // 13: i
+        $plateNumbers,        // 14: s
+        $referenceNumber,     // 15: s
+        $total,               // 16: d
+        $amountPaid,          // 17: d
+        $proof_of_payment,    // 18: s
+        $invoice_number,      // 19: s
+        $status               // 20: s
     );
 
     if (!$bindResult) {
