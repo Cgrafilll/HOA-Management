@@ -885,7 +885,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         <h5 class="modal-title">Reschedule Booking</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <form id="rescheduleForm" method="POST" action="reschedule_booking.php">
+                    <form id="rescheduleForm" method="POST" action="../../admin_side/amenity_booking/reschedule_booking.php">
                         <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                             <input type="hidden" id="reschedule_booking_id" name="booking_id">
                             <input type="hidden" id="reschedule_amenity" name="amenity">
@@ -1170,42 +1170,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         }
 
         function showBookingDetails(booking) {
-            const modalContent = document.getElementById('modalContent');
-            modalContent.innerHTML = `
-                <div class="booking-detail">
-                    <strong>Guest Name:</strong>
-                    <span>${booking.fullName}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Amenity:</strong>
-                    <span class="badge bg-${getAmenityBadgeClass(booking.amenity)}">${booking.amenity}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Date:</strong>
-                    <span>${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Time:</strong>
-                    <span>${booking.time}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Reservation Code:</strong>
-                    <span>${booking.reservationCode}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Payment Status:</strong>
-                    <span class="badge bg-${booking.paymentStatus === 'Paid' ? 'success' : booking.paymentStatus === 'Partial' ? 'warning text-dark' : 'secondary'}">${booking.paymentStatus}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Amount:</strong>
-                    <span>${booking.amount}</span>
-                </div>
-            `;
-
-            new bootstrap.Modal(document.getElementById('bookingModal')).show();
-        }
-
-        function showBookingDetailsFromTable(booking) {
             const modalContent = document.getElementById('modalContent');
             modalContent.innerHTML = `
                 <div class="booking-detail">
