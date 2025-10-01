@@ -560,91 +560,98 @@ class VisitorPaymentManager {
     }
 
     async processPayment() {
-        try {
-            // Disable the confirm button to prevent double submission
-            if (this.confirmPaymentBtn) {
-                this.confirmPaymentBtn.disabled = true;
-                this.confirmPaymentBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
-            }
-            
-            // Create FormData for file upload
-            const formData = new FormData();
-            formData.append('action', 'process_payment');
-            formData.append('category', this.categorySelect.value);
-            formData.append('user_type', this.userTypeSelect.value);
-            formData.append('user_id', this.userIdSelect.value);
-            formData.append('invoice_number', this.invoiceInput.value);
-            formData.append('amount', this.amountPaid.value);
-            formData.append('payment_method', this.selectedMethod.textContent);
-            formData.append('reference_number', this.referenceNumber.value || '');
-            
-            // Add file if exists
-            if (this.fileInput.files.length > 0) {
-                formData.append('proof_of_payment', this.fileInput.files[0]);
-            }
-            
-           // Check if response is OK
-            if (!response.ok) {
-                const text = await response.text();
-                console.error('Server response:', text);
-                throw new Error(`Server error: ${response.status} ${response.statusText}`);
-            }
-            
-            // Check content type before parsing JSON
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                const text = await response.text();
-                console.error('Non-JSON response:', text);
-                throw new Error('Server returned non-JSON response');
-            }
+    try {
+        // Disable the confirm button to prevent double submission
+        if (this.confirmPaymentBtn) {
+            this.confirmPaymentBtn.disabled = true;
+            this.confirmPaymentBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+        }
         
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('action', 'process_payment');
+        formData.append('category', this.categorySelect.value);
+        formData.append('user_type', this.userTypeSelect.value);
+        formData.append('user_id', this.userIdSelect.value);
+        formData.append('invoice_number', this.invoiceInput.value);
+        formData.append('amount', this.amountPaid.value);
+        formData.append('payment_method', this.selectedMethod.textContent);
+        formData.append('reference_number', this.referenceNumber.value || '');
+        
+        // Add file if exists
+        if (this.fileInput.files.length > 0) {
+            formData.append('proof_of_payment', this.fileInput.files[0]);
+        }
+        
+        // THIS IS THE MISSING LINE - Add the fetch call
+        const response = await fetch('process_resident_payment.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        // Check if response is OK
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('Server response:', text);
+            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        
+        // Check content type before parsing JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Non-JSON response:', text);
+            throw new Error('Server returned non-JSON response');
+        }
+    
         const result = await response.json();
-            if (result.success) {
-                // Hide confirmation modal
-                if (this.confirmModal) {
-                    this.confirmModal.hide();
-                }
-                
-                // Wait for modal to hide
-                await new Promise(resolve => setTimeout(resolve, 300));
-                
-                // Show success modal
-                if (this.successModal) {
-                    this.successModal.show();
-                }
-                
-                // Clear form after delay
-                setTimeout(() => {
-                    this.clearFormFields();
-                    this.selectPaymentMethod('bank');
-                }, 1000);
-                
-            } else {
-                throw new Error(result.error || 'Payment processing failed');
-            }
-            
-        } catch (error) {
-            console.error('Payment processing error:', error);
-            
+        
+        if (result.success) {
             // Hide confirmation modal
             if (this.confirmModal) {
                 this.confirmModal.hide();
             }
             
-            // Wait for modal to hide, then show error
+            // Wait for modal to hide
             await new Promise(resolve => setTimeout(resolve, 300));
             
-            // Show error modal instead of alert
-            this.showErrorModal('Error processing payment: ' + error.message);
-            
-        } finally {
-            // Re-enable the confirm button
-            if (this.confirmPaymentBtn) {
-                this.confirmPaymentBtn.disabled = false;
-                this.confirmPaymentBtn.innerHTML = 'Process Payment';
+            // Show success modal
+            if (this.successModal) {
+                this.successModal.show();
             }
+            
+            // Clear form after delay
+            setTimeout(() => {
+                this.clearFormFields();
+                this.selectPaymentMethod('bank');
+            }, 1000);
+            
+        } else {
+            throw new Error(result.error || 'Payment processing failed');
+        }
+        
+    } catch (error) {
+        console.error('Payment processing error:', error);
+        
+        // Hide confirmation modal
+        if (this.confirmModal) {
+            this.confirmModal.hide();
+        }
+        
+        // Wait for modal to hide, then show error
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Show error modal instead of alert
+        this.showErrorModal('Error processing payment: ' + error.message);
+        
+    } finally {
+        // Re-enable the confirm button
+        if (this.confirmPaymentBtn) {
+            this.confirmPaymentBtn.disabled = false;
+            this.confirmPaymentBtn.innerHTML = 'Process Payment';
         }
     }
+}
 }
 
 // Initialize when DOM is ready
