@@ -117,8 +117,8 @@ if ($household_id) {
     LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
     WHERE ab.homeowner_id = ? ORDER BY ab.reservation_date ASC LIMIT ? OFFSET ?";
     $bookings_stmt = $conn->prepare($booking_sql);
-    $bookings_stmt->bind_param("iii", $household_id, $limit, $offset);
-    $bookings_stmt->execute();
+    $bookings_stmt->bind_param("sii", $household_id, $limit, $offset);
+    $bookings_stmt->execute(); 
     $bookings_result = $bookings_stmt->get_result();
 } else {
     // If no homeowner_id, get all records for this page
@@ -254,7 +254,7 @@ WHERE ab.homeowner_id = ? AND ab.reschedule_status IN ('pending', 'approved', 'r
 ORDER BY ab.reschedule_requested_at DESC";
 
 $reschedule_stmt = $conn->prepare($reschedule_sql);
-$reschedule_stmt->bind_param("i", $household_id);
+$reschedule_stmt->bind_param("s", $household_id);
 $reschedule_stmt->execute();
 $reschedule_result = $reschedule_stmt->get_result();
 ?>
