@@ -364,7 +364,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </a>
                 <a href="add_visitor.php"
                     class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
-                    <i class="bi bi-person-fill-add me-2">Visitor</i>
+                    <i class="bi bi-person-fill-add me-2"></i>Visitor
                 </a>
                 <a href="admin_side/login/logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
@@ -381,10 +381,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <span class="small mb-0">User Details</span>
-                    <a href="../visitor_accounts.php"
-                        class="btn btn-outline-secondary btn-sm d-flex align-items-center">
-                        <i class="bi bi-arrow-left-short me-1"></i>Back
-                    </a>
                 </div>
                 <hr class="my-0">
                 <div class="p-3">

@@ -588,7 +588,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </a>
                 <a href="add_visitor.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
-                    <i class="bi bi-person-fill-add me-2">Visitor</i>
+                    <i class="bi bi-person-fill-add me-2"></i>Visitor
                 </a>
                 <a href="admin_side/login/logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
