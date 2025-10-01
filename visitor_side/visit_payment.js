@@ -561,13 +561,11 @@ class VisitorPaymentManager {
 
     async processPayment() {
     try {
-        // Disable the confirm button to prevent double submission
         if (this.confirmPaymentBtn) {
             this.confirmPaymentBtn.disabled = true;
             this.confirmPaymentBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
         }
         
-        // Create FormData for file upload
         const formData = new FormData();
         formData.append('action', 'process_payment');
         formData.append('category', this.categorySelect.value);
@@ -578,26 +576,29 @@ class VisitorPaymentManager {
         formData.append('payment_method', this.selectedMethod.textContent);
         formData.append('reference_number', this.referenceNumber.value || '');
         
-        // Add file if exists
         if (this.fileInput.files.length > 0) {
             formData.append('proof_of_payment', this.fileInput.files[0]);
         }
         
-        // THIS IS THE MISSING LINE - Add the fetch call
+        console.log('=== SENDING PAYMENT REQUEST ===');
+        
         const response = await fetch('process_payment.php', {
             method: 'POST',
             body: formData
         });
         
-        // Check if response is OK
+        console.log('Response status:', response.status);
+        console.log('Response OK:', response.ok);
+        
         if (!response.ok) {
             const text = await response.text();
             console.error('Server response:', text);
             throw new Error(`Server error: ${response.status} ${response.statusText}`);
         }
         
-        // Check content type before parsing JSON
         const contentType = response.headers.get('content-type');
+        console.log('Content-Type:', contentType);
+        
         if (!contentType || !contentType.includes('application/json')) {
             const text = await response.text();
             console.error('Non-JSON response:', text);
@@ -606,21 +607,26 @@ class VisitorPaymentManager {
     
         const result = await response.json();
         
+        console.log('=== PAYMENT RESPONSE ===');
+        console.log('Full result:', result);
+        console.log('Success:', result.success);
+        console.log('Email sent:', result.email_sent);
+        console.log('Debug info:', result.debug);
+        
         if (result.success) {
+            console.log('Payment successful! Payment ID:', result.payment_id);
+            
             // Hide confirmation modal
             if (this.confirmModal) {
                 this.confirmModal.hide();
             }
             
-            // Wait for modal to hide
             await new Promise(resolve => setTimeout(resolve, 300));
             
-            // Show success modal
             if (this.successModal) {
                 this.successModal.show();
             }
             
-            // Clear form after delay
             setTimeout(() => {
                 this.clearFormFields();
                 this.selectPaymentMethod('bank');
@@ -630,35 +636,20 @@ class VisitorPaymentManager {
             throw new Error(result.error || 'Payment processing failed');
         }
         
-        } catch (error) {
-    console.error('Payment processing error:', error);
-    
-    // Hide confirmation modal
-    if (this.confirmModal) {
-        this.confirmModal.hide();
-    }
-    
-        // Wait for modal to hide, then show error
+    } catch (error) {
+        console.error('=== PAYMENT ERROR ===');
+        console.error('Error:', error);
+        console.error('Error message:', error.message);
+        
+        if (this.confirmModal) {
+            this.confirmModal.hide();
+        }
+        
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        // Enhanced error display for debugging
-        let errorMsg = error.message;
-        if (error.file) {
-            errorMsg += `\n\nFile: ${error.file}`;
-        }
-        if (error.line) {
-            errorMsg += `\nLine: ${error.line}`;
-        }
-        if (error.trace) {
-            console.log('Stack trace:', error.trace);
-        }
-        
-        // Show error modal
-        this.showErrorModal('Error processing payment: ' + errorMsg);
+        this.showErrorModal('Error processing payment: ' + error.message);
         
     } finally {
-
-        // Re-enable the confirm button
         if (this.confirmPaymentBtn) {
             this.confirmPaymentBtn.disabled = false;
             this.confirmPaymentBtn.innerHTML = 'Process Payment';
