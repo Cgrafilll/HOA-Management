@@ -584,7 +584,7 @@ class VisitorPaymentManager {
         }
         
         // THIS IS THE MISSING LINE - Add the fetch call
-        const response = await fetch('payment/process_payment.php', {
+        const response = await fetch('process_payment.php', {
             method: 'POST',
             body: formData
         });

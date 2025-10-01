@@ -433,50 +433,57 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
         }
         
         // Insert payment record
-        $db_category = ($category === 'Amenity Fee') ? 'amenity' : 'monthly_dues';
-        
-        $debug_info['step'] = 'About to insert payment';
-        $debug_info['insert_data'] = [
-            'category' => $db_category,
-            'reference_id' => $reference_id,
-            'user_type' => $db_user_type,
-            'household_id' => $household_id,
-            'visitor_id' => $visitor_id
-        ];
-        
-        if ($db_user_type === 'visitor') {
-            $stmt = $conn->prepare("
-                INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
-                VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)
-            ");
-            
-            if (!$stmt) {
-                throw new Exception("Prepare failed: " . $conn->error);
-            }
-            
-            $stmt->bind_param("sissdsss", $db_category, $reference_id, $invoice_number, $db_user_type, $visitor_id, $amount, $payment_method, $reference_number, $proof_filename);
-        } else {
-            $stmt = $conn->prepare("
-                INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
-                VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)
-            ");
-            
-            if (!$stmt) {
-                throw new Exception("Prepare failed: " . $conn->error);
-            }
-            
-            $stmt->bind_param("sisssdsss", $db_category, $reference_id, $invoice_number, $db_user_type, $household_id, $amount, $payment_method, $reference_number, $proof_filename);
-        }
-        
-        if (!$stmt->execute()) {
-            $debug_info['insert_error'] = $stmt->error;
-            throw new Exception("Execute failed (insert payments): " . $stmt->error . " | Debug: " . json_encode($debug_info));
-        }
-        
-        $payment_id = $conn->insert_id;
-        $stmt->close();
-        
-        $conn->commit();
+$db_category = ($category === 'Amenity Fee') ? 'amenity' : 'monthly_dues';
+
+$debug_info['step'] = 'About to insert payment';
+$debug_info['insert_data'] = [
+    'category' => $db_category,
+    'reference_id' => $reference_id,
+    'user_type' => $db_user_type,
+    'household_id' => $household_id,
+    'visitor_id' => $visitor_id
+];
+
+if ($db_user_type === 'visitor') {
+    // For visitors: 9 parameters (household_id is NULL in query)
+    // Types: s i s s s d s s s
+    $stmt = $conn->prepare("
+        INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
+        VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)
+    ");
+    
+    if (!$stmt) {
+        throw new Exception("Prepare failed: " . $conn->error);
+    }
+    
+    // FIXED: Changed "sissdsss" to "sisssdsss" (9 chars for 9 vars)
+    $stmt->bind_param("sisssdsss", $db_category, $reference_id, $invoice_number, $db_user_type, $visitor_id, $amount, $payment_method, $reference_number, $proof_filename);
+    
+} else {
+    // For homeowners: 9 parameters (visitor_id is NULL in query)
+    // Types: s i s s s d s s s
+    $stmt = $conn->prepare("
+        INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
+        VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)
+    ");
+    
+    if (!$stmt) {
+        throw new Exception("Prepare failed: " . $conn->error);
+    }
+    
+    // FIXED: Changed "sisssdsss" to "sisssdsss" (9 chars for 9 vars)
+    $stmt->bind_param("sisssdsss", $db_category, $reference_id, $invoice_number, $db_user_type, $household_id, $amount, $payment_method, $reference_number, $proof_filename);
+}
+
+if (!$stmt->execute()) {
+    $debug_info['insert_error'] = $stmt->error;
+    throw new Exception("Execute failed (insert payments): " . $stmt->error . " | Debug: " . json_encode($debug_info));
+}
+
+$payment_id = $conn->insert_id;
+$stmt->close();
+
+$conn->commit();
         
         // Clear output buffer
         ob_end_clean();
