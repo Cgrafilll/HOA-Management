@@ -949,7 +949,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                         data-date='{$requestedDate}'
                                                         data-bs-toggle='modal' 
                                                         data-bs-target='#confirmRescheduleModal'>
-                                                        <i class='bi bi-check-lg'></i>
+                                                        <i class='bi bi-check-lg me-1'>Approve</i>
                                                     </button>
                                                     <button class='btn btn-sm btn-danger' title='Reject' 
                                                         data-id='{$id}'
@@ -959,7 +959,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                         data-date='{$requestedDate}'
                                                         data-bs-toggle='modal' 
                                                         data-bs-target='#confirmRescheduleModal'>
-                                                        <i class='bi bi-x-lg'></i>
+                                                        <i class='bi bi-x-lg me-1'>Reject</i>
                                                     </button>
                                                 </td>
                                             </tr>";
@@ -1457,11 +1457,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
 
             // Display current booking info
             document.getElementById('currentBookingInfo').innerHTML = `
-        <div><strong>Guest:</strong> ${booking.fullName}</div>
-        <div><strong>Amenity:</strong> ${booking.amenity}</div>
-        <div><strong>Current Date:</strong> ${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-        <div><strong>Current Time:</strong> ${booking.time}</div>
-    `;
+                <div><strong>Guest:</strong> ${booking.fullName}</div>
+                <div><strong>Amenity:</strong> ${booking.amenity}</div>
+                <div><strong>Current Date:</strong> ${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                <div><strong>Current Time:</strong> ${booking.time}</div>
+            `;
 
             // Reset selections
             rescheduleSelectedDate = null;
@@ -1788,6 +1788,18 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     document.getElementById('confirmDate').textContent = date;
                 });
             }
+        });
+
+        // Auto-dismiss alerts after 5 seconds
+        document.addEventListener('DOMContentLoaded', function () {
+            const alerts = document.querySelectorAll('.alert-dismissible');
+
+            alerts.forEach(function (alert) {
+                setTimeout(function () {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000); // 5000ms = 5 seconds
+            });
         });
     </script>
 </body>
