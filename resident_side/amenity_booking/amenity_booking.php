@@ -885,7 +885,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         <h5 class="modal-title">Reschedule Booking</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <form id="rescheduleForm" method="POST" action="../../admin_side/amenity_booking/reschedule_booking.php">
+                    <form id="rescheduleForm" method="POST" action="reschedule_booking.php">
                         <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                             <input type="hidden" id="reschedule_booking_id" name="booking_id">
                             <input type="hidden" id="reschedule_amenity" name="amenity">
