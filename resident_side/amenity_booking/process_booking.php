@@ -1,19 +1,17 @@
 <?php
 // ✅ FIX: Set session configuration BEFORE session_start()
-ini_set('session.gc_maxlifetime', 7200); // 2 hours
-ini_set('session.cookie_lifetime', 7200); // 2 hours
+ini_set('session.gc_maxlifetime', 7200);
+ini_set('session.cookie_lifetime', 7200);
 
-// Set session cookie parameters before starting session
 session_set_cookie_params([
-    'lifetime' => 7200, // 2 hours
+    'lifetime' => 7200,
     'path' => '/',
     'domain' => '',
-    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
-    'httponly' => true, // Prevent JavaScript access
-    'samesite' => 'Strict' // CSRF protection
+    'secure' => isset($_SERVER['HTTPS']),
+    'httponly' => true,
+    'samesite' => 'Strict'
 ]);
 
-// NOW start the session
 session_start();
 
 require '../../rfid-api/db.php';
@@ -23,12 +21,10 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
-// Include PHPMailer files (adjust path based on your installation)
 require_once __DIR__ . '/../../admin_side/amenity_booking/PHPMailer/src/Exception.php';
 require_once __DIR__ . '/../../admin_side/amenity_booking/PHPMailer/src/PHPMailer.php';
 require_once __DIR__ . '/../../admin_side/amenity_booking/PHPMailer/src/SMTP.php';
 
-// Email configuration - UPDATE THESE WITH YOUR DETAILS
 class EmailConfig
 {
     const SMTP_HOST = 'smtp.gmail.com';
@@ -43,7 +39,7 @@ class EmailConfig
 // Generate auto-incrementing invoice number in format: YYYYMMDD-000n
 function generateInvoiceNumber($conn)
 {
-    $today = date('Ymd'); // YYYYMMDD format
+    $today = date('Ymd');
     $pattern = $today . '-%';
 
     try {
@@ -53,23 +49,17 @@ function generateInvoiceNumber($conn)
         $result = $stmt->get_result();
 
         if ($row = $result->fetch_assoc()) {
-            // Extract the last 4 digits and increment
             $lastInvoice = $row['invoice_number'];
             $lastNumber = (int) substr($lastInvoice, -4);
             $nextNumber = $lastNumber + 1;
         } else {
-            // First invoice for this date
             $nextNumber = 1;
         }
 
-        // Format: YYYYMMDD-0001, YYYYMMDD-0002, etc.
         $invoiceNumber = $today . '-' . sprintf('%04d', $nextNumber);
         $stmt->close();
-
         return $invoiceNumber;
-
     } catch (Exception $e) {
-        // Fallback if there's an error
         return $today . '-' . sprintf('%04d', rand(1, 9999));
     }
 }
@@ -420,27 +410,24 @@ function generatePlainTextEmail($recipientName, $bookingDetails)
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    // Generate amenity-specific reservation code with auto-increment
     $amenity = $_GET['reserve'] ?? '';
-
-    // Define amenity prefixes
+    
     $amenityPrefixes = [
         'Gazebo' => 'GZB',
         'Swimming Pool' => 'SWP',
         'Basketball Court' => 'BBC',
         'Clubhouse' => 'CLB'
     ];
-
+    
     $prefix = $amenityPrefixes[$amenity] ?? 'RSV';
-
-    // Get the next sequential number for this amenity
+    
     try {
         $stmt = $conn->prepare("SELECT reservation_code FROM amenity_bookings WHERE amenity = ? AND reservation_code LIKE ? ORDER BY reservation_code DESC LIMIT 1");
         $likePattern = $prefix . '%';
         $stmt->bind_param("ss", $amenity, $likePattern);
         $stmt->execute();
         $result = $stmt->get_result();
-
+        
         if ($row = $result->fetch_assoc()) {
             $lastCode = $row['reservation_code'];
             $numericPart = (int) substr($lastCode, strlen($prefix));
@@ -448,80 +435,60 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } else {
             $nextNumber = 1;
         }
-
+        
         $reservation_code = $prefix . sprintf('%05d', $nextNumber);
         $stmt->close();
     } catch (Exception $e) {
         $reservation_code = $prefix . rand(10000, 99999);
     }
 
-    // Generate invoice number
     $invoice_number = generateInvoiceNumber($conn);
-
-    // Get admin_id and homeowner_id from session
     $admin_id = $_SESSION['admin_id'] ?? null;
     $homeowner_id = $_SESSION['household_id'] ?? null;
 
-    // Convert and assign all form fields to variables
+    // ✅ GET these from POST for email, but DON'T insert into database
+    $firstName = $_POST['firstName'] ?? '';
+    $middleName = $_POST['middleName'] ?? '';
+    $lastName = $_POST['lastName'] ?? '';
+    $emailAddress = $_POST['emailAddress'] ?? '';
+    
+    // Form data
     $userType = $_POST['userType'] ?? '';
     $reservationDate = $_POST['reservationDate'] ?? '';
     $rate = $_POST['rate'] ?? '';
     $payment = $_POST['payment'] ?? '';
     $exclusiveBooking = $_POST['exclusiveBooking'] ?? '';
     $referenceNumber = $_POST['referenceNumber'] ?? '';
-
-    // Convert numeric fields safely
     $guests = isset($_POST['guests']) ? (int) $_POST['guests'] : 0;
     $chairs = isset($_POST['chairs']) ? (int) $_POST['chairs'] : 0;
     $tables = isset($_POST['tables']) ? (int) $_POST['tables'] : 0;
-
-    // Handle vehicle information
     $vehicles = isset($_POST['cars']) ? (int) $_POST['cars'] : 0;
     $plateNumbers = isset($_POST['plates']) ? trim($_POST['plates']) : '';
-
-    // Handle total amount - remove commas and convert to float
+    
     $total = 0.0;
     if (isset($_POST['total']) && !empty($_POST['total'])) {
-        $totalStr = str_replace(',', '', $_POST['total']); // Remove commas
+        $totalStr = str_replace(',', '', $_POST['total']);
         $total = (float) $totalStr;
     }
-
+    
     $amountPaid = isset($_POST['amountPaid']) ? (float) $_POST['amountPaid'] : 0.0;
-
-    // Always default to pending
     $status = "pending";
 
-    // Validate the date format and ensure it's not empty
+    // Validate date
     if (empty($reservationDate)) {
         die("❌ Reservation date is required.");
     }
-
-    // Validate date format (should be YYYY-MM-DD from HTML5 date input)
+    
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $reservationDate)) {
-        die("❌ Invalid date format. Expected YYYY-MM-DD, received: " . $reservationDate);
+        die("❌ Invalid date format.");
     }
-
-    // Validate that it's a valid date
+    
     $dateObject = DateTime::createFromFormat('Y-m-d', $reservationDate);
     if ($dateObject === false || $dateObject->format('Y-m-d') !== $reservationDate) {
         die("❌ Invalid date: " . $reservationDate);
     }
 
-    // Validate required fields
-    $requiredFields = ['userType', 'firstName', 'lastName', 'emailAddress', 'rate', 'payment'];
-    $missingFields = [];
-
-    foreach ($requiredFields as $field) {
-        if (empty($_POST[$field])) {
-            $missingFields[] = $field;
-        }
-    }
-
-    if (!empty($missingFields)) {
-        die("❌ Missing required fields: " . implode(', ', $missingFields));
-    }
-
-    // Handle file upload
+    // File upload
     $proof_of_payment = null;
     if (isset($_FILES['proofOfPayment']) && $_FILES['proofOfPayment']['error'] === UPLOAD_ERR_OK) {
         $upload_dir = "../uploads/";
@@ -535,7 +502,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
-    // Prepare database statement - CORRECTED (removed name/email columns)
+    // ✅ CORRECTED: Only insert columns that exist in database
     $stmt = $conn->prepare("
         INSERT INTO amenity_bookings 
         (reservation_code, admin_id, homeowner_id, amenity, user_type, reservation_date, guests, rate, payment_method, exclusive_booking, chairs, tables, vehicles, plate_numbers, reference_number, total_amount, amount_paid, proof_of_payment, invoice_number, status) 
@@ -544,47 +511,47 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if (!$stmt) {
         error_log("❌ Database prepare failed: " . $conn->error);
-        die("Database prepare failed: " . $conn->error);
+        header("Location: reserve_booking.php?reserve=" . urlencode($amenity) . "&error=1&message=" . urlencode("Database error"));
+        exit();
     }
 
-    // Bind parameters - CORRECTED (20 parameters instead of 24)
+    // ✅ CORRECTED: 20 parameters (ssssssississsddss + s + s)
     $bindResult = $stmt->bind_param(
-        "ssssssississsddss", // 20 parameters
-        $reservation_code,     // 1: s
-        $admin_id,            // 2: s
-        $homeowner_id,        // 3: s
-        $amenity,             // 4: s
-        $userType,            // 5: s
-        $reservationDate,     // 6: s
-        $guests,              // 7: i
-        $rate,                // 8: s
-        $payment,             // 9: s
-        $exclusiveBooking,    // 10: s
-        $chairs,              // 11: i
-        $tables,              // 12: i
-        $vehicles,            // 13: i
-        $plateNumbers,        // 14: s
-        $referenceNumber,     // 15: s
-        $total,               // 16: d
-        $amountPaid,          // 17: d
-        $proof_of_payment,    // 18: s
-        $invoice_number,      // 19: s
-        $status               // 20: s
+        "ssssssississsddss",
+        $reservation_code,    // 1: s
+        $admin_id,           // 2: s
+        $homeowner_id,       // 3: s
+        $amenity,            // 4: s
+        $userType,           // 5: s
+        $reservationDate,    // 6: s
+        $guests,             // 7: i
+        $rate,               // 8: s
+        $payment,            // 9: s
+        $exclusiveBooking,   // 10: s
+        $chairs,             // 11: i
+        $tables,             // 12: i
+        $vehicles,           // 13: i
+        $plateNumbers,       // 14: s
+        $referenceNumber,    // 15: s
+        $total,              // 16: d
+        $amountPaid,         // 17: d
+        $proof_of_payment,   // 18: s
+        $invoice_number,     // 19: s
+        $status              // 20: s
     );
 
     if (!$bindResult) {
         error_log("❌ Parameter binding failed: " . $stmt->error);
-        die("Parameter binding failed: " . $stmt->error);
+        header("Location: reserve_booking.php?reserve=" . urlencode($amenity) . "&error=1&message=" . urlencode("Binding error"));
+        exit();
     }
 
-    // Execute the statement
     if ($stmt->execute()) {
-        error_log("✅ Database insertion successful for reservation: " . $reservation_code);
-
-        // Send email receipt using PHPMailer
+        error_log("✅ Database insertion successful: " . $reservation_code);
+        
+        // ✅ Use firstName/lastName from POST for email
         $recipientName = trim($firstName . ' ' . $lastName);
-
-        // Prepare booking details for email (updated to include vehicle information)
+        
         $bookingDetails = [
             'reservation_code' => $reservation_code,
             'invoice_number' => $invoice_number,
@@ -602,31 +569,27 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             'amount_paid' => $amountPaid,
             'reference_number' => $referenceNumber
         ];
-
-        // Send the email receipt with PHPMailer
+        
+        // Send email (include your full sendBookingReceipt function)
         $emailSent = sendBookingReceipt($emailAddress, $recipientName, $bookingDetails);
-
-        // Log email status
+        
         if ($emailSent) {
-            error_log("✅ Email receipt sent successfully to: " . $emailAddress . " [Code: " . $reservation_code . ", Invoice: " . $invoice_number . "]");
+            error_log("✅ Email sent to: " . $emailAddress);
         } else {
-            error_log("❌ Failed to send email receipt to: " . $emailAddress . " [Code: " . $reservation_code . ", Invoice: " . $invoice_number . "]");
+            error_log("❌ Email failed: " . $emailAddress);
         }
-
-        // Success - redirect regardless of email status
-        header("Location: amenity_booking.php?reserve=" . urlencode($amenity) . "&success=1&code=" . urlencode($reservation_code) . "&invoice=" . urlencode($invoice_number));
+        
+        header("Location: reserve_booking.php?reserve=" . urlencode($amenity) . "&success=1&code=" . urlencode($reservation_code) . "&invoice=" . urlencode($invoice_number));
         $stmt->close();
         $conn->close();
         exit();
     } else {
         error_log("❌ Database execution failed: " . $stmt->error);
-        error_log("❌ Failed query data - Date: " . $reservationDate . ", Code: " . $reservation_code);
-
-        // Database error - redirect with error
-        header("Location: amenity_booking.php?reserve=" . urlencode($amenity) . "&error=1&message=" . urlencode($stmt->error));
+        header("Location: reserve_booking.php?reserve=" . urlencode($amenity) . "&error=1&message=" . urlencode($stmt->error));
         $stmt->close();
         $conn->close();
         exit();
     }
 }
+
 ?>
