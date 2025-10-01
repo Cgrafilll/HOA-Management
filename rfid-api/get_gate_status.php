@@ -1,7 +1,20 @@
 <?php
 header('Content-Type: application/json');
 
-$gate = isset($_POST['gate']) ? $_POST['gate'] : '2'; // Default to gate 2
+if (!isset($_POST['action'])) {
+    echo json_encode(["status" => "error", "message" => "No action provided"]);
+    exit;
+}
+
+$action = strtoupper($_POST['action']);
+$gate = isset($_POST['gate']) ? $_POST['gate'] : '1'; // Default to gate 1 for backward compatibility
+
+$valid_actions = ["OPEN", "CLOSE"];
+
+if (!in_array($action, $valid_actions)) {
+    echo json_encode(["status" => "error", "message" => "Invalid action"]);
+    exit;
+}
 
 // Validate gate number
 if (!in_array($gate, ['1', '2'])) {
@@ -9,65 +22,32 @@ if (!in_array($gate, ['1', '2'])) {
     exit;
 }
 
-// Arduino COM port
+// 🔹 Adjust this to your Arduino COM port
 $port = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') ? "COM6" : "/dev/ttyUSB0";
 
+// Build Arduino command
+$arduino_command = $action . $gate; // OPEN1, OPEN2, CLOSE1, CLOSE2
+
 try {
-    $handle = fopen($port, "r+b");
-
-    if (!$handle) {
-        throw new Exception("Unable to open serial port $port");
+    $fp = fopen($port, "r+"); // Open for read/write
+    if (!$fp) {
+        throw new Exception("Unable to open port $port");
     }
 
-    // Send STATUS command to Arduino
-    fwrite($handle, "STATUS\r\n");
-    fflush($handle);
+    fwrite($fp, $arduino_command . "\n");
 
-    // Wait for Arduino response
-    usleep(200000); // 200ms
-
-    $response = "";
-    $timeout = time() + 2; // 2 second timeout
-
-    while (time() < $timeout) {
-        $line = fgets($handle);
-        if ($line !== false && trim($line) !== "") {
-            $response .= trim($line) . " ";
-            // Look for STATUS response
-            if (strpos($response, "STATUS:") !== false) {
-                break;
-            }
-        }
-        usleep(50000); // 50ms
-    }
-
-    fclose($handle);
-
-    // Parse the status response
-    // Expected format: "STATUS: Gate1=OPEN Gate2=CLOSED"
-    $gateStatus = "UNKNOWN";
-    if (strpos($response, "STATUS:") !== false) {
-        if (strpos($response, "Gate{$gate}=OPEN") !== false) {
-            $gateStatus = "OPEN";
-        } elseif (strpos($response, "Gate{$gate}=CLOSED") !== false) {
-            $gateStatus = "CLOSED";
-        }
-    }
+    // Read Arduino response (optional)
+    $response = fgets($fp);
+    fclose($fp);
 
     echo json_encode([
         "status" => "success",
-        "gate" => $gateStatus,
+        "gate" => $action,
         "gate_number" => $gate,
-        "arduino_command" => "STATUS",
-        "arduino_response" => trim($response),
-        "port" => $port
+        "arduino_command" => $arduino_command,
+        "arduino_response" => trim($response)
     ]);
-
 } catch (Exception $e) {
-    echo json_encode([
-        "status" => "error",
-        "message" => $e->getMessage(),
-        "port" => $port
-    ]);
+    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
 }
 ?>
