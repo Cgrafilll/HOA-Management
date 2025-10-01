@@ -761,7 +761,7 @@ $reschedule_result = $reschedule_stmt->get_result();
     <script>
         const bookings = <?= json_encode($bookings) ?>;
         const loggedInHouseholdId = <?= json_encode($household_id) ?>;
-        let currentDate = new Date(2025, 7, 1); // August 2025
+        let currentDate = new Date();
         let currentView = 'month';
 
         function renderCalendar() {
@@ -1007,6 +1007,42 @@ $reschedule_result = $reschedule_stmt->get_result();
                     const bsAlert = new bootstrap.Alert(alert);
                     bsAlert.close();
                 }, 5000);
+            });
+        });
+
+        // Handle tab switching and link color changes
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabLinks = document.querySelectorAll('#dashboardTabs .nav-link');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            // Add click event listener to each tab link
+            tabLinks.forEach(function (tabLink) {
+                tabLink.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    // Get the target tab pane
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetPane = document.getElementById(targetId);
+
+                    // Remove active classes from all tabs and panes
+                    tabLinks.forEach(function (link) {
+                        link.classList.remove('active', 'link-dark');
+                        link.classList.add('link-secondary');
+                    });
+
+                    tabPanes.forEach(function (pane) {
+                        pane.classList.remove('show', 'active');
+                    });
+
+                    // Add active classes to current tab and pane
+                    this.classList.add('active');
+                    this.classList.remove('link-secondary');
+                    this.classList.add('link-dark');
+
+                    if (targetPane) {
+                        targetPane.classList.add('show', 'active');
+                    }
+                });
             });
         });
     </script>
