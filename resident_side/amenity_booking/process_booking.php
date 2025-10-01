@@ -443,7 +443,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     $invoice_number = generateInvoiceNumber($conn);
-    $admin_id = $_SESSION['admin_id'] ?? null;
+    $admin_id = null;
     $homeowner_id = $_SESSION['household_id'] ?? null;
     $visitor_id = null;
 
@@ -512,7 +512,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Bind parameters - updated to include vehicle fields
     $stmt->bind_param(
-        "sssssssisssiisssddsss",
+        "sssssssisssiiissddsss",
         $reservation_code,   // s
         $admin_id,           // s                
         $homeowner_id,       // s
