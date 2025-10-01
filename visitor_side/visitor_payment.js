@@ -112,8 +112,25 @@ class VisitorPaymentManager {
     }
 
     setAndDisableCategory() {
-        // Default to Amenity Fee for visitors
-        this.categorySelect.value = 'Amenity Fee';
+    // Remove all options except Amenity Fee
+    const amenityOption = [...this.categorySelect.options].find(opt => opt.value === 'Amenity Fee');
+    
+        if (amenityOption) {
+            // Clear all options
+            this.categorySelect.innerHTML = '';
+            
+            // Add only Amenity Fee option
+            const newOption = document.createElement('option');
+            newOption.value = 'Amenity Fee';
+            newOption.textContent = 'Amenity Fee';
+            this.categorySelect.appendChild(newOption);
+            
+            // Set the value
+            this.categorySelect.value = 'Amenity Fee';
+        } else {
+            // Fallback if Amenity Fee option not found
+            this.categorySelect.value = 'Amenity Fee';
+        }
         
         // Disable the category select
         this.categorySelect.disabled = true;
