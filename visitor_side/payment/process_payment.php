@@ -1,25 +1,99 @@
 <?php
-// Remove the ini_set for error_log path - let server handle it
+// ============================================
+// DEBUGGING MODE - REMOVE AFTER FIXING!
+// ============================================
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-ini_set('display_errors', 0); // Don't display errors to users
-ini_set('log_errors', 1);
 
-session_start();
-require '../../rfid-api/db.php';
-
-// Include PHPMailer
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
-use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\Exception as PHPMailerException;
 
-// Include PHPMailer files
-require_once '../../admin_side/amenity_booking/PHPMailer/src/Exception.php';
-require_once '../../admin_side/amenity_booking/PHPMailer/src/PHPMailer.php';
-require_once '../../admin_side/amenity_booking/PHPMailer/src/SMTP.php';
+// Custom error handler to output errors as JSON
+function handleError($errno, $errstr, $errfile, $errline) {
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => "PHP Error [$errno]: $errstr",
+        'file' => basename($errfile),
+        'line' => $errline,
+        'full_path' => $errfile
+    ]);
+    exit;
+}
+set_error_handler('handleError');
 
-// Email configuration
-class EmailConfig
-{
+// Custom exception handler
+function handleException($exception) {
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => $exception->getMessage(),
+        'file' => basename($exception->getFile()),
+        'line' => $exception->getLine(),
+        'full_path' => $exception->getFile(),
+        'trace' => array_slice(explode("\n", $exception->getTraceAsString()), 0, 5)
+    ]);
+    exit;
+}
+set_exception_handler('handleException');
+
+// ============================================
+// START SESSION
+// ============================================
+session_start();
+
+// ============================================
+// DATABASE CONNECTION
+// ============================================
+$db_path = '../../rfid-api/db.php';
+if (!file_exists($db_path)) {
+    throw new Exception("Database config file not found at: " . realpath(dirname(__FILE__)) . "/../../rfid-api/db.php");
+}
+require $db_path;
+
+if (!isset($conn)) {
+    throw new Exception('Database connection variable $conn not set after requiring db.php');
+}
+
+if ($conn->connect_error) {
+    throw new Exception('Database connection failed: ' . $conn->connect_error);
+}
+
+// ============================================
+// PHPMAILER INCLUDES
+// ============================================
+$phpmailer_base = '../../admin_side/amenity_booking/PHPMailer/src/';
+$phpmailer_files = [
+    'Exception.php' => $phpmailer_base . 'Exception.php',
+    'PHPMailer.php' => $phpmailer_base . 'PHPMailer.php',
+    'SMTP.php' => $phpmailer_base . 'SMTP.php'
+];
+
+$phpmailer_available = true;
+foreach ($phpmailer_files as $name => $path) {
+    if (!file_exists($path)) {
+        error_log("PHPMailer file not found: $path");
+        $phpmailer_available = false;
+        break;
+    }
+}
+
+if ($phpmailer_available) {
+    require_once $phpmailer_files['Exception.php'];
+    require_once $phpmailer_files['PHPMailer.php'];
+    require_once $phpmailer_files['SMTP.php'];
+    
+    
+}
+
+// ============================================
+// EMAIL CONFIGURATION
+// ============================================
+class EmailConfig {
     const SMTP_HOST = 'smtp.gmail.com';
     const SMTP_PORT = 587;
     const SMTP_USERNAME = 'lukemia19@gmail.com';
@@ -29,65 +103,106 @@ class EmailConfig
     const REPLY_TO = 'admin@nsshai.com';
 }
 
-// Helper function to handle file upload
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
 function handleFileUpload($file, $uploadDir = 'payment_proofs/') {
     if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+        if ($file && $file['error'] !== UPLOAD_ERR_NO_FILE) {
+            throw new Exception("File upload error code: " . $file['error']);
+        }
         return null;
     }
     
     // Create upload directory if it doesn't exist
     if (!file_exists($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+        if (!mkdir($uploadDir, 0755, true)) {
+            throw new Exception("Failed to create upload directory: $uploadDir");
+        }
+    }
+    
+    // Check if writable
+    if (!is_writable($uploadDir)) {
+        throw new Exception("Upload directory not writable: $uploadDir (check permissions)");
+    }
+    
+    // Validate file type
+    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+    if (!in_array($file['type'], $allowed_types)) {
+        throw new Exception("Invalid file type: " . $file['type']);
+    }
+    
+    // Validate file size (10MB)
+    if ($file['size'] > 10 * 1024 * 1024) {
+        throw new Exception("File too large: " . round($file['size'] / 1024 / 1024, 2) . "MB (max 10MB)");
     }
     
     // Generate unique filename
     $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $filename = 'payment_' . uniqid() . '.' . $extension;
+    $filename = 'payment_' . uniqid() . '_' . time() . '.' . $extension;
     $filepath = $uploadDir . $filename;
     
     // Move uploaded file
-    if (move_uploaded_file($file['tmp_name'], $filepath)) {
-        return $filename;
+    if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+        throw new Exception("Failed to move uploaded file from " . $file['tmp_name'] . " to " . $filepath);
     }
     
-    return null;
+    return $filename;
 }
 
-// Function to get user details and email
-function getUserDetails($conn, $userType, $userId)
-{
+function getUserDetails($conn, $userType, $userId) {
     if ($userType === 'homeowner') {
         $stmt = $conn->prepare("SELECT household_id, first_name, last_name, email_address FROM household_accounts WHERE household_id = ?");
+        if (!$stmt) {
+            throw new Exception("Database prepare failed (household_accounts): " . $conn->error);
+        }
         $stmt->bind_param("s", $userId);
-        $stmt->execute();
+        if (!$stmt->execute()) {
+            throw new Exception("Database execute failed (household_accounts): " . $stmt->error);
+        }
         $result = $stmt->get_result();
         if ($row = $result->fetch_assoc()) {
             $stmt->close();
             return $row;
         }
         $stmt->close();
+        throw new Exception("Homeowner not found with ID: $userId");
+        
     } elseif ($userType === 'visitor') {
         $stmt = $conn->prepare("SELECT visitor_id, first_name, last_name, email_address FROM visitor_details WHERE visitor_id = ?");
+        if (!$stmt) {
+            throw new Exception("Database prepare failed (visitor_details): " . $conn->error);
+        }
         $stmt->bind_param("s", $userId);
-        $stmt->execute();
+        if (!$stmt->execute()) {
+            throw new Exception("Database execute failed (visitor_details): " . $stmt->error);
+        }
         $result = $stmt->get_result();
         if ($row = $result->fetch_assoc()) {
             $stmt->close();
             return $row;
         }
         $stmt->close();
+        throw new Exception("Visitor not found with ID: $userId");
     }
-    return null;
+    
+    throw new Exception("Invalid user type: $userType");
 }
 
-// Robust email sending function using PHPMailer
-function sendPaymentReceipt($recipientEmail, $recipientName, $paymentDetails)
-{
+function sendPaymentReceipt($recipientEmail, $recipientName, $paymentDetails) {
+    global $phpmailer_available;
+    
+    if (!$phpmailer_available) {
+        error_log("PHPMailer not available - skipping email");
+        return false;
+    }
+    
     $mail = new PHPMailer(true);
-
+    
     try {
-        // Server settings - DISABLE DEBUG in production
-        $mail->SMTPDebug = 0; // Set to 0 for production
+        // Server settings
+        $mail->SMTPDebug = 0;
         $mail->isSMTP();
         $mail->Host = EmailConfig::SMTP_HOST;
         $mail->SMTPAuth = true;
@@ -95,8 +210,6 @@ function sendPaymentReceipt($recipientEmail, $recipientName, $paymentDetails)
         $mail->Password = EmailConfig::SMTP_PASSWORD;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = EmailConfig::SMTP_PORT;
-        
-        // Set timeout for shared hosting
         $mail->Timeout = 30;
         $mail->SMTPKeepAlive = false;
         
@@ -104,32 +217,27 @@ function sendPaymentReceipt($recipientEmail, $recipientName, $paymentDetails)
         $mail->setFrom(EmailConfig::FROM_EMAIL, EmailConfig::FROM_NAME);
         $mail->addAddress($recipientEmail, $recipientName);
         $mail->addReplyTo(EmailConfig::REPLY_TO, 'NSSHAI Admin');
-
+        
         // Content
         $mail->isHTML(true);
         $mail->Subject = 'Payment Receipt - NSSHAI [' . $paymentDetails['invoice_number'] . ']';
         $mail->Body = generatePaymentEmailTemplate($recipientName, $paymentDetails);
         $mail->AltBody = generatePaymentPlainTextEmail($recipientName, $paymentDetails);
-
+        
         $result = $mail->send();
         return true;
-
+        
     } catch (Exception $e) {
         error_log("PHPMailer Error: {$mail->ErrorInfo}");
         return false;
     }
 }
 
-// Generate HTML email template for payment receipt
-function generatePaymentEmailTemplate($recipientName, $paymentDetails)
-{
+function generatePaymentEmailTemplate($recipientName, $paymentDetails) {
     $invoiceNumber = htmlspecialchars($paymentDetails['invoice_number']);
     $category = htmlspecialchars($paymentDetails['category']);
     $paymentDate = date('F j, Y', strtotime($paymentDetails['payment_date']));
-    $statusColor = '';
-    $statusText = '';
     
-    // Determine status styling
     if ($paymentDetails['payment_status'] === 'Completed' || $paymentDetails['payment_status'] === 'paid') {
         $statusColor = '#28a745';
         $statusText = 'PAID IN FULL';
@@ -137,216 +245,157 @@ function generatePaymentEmailTemplate($recipientName, $paymentDetails)
         $statusColor = '#ffc107';
         $statusText = 'PARTIALLY PAID';
     }
-
-    $html = '
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Payment Receipt</title>
-        <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f9fc; margin: 0; padding: 0; }
-            .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
-            
-            .header { background: linear-gradient(135deg, #198754 0%, #20c997 100%); color: white; padding: 40px 30px; text-align: center; }
-            .header h1 { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
-            .header p { font-size: 16px; opacity: 0.9; margin: 0; }
-            
-            .content { padding: 40px 30px; }
-            .greeting { font-size: 18px; color: #2c3e50; margin-bottom: 20px; }
-            .intro-text { font-size: 16px; color: #34495e; line-height: 1.6; margin-bottom: 30px; }
-            
-            .payment-banner { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 2px solid #4caf50; border-radius: 12px; padding: 25px; text-align: center; margin: 30px 0; }
-            .payment-banner h3 { font-size: 18px; color: #2e7d32; margin-bottom: 10px; }
-            .payment-banner .invoice { font-size: 32px; font-weight: bold; color: #1b5e20; letter-spacing: 2px; font-family: "Courier New", monospace; }
-            
-            .payment-details { background-color: #f8f9fa; border-radius: 12px; padding: 25px; margin: 30px 0; border-left: 5px solid #198754; }
-            .payment-details h3 { color: #198754; font-size: 20px; margin-bottom: 20px; }
-            
-            .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e9ecef; }
-            .detail-row:last-child { border-bottom: none; }
-            .detail-label { font-weight: 600; color: #495057; font-size: 14px; }
-            .detail-value { color: #212529; font-size: 14px; text-align: right; }
-            .detail-value.amount { font-size: 16px; font-weight: bold; }
-
-            .balance-section { background: linear-gradient(135deg, #e3f2fd 0%, #f0f9ff 100%); border: 1px solid #2196f3; border-radius: 12px; padding: 25px; margin: 30px 0; }
-            .balance-section h4 { color: #1976d2; font-size: 18px; margin-bottom: 15px; }
-            .balance-row { display: flex; justify-content: space-between; padding: 8px 0; }
-            .balance-label { font-weight: 600; color: #1976d2; font-size: 16px; }
-            .balance-amount { font-size: 18px; font-weight: bold; }
-
-            .status-section { background-color: ' . $statusColor . '; color: white; border-radius: 12px; padding: 20px; margin: 30px 0; text-align: center; }
-            .status-section .status-text { font-size: 24px; font-weight: bold; letter-spacing: 2px; }
-            
-            .footer { background-color: #2c3e50; color: #ecf0f1; padding: 30px; text-align: center; }
-            .footer p { margin: 5px 0; font-size: 13px; opacity: 0.8; }
-        </style>
-    </head>
-    <body>
-        <div class="email-container">
-            <div class="header">
-                <h1>Payment Received!</h1>
-                <p>Neopolitan Sitio Seville Homeowners Association</p>
-            </div>
-            
-            <div class="content">
-                <div class="greeting">Hello ' . htmlspecialchars($recipientName) . '!</div>
-                
-                <div class="intro-text">
-                    Thank you for your payment! We have successfully received and processed your payment for <strong>' . $category . '</strong>.
-                </div>
-                
-                <div class="payment-banner">
-                    <h3>Invoice Number</h3>
-                    <div class="invoice">' . $invoiceNumber . '</div>
-                </div>
-                
-                <div class="payment-details">
-                    <h3>Payment Details</h3>
-                    <div class="detail-row">
-                        <span class="detail-label">Category</span>
-                        <span class="detail-value">' . $category . '</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Payment Date</span>
-                        <span class="detail-value">' . $paymentDate . '</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Payment Method</span>
-                        <span class="detail-value">' . ucfirst($paymentDetails['payment_method']) . '</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Amount Paid</span>
-                        <span class="detail-value amount">₱' . number_format($paymentDetails['amount_paid'], 2) . '</span>
-                    </div>';
-
-    if (!empty($paymentDetails['reference_number'])) {
-        $html .= '
-                    <div class="detail-row">
-                        <span class="detail-label">Reference Number</span>
-                        <span class="detail-value">' . htmlspecialchars($paymentDetails['reference_number']) . '</span>
-                    </div>';
-    }
-
-    $html .= '
-                </div>
-                
-                <div class="balance-section">
-                    <h4>Balance Summary</h4>
-                    <div class="balance-row">
-                        <span class="balance-label">Total Amount</span>
-                        <span class="balance-amount">₱' . number_format($paymentDetails['total_amount'], 2) . '</span>
-                    </div>
-                    <div class="balance-row">
-                        <span class="balance-label">Total Paid</span>
-                        <span class="balance-amount">₱' . number_format($paymentDetails['total_paid'], 2) . '</span>
-                    </div>
-                    <div class="balance-row">
-                        <span class="balance-label">Remaining Balance</span>
-                        <span class="balance-amount">₱' . number_format($paymentDetails['remaining_balance'], 2) . '</span>
-                    </div>
-                </div>
-                
-                <div class="status-section">
-                    <div class="status-text">' . $statusText . '</div>
-                </div>
-                
-                <div style="text-align: center; margin-top: 30px; color: #666;">
-                    <p>Thank you for your prompt payment!</p>
-                    <p style="margin-top: 15px;"><strong>Best regards,<br>NSSHAI Administration Team</strong></p>
-                </div>
-            </div>
-            
-            <div class="footer">
-                <h4>Neopolitan Sitio Seville Homeowners Association, Inc.</h4>
-                <p>This is an automated payment confirmation email.</p>
-                <p>For support, contact us at 8-2457647</p>
-            </div>
-        </div>
-    </body>
-    </html>';
-
+    
+    $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Payment Receipt</title></head><body>';
+    $html .= '<div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;">';
+    $html .= '<div style="background:#198754;color:white;padding:30px;text-align:center;">';
+    $html .= '<h1>Payment Received!</h1><p>NSSHAI HOA Management</p></div>';
+    $html .= '<div style="padding:30px;"><h2>Hello ' . htmlspecialchars($recipientName) . '!</h2>';
+    $html .= '<p>Thank you for your payment of <strong>₱' . number_format($paymentDetails['amount_paid'], 2) . '</strong></p>';
+    $html .= '<p>Invoice: <strong>' . $invoiceNumber . '</strong></p>';
+    $html .= '<p>Category: ' . $category . '</p>';
+    $html .= '<p>Remaining Balance: ₱' . number_format($paymentDetails['remaining_balance'], 2) . '</p>';
+    $html .= '</div></div></body></html>';
+    
     return $html;
 }
 
-// Generate plain text version
-function generatePaymentPlainTextEmail($recipientName, $paymentDetails)
-{
-    $text = "PAYMENT RECEIPT - NSSHAI\n";
-    $text .= "========================\n\n";
+function generatePaymentPlainTextEmail($recipientName, $paymentDetails) {
+    $text = "PAYMENT RECEIPT - NSSHAI\n========================\n\n";
     $text .= "Hello " . $recipientName . "!\n\n";
-    $text .= "Thank you for your payment!\n\n";
-    $text .= "INVOICE NUMBER: " . $paymentDetails['invoice_number'] . "\n\n";
+    $text .= "Invoice: " . $paymentDetails['invoice_number'] . "\n";
     $text .= "Amount Paid: ₱" . number_format($paymentDetails['amount_paid'], 2) . "\n";
-    $text .= "Remaining Balance: ₱" . number_format($paymentDetails['remaining_balance'], 2) . "\n\n";
-    $text .= "Best regards,\nNSSHAI Administration Team";
+    $text .= "Remaining Balance: ₱" . number_format($paymentDetails['remaining_balance'], 2) . "\n";
     return $text;
 }
+
+// ============================================
+// MAIN PAYMENT PROCESSING
+// ============================================
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['action'] === 'process_payment') {
     
     try {
-        $admin_id = $_SESSION['admin_id'] ?? "system";
+        // Create output buffer to catch any stray output
+        ob_start();
         
-        // Get form data
-        $category = $_POST['category'] ?? '';
-        $user_type = $_POST['user_type'] ?? '';
-        $user_id = $_POST['user_id'] ?? '';
-        $invoice_number = $_POST['invoice_number'] ?? '';
+        $admin_id = $_SESSION['admin_id'] ?? "visitor_payment";
+        
+        // Get and validate form data
+        $category = trim($_POST['category'] ?? '');
+        $user_type = trim($_POST['user_type'] ?? '');
+        $user_id = trim($_POST['user_id'] ?? '');
+        $invoice_number = trim($_POST['invoice_number'] ?? '');
         $amount = floatval($_POST['amount'] ?? 0);
         $payment_method = ($_POST['payment_method'] === 'Bank Transfer') ? 'bank' : 'cash';
-        $reference_number = $_POST['reference_number'] ?? '';
+        $reference_number = trim($_POST['reference_number'] ?? '');
+        
+        $debug_info = [
+            'step' => 'Initial data received',
+            'category' => $category,
+            'user_type' => $user_type,
+            'user_id' => $user_id,
+            'invoice_number' => $invoice_number,
+            'amount' => $amount
+        ];
         
         // Validate required fields
-        if (empty($category) || empty($user_type) || empty($user_id) || empty($invoice_number) || $amount <= 0) {
-            throw new Exception('Missing required fields');
-        }
+        if (empty($category)) throw new Exception('Category is required');
+        if (empty($user_type)) throw new Exception('User type is required');
+        if (empty($user_id)) throw new Exception('User ID is required');
+        if (empty($invoice_number)) throw new Exception('Invoice number is required');
+        if ($amount <= 0) throw new Exception('Amount must be greater than 0');
+        
+        $debug_info['step'] = 'Validation passed';
         
         // Handle file upload
         $proof_filename = null;
-        if (isset($_FILES['proof_of_payment']) && $_FILES['proof_of_payment']['error'] === UPLOAD_ERR_OK) {
+        if (isset($_FILES['proof_of_payment']) && $_FILES['proof_of_payment']['error'] !== UPLOAD_ERR_NO_FILE) {
             $proof_filename = handleFileUpload($_FILES['proof_of_payment']);
-            if (!$proof_filename) {
-                throw new Exception('Failed to upload proof of payment');
-            }
         }
+        
+        $debug_info['step'] = 'File upload handled';
+        $debug_info['proof_filename'] = $proof_filename ?? 'none';
         
         // Get user details
         $db_user_type = ($user_type === 'Homeowner/Resident') ? 'homeowner' : 'visitor';
+        $debug_info['db_user_type'] = $db_user_type;
+        
         $userDetails = getUserDetails($conn, $db_user_type, $user_id);
         
-        if (!$userDetails) {
-            throw new Exception('User not found');
-        }
+        $debug_info['step'] = 'User details retrieved';
+        $debug_info['userDetails'] = $userDetails;
         
-        // Check if email exists
-        if (empty($userDetails['email_address'])) {
-            error_log("WARNING: No email address found for user " . $user_id);
-        }
+        // THE CRITICAL FIX: Check the actual column name returned
+        $household_id = null;
+        $visitor_id = null;
         
-        $conn->begin_transaction();
-        
-        $reference_id = null;
-        $household_id = ($user_type === 'Homeowner/Resident') ? $user_id : null;
-        $visitor_id = ($user_type === 'Visitor') ? $user_id : null;
-        $paymentDetails = null;
-        
-        if ($category === 'Amenity Fee') {
-            $booking_id_field = ($user_type === 'Homeowner/Resident') ? 'homeowner_id' : 'visitor_id';
-            $stmt = $conn->prepare("SELECT * FROM amenity_bookings WHERE $booking_id_field = ? AND invoice_number = ?");
-            $stmt->bind_param("ss", $user_id, $invoice_number);
-            $stmt->execute();
-            $booking = $stmt->get_result()->fetch_assoc();
+        if ($db_user_type === 'homeowner') {
+            $household_id = $userDetails['household_id'];
+            $debug_info['household_id'] = $household_id;
+        } else {
+            // THIS IS THE KEY: visitor_details table returns 'visitor_id'
+            $visitor_id = $userDetails['visitor_id'] ?? null;
+            $debug_info['visitor_id'] = $visitor_id;
             
-            if (!$booking) {
-                throw new Exception('Amenity booking not found');
+            if (empty($visitor_id)) {
+                throw new Exception("Critical: visitor_id is empty after query. Retrieved data: " . json_encode($userDetails));
             }
             
+            // Verify it exists
+            $check_stmt = $conn->prepare("SELECT visitor_id FROM visitor_details WHERE visitor_id = ?");
+            $check_stmt->bind_param("s", $visitor_id);
+            $check_stmt->execute();
+            $check_result = $check_stmt->get_result();
+            
+            if ($check_result->num_rows === 0) {
+                $check_stmt->close();
+                throw new Exception("Visitor ID '$visitor_id' not found in visitor_details table");
+            }
+            $check_stmt->close();
+            
+            $debug_info['visitor_verified'] = true;
+        }
+        
+        $debug_info['step'] = 'IDs prepared';
+        
+        // Start transaction
+        if (!$conn->begin_transaction()) {
+            throw new Exception("Failed to start transaction: " . $conn->error);
+        }
+        
+        $reference_id = null;
+        $paymentDetails = null;
+        
+        // Process Amenity Fee payment
+        if ($category === 'Amenity Fee') {
+            $booking_id_field = ($user_type === 'Homeowner/Resident') ? 'homeowner_id' : 'visitor_id';
+            
+            $debug_info['booking_id_field'] = $booking_id_field;
+            
+            $stmt = $conn->prepare("SELECT * FROM amenity_bookings WHERE $booking_id_field = ? AND invoice_number = ?");
+            if (!$stmt) {
+                throw new Exception("Prepare failed (amenity_bookings): " . $conn->error);
+            }
+            
+            $stmt->bind_param("ss", $user_id, $invoice_number);
+            if (!$stmt->execute()) {
+                throw new Exception("Execute failed (amenity_bookings): " . $stmt->error);
+            }
+            
+            $booking = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            
+            if (!$booking) {
+                throw new Exception("Amenity booking not found for invoice: $invoice_number");
+            }
+            
+            $debug_info['booking_found'] = true;
+            $debug_info['booking_id'] = $booking['id'];
+            
             $reference_id = $booking['id'];
-            $new_amount_paid = $booking['amount_paid'] + $amount;
-            $balance = $booking['total_amount'] - $new_amount_paid;
+            $new_amount_paid = floatval($booking['amount_paid']) + $amount;
+            $balance = floatval($booking['total_amount']) - $new_amount_paid;
             
             if ($balance <= 0) {
                 $new_status = 'paid';
@@ -357,8 +406,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
             }
             
             $stmt = $conn->prepare("UPDATE amenity_bookings SET amount_paid = ?, status = ? WHERE id = ?");
+            if (!$stmt) {
+                throw new Exception("Prepare failed (update amenity_bookings): " . $conn->error);
+            }
+            
             $stmt->bind_param("dsi", $new_amount_paid, $new_status, $reference_id);
-            $stmt->execute();
+            if (!$stmt->execute()) {
+                throw new Exception("Execute failed (update amenity_bookings): " . $stmt->error);
+            }
+            $stmt->close();
+            
+            $debug_info['booking_updated'] = true;
             
             $paymentDetails = [
                 'invoice_number' => $invoice_number,
@@ -367,107 +425,96 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
                 'payment_method' => $payment_method,
                 'amount_paid' => $amount,
                 'reference_number' => $reference_number,
-                'total_amount' => $booking['total_amount'],
+                'total_amount' => floatval($booking['total_amount']),
                 'total_paid' => $new_amount_paid,
                 'remaining_balance' => max(0, $balance),
-                'payment_status' => $new_status
-            ];
-            
-        } elseif ($category === 'Monthly Dues') {
-            if ($user_type !== 'Homeowner/Resident') {
-                throw new Exception('Monthly dues only apply to homeowners/residents');
-            }
-            
-            $stmt = $conn->prepare("SELECT * FROM monthly_dues WHERE household_id = ? AND invoice_number = ?");
-            $stmt->bind_param("ss", $user_id, $invoice_number);
-            $stmt->execute();
-            $dues = $stmt->get_result()->fetch_assoc();
-            
-            if (!$dues) {
-                throw new Exception('Monthly dues record not found');
-            }
-            
-            $reference_id = $dues['id'];
-            $new_amount_paid = $dues['amount_paid'] + $amount;
-            $new_balance = $dues['balance_remaining'] - $amount;
-            
-            if ($new_balance < 0) {
-                $new_balance = 0;
-            }
-            
-            if ($new_balance <= 0) {
-                $new_status = 'Completed';
-            } elseif ($new_amount_paid > 0) {
-                $new_status = 'Partial';
-            } else {
-                $new_status = 'Pending';
-            }
-            
-            $stmt = $conn->prepare("UPDATE monthly_dues SET amount_paid = ?, balance_remaining = ?, status = ? WHERE id = ?");
-            $stmt->bind_param("ddsi", $new_amount_paid, $new_balance, $new_status, $reference_id);
-            $stmt->execute();
-            
-            $total_amount = $dues['amount_paid'] + $dues['balance_remaining'];
-            $paymentDetails = [
-                'invoice_number' => $invoice_number,
-                'category' => 'Monthly Dues',
-                'payment_date' => date('Y-m-d'),
-                'payment_method' => $payment_method,
-                'amount_paid' => $amount,
-                'reference_number' => $reference_number,
-                'total_amount' => $total_amount,
-                'total_paid' => $new_amount_paid,
-                'remaining_balance' => $new_balance,
                 'payment_status' => $new_status
             ];
         }
         
         // Insert payment record
         $db_category = ($category === 'Amenity Fee') ? 'amenity' : 'monthly_dues';
-        $stmt = $conn->prepare("
-            INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->bind_param("sisssdssss", $db_category, $reference_id, $invoice_number, $db_user_type, $household_id, $visitor_id, $amount, $payment_method, $reference_number, $proof_filename);
-        $stmt->execute();
+        
+        $debug_info['step'] = 'About to insert payment';
+        $debug_info['insert_data'] = [
+            'category' => $db_category,
+            'reference_id' => $reference_id,
+            'user_type' => $db_user_type,
+            'household_id' => $household_id,
+            'visitor_id' => $visitor_id
+        ];
+        
+        if ($db_user_type === 'visitor') {
+            $stmt = $conn->prepare("
+                INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
+                VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)
+            ");
+            
+            if (!$stmt) {
+                throw new Exception("Prepare failed: " . $conn->error);
+            }
+            
+            $stmt->bind_param("sissdsss", $db_category, $reference_id, $invoice_number, $db_user_type, $visitor_id, $amount, $payment_method, $reference_number, $proof_filename);
+        } else {
+            $stmt = $conn->prepare("
+                INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
+                VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)
+            ");
+            
+            if (!$stmt) {
+                throw new Exception("Prepare failed: " . $conn->error);
+            }
+            
+            $stmt->bind_param("sisssdsss", $db_category, $reference_id, $invoice_number, $db_user_type, $household_id, $amount, $payment_method, $reference_number, $proof_filename);
+        }
+        
+        if (!$stmt->execute()) {
+            $debug_info['insert_error'] = $stmt->error;
+            throw new Exception("Execute failed (insert payments): " . $stmt->error . " | Debug: " . json_encode($debug_info));
+        }
         
         $payment_id = $conn->insert_id;
+        $stmt->close();
         
         $conn->commit();
         
-        // Send email
-        $emailSent = false;
-        $recipientEmail = trim($userDetails['email_address'] ?? '');
+        // Clear output buffer
+        ob_end_clean();
         
-        if (!empty($recipientEmail) && filter_var($recipientEmail, FILTER_VALIDATE_EMAIL) && $paymentDetails) {
-            $recipientName = trim($userDetails['first_name'] . ' ' . $userDetails['last_name']);
-            $emailSent = sendPaymentReceipt($recipientEmail, $recipientName, $paymentDetails);
-        }
-        
-        // Return success response
+        // Return success
         header('Content-Type: application/json');
         echo json_encode([
-            'success' => true, 
+            'success' => true,
             'message' => 'Payment processed successfully',
             'payment_id' => $payment_id,
-            'email_sent' => $emailSent
+            'email_sent' => false,
+            'debug' => $debug_info
         ]);
+        exit;
         
     } catch (Exception $e) {
-        if ($conn) {
+        if (isset($conn) && $conn->ping()) {
             $conn->rollback();
         }
         
-        error_log("Payment processing error: " . $e->getMessage());
+        // Clear output buffer if it exists
+        if (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         
+        http_response_code(500);
         header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'file' => basename($e->getFile()),
+            'line' => $e->getLine(),
+            'debug' => $debug_info ?? []
+        ]);
+        exit;
     }
-    
-    exit;
 }
 
 // Redirect if not POST request
 header("Location: ../visitor_payment.php");
 exit;
-?>
