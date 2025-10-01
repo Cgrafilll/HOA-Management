@@ -1,0 +1,673 @@
+// Visitor Payment Management System JavaScript
+
+class VisitorPaymentManager {
+    constructor() {
+        this.initializeElements();
+        this.initializeModals();
+        this.disableInOfficePayment(); // Disable in-office payment for visitors
+        this.autoPopulateUserInfo(); // Auto-populate on load
+        this.setAndDisableCategory(); // Default and disable category to Amenity Fee
+        this.attachEventListeners();
+    }
+
+    initializeElements() {
+        // Payment method cards
+        this.bankTransfer = document.getElementById('bankTransfer');
+        this.inOffice = document.getElementById('inOffice');
+        this.selectedMethod = document.getElementById('selectedMethod');
+        
+        // Form elements
+        this.userTypeSelect = document.getElementById('userTypeSelect');
+        this.userIdSelect = document.getElementById('userIdSelect');
+        this.idLabel = document.getElementById('idLabel');
+        this.loadingIndicator = document.getElementById('loadingIndicator');
+        this.categorySelect = document.getElementById('categorySelect');
+        this.invoiceInput = document.getElementById('invoiceInput');
+        this.amountPaid = document.getElementById('amountPaid');
+        this.referenceNumber = document.getElementById('referenceNumber');
+        this.referenceNumberGroup = document.getElementById('referenceNumberGroup');
+        
+        // Display elements
+        this.refNo = document.getElementById('refNo');
+        this.residentName = document.getElementById('residentName');
+        this.issueDate = document.getElementById('issueDate');
+        
+        // Table and summary elements
+        this.invoiceTableBody = document.getElementById('invoiceTableBody');
+        this.subtotal = document.getElementById('subtotal');
+        this.previouslyPaid = document.getElementById('previouslyPaid');
+        this.balanceDue = document.getElementById('balanceDue');
+        
+        // File upload elements
+        this.fileDropArea = document.getElementById('fileDropArea');
+        this.fileInput = document.getElementById('fileInput');
+        this.browseLink = document.getElementById('browseLink');
+        this.filePreview = document.getElementById('filePreview');
+        
+        // Store current invoice data
+        this.currentInvoiceData = null;
+        
+        // Modal confirmation elements
+        this.confirmName = document.getElementById('confirmName');
+        this.confirmCategory = document.getElementById('confirmCategory');
+        this.confirmInvoice = document.getElementById('confirmInvoice');
+        this.confirmAmount = document.getElementById('confirmAmount');
+        this.confirmMethod = document.getElementById('confirmMethod');
+        this.confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+    }
+
+    initializeModals() {
+        // Initialize Bootstrap modals
+        const confirmModalElement = document.getElementById('confirmPaymentModal');
+        const successModalElement = document.getElementById('successPaymentModal');
+        const errorModalElement = document.getElementById('errorPaymentModal');
+        
+        if (confirmModalElement) {
+            this.confirmModal = new bootstrap.Modal(confirmModalElement);
+        } else {
+            console.error('Confirmation modal not found');
+        }
+        
+        if (successModalElement) {
+            this.successModal = new bootstrap.Modal(successModalElement);
+        } else {
+            console.error('Success modal not found');
+        }
+        
+        if (errorModalElement) {
+            this.errorModal = new bootstrap.Modal(errorModalElement);
+            this.errorMessage = document.getElementById('errorMessage');
+        } else {
+            console.error('Error modal not found');
+        }
+    }
+
+    autoPopulateUserInfo() {
+        // Get user info from data attributes set by PHP
+        const userType = this.userTypeSelect.getAttribute('data-user-type');
+        const userId = this.userIdSelect.getAttribute('data-user-id');
+        const userName = this.userIdSelect.getAttribute('data-user-name');
+        
+        if (userType && userId && userName) {
+            // Set user type
+            this.userTypeSelect.value = userType;
+            this.userTypeSelect.disabled = true;
+            this.userTypeSelect.style.backgroundColor = '#e9ecef';
+            
+            // Determine label based on user type
+            const labelText = userType === 'Homeowner/Resident' ? 'Resident ID' : 'Visitor ID';
+            this.idLabel.innerHTML = `${labelText}<small class="fw-bold text-danger">*</small>`;
+            
+            // Populate ID dropdown with current user only
+            this.userIdSelect.innerHTML = `<option value="${userId}">${userId} - ${userName}</option>`;
+            this.userIdSelect.value = userId;
+            this.userIdSelect.disabled = true;
+            this.userIdSelect.style.backgroundColor = '#e9ecef';
+            
+            // Hide loading indicator
+            this.loadingIndicator.classList.add('d-none');
+        } else {
+            console.error('User information not found. Please ensure data attributes are set correctly.');
+        }
+    }
+
+    setAndDisableCategory() {
+    // Remove all options except Amenity Fee
+    const amenityOption = [...this.categorySelect.options].find(opt => opt.value === 'Amenity Fee');
+    
+        if (amenityOption) {
+            // Clear all options
+            this.categorySelect.innerHTML = '';
+            
+            // Add only Amenity Fee option
+            const newOption = document.createElement('option');
+            newOption.value = 'Amenity Fee';
+            newOption.textContent = 'Amenity Fee';
+            this.categorySelect.appendChild(newOption);
+            
+            // Set the value
+            this.categorySelect.value = 'Amenity Fee';
+        } else {
+            // Fallback if Amenity Fee option not found
+            this.categorySelect.value = 'Amenity Fee';
+        }
+        
+        // Disable the category select
+        this.categorySelect.disabled = true;
+        this.categorySelect.style.backgroundColor = '#e9ecef';
+    }
+
+    disableInOfficePayment() {
+        // Add disabled class
+        this.inOffice.classList.add('disabled');
+        
+        // Add a disabled badge or text
+        if (!this.inOffice.querySelector('.text-muted')) {
+            const disabledText = document.createElement('small');
+            disabledText.className = 'text-muted d-block mt-1';
+            disabledText.textContent = '(Visitors: Bank Transfer Only)';
+            disabledText.style.fontSize = '0.75rem';
+            this.inOffice.appendChild(disabledText);
+        }
+        
+        // Ensure bank transfer is selected by default
+        this.selectPaymentMethod('bank');
+    }
+
+    attachEventListeners() {
+        // Payment method selection - bank transfer only for visitors
+        this.bankTransfer.addEventListener('click', () => this.selectPaymentMethod('bank'));
+        
+        // Form field changes
+        this.invoiceInput.addEventListener('blur', () => this.fetchInvoiceDetails());
+        this.invoiceInput.addEventListener('input', () => this.resetInvoiceValidation());
+        
+        // File upload
+        this.browseLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.fileInput.click();
+        });
+        this.fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
+        
+        // Drag and drop
+        this.setupDragAndDrop();
+        
+        // Form submission
+        document.getElementById('paymentForm').addEventListener('submit', (e) => this.handleSubmit(e));
+        
+        // Modal confirmation button
+        if (this.confirmPaymentBtn) {
+            this.confirmPaymentBtn.addEventListener('click', () => this.processPayment());
+        }
+    }
+
+    selectPaymentMethod(method) {
+        if (method === 'bank') {
+            this.bankTransfer.classList.add('active');
+            this.inOffice.classList.remove('active');
+            this.selectedMethod.textContent = "Bank Transfer";
+            this.referenceNumberGroup.style.display = 'block';
+        } else {
+            this.inOffice.classList.add('active');
+            this.bankTransfer.classList.remove('active');
+            this.selectedMethod.textContent = "In-Office Payment";
+            this.referenceNumberGroup.style.display = 'none';
+        }
+        this.clearFormFields();
+    }
+
+    async fetchInvoiceDetails() {
+        const invoiceNumber = this.invoiceInput.value.trim();
+        const selectedCategory = this.categorySelect.value;
+        const userId = this.userIdSelect.value;
+        const userType = this.userTypeSelect.value;
+        
+        // Reset display fields
+        this.refNo.textContent = "";
+        this.residentName.textContent = "";
+        this.issueDate.textContent = "";
+        this.clearInvoiceTable();
+        
+        // Only fetch for Amenity Fee (since category is locked for visitors)
+        if (selectedCategory === "Amenity Fee" && invoiceNumber && userId && userType) {
+            try {
+                const params = new URLSearchParams({
+                    action: 'get_amenity_booking_by_invoice',
+                    invoice_number: invoiceNumber,
+                    user_id: userId,
+                    user_type: userType
+                });
+                
+                const response = await fetch(`?${params}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    this.currentInvoiceData = data;
+                    
+                    // Populate basic info
+                    this.refNo.textContent = data.reference_number;
+                    this.residentName.textContent = `${data.first_name} ${data.middle_name} ${data.last_name}`;
+                    this.issueDate.textContent = new Date(data.created_at).toLocaleDateString();
+                    
+                    // Populate table
+                    this.populateInvoiceTable(data.items);
+                    
+                    // Populate summary
+                    this.subtotal.textContent = `₱${data.subtotal}`;
+                    this.previouslyPaid.textContent = `₱${data.amount_paid}`;
+                    this.balanceDue.textContent = `₱${data.balance_due}`;
+                    
+                    // Add status indicator
+                    if (data.status === 'Partial') {
+                        this.balanceDue.parentElement.classList.add('text-warning');
+                        this.balanceDue.parentElement.classList.remove('text-success');
+                    } else if (data.status === 'Paid' || data.status === 'Completed') {
+                        this.balanceDue.parentElement.classList.add('text-success');
+                        this.balanceDue.parentElement.classList.remove('text-warning');
+                    } else {
+                        this.balanceDue.parentElement.classList.remove('text-success', 'text-warning');
+                    }
+                    
+                    this.invoiceInput.style.borderColor = '#198754';
+                    this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+                } else {
+                    this.refNo.textContent = result.error || "Invoice not found";
+                    this.invoiceInput.style.borderColor = '#dc3545';
+                    this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+                    this.clearInvoiceTable();
+                }
+            } catch (error) {
+                console.error('Error fetching invoice details:', error);
+                this.refNo.textContent = "Error loading";
+                this.invoiceInput.style.borderColor = '#dc3545';
+                this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+                this.clearInvoiceTable();
+            }
+        } else {
+            this.clearInvoiceTable();
+        }
+    }
+    
+    populateInvoiceTable(items) {
+        if (!items || items.length === 0) {
+            this.clearInvoiceTable();
+            return;
+        }
+        
+        // Clear existing rows
+        this.invoiceTableBody.innerHTML = '';
+        
+        // Add items to table
+        items.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.category}</td>
+                <td>${item.item}</td>
+                <td>₱${item.rate}</td>
+                <td>${item.qty}</td>
+                <td>₱${item.amount}</td>
+            `;
+            this.invoiceTableBody.appendChild(row);
+        });
+        
+        // Add empty rows if needed to maintain minimum height
+        const currentRows = items.length;
+        const minRows = 3;
+        if (currentRows < minRows) {
+            for (let i = currentRows; i < minRows; i++) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = '<td colspan="5">&nbsp;</td>';
+                this.invoiceTableBody.appendChild(emptyRow);
+            }
+        }
+    }
+    
+    clearInvoiceTable() {
+        this.invoiceTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No invoice data loaded</td></tr>';
+        this.subtotal.textContent = '₱0.00';
+        this.previouslyPaid.textContent = '₱0.00';
+        this.balanceDue.textContent = '₱0.00';
+        this.currentInvoiceData = null;
+    }
+
+    resetInvoiceValidation() {
+        this.invoiceInput.style.borderColor = '#dee2e6';
+        this.invoiceInput.style.boxShadow = 'none';
+    }
+
+    setupDragAndDrop() {
+        this.fileDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.fileDropArea.classList.add('dragover');
+        });
+        
+        this.fileDropArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.fileDropArea.classList.remove('dragover');
+        });
+        
+        this.fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.fileDropArea.classList.remove('dragover');
+            this.handleFiles(e.dataTransfer.files);
+        });
+    }
+
+    handleFiles(files) {
+        if (files.length === 0) return;
+        
+        const file = files[0];
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        
+        // Validate file type
+        if (!allowedTypes.includes(file.type)) {
+            alert('Please select a valid file type for proof of payment (JPEG, PNG, GIF, PDF)');
+            return;
+        }
+        
+        // Validate file size
+        if (file.size > maxSize) {
+            alert('File size must be less than 10MB');
+            return;
+        }
+        
+        // Update file input
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        this.fileInput.files = dt.files;
+        
+        // Display preview
+        this.displayFilePreview(file);
+    }
+
+    displayFilePreview(file) {
+        this.filePreview.innerHTML = '';
+        
+        const previewContainer = document.createElement('div');
+        previewContainer.className = 'alert alert-success d-flex align-items-center justify-content-between';
+        
+        const fileInfo = document.createElement('div');
+        fileInfo.className = 'd-flex align-items-center';
+        
+        const fileIcon = document.createElement('i');
+        fileIcon.className = file.type.startsWith('image/') 
+            ? 'bi bi-file-earmark-image me-2' 
+            : 'bi bi-file-earmark-pdf me-2';
+        
+        const fileName = document.createElement('span');
+        fileName.textContent = `${file.name} (${this.formatFileSize(file.size)})`;
+        
+        fileInfo.appendChild(fileIcon);
+        fileInfo.appendChild(fileName);
+        
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'btn-close';
+        removeButton.onclick = () => {
+            this.fileInput.value = '';
+            this.filePreview.innerHTML = '';
+        };
+        
+        previewContainer.appendChild(fileInfo);
+        previewContainer.appendChild(removeButton);
+        this.filePreview.appendChild(previewContainer);
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    clearFormFields() {
+        // Only clear editable fields (category remains disabled and locked)
+        this.invoiceInput.value = "";
+        this.amountPaid.value = "";
+        this.referenceNumber.value = "";
+        
+        // Reset display fields
+        this.refNo.textContent = "";
+        this.residentName.textContent = "";
+        this.issueDate.textContent = "";
+        
+        // Reset table and summary
+        this.clearInvoiceTable();
+        
+        // Reset validation styles
+        const fieldsToReset = [
+            this.invoiceInput,
+            this.amountPaid
+        ];
+        
+        fieldsToReset.forEach(field => {
+            field.classList.remove('is-invalid');
+            field.style.borderColor = '#dee2e6';
+            field.style.boxShadow = 'none';
+        });
+        
+        // Reset file drop area
+        this.fileDropArea.style.border = '2px dashed #d1d5db';
+        this.fileDropArea.style.backgroundColor = '#f9fafb';
+        
+        // Remove error message if exists
+        const errorMsg = this.fileDropArea.querySelector('.upload-error');
+        if (errorMsg) {
+            errorMsg.remove();
+        }
+        
+        // Reset file upload
+        this.fileInput.value = '';
+        this.filePreview.innerHTML = '';
+    }
+
+    handleSubmit(e) {
+        e.preventDefault();
+        
+        // Validate required fields (category is already set and disabled)
+        const requiredFields = [
+            this.invoiceInput,
+            this.amountPaid
+        ];
+        
+        let isValid = true;
+        
+        // Check each required field
+        requiredFields.forEach(field => {
+            if (!field.value) {
+                field.classList.add('is-invalid');
+                field.style.borderColor = '#dc3545';
+                field.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+                field.style.borderColor = '#dee2e6';
+                field.style.boxShadow = 'none';
+            }
+        });
+        
+        // Validate amount paid specifically
+        if (!this.amountPaid.value || parseFloat(this.amountPaid.value) <= 0) {
+            this.amountPaid.classList.add('is-invalid');
+            this.amountPaid.style.borderColor = '#dc3545';
+            this.amountPaid.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+            isValid = false;
+        }
+        
+        // CRITICAL: Check proof of payment for bank transfer
+        if (this.selectedMethod.textContent === "Bank Transfer" && !this.fileInput.files.length) {
+            this.fileDropArea.style.border = '2px dashed #dc3545';
+            this.fileDropArea.style.backgroundColor = '#f8d7da';
+            
+            if (!this.fileDropArea.querySelector('.upload-error')) {
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'upload-error text-danger small mt-2';
+                errorMsg.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>Proof of payment is required for bank transfers';
+                this.fileDropArea.appendChild(errorMsg);
+            }
+            
+            isValid = false;
+        } else {
+            this.fileDropArea.style.border = '2px dashed #d1d5db';
+            this.fileDropArea.style.backgroundColor = '#f9fafb';
+            
+            const errorMsg = this.fileDropArea.querySelector('.upload-error');
+            if (errorMsg) {
+                errorMsg.remove();
+            }
+        }
+        
+        // STOP if basic validation failed
+        if (!isValid) {
+            return;
+        }
+        
+        // Additional validation for Amenity Fee
+        if (this.categorySelect.value === 'Amenity Fee') {
+            if (!this.currentInvoiceData) {
+                this.showErrorModal('Please enter a valid invoice number for Amenity Fee payments.');
+                return;
+            }
+            
+            const amountPaid = parseFloat(this.amountPaid.value);
+            const balanceDue = parseFloat(this.currentInvoiceData.balance_due.replace(/,/g, ''));
+            
+            if (amountPaid > balanceDue) {
+                this.showErrorModal(`The amount entered (₱${amountPaid.toFixed(2)}) exceeds the balance due (₱${balanceDue.toFixed(2)}). Please enter a valid amount.`);
+                return;
+            }
+        }
+        
+        // All validations passed - show confirmation modal
+        this.showConfirmationModal();
+    }
+
+    showConfirmationModal() {
+        // Populate confirmation modal with payment details
+        const selectedUserOption = this.userIdSelect.options[this.userIdSelect.selectedIndex];
+        const userName = selectedUserOption.textContent.split(' - ')[1] || 'Unknown';
+        
+        // Safely set text content with null checks
+        if (this.confirmName) this.confirmName.textContent = userName;
+        if (this.confirmCategory) this.confirmCategory.textContent = this.categorySelect.value;
+        if (this.confirmInvoice) this.confirmInvoice.textContent = this.invoiceInput.value;
+        if (this.confirmAmount) this.confirmAmount.textContent = `₱${parseFloat(this.amountPaid.value).toFixed(2)}`;
+        if (this.confirmMethod) this.confirmMethod.textContent = this.selectedMethod.textContent;
+        
+        // Show the modal
+        if (this.confirmModal) {
+            this.confirmModal.show();
+        } else {
+            console.error('Confirmation modal not initialized');
+            alert('Error: Unable to show confirmation dialog');
+        }
+    }
+
+    showErrorModal(message) {
+        if (this.errorMessage && this.errorModal) {
+            this.errorMessage.textContent = message;
+            this.errorModal.show();
+        } else {
+            console.error('Error modal not initialized');
+            alert(message); // Fallback to alert if modal not available
+        }
+    }
+
+    async processPayment() {
+    try {
+        // Disable the confirm button to prevent double submission
+        if (this.confirmPaymentBtn) {
+            this.confirmPaymentBtn.disabled = true;
+            this.confirmPaymentBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+        }
+        
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('action', 'process_payment');
+        formData.append('category', this.categorySelect.value);
+        formData.append('user_type', this.userTypeSelect.value);
+        formData.append('user_id', this.userIdSelect.value);
+        formData.append('invoice_number', this.invoiceInput.value);
+        formData.append('amount', this.amountPaid.value);
+        formData.append('payment_method', this.selectedMethod.textContent);
+        formData.append('reference_number', this.referenceNumber.value || '');
+        
+        // Add file if exists
+        if (this.fileInput.files.length > 0) {
+            formData.append('proof_of_payment', this.fileInput.files[0]);
+        }
+        
+        // THIS IS THE MISSING LINE - Add the fetch call
+        const response = await fetch('process_payment.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        // Check if response is OK
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('Server response:', text);
+            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        
+        // Check content type before parsing JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Non-JSON response:', text);
+            throw new Error('Server returned non-JSON response');
+        }
+    
+        const result = await response.json();
+        
+        if (result.success) {
+            // Hide confirmation modal
+            if (this.confirmModal) {
+                this.confirmModal.hide();
+            }
+            
+            // Wait for modal to hide
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // Show success modal
+            if (this.successModal) {
+                this.successModal.show();
+            }
+            
+            // Clear form after delay
+            setTimeout(() => {
+                this.clearFormFields();
+                this.selectPaymentMethod('bank');
+            }, 1000);
+            
+        } else {
+            throw new Error(result.error || 'Payment processing failed');
+        }
+        
+        } catch (error) {
+    console.error('Payment processing error:', error);
+    
+    // Hide confirmation modal
+    if (this.confirmModal) {
+        this.confirmModal.hide();
+    }
+    
+        // Wait for modal to hide, then show error
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Enhanced error display for debugging
+        let errorMsg = error.message;
+        if (error.file) {
+            errorMsg += `\n\nFile: ${error.file}`;
+        }
+        if (error.line) {
+            errorMsg += `\nLine: ${error.line}`;
+        }
+        if (error.trace) {
+            console.log('Stack trace:', error.trace);
+        }
+        
+        // Show error modal
+        this.showErrorModal('Error processing payment: ' + errorMsg);
+        
+    } finally {
+
+        // Re-enable the confirm button
+        if (this.confirmPaymentBtn) {
+            this.confirmPaymentBtn.disabled = false;
+            this.confirmPaymentBtn.innerHTML = 'Process Payment';
+        }
+    }
+}
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    new VisitorPaymentManager();
+});
