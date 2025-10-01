@@ -240,16 +240,25 @@ if ($view_admin_id) {
         <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav d-flex flex-column gap-1">
-                <a href="index.php"
-                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                <a href="index.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i>Entry Monitoring
                 </a>
-                <a href="exit.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                <a href="exit.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-sign-turn-left me-2"></i>Exit Monitoring
                 </a>
                 <a href="amenity.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i>Amenity Booking
+                </a>
+                <a href="add_visitor.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-person-fill-add me-2">Visitor</i>
+                </a>
+                <a href="admin_side/login/logout.php"
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="position: fixed; bottom: 0; width: 220px;">
+                    <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
