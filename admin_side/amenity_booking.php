@@ -180,6 +180,42 @@ while ($row = $calendar_result->fetch_assoc()) {
     ];
 }
 
+// Query for reschedule requests
+$reschedule_sql = "SELECT 
+    ab.id,
+    ab.reservation_code,
+    ab.amenity,
+    ab.user_type,
+    ab.reservation_date,
+    ab.rate,
+    ab.status,
+    ab.requested_date,
+    ab.requested_rate,
+    ab.reschedule_reason,
+    ab.reschedule_requested_at,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.first_name
+        WHEN ab.user_type = 'visitor' THEN vd.first_name
+        ELSE NULL
+    END as first_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.middle_name
+        WHEN ab.user_type = 'visitor' THEN vd.middle_name
+        ELSE NULL
+    END as middle_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.last_name
+        WHEN ab.user_type = 'visitor' THEN vd.last_name
+        ELSE NULL
+    END as last_name
+FROM amenity_bookings ab
+LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+WHERE ab.reschedule_status = 'pending'
+ORDER BY ab.reschedule_requested_at DESC";
+
+$reschedule_result = $conn->query($reschedule_sql);
+
 // Handle AJAX request to get booked dates with rates for an amenity
 if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
     header('Content-Type: application/json');
@@ -865,96 +901,63 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     </div>
                     <!-- Reschedule Requests -->
                     <div class="tab-pane fade" id="reschedule" role="tabpanel">
-                        <!-- Bookings Table -->
-                        <div class="tab-pane fade show active" id="bookings" role="tabpanel">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="small">List of Amenity Bookings</span>
-                                <a href="amenity_booking/choose_booking.php" class="btn btn-primary btn-sm">+ Create New
-                                    Booking</a>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
-                                    <thead class="bg-success text-white small">
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Booking Date</th>
-                                            <th>Full Name</th>
-                                            <th>Amenity</th>
-                                            <th>Reservation Code</th>
-                                            <th>Payment Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="small align-middle">
-                                        <?php
-                                        if ($bookings_result->num_rows > 0) {
-                                            while ($row = $bookings_result->fetch_assoc()) {
-                                                $id = $row['booking_id'];
-                                                $fullName = $row['full_name'];
-                                                $amenity = $row['amenity'];
-                                                $bookingDate = $row['booking_date'];
-                                                $resCode = $row['reservation_code'];
-                                                $statusClass = $row['payment_status'] === 'Paid' ? 'text-success' : ($row['payment_status'] === 'Partial' ? 'text-warning' : 'text-muted');
-                                                echo "<tr>
-                                                <td>{$id}</td>
-                                                <td>{$bookingDate}</td>
-                                                <td>{$fullName}</td>
-                                                <td>{$amenity}</td>
-                                                <td>{$resCode}</td>
-                                                <td class='{$statusClass} fw-bold'>{$row['payment_status']}</td>
-                                                <td class='text-center'>
-                                                    <div class='text-center'>
-                                                        <!-- View button -->
-                                                        <button class='btn btn-sm btn-outline-success me-1' title='View' style='padding: 2px 6px; font-size: 0.9rem;' 
-                                                            onclick='showBookingDetailsFromTable({
-                                                                fullName: \"" . addslashes($fullName) . "\",
-                                                                amenity: \"" . addslashes($amenity) . "\",
-                                                                date: \"" . $bookingDate . "\",
-                                                                reservationCode: \"" . $resCode . "\",
-                                                                paymentStatus: \"" . ucfirst($row['status']) . "\",
-                                                                amount: \"₱" . number_format($row['amount_paid'], 2) . ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : "") . "\",
-                                                                time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\"
-                                                            })'>
-                                                            <i class='bi bi-eye'></i>
-                                                        </button>
-                                                        <!-- Reschedule button - show different state if pending -->
-                                                        " . ($row['reschedule_status'] === 'pending'
-                                                    ? "<button class='btn btn-sm btn-outline-warning me-1' title='Pending Reschedule' style='padding: 2px 6px; font-size: 0.9rem;' disabled>
-                                                                <i class='bi bi-clock-history'></i>
-                                                            </button>"
-                                                    : "<button class='btn btn-sm btn-outline-primary me-1' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'
-                                                                onclick='openRescheduleModal({
-                                                                    id: \"" . $id . "\",
-                                                                    fullName: \"" . addslashes($fullName) . "\",
-                                                                    amenity: \"" . addslashes($amenity) . "\",
-                                                                    date: \"" . $bookingDate . "\",
-                                                                    time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\",
-                                                                    rate: \"" . $row['rate'] . "\"
-                                                                })'>
-                                                                <i class='bi bi-calendar2-week'></i>
-                                                            </button>") . "
-                                                    </div>
-                                                </td>
-                                            </tr>";
-                                            }
-                                        } else {
-                                            echo "<tr><td colspan='7' class='text-center text-muted'>No bookings found.</td></tr>";
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="small">List of Pending Reschedule Requests</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="bg-success text-white small">
+                                    <tr>
+                                        <th>Full Name</th>
+                                        <th>Amenity</th>
+                                        <th>Reservation Code</th>
+                                        <th>Current Date</th>
+                                        <th>Requested Date</th>
+                                        <th>Reason</th>
+                                        <th>Requested At</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="small align-middle">
+                                    <?php
+                                    if ($reschedule_result->num_rows > 0) {
+                                        while ($row = $reschedule_result->fetch_assoc()) {
+                                            $id = $row['id'];
+                                            $fullName = ucwords(trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']));
+                                            $amenity = $row['amenity'];
+                                            $currentDate = date('M d, Y', strtotime($row['reservation_date']));
+                                            $requestedDate = date('M d, Y', strtotime($row['requested_date']));
+                                            $currentTime = $row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : '5:00 PM - 10:00 PM';
+                                            $requestedTime = $row['requested_rate'] === 'day' ? '9:00 AM - 5:00 PM' : '5:00 PM - 10:00 PM';
+                                            $reason = htmlspecialchars($row['reschedule_reason']);
+                                            $requestedAt = date('M d, Y h:i A', strtotime($row['reschedule_requested_at']));
+
+                                            echo "<tr>
+                            <td>{$fullName}</td>
+                            <td><span class='badge bg-secondary'>{$amenity}</span></td>
+                            <td>{$row['reservation_code']}</td>
+                            <td>{$currentDate}<br><small class='text-muted'>{$currentTime}</small></td>
+                            <td><span class='text-primary fw-bold'>{$requestedDate}</span><br><small class='text-muted'>{$requestedTime}</small></td>
+                            <td><small>{$reason}</small></td>
+                            <td><small>{$requestedAt}</small></td>
+                            <td class='text-center'>
+                                <button class='btn btn-sm btn-success me-1' title='Approve' 
+                                    onclick='approveReschedule({$id})'>
+                                    <i class='bi bi-check-lg'></i>
+                                </button>
+                                <button class='btn btn-sm btn-danger' title='Reject' 
+                                    onclick='rejectReschedule({$id})'>
+                                    <i class='bi bi-x-lg'></i>
+                                </button>
+                            </td>
+                        </tr>";
                                         }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mt-2">
-                                <span class="small">Showing 1 to <?php echo $bookings_result->num_rows; ?>
-                                    entries</span>
-                                <nav>
-                                    <ul class="pagination pagination-sm m-0">
-                                        <li class="page-item disabled"><a class="page-link">Previous</a></li>
-                                        <li class="page-item active"><a class="page-link">1</a></li>
-                                        <li class="page-item"><a class="page-link">Next</a></li>
-                                    </ul>
-                                </nav>
-                            </div>
+                                    } else {
+                                        echo "<tr><td colspan='8' class='text-center text-muted'>No pending reschedule requests.</td></tr>";
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -1703,6 +1706,18 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 });
             }
         });
+
+        function approveReschedule(bookingId) {
+            if (confirm('Are you sure you want to approve this reschedule request?')) {
+                window.location.href = `amenity_booking/approve_reschedule.php?id=${bookingId}`;
+            }
+        }
+
+        function rejectReschedule(bookingId) {
+            if (confirm('Are you sure you want to reject this reschedule request?')) {
+                window.location.href = `amenity_booking/reject_reschedule.php?id=${bookingId}`;
+            }
+        }
     </script>
 </body>
 
