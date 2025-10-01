@@ -662,6 +662,21 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         </aside>
         <!-- Main Content -->
         <main class="flex-fill p-4">
+            <?php if (isset($_GET['success'])): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <?php echo htmlspecialchars($_GET['success']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+
+            <?php if (isset($_GET['error'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <?php echo htmlspecialchars($_GET['error']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Amenity Booking Management</h5>
