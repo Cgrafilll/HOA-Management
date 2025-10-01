@@ -583,7 +583,7 @@ class VisitorPaymentManager {
                 formData.append('proof_of_payment', this.fileInput.files[0]);
             }
             
-            const response = await fetch('payment/process_visitor_payment.php', {
+            const response = await fetch('payment/process_resident_payment.php', {
                 method: 'POST',
                 body: formData
             });
