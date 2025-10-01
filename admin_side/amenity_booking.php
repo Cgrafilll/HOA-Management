@@ -192,7 +192,7 @@ $reschedule_sql = "SELECT
     ab.requested_date,
     ab.requested_rate,
     ab.reschedule_reason,
-    ab.reschedule_status
+    ab.reschedule_status,
     ab.reschedule_requested_at,
     CASE 
         WHEN ab.user_type = 'homeowner' THEN ha.first_name
