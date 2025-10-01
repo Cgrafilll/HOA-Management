@@ -717,6 +717,28 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         </div>
                                     </div>
                                 </div>
+                                <!-- Vehicle -->
+                                <div class="row">
+                                    <label class="form-label fw-bold">Vehicle</label>
+                                    <div class="col-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="number" class="form-control" id="cars" name="cars" min="0"
+                                                value="0">
+                                            <label for="cars">No. of Vehicle/s</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="plates" name="plates">
+                                            <label for="plates">Vehicle Plate Number/s</label>
+                                        </div>
+                                        <div class="form-text text-muted">
+                                            <small><i class="bi bi-info-circle me-1"></i>If more than 1 vehicle,
+                                                separate plate numbers by comma (e.g., ABC-1234,
+                                                XYZ-5678)</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <!-- Right Column -->
                             <div class="col-lg-6">
