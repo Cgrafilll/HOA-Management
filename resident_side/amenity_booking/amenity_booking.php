@@ -217,6 +217,46 @@ if ($result) {
         ];
     }
 }
+
+// Query for reschedule requests for this homeowner
+$reschedule_sql = "SELECT 
+    ab.id,
+    ab.reservation_code,
+    ab.amenity,
+    ab.user_type,
+    ab.reservation_date,
+    ab.rate,
+    ab.status,
+    ab.requested_date,
+    ab.requested_rate,
+    ab.reschedule_reason,
+    ab.reschedule_status,
+    ab.reschedule_requested_at,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.first_name
+        WHEN ab.user_type = 'visitor' THEN vd.first_name
+        ELSE NULL
+    END as first_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.middle_name
+        WHEN ab.user_type = 'visitor' THEN vd.middle_name
+        ELSE NULL
+    END as middle_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.last_name
+        WHEN ab.user_type = 'visitor' THEN vd.last_name
+        ELSE NULL
+    END as last_name
+FROM amenity_bookings ab
+LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+WHERE ab.homeowner_id = ? AND ab.reschedule_status IN ('pending', 'approved', 'rejected')
+ORDER BY ab.reschedule_requested_at DESC";
+
+$reschedule_stmt = $conn->prepare($reschedule_sql);
+$reschedule_stmt->bind_param("i", $household_id);
+$reschedule_stmt->execute();
+$reschedule_result = $reschedule_stmt->get_result();
 ?>
 
 
@@ -476,6 +516,21 @@ if ($result) {
         </aside>
         <!-- Main Content -->
         <main class="flex-fill p-4">
+            <?php if (isset($_GET['success'])): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <?php echo htmlspecialchars($_GET['success']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+
+            <?php if (isset($_GET['error'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <?php echo htmlspecialchars($_GET['error']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Amenity Booking Management</h5>
@@ -489,6 +544,10 @@ if ($result) {
                     <li class="nav-item">
                         <a class="nav-link link-secondary" id="calendar-tab" data-bs-toggle="tab" href="#calendar"
                             role="tab">Calendar View</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link link-secondary" id="reschedule-tab" data-bs-toggle="tab" href="#reschedule"
+                            role="tab">Reschedule Requests</a>
                     </li>
                 </ul>
                 <!-- Tab Content -->
@@ -631,6 +690,66 @@ if ($result) {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    <!-- Reschedule Requests -->
+                    <div class="tab-pane fade" id="reschedule" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="small">List of Your Reschedule Requests</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="bg-success text-white small">
+                                    <tr>
+                                        <th>Full Name</th>
+                                        <th>Amenity</th>
+                                        <th>Reservation Code</th>
+                                        <th>Current Date</th>
+                                        <th>Requested Date</th>
+                                        <th>Reason</th>
+                                        <th>Requested At</th>
+                                        <th class="text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="small align-middle">
+                                    <?php
+                                    if ($reschedule_result->num_rows > 0) {
+                                        while ($row = $reschedule_result->fetch_assoc()) {
+                                            $fullName = ucwords(trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']));
+                                            $amenity = $row['amenity'];
+                                            $currentDate = date('M d, Y', strtotime($row['reservation_date']));
+                                            $requestedDate = date('M d, Y', strtotime($row['requested_date']));
+                                            $currentTime = $row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : '5:00 PM - 10:00 PM';
+                                            $requestedTime = $row['requested_rate'] === 'day' ? '9:00 AM - 5:00 PM' : '5:00 PM - 10:00 PM';
+                                            $reason = htmlspecialchars($row['reschedule_reason']);
+                                            $statusClass = $row['reschedule_status'] === 'approved'
+                                                ? 'badge bg-success text-white'
+                                                : ($row['reschedule_status'] === 'rejected'
+                                                    ? 'badge bg-danger text-white'
+                                                    : 'badge bg-warning text-dark');
+                                            $requestedAt = date('M d, Y h:i A', strtotime($row['reschedule_requested_at']));
+
+                                            echo "<tr>
+                                                <td>{$fullName}</td>
+                                                <td><span class='badge bg-secondary'>{$amenity}</span></td>
+                                                <td>{$row['reservation_code']}</td>
+                                                <td>{$currentDate}<br><small class='text-muted'>{$currentTime}</small></td>
+                                                <td><span class='text-primary fw-bold'>{$requestedDate}</span><br><small class='text-muted'>{$requestedTime}</small></td>
+                                                <td>{$reason}</td>
+                                                <td><small>{$requestedAt}</small></td>
+                                                <td class='text-center'>
+                                                    <span class='" . $statusClass . " fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 80px;'>
+                                                        " . ucfirst($row['reschedule_status']) . "
+                                                    </span>
+                                                </td>
+                                            </tr>";
+                                        }
+                                    } else {
+                                        echo "<tr><td colspan='8' class='text-center text-muted'>No reschedule requests found.</td></tr>";
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -878,6 +997,18 @@ if ($result) {
 
         // Initialize calendar
         renderCalendar();
+
+        // Auto-dismiss alerts after 5 seconds
+        document.addEventListener('DOMContentLoaded', function () {
+            const alerts = document.querySelectorAll('.alert-dismissible');
+
+            alerts.forEach(function (alert) {
+                setTimeout(function () {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+        });
     </script>
 </body>
 
