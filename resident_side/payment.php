@@ -691,6 +691,19 @@ if (isset($_GET['action'])) {
             color: #9ca3af;
             margin-bottom: 16px;
         }
+        /* Force disable in-office payment for residents */
+        #inOffice.disabled {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+            pointer-events: none !important;
+            background-color: #e9ecef !important;
+            filter: grayscale(100%) !important;
+        }
+
+        #inOffice.disabled:hover {
+            opacity: 0.5 !important;
+            background-color: #e9ecef !important;
+        }
     </style>
 </head>
 
@@ -799,7 +812,7 @@ if (isset($_GET['action'])) {
                             <div class="d-flex gap-3 mb-3">
                                 <div class="card method-card flex-fill text-center p-3 border active" id="bankTransfer">
                                     <div><i class="bi bi-bank" style="font-size: 2rem;"></i></div>
-                                    <h6 class="mt-2">EastWest Bank Transfer</h6>
+                                    <h6 class="mt-2">EastWests Bank Transfer</h6>
                                 </div>
                                 <div class="card method-card flex-fill text-center p-3 border" id="inOffice">
                                     <div><i class="bi bi-building" style="font-size: 2rem;"></i></div>
@@ -1037,26 +1050,9 @@ if (isset($_GET['action'])) {
         </div>
     </div>
 
-    <!-- Payment Error Modal -->
-    <div class="modal fade" id="errorPaymentModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content text-center">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Payment Error</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 64px;"></i>
-                    <p class="mt-3 mb-2"><b>Payment Error!</b></p>
-                    <p class="mb-3" id="errorMessage">An error occurred while processing your payment.</p>
-                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="payment.js"></script>
+                        <!--updated check js-->
+    <script src="resident_payment.js"></script>
 </body>
 
 </html>
