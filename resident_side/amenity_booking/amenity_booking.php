@@ -69,7 +69,7 @@ $offset = ($page - 1) * $limit;
 if ($household_id) {
     $totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE homeowner_id = ?";
     $totalStmt = $conn->prepare($totalQuery);
-    $totalStmt->bind_param("i", $household_id);
+    $totalStmt->bind_param("s", $household_id);
     $totalStmt->execute();
     $totalResult = $totalStmt->get_result();
     $totalRow = $totalResult->fetch_assoc();
