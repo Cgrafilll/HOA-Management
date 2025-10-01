@@ -484,20 +484,43 @@ $payment_id = $conn->insert_id;
 $stmt->close();
 
 $conn->commit();
-        
-        // Clear output buffer
-        ob_end_clean();
-        
-        // Return success
-        header('Content-Type: application/json');
-        echo json_encode([
-            'success' => true,
-            'message' => 'Payment processed successfully',
-            'payment_id' => $payment_id,
-            'email_sent' => false,
-            'debug' => $debug_info
-        ]);
-        exit;
+
+// Clear output buffer
+ob_end_clean();
+
+// Send email (non-critical, don't fail if this errors)
+$emailSent = false;
+$recipientEmail = trim($userDetails['email_address'] ?? '');
+
+$debug_info['email_attempt'] = [
+    'recipient_email' => $recipientEmail,
+    'has_payment_details' => !empty($paymentDetails)
+];
+
+if (!empty($recipientEmail) && filter_var($recipientEmail, FILTER_VALIDATE_EMAIL) && $paymentDetails) {
+    $recipientName = trim($userDetails['first_name'] . ' ' . $userDetails['last_name']);
+    
+    try {
+        $emailSent = sendPaymentReceipt($recipientEmail, $recipientName, $paymentDetails);
+        $debug_info['email_sent'] = $emailSent;
+    } catch (Exception $e) {
+        error_log("Email sending failed: " . $e->getMessage());
+        $debug_info['email_error'] = $e->getMessage();
+    }
+} else {
+    $debug_info['email_skipped'] = 'Missing email or payment details';
+}
+
+// Return success
+header('Content-Type: application/json');
+echo json_encode([
+    'success' => true,
+    'message' => 'Payment processed successfully',
+    'payment_id' => $payment_id,
+    'email_sent' => $emailSent,
+    'debug' => $debug_info
+]);
+exit;
         
     } catch (Exception $e) {
         if (isset($conn) && $conn->ping()) {
