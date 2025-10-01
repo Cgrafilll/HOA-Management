@@ -961,7 +961,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                         data-date='{$requestedDate}'
                                                         data-bs-toggle='modal' 
                                                         data-bs-target='#confirmRescheduleModal'>
-                                                        <i class='bi bi-check2-circle me-1'> Approve</i>
+                                                        <i class='bi bi-check2-circle me-1'></i>
                                                     </button>
                                                     <button class='btn btn-sm btn-danger' title='Reject' 
                                                         data-id='{$id}'
@@ -971,7 +971,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                         data-date='{$requestedDate}'
                                                         data-bs-toggle='modal' 
                                                         data-bs-target='#confirmRescheduleModal'>
-                                                        <i class='bi bi-x-circle me-1'> Reject</i>
+                                                        <i class='bi bi-x-circle me-1'></i>
                                                     </button>
                                                 </td>
                                             </tr>";
