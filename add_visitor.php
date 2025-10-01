@@ -589,7 +589,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 const successModal = new bootstrap.Modal(document.getElementById('successModal'));
                                 successModal.show();
 
-                                const redirect = () => window.location.href = '../visitor_accounts.php';
+                                const redirect = () => window.location.href = 'add_visitor.php';
                                 document.getElementById('doneButton').addEventListener('click', redirect);
                                 document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
                             });
