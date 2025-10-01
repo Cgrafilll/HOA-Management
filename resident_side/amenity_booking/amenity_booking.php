@@ -437,6 +437,145 @@ $reschedule_result = $reschedule_stmt->get_result();
         .booking-detail:last-child {
             border-bottom: none;
         }
+
+        /* Reschedule Calendar - following reserve_booking.php style */
+        .calendar-grid-reschedule {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .calendar-grid-reschedule .calendar-day-header {
+            text-align: center;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 8px;
+            color: #6c757d;
+        }
+
+        .calendar-grid-reschedule .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid #dee2e6;
+            background: white;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .calendar-grid-reschedule .calendar-day:hover:not(.disabled):not(.booked) {
+            background: #e7f5ea;
+            border-color: #198754;
+        }
+
+        .calendar-grid-reschedule .calendar-day.today {
+            border: 2px solid #198754;
+            font-weight: 600;
+        }
+
+        .calendar-grid-reschedule .calendar-day.booked {
+            background: #f8d7da;
+            color: #721c24;
+            cursor: not-allowed;
+        }
+
+        .calendar-grid-reschedule .calendar-day.booked::after {
+            content: "●";
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 8px;
+            color: #dc3545;
+        }
+
+        .calendar-grid-reschedule .calendar-day.selected {
+            background: #198754 !important;
+            color: white !important;
+            border-color: #198754 !important;
+        }
+
+        .calendar-grid-reschedule .calendar-day.disabled {
+            background: #e9ecef;
+            color: #adb5bd;
+            cursor: not-allowed;
+        }
+
+        .calendar-grid-reschedule .calendar-day.empty {
+            background: transparent;
+            border: none;
+            cursor: default;
+        }
+
+        .calendar-grid-reschedule .calendar-day.partial-booked {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+            cursor: pointer;
+        }
+
+        .calendar-grid-reschedule .calendar-day.partial-booked:hover {
+            background-color: #ffeaa7;
+            border-color: #ffb300;
+        }
+
+        .calendar-grid-reschedule .partial-indicator {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 10px;
+            color: #856404;
+            pointer-events: none;
+        }
+
+        #dateMessageReschedule {
+            margin-top: 10px;
+        }
+
+        .rate-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .rate-option {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rate-option:hover {
+            border-color: #0d6efd;
+            background: #f8f9fa;
+        }
+
+        .rate-option.selected {
+            border-color: #0d6efd;
+            background: #cfe2ff;
+        }
+
+        .rate-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #e9ecef;
+        }
+
+        .rate-option i {
+            font-size: 24px;
+            color: #0d6efd;
+        }
     </style>
 </head>
 
@@ -575,27 +714,45 @@ $reschedule_result = $reschedule_stmt->get_result();
                                     <?php
                                     if ($bookings_result->num_rows > 0) {
                                         while ($row = $bookings_result->fetch_assoc()) {
-                                            $id = $row['id'];
-                                            $fullName = ucwords($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
-                                            $amenity = $row['amenity'];
-                                            $bookingDate = date('F d, Y', strtotime($row['reservation_date']));
-                                            $resCode = $row['reservation_code'];
-                                            $statusClass = $row['status'] === 'Paid' ? 'text-success' : ($row['status'] === 'Partial' ? 'text-warning' : 'text-muted');
-                                            echo "<tr>
-                                                    <td>{$bookingDate}</td>
-                                                    <td>{$fullName}</td>
-                                                    <td>{$amenity}</td>
-                                                    <td>{$resCode}</td>
-                                                    <td class='{$statusClass} fw-bold'>" . ucfirst($row['status']) . "</td>
-                                                    <td class='text-center'>
-                                                        <div class='dropdown'>
-                                                            <button class='btn btn-sm btn-secondary dropdown-toggle' data-bs-toggle='dropdown'>Action</button>
-                                                            <ul class='dropdown-menu'>
-                                                                <li><a class='dropdown-item' href='#'>View Details</a></li>
-                                                            </ul>
-                                                        </div>
-                                                    </td>
-                                                </tr>";
+                                            // Verify this booking belongs to the logged-in household
+                                            if ($row['homeowner_id'] == $household_id) {
+                                                $id = $row['id'];
+                                                $fullName = ucwords(trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']));
+                                                $amenity = $row['amenity'];
+                                                $bookingDate = date('F d, Y', strtotime($row['reservation_date']));
+                                                $resCode = $row['reservation_code'];
+
+                                                // Determine status badge class
+                                                $statusClass = $row['status'] === 'paid'
+                                                    ? 'badge bg-success text-white'
+                                                    : ($row['status'] === 'partial'
+                                                        ? 'badge bg-warning text-dark'
+                                                        : 'badge bg-secondary text-white');
+
+                                                echo "<tr>
+                        <td>{$bookingDate}</td>
+                        <td>{$fullName}</td>
+                        <td>{$amenity}</td>
+                        <td>{$resCode}</td>
+                        <td class='text-center'>
+                            <span class='{$statusClass} fw-bold'>" . ucfirst($row['status']) . "</span>
+                        </td>
+                        <td class='text-center'>
+                            <button class='btn btn-sm btn-outline-success' title='View Details' 
+                                onclick='showBookingDetailsFromTable({
+                                    fullName: \"" . addslashes($fullName) . "\",
+                                    amenity: \"" . addslashes($amenity) . "\",
+                                    date: \"" . $bookingDate . "\",
+                                    reservationCode: \"" . $resCode . "\",
+                                    paymentStatus: \"" . ucfirst($row['status']) . "\",
+                                    amount: \"₱" . number_format($row['amount_paid'], 2) . ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : "") . "\",
+                                    time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\"
+                                })'>
+                                <i class='bi bi-eye'></i>
+                            </button>
+                        </td>
+                    </tr>";
+                                            }
                                         }
                                     } else {
                                         echo "<tr><td colspan='6' class='text-center text-muted'>No bookings found.</td></tr>";
