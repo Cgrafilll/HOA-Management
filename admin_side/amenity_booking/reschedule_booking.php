@@ -34,6 +34,7 @@ $amenity = $_POST['amenity'] ?? '';
 $new_date = $_POST['new_date'] ?? '';
 $new_rate = $_POST['new_rate'] ?? '';
 $reason = $_POST['reason'] ?? '';
+$admin_id = $_SESSION['admin_id'];
 
 // Validate required fields
 if (empty($booking_id) || empty($amenity) || empty($new_date) || empty($new_rate) || empty($reason)) {
@@ -70,6 +71,11 @@ try {
 
     $booking = $booking_result->fetch_assoc();
 
+    // Check if there's already a pending reschedule request
+    if ($booking['reschedule_status'] === 'pending') {
+        throw new Exception("There is already a pending reschedule request for this booking.");
+    }
+
     // Check if the new date/rate combination is available
     $availability_stmt = $conn->prepare("
         SELECT COUNT(*) as count 
@@ -89,29 +95,27 @@ try {
         throw new Exception("The selected date and time slot is no longer available. Please choose another date or time slot.");
     }
 
-    // Update the booking with new date and rate
+    // Store the reschedule request (not update the actual booking yet)
     $update_stmt = $conn->prepare("
         UPDATE amenity_bookings 
-        SET reservation_date = ?, 
-            rate = ?,
-            updated_at = CURRENT_TIMESTAMP
+        SET requested_date = ?, 
+            requested_rate = ?,
+            reschedule_reason = ?,
+            reschedule_status = 'pending',
+            reschedule_requested_at = CURRENT_TIMESTAMP
         WHERE id = ?
     ");
-    $update_stmt->bind_param("ssi", $new_date, $new_rate, $booking_id);
+    $update_stmt->bind_param("sssi", $new_date, $new_rate, $reason, $booking_id);
 
     if (!$update_stmt->execute()) {
-        throw new Exception("Failed to update booking.");
+        throw new Exception("Failed to submit reschedule request.");
     }
-
-    // Log the reschedule (optional - you can create a reschedule_log table for this)
-    // For now, we'll just add a note in a separate table if it exists
-    // Or you could send a notification to the user
 
     // Commit transaction
     $conn->commit();
 
     // Redirect with success message
-    header("Location: ../amenity_booking.php?success=" . urlencode("Booking successfully rescheduled to " . date('F d, Y', strtotime($new_date)) . " (" . ucfirst($new_rate) . " rate)."));
+    header("Location: ../amenity_booking.php?success=" . urlencode("Reschedule request submitted successfully and is pending approval."));
     exit;
 
 } catch (Exception $e) {

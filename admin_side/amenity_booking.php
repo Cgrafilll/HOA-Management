@@ -89,6 +89,11 @@ $booking_sql = "SELECT
     ab.amount_paid,
     ab.status,
     ab.created_at,
+    ab.requested_date,
+    ab.requested_rate,
+    ab.reschedule_reason,
+    ab.reschedule_status,
+    ab.reschedule_requested_at,
     CASE 
         WHEN ab.user_type = 'homeowner' THEN ha.first_name
         WHEN ab.user_type = 'visitor' THEN vd.first_name
@@ -897,12 +902,37 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                 <td>{$amenity}</td>
                                                 <td>{$resCode}</td>
                                                 <td class='{$statusClass} fw-bold'>{$row['payment_status']}</td>
-                                                <td>
-                                                    <div class='dropdown'>
-                                                        <button class='btn btn-sm btn-secondary dropdown-toggle' data-bs-toggle='dropdown'>Action</button>
-                                                        <ul class='dropdown-menu'>
-                                                            <li><a class='dropdown-item' href='#'>View Details</a></li>
-                                                        </ul>
+                                                <td class='text-center'>
+                                                    <div class='text-center'>
+                                                        <!-- View button -->
+                                                        <button class='btn btn-sm btn-outline-success me-1' title='View' style='padding: 2px 6px; font-size: 0.9rem;' 
+                                                            onclick='showBookingDetailsFromTable({
+                                                                fullName: \"" . addslashes($fullName) . "\",
+                                                                amenity: \"" . addslashes($amenity) . "\",
+                                                                date: \"" . $bookingDate . "\",
+                                                                reservationCode: \"" . $resCode . "\",
+                                                                paymentStatus: \"" . ucfirst($row['status']) . "\",
+                                                                amount: \"₱" . number_format($row['amount_paid'], 2) . ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : "") . "\",
+                                                                time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\"
+                                                            })'>
+                                                            <i class='bi bi-eye'></i>
+                                                        </button>
+                                                        <!-- Reschedule button - show different state if pending -->
+                                                        " . ($row['reschedule_status'] === 'pending'
+                                                    ? "<button class='btn btn-sm btn-outline-warning me-1' title='Pending Reschedule' style='padding: 2px 6px; font-size: 0.9rem;' disabled>
+                                                                <i class='bi bi-clock-history'></i>
+                                                            </button>"
+                                                    : "<button class='btn btn-sm btn-outline-primary me-1' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'
+                                                                onclick='openRescheduleModal({
+                                                                    id: \"" . $id . "\",
+                                                                    fullName: \"" . addslashes($fullName) . "\",
+                                                                    amenity: \"" . addslashes($amenity) . "\",
+                                                                    date: \"" . $bookingDate . "\",
+                                                                    time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\",
+                                                                    rate: \"" . $row['rate'] . "\"
+                                                                })'>
+                                                                <i class='bi bi-calendar2-week'></i>
+                                                            </button>") . "
                                                     </div>
                                                 </td>
                                             </tr>";
