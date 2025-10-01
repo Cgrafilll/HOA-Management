@@ -21,10 +21,9 @@ if (!in_array($gate, ['1', '2'])) {
     exit;
 }
 
-// ⚠️ REPLACE THIS WITH YOUR ACTUAL NGROK URL!
-$local_server = "https://evon-unscalable-berserkly.ngrok-free.dev"; // Get this from ngrok window
+// Replace with YOUR ngrok URL
+$local_server = "https://evon-unscalable-berserkly.ngrok-free.dev"; // UPDATE THIS!
 
-// Send request to local Node.js server
 $ch = curl_init($local_server . "/gate-control");
 curl_setopt($ch, CURLOPT_POST, 1);
 curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
@@ -33,7 +32,7 @@ curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
 ]));
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // For ngrok SSL
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
 $response = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -48,7 +47,6 @@ if ($response === false || $httpCode !== 200) {
         "gate" => "ERROR"
     ]);
 } else {
-    // Forward the response from local server
     echo $response;
 }
 ?>

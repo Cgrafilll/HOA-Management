@@ -1,53 +1,45 @@
 <?php
 header('Content-Type: application/json');
 
-if (!isset($_POST['action'])) {
-    echo json_encode(["status" => "error", "message" => "No action provided"]);
+if (!isset($_POST['gate'])) {
+    echo json_encode(["status" => "error", "message" => "No gate specified", "gate" => "ERROR"]);
     exit;
 }
 
-$action = strtoupper($_POST['action']);
-$gate = isset($_POST['gate']) ? $_POST['gate'] : '1'; // Default to gate 1 for backward compatibility
-
-$valid_actions = ["OPEN", "CLOSE"];
-
-if (!in_array($action, $valid_actions)) {
-    echo json_encode(["status" => "error", "message" => "Invalid action"]);
-    exit;
-}
+$gate = $_POST['gate'];
 
 // Validate gate number
 if (!in_array($gate, ['1', '2'])) {
-    echo json_encode(["status" => "error", "message" => "Invalid gate number"]);
+    echo json_encode(["status" => "error", "message" => "Invalid gate number", "gate" => "ERROR"]);
     exit;
 }
 
-// 🔹 Adjust this to your Arduino COM port
-$port = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') ? "COM6" : "/dev/ttyUSB0";
+// Replace with YOUR ngrok URL
+$local_server = "https://evon-unscalable-berserkly.ngrok-free.dev"; // UPDATE THIS!
 
-// Build Arduino command
-$arduino_command = $action . $gate; // OPEN1, OPEN2, CLOSE1, CLOSE2
+// Send request to local Node.js server
+$ch = curl_init($local_server . "/gate-status");
+curl_setopt($ch, CURLOPT_POST, 1);
+curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+    'gate' => $gate
+]));
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-try {
-    $fp = fopen($port, "r+"); // Open for read/write
-    if (!$fp) {
-        throw new Exception("Unable to open port $port");
-    }
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$error = curl_error($ch);
 
-    fwrite($fp, $arduino_command . "\n");
+curl_close($ch);
 
-    // Read Arduino response (optional)
-    $response = fgets($fp);
-    fclose($fp);
-
+if ($response === false || $httpCode !== 200) {
     echo json_encode([
-        "status" => "success",
-        "gate" => $action,
-        "gate_number" => $gate,
-        "arduino_command" => $arduino_command,
-        "arduino_response" => trim($response)
+        "status" => "error",
+        "message" => "Cannot connect to local server: " . $error,
+        "gate" => "ERROR"
     ]);
-} catch (Exception $e) {
-    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+} else {
+    echo $response;
 }
 ?>
