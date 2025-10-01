@@ -279,39 +279,72 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
         $admin_id = $_SESSION['admin_id'] ?? "visitor_payment";
         
         // Get and validate form data
-        $category = trim($_POST['category'] ?? '');
-        $user_type = trim($_POST['user_type'] ?? '');
-        $user_id = trim($_POST['user_id'] ?? '');
-        $invoice_number = trim($_POST['invoice_number'] ?? '');
-        $amount = floatval($_POST['amount'] ?? 0);
-        $payment_method = ($_POST['payment_method'] === 'Bank Transfer') ? 'bank' : 'cash';
-        $reference_number = trim($_POST['reference_number'] ?? '');
-        
-        // Validate required fields
-        if (empty($category)) throw new Exception('Category is required');
-        if (empty($user_type)) throw new Exception('User type is required');
-        if (empty($user_id)) throw new Exception('User ID is required');
-        if (empty($invoice_number)) throw new Exception('Invoice number is required');
-        if ($amount <= 0) throw new Exception('Amount must be greater than 0');
-        
-        // Handle file upload
-        $proof_filename = null;
-        if (isset($_FILES['proof_of_payment']) && $_FILES['proof_of_payment']['error'] !== UPLOAD_ERR_NO_FILE) {
-            $proof_filename = handleFileUpload($_FILES['proof_of_payment']);
-        }
-        
-        // Get user details
+$category = trim($_POST['category'] ?? '');
+$user_type = trim($_POST['user_type'] ?? '');
+$user_id = trim($_POST['user_id'] ?? '');
+$invoice_number = trim($_POST['invoice_number'] ?? '');
+$amount = floatval($_POST['amount'] ?? 0);
+$payment_method = ($_POST['payment_method'] === 'Bank Transfer') ? 'bank' : 'cash';
+$reference_number = trim($_POST['reference_number'] ?? '');
+
+// DEBUG: Log incoming data
+error_log("=== INCOMING POST DATA ===");
+error_log("category: $category");
+error_log("user_type: $user_type");
+error_log("user_id: $user_id");
+error_log("invoice_number: $invoice_number");
+error_log("amount: $amount");
+
+// Validate required fields
+if (empty($category)) throw new Exception('Category is required');
+if (empty($user_type)) throw new Exception('User type is required');
+if (empty($user_id)) throw new Exception('User ID is required');
+if (empty($invoice_number)) throw new Exception('Invoice number is required');
+if ($amount <= 0) throw new Exception('Amount must be greater than 0');
+
+// Handle file upload
+$proof_filename = null;
+if (isset($_FILES['proof_of_payment']) && $_FILES['proof_of_payment']['error'] !== UPLOAD_ERR_NO_FILE) {
+    $proof_filename = handleFileUpload($_FILES['proof_of_payment']);
+}
+
+// Get user details
 $db_user_type = ($user_type === 'Homeowner/Resident') ? 'homeowner' : 'visitor';
+error_log("db_user_type: $db_user_type");
+
 $userDetails = getUserDetails($conn, $db_user_type, $user_id);
 
-// ⭐ FIX: Use the actual IDs from the database, not from POST
+// DEBUG: Log what we got back
+error_log("=== USER DETAILS FROM DATABASE ===");
+error_log("userDetails: " . json_encode($userDetails));
+
+// Use actual database IDs
 $household_id = null;
 $visitor_id = null;
 
 if ($db_user_type === 'homeowner') {
     $household_id = $userDetails['household_id'];
+    error_log("Using household_id: $household_id");
 } else {
     $visitor_id = $userDetails['visitor_id'];
+    error_log("Using visitor_id: " . var_export($visitor_id, true));
+    
+    // CRITICAL: Verify this visitor_id actually exists
+    $check_stmt = $conn->prepare("SELECT visitor_id FROM visitor_details WHERE visitor_id = ?");
+    $check_stmt->bind_param("s", $visitor_id);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    
+    error_log("Verification query - rows found: " . $check_result->num_rows);
+    
+    if ($check_result->num_rows === 0) {
+        $check_stmt->close();
+        throw new Exception("VERIFICATION FAILED: Visitor ID '$visitor_id' does not exist in visitor_details table. Original user_id from POST was: '$user_id'");
+    }
+    
+    $verify_row = $check_result->fetch_assoc();
+    error_log("Verified visitor_id from database: " . var_export($verify_row['visitor_id'], true));
+    $check_stmt->close();
 }
 
 // Start transaction
@@ -321,93 +354,136 @@ if (!$conn->begin_transaction()) {
 
 $reference_id = null;
 $paymentDetails = null;
-        
-        $reference_id = null;
-        $household_id = ($user_type === 'Homeowner/Resident') ? $user_id : null;
-        $visitor_id = ($user_type === 'Visitor') ? $user_id : null;
-        $paymentDetails = null;
-        
-        // Process Amenity Fee payment
-        if ($category === 'Amenity Fee') {
-            $booking_id_field = ($user_type === 'Homeowner/Resident') ? 'homeowner_id' : 'visitor_id';
-            
-            $stmt = $conn->prepare("SELECT * FROM amenity_bookings WHERE $booking_id_field = ? AND invoice_number = ?");
-            if (!$stmt) {
-                throw new Exception("Prepare failed (amenity_bookings): " . $conn->error);
-            }
-            
-            $stmt->bind_param("ss", $user_id, $invoice_number);
-            if (!$stmt->execute()) {
-                throw new Exception("Execute failed (amenity_bookings): " . $stmt->error);
-            }
-            
-            $booking = $stmt->get_result()->fetch_assoc();
-            $stmt->close();
-            
-            if (!$booking) {
-                throw new Exception("Amenity booking not found for invoice: $invoice_number (User: $user_id)");
-            }
-            
-            $reference_id = $booking['id'];
-            $new_amount_paid = floatval($booking['amount_paid']) + $amount;
-            $balance = floatval($booking['total_amount']) - $new_amount_paid;
-            
-            // Determine new status
-            if ($balance <= 0) {
-                $new_status = 'paid';
-            } elseif ($new_amount_paid > 0) {
-                $new_status = 'partial';
-            } else {
-                $new_status = 'pending';
-            }
-            
-            // Update booking
-            $stmt = $conn->prepare("UPDATE amenity_bookings SET amount_paid = ?, status = ? WHERE id = ?");
-            if (!$stmt) {
-                throw new Exception("Prepare failed (update amenity_bookings): " . $conn->error);
-            }
-            
-            $stmt->bind_param("dsi", $new_amount_paid, $new_status, $reference_id);
-            if (!$stmt->execute()) {
-                throw new Exception("Execute failed (update amenity_bookings): " . $stmt->error);
-            }
-            $stmt->close();
-            
-            $paymentDetails = [
-                'invoice_number' => $invoice_number,
-                'category' => 'Amenity Fee',
-                'payment_date' => date('Y-m-d'),
-                'payment_method' => $payment_method,
-                'amount_paid' => $amount,
-                'reference_number' => $reference_number,
-                'total_amount' => floatval($booking['total_amount']),
-                'total_paid' => $new_amount_paid,
-                'remaining_balance' => max(0, $balance),
-                'payment_status' => $new_status
-            ];
-        }
-        
-        // Insert payment record
-        $db_category = ($category === 'Amenity Fee') ? 'amenity' : 'monthly_dues';
-        
-        $stmt = $conn->prepare("
-            INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        
-        if (!$stmt) {
-            throw new Exception("Prepare failed (insert payments): " . $conn->error);
-        }
-        
-        $stmt->bind_param("sisssdssss", $db_category, $reference_id, $invoice_number, $db_user_type, $household_id, $visitor_id, $amount, $payment_method, $reference_number, $proof_filename);
-        
-        if (!$stmt->execute()) {
-            throw new Exception("Execute failed (insert payments): " . $stmt->error);
-        }
-        
-        $payment_id = $conn->insert_id;
-        $stmt->close();
-        
+
+// Process Amenity Fee payment
+if ($category === 'Amenity Fee') {
+    $booking_id_field = ($user_type === 'Homeowner/Resident') ? 'homeowner_id' : 'visitor_id';
+    
+    error_log("Querying amenity_bookings with $booking_id_field = '$user_id'");
+    
+    $stmt = $conn->prepare("SELECT * FROM amenity_bookings WHERE $booking_id_field = ? AND invoice_number = ?");
+    if (!$stmt) {
+        throw new Exception("Prepare failed (amenity_bookings): " . $conn->error);
+    }
+    
+    $stmt->bind_param("ss", $user_id, $invoice_number);
+    if (!$stmt->execute()) {
+        throw new Exception("Execute failed (amenity_bookings): " . $stmt->error);
+    }
+    
+    $booking = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    
+    if (!$booking) {
+        throw new Exception("Amenity booking not found for invoice: $invoice_number (User: $user_id, Field: $booking_id_field)");
+    }
+    
+    error_log("Found booking ID: " . $booking['id']);
+    
+    $reference_id = $booking['id'];
+    $new_amount_paid = floatval($booking['amount_paid']) + $amount;
+    $balance = floatval($booking['total_amount']) - $new_amount_paid;
+    
+    // Determine new status
+    if ($balance <= 0) {
+        $new_status = 'paid';
+    } elseif ($new_amount_paid > 0) {
+        $new_status = 'partial';
+    } else {
+        $new_status = 'pending';
+    }
+    
+    // Update booking
+    $stmt = $conn->prepare("UPDATE amenity_bookings SET amount_paid = ?, status = ? WHERE id = ?");
+    if (!$stmt) {
+        throw new Exception("Prepare failed (update amenity_bookings): " . $conn->error);
+    }
+    
+    $stmt->bind_param("dsi", $new_amount_paid, $new_status, $reference_id);
+    if (!$stmt->execute()) {
+        throw new Exception("Execute failed (update amenity_bookings): " . $stmt->error);
+    }
+    $stmt->close();
+    
+    $paymentDetails = [
+        'invoice_number' => $invoice_number,
+        'category' => 'Amenity Fee',
+        'payment_date' => date('Y-m-d'),
+        'payment_method' => $payment_method,
+        'amount_paid' => $amount,
+        'reference_number' => $reference_number,
+        'total_amount' => floatval($booking['total_amount']),
+        'total_paid' => $new_amount_paid,
+        'remaining_balance' => max(0, $balance),
+        'payment_status' => $new_status
+    ];
+}
+
+// Insert payment record - HANDLE NULL VALUES PROPERLY
+$db_category = ($category === 'Amenity Fee') ? 'amenity' : 'monthly_dues';
+
+// DEBUG: Log values before insert
+error_log("=== ABOUT TO INSERT PAYMENT ===");
+error_log("category: $db_category");
+error_log("reference_id: $reference_id");
+error_log("invoice_number: $invoice_number");
+error_log("user_type: $db_user_type");
+error_log("household_id: " . ($household_id ?? 'NULL'));
+error_log("visitor_id: " . ($visitor_id ?? 'NULL'));
+error_log("amount: $amount");
+error_log("payment_method: $payment_method");
+error_log("reference_number: $reference_number");
+error_log("proof_of_payment: " . ($proof_filename ?? 'NULL'));
+
+// Use different approach based on user type to avoid NULL issues
+if ($db_user_type === 'visitor') {
+    // For visitors: household_id must be NULL, visitor_id must have value
+    if (empty($visitor_id)) {
+        throw new Exception("CRITICAL: visitor_id is empty! Cannot insert payment.");
+    }
+    
+    $stmt = $conn->prepare("
+        INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
+        VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)
+    ");
+    
+    if (!$stmt) {
+        throw new Exception("Prepare failed (insert payments for visitor): " . $conn->error);
+    }
+    
+    error_log("Binding parameters for visitor payment");
+    $stmt->bind_param("sissdsss", $db_category, $reference_id, $invoice_number, $db_user_type, $visitor_id, $amount, $payment_method, $reference_number, $proof_filename);
+    
+} else {
+    // For homeowners: visitor_id must be NULL, household_id must have value
+    if (empty($household_id)) {
+        throw new Exception("CRITICAL: household_id is empty! Cannot insert payment.");
+    }
+    
+    $stmt = $conn->prepare("
+        INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
+        VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)
+    ");
+    
+    if (!$stmt) {
+        throw new Exception("Prepare failed (insert payments for homeowner): " . $conn->error);
+    }
+    
+    error_log("Binding parameters for homeowner payment");
+    $stmt->bind_param("sisssdsss", $db_category, $reference_id, $invoice_number, $db_user_type, $household_id, $amount, $payment_method, $reference_number, $proof_filename);
+}
+
+error_log("Executing payment insert");
+if (!$stmt->execute()) {
+    $error_detail = "Execute failed (insert payments): " . $stmt->error;
+    $error_detail .= " | visitor_id=" . ($visitor_id ?? 'NULL');
+    $error_detail .= " | household_id=" . ($household_id ?? 'NULL');
+    throw new Exception($error_detail);
+}
+
+$payment_id = $conn->insert_id;
+error_log("Payment inserted successfully with ID: $payment_id");
+$stmt->close();
         // Commit transaction
         if (!$conn->commit()) {
             throw new Exception("Failed to commit transaction: " . $conn->error);
