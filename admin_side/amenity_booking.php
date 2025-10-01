@@ -212,6 +212,7 @@ $reschedule_sql = "SELECT
 FROM amenity_bookings ab
 LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
 LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+WHERE ab.reschedule_status IN ('pending', 'approved', 'rejected')
 ORDER BY ab.reschedule_requested_at DESC";
 
 $reschedule_result = $conn->query($reschedule_sql);
@@ -902,7 +903,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     <!-- Reschedule Requests -->
                     <div class="tab-pane fade" id="reschedule" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="small">List of Reschedule Requests</span>
+                            <span class="small">List of Pending Reschedule Requests</span>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
@@ -960,7 +961,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                         data-date='{$requestedDate}'
                                                         data-bs-toggle='modal' 
                                                         data-bs-target='#confirmRescheduleModal'>
-                                                        <i class='bi bi-check2-circle me-1'> Approve</i>
+                                                        <i class='bi bi-check2-circle'></i>
                                                     </button>
                                                     <button class='btn btn-sm btn-danger' title='Reject' 
                                                         data-id='{$id}'
@@ -970,7 +971,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                         data-date='{$requestedDate}'
                                                         data-bs-toggle='modal' 
                                                         data-bs-target='#confirmRescheduleModal'>
-                                                        <i class='bi bi-x-circle me-1'> Reject</i>
+                                                        <i class='bi bi-x-circle'></i>
                                                     </button>
                                                 </td>
                                             </tr>";
@@ -982,7 +983,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                 </tbody>
                             </table>
                         </div>
-                    </div>            
+                    </div>
                 </div>
             </div>
         </main>
