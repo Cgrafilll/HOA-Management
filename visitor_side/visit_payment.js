@@ -607,6 +607,8 @@ class VisitorPaymentManager {
         const result = await response.json();
         
         if (result.success) {
+            console.log('DEBUG INFO:', result.debug); // ADD THIS LINE
+
             // Hide confirmation modal
             if (this.confirmModal) {
                 this.confirmModal.hide();
