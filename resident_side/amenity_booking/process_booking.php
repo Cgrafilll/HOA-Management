@@ -411,23 +411,23 @@ function generatePlainTextEmail($recipientName, $bookingDetails)
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $amenity = $_GET['reserve'] ?? '';
-    
+
     $amenityPrefixes = [
         'Gazebo' => 'GZB',
         'Swimming Pool' => 'SWP',
         'Basketball Court' => 'BBC',
         'Clubhouse' => 'CLB'
     ];
-    
+
     $prefix = $amenityPrefixes[$amenity] ?? 'RSV';
-    
+
     try {
         $stmt = $conn->prepare("SELECT reservation_code FROM amenity_bookings WHERE amenity = ? AND reservation_code LIKE ? ORDER BY reservation_code DESC LIMIT 1");
         $likePattern = $prefix . '%';
         $stmt->bind_param("ss", $amenity, $likePattern);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         if ($row = $result->fetch_assoc()) {
             $lastCode = $row['reservation_code'];
             $numericPart = (int) substr($lastCode, strlen($prefix));
@@ -435,7 +435,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } else {
             $nextNumber = 1;
         }
-        
+
         $reservation_code = $prefix . sprintf('%05d', $nextNumber);
         $stmt->close();
     } catch (Exception $e) {
@@ -445,13 +445,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $invoice_number = generateInvoiceNumber($conn);
     $admin_id = $_SESSION['admin_id'] ?? null;
     $homeowner_id = $_SESSION['household_id'] ?? null;
+    $visitor_id = null;
 
-    // ✅ GET these from POST for email, but DON'T insert into database
-    $firstName = $_POST['firstName'] ?? '';
-    $middleName = $_POST['middleName'] ?? '';
-    $lastName = $_POST['lastName'] ?? '';
-    $emailAddress = $_POST['emailAddress'] ?? '';
-    
     // Form data
     $userType = $_POST['userType'] ?? '';
     $reservationDate = $_POST['reservationDate'] ?? '';
@@ -464,13 +459,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $tables = isset($_POST['tables']) ? (int) $_POST['tables'] : 0;
     $vehicles = isset($_POST['cars']) ? (int) $_POST['cars'] : 0;
     $plateNumbers = isset($_POST['plates']) ? trim($_POST['plates']) : '';
-    
+
     $total = 0.0;
     if (isset($_POST['total']) && !empty($_POST['total'])) {
         $totalStr = str_replace(',', '', $_POST['total']);
         $total = (float) $totalStr;
     }
-    
+
     $amountPaid = isset($_POST['amountPaid']) ? (float) $_POST['amountPaid'] : 0.0;
     $status = "pending";
 
@@ -478,11 +473,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (empty($reservationDate)) {
         die("❌ Reservation date is required.");
     }
-    
+
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $reservationDate)) {
         die("❌ Invalid date format.");
     }
-    
+
     $dateObject = DateTime::createFromFormat('Y-m-d', $reservationDate);
     if ($dateObject === false || $dateObject->format('Y-m-d') !== $reservationDate) {
         die("❌ Invalid date: " . $reservationDate);
@@ -505,8 +500,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // ✅ CORRECTED: Only insert columns that exist in database
     $stmt = $conn->prepare("
         INSERT INTO amenity_bookings 
-        (reservation_code, admin_id, homeowner_id, amenity, user_type, reservation_date, guests, rate, payment_method, exclusive_booking, chairs, tables, vehicles, plate_numbers, reference_number, total_amount, amount_paid, proof_of_payment, invoice_number, status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (reservation_code, admin_id, homeowner_id, visitor_id, amenity, user_type, reservation_date, guests, rate, payment_method, exclusive_booking, chairs, tables, vehicles, plate_numbers, reference_number, total_amount, amount_paid, proof_of_payment, invoice_number, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
     if (!$stmt) {
@@ -515,29 +510,30 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit();
     }
 
-    // ✅ CORRECTED: 20 parameters (ssssssississsddss + s + s)
-    $bindResult = $stmt->bind_param(
-        "ssssssississsddss",
-        $reservation_code,    // 1: s
-        $admin_id,           // 2: s
-        $homeowner_id,       // 3: s
-        $amenity,            // 4: s
-        $userType,           // 5: s
-        $reservationDate,    // 6: s
-        $guests,             // 7: i
-        $rate,               // 8: s
-        $payment,            // 9: s
-        $exclusiveBooking,   // 10: s
-        $chairs,             // 11: i
-        $tables,             // 12: i
-        $vehicles,           // 13: i
-        $plateNumbers,       // 14: s
-        $referenceNumber,    // 15: s
-        $total,              // 16: d
-        $amountPaid,         // 17: d
-        $proof_of_payment,   // 18: s
-        $invoice_number,     // 19: s
-        $status              // 20: s
+    // Bind parameters - updated to include vehicle fields
+    $stmt->bind_param(
+        "sssssssisssiisssddsss",
+        $reservation_code,   // s
+        $admin_id,           // s                
+        $homeowner_id,       // s
+        $visitor_id,         // s
+        $amenity,            // s
+        $userType,           // s
+        $reservationDate,    // s 
+        $guests,             // i
+        $rate,               // s
+        $payment,            // s
+        $exclusiveBooking,   // s 
+        $chairs,             // i
+        $tables,             // i
+        $vehicles,           // i (new)
+        $plateNumbers,       // s (new)
+        $referenceNumber,    // s     
+        $total,              // d
+        $amountPaid,         // d 
+        $proof_of_payment,   // s 
+        $invoice_number,     // s 
+        $status              // s
     );
 
     if (!$bindResult) {
@@ -548,10 +544,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if ($stmt->execute()) {
         error_log("✅ Database insertion successful: " . $reservation_code);
-        
+
         // ✅ Use firstName/lastName from POST for email
         $recipientName = trim($firstName . ' ' . $lastName);
-        
+
         $bookingDetails = [
             'reservation_code' => $reservation_code,
             'invoice_number' => $invoice_number,
@@ -569,16 +565,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             'amount_paid' => $amountPaid,
             'reference_number' => $referenceNumber
         ];
-        
+
         // Send email (include your full sendBookingReceipt function)
         $emailSent = sendBookingReceipt($emailAddress, $recipientName, $bookingDetails);
-        
+
         if ($emailSent) {
             error_log("✅ Email sent to: " . $emailAddress);
         } else {
             error_log("❌ Email failed: " . $emailAddress);
         }
-        
+
         header("Location: reserve_booking.php?reserve=" . urlencode($amenity) . "&success=1&code=" . urlencode($reservation_code) . "&invoice=" . urlencode($invoice_number));
         $stmt->close();
         $conn->close();
