@@ -572,17 +572,20 @@ if (!empty($admin['profile_picture'])) {
 
         function updateGateStatusFromArduino(data) {
             if (data.status === 'success') {
-                // Parse Arduino response for actual gate state
                 const response = data.arduino_response || '';
                 let currentStatus = 'UNKNOWN';
 
-                if (response.includes('Gate2 opened') || response.includes('SUCCESS: Gate2 opened')) {
+                // Check for various gate 2 status messages
+                if (response.includes('Gate2 opened') ||
+                    response.includes('Gate2=OPEN') ||
+                    response.includes('SUCCESS: Gate2 opened') ||
+                    response.includes('INFO: Gate2 already open')) {
                     currentStatus = 'OPEN';
-                } else if (response.includes('Gate2 closed') || response.includes('SUCCESS: Gate2 closed')) {
-                    currentStatus = 'CLOSED';
-                } else if (response.includes('already open')) {
-                    currentStatus = 'OPEN';
-                } else if (response.includes('already closed')) {
+                } else if (response.includes('Gate2 closed') ||
+                    response.includes('Gate2=CLOSED') ||
+                    response.includes('SUCCESS: Gate2 closed') ||
+                    response.includes('INFO: Gate2 already closed') ||
+                    response.includes('AUTO: Closing Gate2')) {
                     currentStatus = 'CLOSED';
                 } else if (data.gate && data.gate !== 'UNKNOWN') {
                     currentStatus = data.gate;
