@@ -752,6 +752,10 @@ if (isset($_GET['action'])) {
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
+                <a href="amenity_booking/amenity_booking.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-book me-2"></i> Amenity Booking
+                </a>
                 <!-- Accounting -->
                 <div>
                     <button
