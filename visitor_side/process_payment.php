@@ -234,41 +234,212 @@
     }
 
     function generatePaymentEmailTemplate($recipientName, $paymentDetails) {
-        $invoiceNumber = htmlspecialchars($paymentDetails['invoice_number']);
-        $category = htmlspecialchars($paymentDetails['category']);
-        $paymentDate = date('F j, Y', strtotime($paymentDetails['payment_date']));
-        
-        if ($paymentDetails['payment_status'] === 'Completed' || $paymentDetails['payment_status'] === 'paid') {
-            $statusColor = '#28a745';
-            $statusText = 'PAID IN FULL';
-        } else {
-            $statusColor = '#ffc107';
-            $statusText = 'PARTIALLY PAID';
-        }
-        
-        $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Payment Receipt</title></head><body>';
-        $html .= '<div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;">';
-        $html .= '<div style="background:#198754;color:white;padding:30px;text-align:center;">';
-        $html .= '<h1>Payment Received!</h1><p>NSSHAI HOA Management</p></div>';
-        $html .= '<div style="padding:30px;"><h2>Hello ' . htmlspecialchars($recipientName) . '!</h2>';
-        $html .= '<p>Thank you for your payment of <strong>₱' . number_format($paymentDetails['amount_paid'], 2) . '</strong></p>';
-        $html .= '<p>Invoice: <strong>' . $invoiceNumber . '</strong></p>';
-        $html .= '<p>Category: ' . $category . '</p>';
-        $html .= '<p>Remaining Balance: ₱' . number_format($paymentDetails['remaining_balance'], 2) . '</p>';
-        $html .= '</div></div></body></html>';
-        
-        return $html;
+    $invoiceNumber = htmlspecialchars($paymentDetails['invoice_number']);
+    $category = htmlspecialchars($paymentDetails['category']);
+    $paymentDate = date('F j, Y', strtotime($paymentDetails['payment_date']));
+    
+    if ($paymentDetails['payment_status'] === 'Completed' || $paymentDetails['payment_status'] === 'paid') {
+        $statusColor = '#28a745';
+        $statusText = 'PAID IN FULL';
+        $statusBadge = '<span class="status-badge status-paid">PAID IN FULL</span>';
+    } else {
+        $statusColor = '#ffc107';
+        $statusText = 'PARTIALLY PAID';
+        $statusBadge = '<span class="status-badge status-partial">PARTIALLY PAID</span>';
+    }
+    
+    $html = '
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Payment Receipt</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f9fc; margin: 0; padding: 0; }
+            .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+            
+            .header { background: linear-gradient(135deg, #198754 0%, #20c997 100%); color: white; padding: 40px 30px; text-align: center; }
+            .header h1 { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+            .header p { font-size: 16px; opacity: 0.9; margin: 0; }
+            
+            .content { padding: 40px 30px; }
+            .greeting { font-size: 18px; color: #2c3e50; margin-bottom: 20px; }
+            .intro-text { font-size: 16px; color: #34495e; line-height: 1.6; margin-bottom: 30px; }
+            
+            .payment-banner { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 2px solid #4caf50; border-radius: 12px; padding: 25px; text-align: center; margin: 30px 0; }
+            .payment-banner h3 { font-size: 18px; color: #2e7d32; margin-bottom: 10px; }
+            .payment-banner .invoice { font-size: 32px; font-weight: bold; color: #1b5e20; letter-spacing: 2px; font-family: "Courier New", monospace; }
+            
+            .payment-details { background-color: #f8f9fa; border-radius: 12px; padding: 25px; margin: 30px 0; border-left: 5px solid #198754; }
+            .payment-details h3 { color: #198754; font-size: 20px; margin-bottom: 20px; }
+            
+            .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e9ecef; }
+            .detail-row:last-child { border-bottom: none; }
+            .detail-label { font-weight: 600; color: #495057; font-size: 14px; }
+            .detail-value { color: #212529; font-size: 14px; text-align: right; }
+            .detail-value.amount { font-size: 16px; font-weight: bold; }
+
+            .balance-section { background: linear-gradient(135deg, #e3f2fd 0%, #f0f9ff 100%); border: 1px solid #2196f3; border-radius: 12px; padding: 25px; margin: 30px 0; }
+            .balance-section h4 { color: #1976d2; font-size: 18px; margin-bottom: 15px; }
+            .balance-row { display: flex; justify-content: space-between; padding: 8px 0; }
+            .balance-label { font-weight: 600; color: #1976d2; font-size: 16px; }
+            .balance-amount { font-size: 18px; font-weight: bold; }
+
+            .status-section { background-color: ' . $statusColor . '; color: white; border-radius: 12px; padding: 20px; margin: 30px 0; text-align: center; }
+            .status-section .status-text { font-size: 24px; font-weight: bold; letter-spacing: 2px; }
+            
+            .status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+            .status-badge.status-paid { background-color: #28a745; color: white; }
+            .status-badge.status-partial { background-color: #ffc107; color: #212529; }
+            
+            .important-section { background: linear-gradient(135deg, #fff3cd 0%, #fef9e7 100%); border: 1px solid #ffc107; border-radius: 12px; padding: 25px; margin: 30px 0; }
+            .important-section h4 { color: #856404; font-size: 18px; margin-bottom: 15px; display: flex; align-items: center; }
+            .important-section h4::before { content: "⚠️"; margin-right: 10px; }
+            .important-section ul { list-style: none; padding: 0; }
+            .important-section li { color: #856404; margin-bottom: 8px; padding-left: 20px; position: relative; font-size: 14px; line-height: 1.5; }
+            .important-section li::before { content: "•"; color: #ffc107; font-weight: bold; position: absolute; left: 0; }
+            
+            .contact-section { background-color: #e8f5e8; border-radius: 12px; padding: 20px; margin: 30px 0; text-align: center; }
+            .contact-section h4 { color: #198754; margin-bottom: 10px; }
+            .contact-section p { color: #2d5a2d; margin: 5px 0; font-size: 14px; }
+            .contact-section .phone { font-size: 18px; font-weight: bold; color: #198754; }
+            
+            .footer { background-color: #2c3e50; color: #ecf0f1; padding: 30px; text-align: center; }
+            .footer h4 { margin-bottom: 15px; color: #3498db; }
+            .footer p { margin: 5px 0; font-size: 13px; opacity: 0.8; }
+            
+            @media only screen and (max-width: 600px) {
+                .email-container { width: 100% !important; }
+                .header, .content, .footer { padding: 20px !important; }
+                .payment-banner .invoice { font-size: 24px; }
+                .detail-row { flex-direction: column; align-items: flex-start; }
+                .detail-value { text-align: left; margin-top: 5px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="email-container">
+            <div class="header">
+                <h1>Payment Received!</h1>
+                <p>Neopolitan Sitio Seville Homeowners Association</p>
+            </div>
+            
+            <div class="content">
+                <div class="greeting">Hello ' . htmlspecialchars($recipientName) . '!</div>
+                
+                <div class="intro-text">
+                    Thank you for your payment! We have successfully received and processed your payment for <strong>' . $category . '</strong>. Your current payment status is ' . $statusBadge . '.
+                </div>
+                
+                <div class="payment-banner">
+                    <h3>Invoice Number</h3>
+                    <div class="invoice">' . $invoiceNumber . '</div>
+                </div>
+                
+                <div class="payment-details">
+                    <h3>Payment Details</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Category</span>
+                        <span class="detail-value">' . $category . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Date</span>
+                        <span class="detail-value">' . $paymentDate . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Method</span>
+                        <span class="detail-value">' . ucfirst($paymentDetails['payment_method']) . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Amount Paid</span>
+                        <span class="detail-value amount">₱' . number_format($paymentDetails['amount_paid'], 2) . '</span>
+                    </div>';
+
+    if (!empty($paymentDetails['reference_number'])) {
+        $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">Reference Number</span>
+                        <span class="detail-value">' . htmlspecialchars($paymentDetails['reference_number']) . '</span>
+                    </div>';
     }
 
-    function generatePaymentPlainTextEmail($recipientName, $paymentDetails) {
-        $text = "PAYMENT RECEIPT - NSSHAI\n========================\n\n";
-        $text .= "Hello " . $recipientName . "!\n\n";
-        $text .= "Invoice: " . $paymentDetails['invoice_number'] . "\n";
-        $text .= "Amount Paid: ₱" . number_format($paymentDetails['amount_paid'], 2) . "\n";
-        $text .= "Remaining Balance: ₱" . number_format($paymentDetails['remaining_balance'], 2) . "\n";
-        return $text;
+    $html .= '
+                </div>
+                
+                <div class="balance-section">
+                    <h4>Balance Summary</h4>
+                    <div class="balance-row">
+                        <span class="balance-label">Total Amount</span>
+                        <span class="balance-amount">₱' . number_format($paymentDetails['total_amount'], 2) . '</span>
+                    </div>
+                    <div class="balance-row">
+                        <span class="balance-label">Total Paid</span>
+                        <span class="balance-amount">₱' . number_format($paymentDetails['total_paid'], 2) . '</span>
+                    </div>
+                    <div class="balance-row">
+                        <span class="balance-label">Remaining Balance</span>
+                        <span class="balance-amount">₱' . number_format($paymentDetails['remaining_balance'], 2) . '</span>
+                    </div>
+                </div>
+                
+                <div class="status-section">
+                    <div class="status-text">' . $statusText . '</div>
+                </div>';
+
+    // Add important reminders based on payment status
+    if ($paymentDetails['remaining_balance'] > 0) {
+        $html .= '
+                <div class="important-section">
+                    <h4>Important Reminders</h4>
+                    <ul>
+                        <li>Your payment has been received and recorded in our system.</li>
+                        <li>Remaining balance: <strong>₱' . number_format($paymentDetails['remaining_balance'], 2) . '</strong></li>
+                        <li>Please ensure full payment before your scheduled date.</li>
+                        <li>Keep this email and your invoice number for future reference.</li>
+                        <li>Contact us if you have any questions about your payment.</li>
+                    </ul>
+                </div>';
+    } else {
+        $html .= '
+                <div class="important-section">
+                    <h4>Important Reminders</h4>
+                    <ul>
+                        <li>Your payment has been received and recorded in our system.</li>
+                        <li>Your balance is now <strong>FULLY PAID</strong>. Thank you!</li>
+                        <li>Keep this email and your invoice number for your records.</li>
+                        <li>Contact us if you need a detailed receipt or have any questions.</li>
+                    </ul>
+                </div>';
     }
 
+    $html .= '
+                <div class="contact-section">
+                    <h4>Need Help?</h4>
+                    <p>For questions or concerns about your payment:</p>
+                    <p class="phone">📞 8-2457647</p>
+                    <p>📧 admin@nsshai.com</p>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px; color: #666;">
+                    <p>Thank you for your prompt payment!</p>
+                    <p style="margin-top: 15px;"><strong>Best regards,<br>NSSHAI Administration Team</strong></p>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <h4>Neopolitan Sitio Seville Homeowners Association, Inc.</h4>
+                <p>This is an automated payment confirmation email.</p>
+                <p>For support, contact us at 8-2457647</p>
+                <p style="margin-top: 15px; font-size: 12px;">© 2025 NSSHAI. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>';
+
+    return $html;
+}
     // ============================================
     // MAIN PAYMENT PROCESSING
     // ============================================
