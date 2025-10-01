@@ -630,21 +630,34 @@ class VisitorPaymentManager {
             throw new Error(result.error || 'Payment processing failed');
         }
         
-    } catch (error) {
-        console.error('Payment processing error:', error);
-        
-        // Hide confirmation modal
-        if (this.confirmModal) {
-            this.confirmModal.hide();
-        }
-        
+        } catch (error) {
+    console.error('Payment processing error:', error);
+    
+    // Hide confirmation modal
+    if (this.confirmModal) {
+        this.confirmModal.hide();
+    }
+    
         // Wait for modal to hide, then show error
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        // Show error modal instead of alert
-        this.showErrorModal('Error processing payment: ' + error.message);
+        // Enhanced error display for debugging
+        let errorMsg = error.message;
+        if (error.file) {
+            errorMsg += `\n\nFile: ${error.file}`;
+        }
+        if (error.line) {
+            errorMsg += `\nLine: ${error.line}`;
+        }
+        if (error.trace) {
+            console.log('Stack trace:', error.trace);
+        }
+        
+        // Show error modal
+        this.showErrorModal('Error processing payment: ' + errorMsg);
         
     } finally {
+
         // Re-enable the confirm button
         if (this.confirmPaymentBtn) {
             this.confirmPaymentBtn.disabled = false;
