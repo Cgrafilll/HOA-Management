@@ -49,7 +49,7 @@ session_start();
 // ============================================
 // DATABASE CONNECTION
 // ============================================
-$db_path = '../../rfid-api/db.php';
+$db_path = '../rfid-api/db.php';
 if (!file_exists($db_path)) {
     throw new Exception("Database config file not found at: " . realpath(dirname(__FILE__)) . "/../../rfid-api/db.php");
 }
