@@ -192,6 +192,7 @@ $reschedule_sql = "SELECT
     ab.requested_date,
     ab.requested_rate,
     ab.reschedule_reason,
+    ab.reschedule_status
     ab.reschedule_requested_at,
     CASE 
         WHEN ab.user_type = 'homeowner' THEN ha.first_name
@@ -211,7 +212,6 @@ $reschedule_sql = "SELECT
 FROM amenity_bookings ab
 LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
 LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
-WHERE ab.reschedule_status = 'pending'
 ORDER BY ab.reschedule_requested_at DESC";
 
 $reschedule_result = $conn->query($reschedule_sql);
