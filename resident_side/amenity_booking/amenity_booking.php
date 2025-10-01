@@ -695,7 +695,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                 </td>
                                                 <td class='text-center'>
                                                     <button class='btn btn-sm btn-outline-success me-1' title='View'
-                                                        onclick='showBookingDetailsFromTable({
+                                                        onclick='showBookingDetails({
                                                             fullName: \"" . addslashes($fullName) . "\",
                                                             amenity: \"" . addslashes($amenity) . "\",
                                                             date: \"" . $bookingDate . "\",
