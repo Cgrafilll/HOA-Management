@@ -583,13 +583,22 @@ class VisitorPaymentManager {
                 formData.append('proof_of_payment', this.fileInput.files[0]);
             }
             
-            const response = await fetch('payment/process_resident_payment.php', {
-                method: 'POST',
-                body: formData
-            });
+           // Check if response is OK
+            if (!response.ok) {
+                const text = await response.text();
+                console.error('Server response:', text);
+                throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            }
             
-            const result = await response.json();
-            
+            // Check content type before parsing JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Non-JSON response:', text);
+                throw new Error('Server returned non-JSON response');
+            }
+        
+        const result = await response.json();
             if (result.success) {
                 // Hide confirmation modal
                 if (this.confirmModal) {
