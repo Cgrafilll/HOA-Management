@@ -468,6 +468,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
 }
 
 // Redirect if not POST request
-header("Location: ../payment.php");
+header("Location: ../visitor_payment.php");
 exit;
 ?>
