@@ -1,19 +1,18 @@
 <?php
-// ✅ FIX: Set session configuration BEFORE session_start()
+// ✅ Set session configuration BEFORE session_start()
 ini_set('session.gc_maxlifetime', 7200); // 2 hours
 ini_set('session.cookie_lifetime', 7200); // 2 hours
 
 // Set session cookie parameters before starting session
 session_set_cookie_params([
-    'lifetime' => 7200, // 2 hours
+    'lifetime' => 7200,
     'path' => '/',
     'domain' => '',
-    'secure' => isset($_SERVER['HTTPS']), // Use secure cookies on HTTPS
-    'httponly' => true, // Prevent JavaScript access
-    'samesite' => 'Strict' // CSRF protection
+    'secure' => isset($_SERVER['HTTPS']),
+    'httponly' => true,
+    'samesite' => 'Strict'
 ]);
 
-// NOW start the session
 session_start();
 
 require '../../rfid-api/db.php';
@@ -24,16 +23,14 @@ if (!isset($_SESSION['household_id'])) {
     exit;
 }
 
-// Check session timeout (2 hours = 7200 seconds)
+// Check session timeout
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
-    // Session expired
     session_unset();
     session_destroy();
     header("Location: ../login.php?error=" . urlencode("Your session has expired. Please log in again."));
     exit;
 }
 
-// Update last activity time
 $_SESSION['last_activity'] = time();
 
 $household_id = $_SESSION['household_id'];
@@ -49,117 +46,69 @@ if (!$resident) {
     exit;
 }
 
-// Initialize user details
-$username = $resident['first_name']; // <- Set username directly from household query
-$photo = ''; // Initialize photo; your existing profile photo block will set this later
-// Only set $photo if profile_pic exists and is not null
+$username = $resident['first_name'];
+$photo = '';
 if (!empty($resident['profile_picture'])) {
     $photo = 'data:image/jpeg;base64,' . base64_encode($resident['profile_picture']);
-} else {
-    $photo = ''; // Explicitly empty if no image is saved
 }
 
-// How many records per page
+// Pagination
 $limit = 10;
-// Current page number (default 1 if not set)
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
-// Calculate offset for SQL query
 $offset = ($page - 1) * $limit;
-// Get total number of records from amenity_bookings for this homeowner
-if ($household_id) {
-    $totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE homeowner_id = ?";
-    $totalStmt = $conn->prepare($totalQuery);
-    $totalStmt->bind_param("s", $household_id);
-    $totalStmt->execute();
-    $totalResult = $totalStmt->get_result();
-    $totalRow = $totalResult->fetch_assoc();
-    $totalRecords = $totalRow['total'];
-} else {
-    // If no household_id, get all records
-    $totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings";
-    $totalResult = $conn->query($totalQuery);
-    $totalRow = $totalResult->fetch_assoc();
-    $totalRecords = $totalRow['total'];
-}
-// Calculate total pages
+
+// Get total records for this homeowner
+$totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE homeowner_id = ?";
+$totalStmt = $conn->prepare($totalQuery);
+$totalStmt->bind_param("s", $household_id);
+$totalStmt->execute();
+$totalResult = $totalStmt->get_result();
+$totalRow = $totalResult->fetch_assoc();
+$totalRecords = $totalRow['total'];
 $totalPages = ceil($totalRecords / $limit);
-// ✅ Fetch only the records for THIS PAGE (table)
-if ($household_id) {
-    $booking_sql = "SELECT 
-        ab.id,
-        ab.reservation_code,
-        ab.amenity,
-        ab.user_type,
-        ab.reservation_date,
-        ab.rate,
-        ab.total_amount,
-        ab.amount_paid,
-        ab.status,
-        ab.created_at,
-        ab.homeowner_id,
-        CASE 
-            WHEN ab.user_type = 'homeowner' THEN ha.first_name
-            WHEN ab.user_type = 'visitor' THEN vd.first_name
-            ELSE NULL
-        END as first_name,
-        CASE 
-            WHEN ab.user_type = 'homeowner' THEN ha.middle_name
-            WHEN ab.user_type = 'visitor' THEN vd.middle_name
-            ELSE NULL
-        END as middle_name,
-        CASE 
-            WHEN ab.user_type = 'homeowner' THEN ha.last_name
-            WHEN ab.user_type = 'visitor' THEN vd.last_name
-            ELSE NULL
-        END as last_name
-    FROM amenity_bookings ab
-    LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
-    LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
-    WHERE ab.homeowner_id = ? ORDER BY ab.reservation_date ASC LIMIT ? OFFSET ?";
-    $bookings_stmt = $conn->prepare($booking_sql);
-    $bookings_stmt->bind_param("sii", $household_id, $limit, $offset);
-    $bookings_stmt->execute();
-    $bookings_result = $bookings_stmt->get_result();
-} else {
-    // If no homeowner_id, get all records for this page
-    $booking_sql = "SELECT 
-        ab.id,
-        ab.reservation_code,
-        ab.amenity,
-        ab.user_type,
-        ab.reservation_date,
-        ab.rate,
-        ab.total_amount,
-        ab.amount_paid,
-        ab.status,
-        ab.created_at,
-        ab.homeowner_id,
-        CASE 
-            WHEN ab.user_type = 'homeowner' THEN ha.first_name
-            WHEN ab.user_type = 'visitor' THEN vd.first_name
-            ELSE NULL
-        END as first_name,
-        CASE 
-            WHEN ab.user_type = 'homeowner' THEN ha.middle_name
-            WHEN ab.user_type = 'visitor' THEN vd.middle_name
-            ELSE NULL
-        END as middle_name,
-        CASE 
-            WHEN ab.user_type = 'homeowner' THEN ha.last_name
-            WHEN ab.user_type = 'visitor' THEN vd.last_name
-            ELSE NULL
-        END as last_name
-    FROM amenity_bookings ab
-    LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
-    LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
-    ORDER BY ab.reservation_date ASC LIMIT ? OFFSET ?";
-    $bookings_stmt = $conn->prepare($booking_sql);
-    $bookings_stmt->bind_param("ii", $limit, $offset);
-    $bookings_stmt->execute();
-    $bookings_result = $bookings_stmt->get_result();
-}
-// ✅ Fetch ALL records (for calendar JSON) - if you need this for calendar
-$sql = "SELECT 
+
+// Fetch paginated bookings for table
+$booking_sql = "SELECT 
+    ab.id,
+    ab.reservation_code,
+    ab.amenity,
+    ab.user_type,
+    ab.reservation_date,
+    ab.rate,
+    ab.total_amount,
+    ab.amount_paid,
+    ab.status,
+    ab.created_at,
+    ab.homeowner_id,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.first_name
+        WHEN ab.user_type = 'visitor' THEN vd.first_name
+        ELSE NULL
+    END as first_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.middle_name
+        WHEN ab.user_type = 'visitor' THEN vd.middle_name
+        ELSE NULL
+    END as middle_name,
+    CASE 
+        WHEN ab.user_type = 'homeowner' THEN ha.last_name
+        WHEN ab.user_type = 'visitor' THEN vd.last_name
+        ELSE NULL
+    END as last_name
+FROM amenity_bookings ab
+LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+WHERE ab.homeowner_id = ?
+ORDER BY ab.reservation_date DESC
+LIMIT ? OFFSET ?";
+
+$bookings_stmt = $conn->prepare($booking_sql);
+$bookings_stmt->bind_param("sii", $household_id, $limit, $offset);
+$bookings_stmt->execute();
+$bookings_result = $bookings_stmt->get_result();
+
+// ✅ Fetch ALL bookings for calendar view (including other homeowners)
+$calendar_sql = "SELECT 
     ab.id,
     ab.reservation_code,
     ab.amenity,
@@ -190,32 +139,34 @@ FROM amenity_bookings ab
 LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
 LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
 ORDER BY ab.reservation_date ASC";
-$result = $conn->query($sql);
+
+$calendar_result = $conn->query($calendar_sql);
+
 $bookings = [];
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        // Determine time slot based on 'rate'
-        $timeSlot = "N/A";
-        if (isset($row['rate'])) {
-            if ($row['rate'] === "day") {
-                $timeSlot = "9:00 AM - 5:00 PM";
-            } elseif ($row['rate'] === "night") {
-                $timeSlot = "5:00 PM - 10:00 PM";
-            }
+while ($row = $calendar_result->fetch_assoc()) {
+    $timeSlot = "N/A";
+    if (isset($row['rate'])) {
+        if ($row['rate'] === "day") {
+            $timeSlot = "9:00 AM - 5:00 PM";
+        } elseif ($row['rate'] === "night") {
+            $timeSlot = "5:00 PM - 10:00 PM";
         }
-        $bookings[] = [
-            "id" => $row['id'],
-            "date" => $row['reservation_date'],
-            "fullName" => trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']),
-            "amenity" => $row['amenity'],
-            "reservationCode" => $row['reservation_code'],
-            "paymentStatus" => ucfirst($row['status']), // pending → Pending
-            "amount" => "₱" . number_format($row['amount_paid'], 2) .
-                ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : ""),
-            "time" => $timeSlot,
-            "homeownerId" => $row['homeowner_id']
-        ];
     }
+
+    $fullName = trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']);
+
+    $bookings[] = [
+        "id" => $row['id'],
+        "date" => $row['reservation_date'],
+        "fullName" => $fullName,
+        "amenity" => $row['amenity'],
+        "reservationCode" => $row['reservation_code'],
+        "paymentStatus" => ucfirst($row['status']),
+        "amount" => "₱" . number_format($row['amount_paid'], 2) .
+            ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : ""),
+        "time" => $timeSlot,
+        "homeownerId" => $row['homeowner_id']
+    ];
 }
 
 // Query for reschedule requests for this homeowner
@@ -258,7 +209,7 @@ $reschedule_stmt->bind_param("s", $household_id);
 $reschedule_stmt->execute();
 $reschedule_result = $reschedule_stmt->get_result();
 
-// Handle AJAX request to get booked dates with rates for an amenity
+// ✅ Handle AJAX request to get booked dates (ALL bookings, not just current user)
 if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
     header('Content-Type: application/json');
 
@@ -270,7 +221,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             exit;
         }
 
-        // Query to get both date and rate for each booking
         $stmt = $conn->prepare("
             SELECT reservation_date, rate 
             FROM amenity_bookings 
@@ -285,7 +235,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         while ($row = $result->fetch_assoc()) {
             $bookings[] = [
                 'date' => $row['reservation_date'],
-                'rate' => $row['rate'] // 'day' or 'night'
+                'rate' => $row['rate']
             ];
         }
 
@@ -295,7 +245,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
     }
     exit;
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -476,7 +425,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             border-bottom: none;
         }
 
-        /* Reschedule Calendar - following reserve_booking.php style */
+        /* Reschedule Calendar */
         .calendar-grid-reschedule {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -505,9 +454,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             background: white;
             position: relative;
             user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
         }
 
         .calendar-grid-reschedule .calendar-day:hover:not(.disabled):not(.booked) {
@@ -573,25 +519,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             pointer-events: none;
         }
 
-        #dateMessageReschedule {
-            margin-top: 10px;
-        }
-
-        .rate-options {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
         .rate-option {
             border: 2px solid #dee2e6;
             border-radius: 8px;
             padding: 15px;
             cursor: pointer;
             transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
         .rate-option:hover {
@@ -602,17 +535,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         .rate-option.selected {
             border-color: #0d6efd;
             background: #cfe2ff;
-        }
-
-        .rate-option.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background: #e9ecef;
-        }
-
-        .rate-option i {
-            font-size: 24px;
-            color: #0d6efd;
         }
     </style>
 </head>
@@ -652,10 +574,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             </div>
         </div>
     </header>
-    <div class="flex min-h-screen">
+    <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar p-3">
-            <nav class="nav d-flex flex-column gap-1">
+            <nav class="nav flex-column gap-1">
                 <a href="../dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -668,7 +590,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
-                <!-- Accounting -->
                 <div>
                     <button
                         class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start"
@@ -733,8 +654,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     <div class="tab-pane fade show active" id="bookings" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <span class="small">List of Amenity Bookings</span>
-                            <a href="choose_booking.php" class="btn btn-primary btn-sm">+ Create New
-                                Booking</a>
+                            <a href="choose_booking.php" class="btn btn-primary btn-sm">+ Create New Booking</a>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
@@ -744,7 +664,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                         <th>Full Name</th>
                                         <th>Amenity</th>
                                         <th>Reservation Code</th>
-                                        <th>Payment Status</th>
+                                        <th class="text-center">Payment Status</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -752,57 +672,53 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                     <?php
                                     if ($bookings_result->num_rows > 0) {
                                         while ($row = $bookings_result->fetch_assoc()) {
-                                            // Verify this booking belongs to the logged-in household
-                                            if ($row['homeowner_id'] == $household_id) {
-                                                $id = $row['id'];
-                                                $fullName = ucwords(trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']));
-                                                $amenity = $row['amenity'];
-                                                $bookingDate = date('F d, Y', strtotime($row['reservation_date']));
-                                                $resCode = $row['reservation_code'];
-                                                $statusClass = $row['status'] === 'paid'
-                                                    ? 'badge bg-success text-white'
-                                                    : ($row['status'] === 'partial'
-                                                        ? 'badge bg-primary text-white'
-                                                        : 'badge bg-warning text-dark');
+                                            $id = $row['id'];
+                                            $fullName = ucwords(trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']));
+                                            $amenity = $row['amenity'];
+                                            $bookingDate = $row['reservation_date'];
+                                            $resCode = $row['reservation_code'];
+                                            $statusClass = $row['status'] === 'paid'
+                                                ? 'badge bg-success text-white'
+                                                : ($row['status'] === 'partial'
+                                                    ? 'badge bg-primary text-white'
+                                                    : 'badge bg-warning text-dark');
 
-                                                echo "<tr>
-                                                    <td>{$bookingDate}</td>
-                                                    <td>{$fullName}</td>
-                                                    <td>{$amenity}</td>
-                                                    <td>{$resCode}</td>
-                                                    <td class='text-center'>
-                                                        <span class='" . $statusClass . " fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>
-                                                            " . ucfirst($row['status']) . "
-                                                        </span>
-                                                    </td>
-                                                    <td class='text-center'>
-                                                        <button class='btn btn-sm btn-outline-success' title='View Details' 
-                                                            onclick='showBookingDetailsFromTable({
-                                                                fullName: \"" . addslashes($fullName) . "\",
-                                                                amenity: \"" . addslashes($amenity) . "\",
-                                                                date: \"" . $bookingDate . "\",
-                                                                reservationCode: \"" . $resCode . "\",
-                                                                paymentStatus: \"" . ucfirst($row['status']) . "\",
-                                                                amount: \"₱" . number_format($row['amount_paid'], 2) . ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : "") . "\",
-                                                                time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\"
-                                                            })'>
-                                                            <i class='bi bi-eye'></i>
-                                                        </button>
-                                                        <!-- Reschedule button -->
-                                                        <button class='btn btn-sm btn-outline-primary me-1' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'
-                                                            onclick='openRescheduleModal({
-                                                                id: \"" . $id . "\",
-                                                                fullName: \"" . addslashes($fullName) . "\",
-                                                                amenity: \"" . addslashes($amenity) . "\",
-                                                                date: \"" . $bookingDate . "\",
-                                                                time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\",
-                                                                rate: \"" . $row['rate'] . "\"
-                                                            })'>
-                                                            <i class='bi bi-calendar2-week'></i>
-                                                        </button>
-                                                    </td>
-                                                </tr>";
-                                            }
+                                            echo "<tr>
+                                                <td>{$bookingDate}</td>
+                                                <td>{$fullName}</td>
+                                                <td>{$amenity}</td>
+                                                <td>{$resCode}</td>
+                                                <td class='text-center'>
+                                                    <span class='" . $statusClass . " fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>
+                                                        " . ucfirst($row['status']) . "
+                                                    </span>
+                                                </td>
+                                                <td class='text-center'>
+                                                    <button class='btn btn-sm btn-outline-success me-1' title='View'
+                                                        onclick='showBookingDetailsFromTable({
+                                                            fullName: \"" . addslashes($fullName) . "\",
+                                                            amenity: \"" . addslashes($amenity) . "\",
+                                                            date: \"" . $bookingDate . "\",
+                                                            reservationCode: \"" . $resCode . "\",
+                                                            paymentStatus: \"" . ucfirst($row['status']) . "\",
+                                                            amount: \"₱" . number_format($row['amount_paid'], 2) . ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : "") . "\",
+                                                            time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\"
+                                                        })'>
+                                                        <i class='bi bi-eye'></i>
+                                                    </button>
+                                                    <button class='btn btn-sm btn-outline-primary' title='Reschedule'
+                                                        onclick='openRescheduleModal({
+                                                            id: \"" . $id . "\",
+                                                            fullName: \"" . addslashes($fullName) . "\",
+                                                            amenity: \"" . addslashes($amenity) . "\",
+                                                            date: \"" . $bookingDate . "\",
+                                                            time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\",
+                                                            rate: \"" . $row['rate'] . "\"
+                                                        })'>
+                                                        <i class='bi bi-calendar2-week'></i>
+                                                    </button>
+                                                </td>
+                                            </tr>";
                                         }
                                     } else {
                                         echo "<tr><td colspan='6' class='text-center text-muted'>No bookings found.</td></tr>";
@@ -815,19 +731,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                             <span class="small">Showing 1 to <?php echo $bookings_result->num_rows; ?> entries</span>
                             <nav>
                                 <ul class="pagination justify-content-center">
-                                    <!-- Previous button -->
                                     <li class="page-item <?php if ($page <= 1)
                                         echo 'disabled'; ?>">
                                         <a class="page-link" href="?page=<?php echo $page - 1; ?>">Previous</a>
                                     </li>
-                                    <!-- Page numbers -->
                                     <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                                         <li class="page-item <?php if ($page == $i)
                                             echo 'active'; ?>">
                                             <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
                                         </li>
                                     <?php endfor; ?>
-                                    <!-- Next button -->
                                     <li class="page-item <?php if ($page >= $totalPages)
                                         echo 'disabled'; ?>">
                                         <a class="page-link" href="?page=<?php echo $page + 1; ?>">Next</a>
@@ -838,7 +751,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     </div>
                     <!-- Calendar View -->
                     <div class="tab-pane fade" id="calendar" role="tabpanel">
-                        <!-- Calendar Controls -->
                         <div class="row mb-3 align-items-center">
                             <div class="col-md-4">
                                 <div class="legend">
@@ -862,7 +774,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                 </button>
                             </div>
                         </div>
-                        <!-- Calendar -->
                         <div class="calendar-container shadow-sm">
                             <div
                                 class="calendar-header bg-success text-white p-3 d-flex justify-content-between align-items-center">
@@ -947,8 +858,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 </div>
             </div>
         </main>
+
         <!-- Booking Details Modal -->
-        <div class="modal fade booking-modal" id="bookingModal" tabindex="-1">
+        <div class="modal fade" id="bookingModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header bg-success text-white">
@@ -964,6 +876,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 </div>
             </div>
         </div>
+
         <!-- Reschedule Modal -->
         <div class="modal fade" id="rescheduleModal" tabindex="-1">
             <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -972,16 +885,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         <h5 class="modal-title">Reschedule Booking</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <form id="rescheduleForm" method="POST" action="amenity_booking/reschedule_booking.php">
+                    <form id="rescheduleForm" method="POST" action="reschedule_booking.php">
                         <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                             <input type="hidden" id="reschedule_booking_id" name="booking_id">
                             <input type="hidden" id="reschedule_amenity" name="amenity">
-                            <!-- Current Booking Info -->
+
                             <div class="alert alert-info">
                                 <strong>Current Booking:</strong>
                                 <div id="currentBookingInfo"></div>
                             </div>
-                            <!-- Calendar for New Date -->
+
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Select New Date<span
                                         class="text-danger">*</span></label>
@@ -1016,13 +929,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                     </div>
                                     <div id="dateMessageReschedule" class="mt-2"></div>
                                 </div>
-                                <!-- Visible Date Input Below Calendar -->
                                 <input type="text" class="form-control" id="selected_date_display" readonly
                                     placeholder="Select a date from calendar above" onfocus="this.blur()">
-                                <!-- Hidden input for form submission -->
                                 <input type="hidden" id="new_date" name="new_date" required>
                             </div>
-                            <!-- New Time Slot -->
+
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Select New Time Slot<span
                                         class="text-danger">*</span></label>
@@ -1054,7 +965,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                 </div>
                                 <input type="hidden" id="new_rate" name="new_rate" required>
                             </div>
-                            <!-- Reason -->
+
                             <div class="mb-3">
                                 <label for="reschedule_reason" class="form-label fw-bold">Reason for Rescheduling<span
                                         class="text-danger">*</span></label>
@@ -1070,30 +981,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 </div>
             </div>
         </div>
-        <!-- Confirm Reschedule Action Modal -->
-        <div class="modal fade" id="confirmRescheduleModal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header" id="confirmModalHeader">
-                        <h5 class="modal-title" id="confirmModalTitle"></h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p id="confirmModalMessage"></p>
-                        <div class="alert alert-info">
-                            <strong>Guest:</strong> <span id="confirmGuestName"></span><br>
-                            <strong>Amenity:</strong> <span id="confirmAmenity"></span><br>
-                            <strong>New Date:</strong> <span id="confirmDate"></span>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary btn-cancel"
-                            data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn" id="confirmActionBtn"></button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1103,18 +990,47 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         let currentDate = new Date();
         let currentView = 'month';
 
+        // Handle tab switching
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabLinks = document.querySelectorAll('#dashboardTabs .nav-link');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            tabLinks.forEach(function (tabLink) {
+                tabLink.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetPane = document.getElementById(targetId);
+
+                    tabLinks.forEach(function (link) {
+                        link.classList.remove('active', 'link-dark');
+                        link.classList.add('link-secondary');
+                    });
+
+                    tabPanes.forEach(function (pane) {
+                        pane.classList.remove('show', 'active');
+                    });
+
+                    this.classList.add('active');
+                    this.classList.remove('link-secondary');
+                    this.classList.add('link-dark');
+
+                    if (targetPane) {
+                        targetPane.classList.add('show', 'active');
+                    }
+                });
+            });
+        });
+
         function renderCalendar() {
             const grid = document.getElementById('calendarGrid');
             const monthYear = document.getElementById('monthYear');
 
             grid.innerHTML = '';
 
-            // Update header
             const months = ['January', 'February', 'March', 'April', 'May', 'June',
                 'July', 'August', 'September', 'October', 'November', 'December'];
             monthYear.textContent = `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
 
-            // Day headers
             const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             dayHeaders.forEach(day => {
                 const header = document.createElement('div');
@@ -1123,35 +1039,33 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 grid.appendChild(header);
             });
 
-            // Get first day of month and number of days
             const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-            const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
             const startDate = new Date(firstDay);
             startDate.setDate(startDate.getDate() - firstDay.getDay());
 
-            // Create calendar days
             const today = new Date();
             for (let i = 0; i < 35; i++) {
                 const date = new Date(startDate);
                 date.setDate(startDate.getDate() + i);
                 const dayElement = document.createElement('div');
                 dayElement.className = 'calendar-day';
-                // Add classes for styling
+
                 if (date.getMonth() !== currentDate.getMonth()) {
                     dayElement.classList.add('other-month');
                 }
                 if (date.toDateString() === today.toDateString()) {
                     dayElement.classList.add('today');
                 }
-                // Day number
+
                 const dayNumber = document.createElement('div');
                 dayNumber.className = 'day-number fw-medium';
                 dayNumber.style.fontSize = `0.875rem`;
                 dayNumber.textContent = date.getDate();
                 dayElement.appendChild(dayNumber);
-                // Add bookings for this date
+
                 const dateStr = date.toLocaleDateString('en-CA');
                 const dayBookings = bookings.filter(booking => booking.date === dateStr);
+
                 dayBookings.forEach(booking => {
                     const bookingContainer = document.createElement('div');
                     bookingContainer.className = 'position-relative';
@@ -1160,8 +1074,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     bookingContainer.style.marginBottom = '4px';
 
                     const bookingElement = document.createElement('div');
-
-                    // Determine background class based on payment
                     let bgClass = 'bg-secondary text-white';
                     if (booking.paymentStatus === 'Paid') {
                         bgClass = 'bg-success text-white';
@@ -1169,33 +1081,25 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         bgClass = 'bg-warning text-dark';
                     }
 
+                    bookingElement.className = `booking-item ${bgClass} overflow-hidden text-nowrap rounded-2`;
+                    bookingElement.style.fontSize = '0.75rem';
+                    bookingElement.style.padding = '0.25rem 0.5rem';
+
                     if (booking.homeownerId == loggedInHouseholdId) {
-                        // ✅ Your household
-                        bookingElement.className = `booking-item ${bgClass} text-white overflow-hidden text-nowrap rounded-2`;
-                        bookingElement.style.fontSize = '0.75rem';
-                        bookingElement.style.padding = '0.25rem 0.5rem';
                         bookingElement.style.cursor = 'pointer';
                         bookingElement.textContent = booking.fullName;
 
-                        // Badge (always shown for your bookings)
                         const amenityBadge = createAmenityBadge(booking);
                         bookingContainer.appendChild(bookingElement);
                         bookingContainer.appendChild(amenityBadge);
-
                         bookingContainer.onclick = () => showBookingDetails(booking);
-
                     } else {
-                        // ✅ Other households
-                        bookingElement.className = `booking-item ${bgClass} overflow-hidden text-nowrap rounded-2`;
-                        bookingElement.style.fontSize = '0.75rem';
-                        bookingElement.style.padding = '0.25rem 0.5rem';
                         bookingElement.style.cursor = 'not-allowed';
                         bookingElement.textContent = `Booked - ${booking.time}`;
+                        bookingContainer.appendChild(bookingElement);
 
-                        // Badge only if payment is Paid or Partial
                         if (booking.paymentStatus === 'Paid' || booking.paymentStatus === 'Partial') {
                             const amenityBadge = createAmenityBadge(booking);
-                            bookingContainer.appendChild(bookingElement);
                             bookingContainer.appendChild(amenityBadge);
                         }
                     }
@@ -1212,15 +1116,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             const amenityLower = booking.amenity.toLowerCase();
 
             if (amenityLower === 'clubhouse') {
-                amenityBadge.style.backgroundColor = '#dc3545'; // danger
+                amenityBadge.style.backgroundColor = '#dc3545';
             } else if (amenityLower === 'swimming pool') {
-                amenityBadge.style.backgroundColor = '#0d6efd'; // primary
+                amenityBadge.style.backgroundColor = '#0d6efd';
             } else if (amenityLower === 'gazebo') {
-                amenityBadge.style.backgroundColor = '#ffc107'; // warning
+                amenityBadge.style.backgroundColor = '#ffc107';
             } else if (amenityLower === 'basketball court') {
-                amenityBadge.style.backgroundColor = '#0dcaf0'; // info
+                amenityBadge.style.backgroundColor = '#0dcaf0';
             } else {
-                amenityBadge.style.backgroundColor = '#6c757d'; // secondary
+                amenityBadge.style.backgroundColor = '#6c757d';
             }
 
             let badgeInitials = '';
@@ -1274,51 +1178,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 </div>
                 <div class="booking-detail">
                     <strong>Amenity:</strong>
-                    <span class="badge bg-${booking.amenity.toLowerCase() === 'clubhouse' ? 'danger' :
-                    booking.amenity.toLowerCase() === 'swimming pool' ? 'primary' :
-                        booking.amenity.toLowerCase() === 'gazebo' ? 'warning' : booking.amenity.toLowerCase() === 'basketball court' ? 'info' : 'secondary'}">${booking.amenity}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Date:</strong>
-                    <span>${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Time:</strong>
-                    <span>${booking.time}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Reservation Code:</strong>
-                    <span>${booking.reservationCode}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Payment Status:</strong>
-                    <span class="badge bg-${booking.paymentStatus === 'Paid' ? 'success' : booking.paymentStatus === 'Partial' ? 'warning' : 'secondary'}">${booking.paymentStatus}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Amount:</strong>
-                    <span>${booking.amount}</span>
-                </div>
-                <div class="booking-detail d-flex justify-content-end mt-3">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            `;
-
-            new bootstrap.Modal(document.getElementById('bookingModal')).show();
-        }
-
-        // Function to show booking details from table view
-        function showBookingDetailsFromTable(booking) {
-            const modalContent = document.getElementById('modalContent');
-            modalContent.innerHTML = `
-                <div class="booking-detail">
-                    <strong>Guest Name:</strong>
-                    <span>${booking.fullName}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Amenity:</strong>
-                    <span class="badge bg-${booking.amenity.toLowerCase() === 'clubhouse' ? 'danger' :
-                    booking.amenity.toLowerCase() === 'swimming pool' ? 'primary' :
-                        booking.amenity.toLowerCase() === 'gazebo' ? 'warning text-dark' : booking.amenity.toLowerCase() === 'basketball court' ? 'info' : 'secondary'}">${booking.amenity}</span>
+                    <span class="badge bg-${getAmenityBadgeClass(booking.amenity)}">${booking.amenity}</span>
                 </div>
                 <div class="booking-detail">
                     <strong>Date:</strong>
@@ -1345,30 +1205,49 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             new bootstrap.Modal(document.getElementById('bookingModal')).show();
         }
 
-        // Function to open reschedule modal
-        function openRescheduleModal(booking) {
-            // Set booking ID
-            document.getElementById('reschedule_booking_id').value = booking.id;
-
-            // Display current booking info
-            document.getElementById('currentBookingInfo').innerHTML = `
-                <div><strong>Guest:</strong> ${booking.fullName}</div>
-                <div><strong>Amenity:</strong> ${booking.amenity}</div>
-                <div><strong>Current Date:</strong> ${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                <div><strong>Current Time:</strong> ${booking.time}</div>
+        function showBookingDetailsFromTable(booking) {
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="booking-detail">
+                    <strong>Guest Name:</strong>
+                    <span>${booking.fullName}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Amenity:</strong>
+                    <span class="badge bg-${getAmenityBadgeClass(booking.amenity)}">${booking.amenity}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Date:</strong>
+                    <span>${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Time:</strong>
+                    <span>${booking.time}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Reservation Code:</strong>
+                    <span>${booking.reservationCode}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Payment Status:</strong>
+                    <span class="badge bg-${booking.paymentStatus === 'Paid' ? 'success' : booking.paymentStatus === 'Partial' ? 'warning text-dark' : 'secondary'}">${booking.paymentStatus}</span>
+                </div>
+                <div class="booking-detail">
+                    <strong>Amount:</strong>
+                    <span>${booking.amount}</span>
+                </div>
             `;
 
-            // Set minimum date to today
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('new_date').setAttribute('min', today);
+            new bootstrap.Modal(document.getElementById('bookingModal')).show();
+        }
 
-            // Clear form
-            document.getElementById('new_date').value = '';
-            document.getElementById('new_rate').value = '';
-            document.getElementById('reschedule_reason').value = '';
-
-            // Show modal
-            new bootstrap.Modal(document.getElementById('rescheduleModal')).show();
+        function getAmenityBadgeClass(amenity) {
+            const amenityLower = amenity.toLowerCase();
+            if (amenityLower === 'clubhouse') return 'danger';
+            if (amenityLower === 'swimming pool') return 'primary';
+            if (amenityLower === 'gazebo') return 'warning text-dark';
+            if (amenityLower === 'basketball court') return 'info';
+            return 'secondary';
         }
 
         function previousMonth() {
@@ -1388,34 +1267,22 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
 
         function setView(view) {
             currentView = view;
-            document.getElementById('monthBtn').classList.toggle('active', view === 'month');
-            document.getElementById('weekBtn').classList.toggle('active', view === 'week');
-
-            if (view === 'week') {
-                // You can implement week view here
-                alert('Week view feature coming soon!');
-            } else {
-                renderCalendar();
-            }
+            renderCalendar();
         }
 
-        // Initialize calendar
         renderCalendar();
 
-        // Reschedule Modal Variables
+        // Reschedule Modal Functionality
         let rescheduleBookedDates = {};
         let rescheduleCurrentDate = new Date();
         let rescheduleSelectedDate = null;
         let rescheduleAmenity = null;
 
-        // Function to open reschedule modal
         function openRescheduleModal(booking) {
-            // Set booking details
             document.getElementById('reschedule_booking_id').value = booking.id;
             document.getElementById('reschedule_amenity').value = booking.amenity;
             rescheduleAmenity = booking.amenity;
 
-            // Display current booking info
             document.getElementById('currentBookingInfo').innerHTML = `
                 <div><strong>Guest:</strong> ${booking.fullName}</div>
                 <div><strong>Amenity:</strong> ${booking.amenity}</div>
@@ -1423,17 +1290,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 <div><strong>Current Time:</strong> ${booking.time}</div>
             `;
 
-            // Reset selections
             rescheduleSelectedDate = null;
             document.getElementById('new_date').value = '';
             document.getElementById('new_rate').value = '';
             document.getElementById('reschedule_reason').value = '';
+            document.getElementById('selected_date_display').value = '';
             document.querySelectorAll('.rate-option').forEach(el => el.classList.remove('selected'));
 
-            // Fetch booked dates and render calendar
             fetchRescheduleBookedDates();
-
-            // Show modal
             new bootstrap.Modal(document.getElementById('rescheduleModal')).show();
         }
 
@@ -1488,16 +1352,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             const year = rescheduleCurrentDate.getFullYear();
             const month = rescheduleCurrentDate.getMonth();
 
-            // Set month display
             monthDisplay.textContent = new Date(year, month).toLocaleDateString('en-US', {
                 month: 'long',
                 year: 'numeric'
             });
 
-            // Clear grid
             grid.innerHTML = '';
 
-            // Day headers
             const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             dayHeaders.forEach(day => {
                 const header = document.createElement('div');
@@ -1506,20 +1367,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 grid.appendChild(header);
             });
 
-            // Get first day of month and total days
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            // Empty cells before first day
             for (let i = 0; i < firstDay; i++) {
                 const emptyDay = document.createElement('div');
                 emptyDay.className = 'calendar-day empty';
                 grid.appendChild(emptyDay);
             }
 
-            // Days of month
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayElement = document.createElement('div');
                 dayElement.className = 'calendar-day';
@@ -1528,33 +1386,26 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 const cellDate = new Date(year, month, day);
                 cellDate.setHours(0, 0, 0, 0);
 
-                // Use timezone-safe date formatting
                 const dateString = formatDateReschedule(cellDate);
 
-                // Check if past date
                 if (cellDate < today) {
                     dayElement.classList.add('disabled');
                     dayElement.title = 'Past date';
                 } else {
-                    // Check booking status
                     const booking = rescheduleBookedDates[dateString];
 
                     if (booking) {
                         const dayBooked = booking.day;
                         const nightBooked = booking.night;
 
-                        // Both rates booked - fully booked
                         if (dayBooked && nightBooked) {
                             dayElement.classList.add('booked');
                             dayElement.title = 'Fully booked (Day & Night)';
-                        }
-                        // Partially booked - still selectable
-                        else if (dayBooked || nightBooked) {
+                        } else if (dayBooked || nightBooked) {
                             dayElement.classList.add('partial-booked');
                             const available = dayBooked ? 'Night' : 'Day';
                             dayElement.title = `Partially booked - ${available} available`;
 
-                            // Add a small indicator
                             const indicator = document.createElement('span');
                             indicator.className = 'partial-indicator';
                             indicator.textContent = '◐';
@@ -1562,18 +1413,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         }
                     }
 
-                    // Check if today
                     if (cellDate.getTime() === today.getTime()) {
                         dayElement.classList.add('today');
                     }
                 }
 
-                // Check if selected
                 if (rescheduleSelectedDate && rescheduleSelectedDate === dateString) {
                     dayElement.classList.add('selected');
                 }
 
-                // Click handler - allow clicking on partially booked dates
                 if (!dayElement.classList.contains('disabled') && !dayElement.classList.contains('booked')) {
                     dayElement.addEventListener('click', () => selectRescheduleDate(dateString, dayElement));
                 }
@@ -1590,15 +1438,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         }
 
         function selectRescheduleDate(dateString, element) {
-            console.log('Date selected:', dateString);
-
             const booking = rescheduleBookedDates[dateString];
 
-            // No validation here - just select the date
             rescheduleSelectedDate = dateString;
             document.getElementById('new_date').value = dateString;
 
-            // Update the visible date input with formatted date
             const formattedDate = new Date(dateString + 'T00:00:00').toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
@@ -1606,18 +1450,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             });
             document.getElementById('selected_date_display').value = formattedDate;
 
-            // Remove previous selection
             document.querySelectorAll('.calendar-grid-reschedule .calendar-day.selected').forEach(el => {
                 el.classList.remove('selected');
             });
 
-            // Add selection to clicked element
             element.classList.add('selected');
-
-            // Update rate options based on availability
             updateRescheduleRateOptions(booking);
 
-            // If date is partially booked, show which rate is available
             if (booking && (booking.day || booking.night)) {
                 const availableRate = booking.day ? 'night' : 'day';
                 showRescheduleRateMessage(dateString, availableRate);
@@ -1627,17 +1466,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         }
 
         function selectRescheduleRate(element, rate) {
-            // Check if disabled
             if (element.classList.contains('bg-secondary') || element.style.opacity === '0.5') return;
 
-            // Remove selection from all rate options
             document.querySelectorAll('.rate-option').forEach(el => {
-                el.classList.remove('border-primary', 'border-2', 'bg-primary', 'bg-opacity-10');
+                el.classList.remove('border-primary', 'border-2', 'bg-primary', 'bg-opacity-10', 'selected');
                 el.style.borderWidth = '1px';
             });
 
-            // Add selection to clicked option
-            element.classList.add('border-primary', 'border-2', 'bg-primary', 'bg-opacity-10');
+            element.classList.add('border-primary', 'border-2', 'bg-primary', 'bg-opacity-10', 'selected');
             element.style.borderWidth = '2px';
 
             document.getElementById('new_rate').value = rate;
@@ -1647,9 +1483,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             const dayOption = document.querySelector('.rate-option[data-value="day"]');
             const nightOption = document.querySelector('.rate-option[data-value="night"]');
 
-            // Reset both options
             [dayOption, nightOption].forEach(option => {
-                option.classList.remove('bg-secondary', 'bg-opacity-10', 'border-primary', 'border-2', 'bg-primary');
+                option.classList.remove('bg-secondary', 'bg-opacity-10', 'border-primary', 'border-2', 'bg-primary', 'selected');
                 option.style.opacity = '1';
                 option.style.cursor = 'pointer';
                 option.style.borderWidth = '1px';
@@ -1668,7 +1503,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 }
             }
 
-            // Clear selection
             document.getElementById('new_rate').value = '';
         }
 
@@ -1683,7 +1517,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             }
         }
 
-        // Calendar navigation for reschedule
         document.addEventListener('DOMContentLoaded', function () {
             const prevBtn = document.getElementById('prevMonthReschedule');
             const nextBtn = document.getElementById('nextMonthReschedule');
@@ -1701,100 +1534,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     renderRescheduleCalendar();
                 });
             }
-        });
 
-        // Handle reschedule confirmation modal
-        document.addEventListener('DOMContentLoaded', function () {
-            const confirmModal = document.getElementById('confirmRescheduleModal');
-
-            if (confirmModal) {
-                confirmModal.addEventListener('show.bs.modal', function (event) {
-                    const button = event.relatedTarget;
-                    const action = button.getAttribute('data-action');
-                    const bookingId = button.getAttribute('data-id');
-                    const guestName = button.getAttribute('data-name');
-                    const amenity = button.getAttribute('data-amenity');
-                    const date = button.getAttribute('data-date');
-
-                    const modalHeader = document.getElementById('confirmModalHeader');
-                    const modalTitle = document.getElementById('confirmModalTitle');
-                    const modalMessage = document.getElementById('confirmModalMessage');
-                    const confirmBtn = document.getElementById('confirmActionBtn');
-
-                    // Set modal content based on action
-                    if (action === 'approve') {
-                        modalHeader.className = 'modal-header bg-success text-white';
-                        modalTitle.textContent = 'Approve Reschedule Request';
-                        modalMessage.textContent = 'Are you sure you want to approve this reschedule request?';
-                        confirmBtn.className = 'btn btn-success';
-                        confirmBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Approve';
-                        confirmBtn.onclick = function () {
-                            window.location.href = `amenity_booking/process_reschedule.php?id=${bookingId}&action=approve`;
-                        };
-                    } else if (action === 'reject') {
-                        modalHeader.className = 'modal-header bg-danger text-white';
-                        modalTitle.textContent = 'Reject Reschedule Request';
-                        modalMessage.textContent = 'Are you sure you want to reject this reschedule request?';
-                        confirmBtn.className = 'btn btn-danger';
-                        confirmBtn.innerHTML = '<i class="bi bi-x-lg me-1"></i>Reject';
-                        confirmBtn.onclick = function () {
-                            window.location.href = `amenity_booking/process_reschedule.php?id=${bookingId}&action=reject`;
-                        };
-                    }
-
-                    // Set booking details
-                    document.getElementById('confirmGuestName').textContent = guestName;
-                    document.getElementById('confirmAmenity').textContent = amenity;
-                    document.getElementById('confirmDate').textContent = date;
-                });
-            }
-        });
-
-        // Auto-dismiss alerts after 5 seconds
-        document.addEventListener('DOMContentLoaded', function () {
+            // Auto-dismiss alerts
             const alerts = document.querySelectorAll('.alert-dismissible');
-
             alerts.forEach(function (alert) {
                 setTimeout(function () {
                     const bsAlert = new bootstrap.Alert(alert);
                     bsAlert.close();
                 }, 5000);
-            });
-        });
-
-        // Handle tab switching and link color changes
-        document.addEventListener('DOMContentLoaded', function () {
-            const tabLinks = document.querySelectorAll('#dashboardTabs .nav-link');
-            const tabPanes = document.querySelectorAll('.tab-pane');
-
-            // Add click event listener to each tab link
-            tabLinks.forEach(function (tabLink) {
-                tabLink.addEventListener('click', function (event) {
-                    event.preventDefault();
-
-                    // Get the target tab pane
-                    const targetId = this.getAttribute('href').substring(1);
-                    const targetPane = document.getElementById(targetId);
-
-                    // Remove active classes from all tabs and panes
-                    tabLinks.forEach(function (link) {
-                        link.classList.remove('active', 'link-dark');
-                        link.classList.add('link-secondary');
-                    });
-
-                    tabPanes.forEach(function (pane) {
-                        pane.classList.remove('show', 'active');
-                    });
-
-                    // Add active classes to current tab and pane
-                    this.classList.add('active');
-                    this.classList.remove('link-secondary');
-                    this.classList.add('link-dark');
-
-                    if (targetPane) {
-                        targetPane.classList.add('show', 'active');
-                    }
-                });
             });
         });
     </script>
