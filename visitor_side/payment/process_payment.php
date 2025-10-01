@@ -301,13 +301,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
         }
         
         // Get user details
-        $db_user_type = ($user_type === 'Homeowner/Resident') ? 'homeowner' : 'visitor';
-        $userDetails = getUserDetails($conn, $db_user_type, $user_id);
-        
-        // Start transaction
-        if (!$conn->begin_transaction()) {
-            throw new Exception("Failed to start transaction: " . $conn->error);
-        }
+$db_user_type = ($user_type === 'Homeowner/Resident') ? 'homeowner' : 'visitor';
+$userDetails = getUserDetails($conn, $db_user_type, $user_id);
+
+// ⭐ FIX: Use the actual IDs from the database, not from POST
+$household_id = null;
+$visitor_id = null;
+
+if ($db_user_type === 'homeowner') {
+    $household_id = $userDetails['household_id'];
+} else {
+    $visitor_id = $userDetails['visitor_id'];
+}
+
+// Start transaction
+if (!$conn->begin_transaction()) {
+    throw new Exception("Failed to start transaction: " . $conn->error);
+}
+
+$reference_id = null;
+$paymentDetails = null;
         
         $reference_id = null;
         $household_id = ($user_type === 'Homeowner/Resident') ? $user_id : null;
