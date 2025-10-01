@@ -440,6 +440,51 @@
 
     return $html;
 }
+
+// Generate plain text version
+function generatePaymentPlainTextEmail($recipientName, $paymentDetails)
+{
+    $invoiceNumber = $paymentDetails['invoice_number'];
+    $category = $paymentDetails['category'];
+    $paymentDate = date('F j, Y', strtotime($paymentDetails['payment_date']));
+    
+    $statusText = ($paymentDetails['payment_status'] === 'Completed' || $paymentDetails['payment_status'] === 'paid') 
+        ? 'PAID IN FULL' 
+        : 'PARTIALLY PAID';
+    
+    $text = "PAYMENT RECEIPT - NSSHAI\n";
+    $text .= "========================\n\n";
+    $text .= "Hello " . $recipientName . "!\n\n";
+    $text .= "Thank you for your payment! We have successfully received and processed your payment for " . $category . ".\n\n";
+    $text .= "INVOICE NUMBER: " . $invoiceNumber . "\n\n";
+    $text .= "PAYMENT DETAILS:\n";
+    $text .= "- Category: " . $category . "\n";
+    $text .= "- Payment Date: " . $paymentDate . "\n";
+    $text .= "- Payment Method: " . ucfirst($paymentDetails['payment_method']) . "\n";
+    $text .= "- Amount Paid: ₱" . number_format($paymentDetails['amount_paid'], 2) . "\n";
+    
+    if (!empty($paymentDetails['reference_number'])) {
+        $text .= "- Reference Number: " . $paymentDetails['reference_number'] . "\n";
+    }
+    
+    $text .= "\nBALANCE SUMMARY:\n";
+    $text .= "- Total Amount: ₱" . number_format($paymentDetails['total_amount'], 2) . "\n";
+    $text .= "- Total Paid: ₱" . number_format($paymentDetails['total_paid'], 2) . "\n";
+    $text .= "- Remaining Balance: ₱" . number_format($paymentDetails['remaining_balance'], 2) . "\n";
+    
+    $text .= "\nSTATUS: " . $statusText . "\n\n";
+    
+    if ($paymentDetails['remaining_balance'] > 0) {
+        $text .= "Please ensure full payment before your scheduled date.\n\n";
+    }
+    
+    $text .= "For questions or concerns, contact us at 8-2457647 or admin@nsshai.com\n\n";
+    $text .= "Thank you for your prompt payment!\n\n";
+    $text .= "Best regards,\nNSSHAI Administration Team\n";
+    $text .= "Neopolitan Sitio Seville Homeowners Association, Inc.";
+    
+    return $text;
+}
     // ============================================
     // MAIN PAYMENT PROCESSING
     // ============================================
