@@ -192,7 +192,6 @@ $reschedule_sql = "SELECT
     ab.requested_date,
     ab.requested_rate,
     ab.reschedule_reason,
-    ab.reschedule_status,
     ab.reschedule_requested_at,
     CASE 
         WHEN ab.user_type = 'homeowner' THEN ha.first_name
@@ -212,6 +211,7 @@ $reschedule_sql = "SELECT
 FROM amenity_bookings ab
 LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
 LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
+WHERE ab.reschedule_status = 'pending'
 ORDER BY ab.reschedule_requested_at DESC";
 
 $reschedule_result = $conn->query($reschedule_sql);
@@ -902,7 +902,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     <!-- Reschedule Requests -->
                     <div class="tab-pane fade" id="reschedule" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="small">List of Reschedule Requests</span>
+                            <span class="small">List of Pending Reschedule Requests</span>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
@@ -915,7 +915,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                         <th>Requested Date</th>
                                         <th>Reason</th>
                                         <th>Requested At</th>
-                                        <th class="text-center">Status</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -931,11 +930,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                             $currentTime = $row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : '5:00 PM - 10:00 PM';
                                             $requestedTime = $row['requested_rate'] === 'day' ? '9:00 AM - 5:00 PM' : '5:00 PM - 10:00 PM';
                                             $reason = htmlspecialchars($row['reschedule_reason']);
-                                            $statusClass = $row['reschedule_status'] === 'approved'
-                                                ? 'badge bg-success text-white'
-                                                : ($row['reschedule_status'] === 'rejected'
-                                                    ? 'badge bg-danger text-white'
-                                                    : 'badge bg-warning text-dark');
                                             $requestedAt = date('M d, Y h:i A', strtotime($row['reschedule_requested_at']));
 
                                             echo "<tr>
@@ -946,11 +940,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                 <td><span class='text-primary fw-bold'>{$requestedDate}</span><br><small class='text-muted'>{$requestedTime}</small></td>
                                                 <td>{$reason}</td>
                                                 <td>{$requestedAt}</td>
-                                                <td class='text-center'>
-                                                    <span class='" . $statusClass . " fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>
-                                                        " . ucfirst($row['reschedule_status']) . "
-                                                    </span>
-                                                </td>
                                                 <td class='text-center'>
                                                     <button class='btn btn-sm btn-success me-1' title='Approve' 
                                                         data-id='{$id}' 
@@ -982,7 +971,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                 </tbody>
                             </table>
                         </div>
-                    </div>            
+                    </div>
                 </div>
             </div>
         </main>
