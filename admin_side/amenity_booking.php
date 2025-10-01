@@ -933,24 +933,36 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                             $requestedAt = date('M d, Y h:i A', strtotime($row['reschedule_requested_at']));
 
                                             echo "<tr>
-                            <td>{$fullName}</td>
-                            <td><span class='badge bg-secondary'>{$amenity}</span></td>
-                            <td>{$row['reservation_code']}</td>
-                            <td>{$currentDate}<br><small class='text-muted'>{$currentTime}</small></td>
-                            <td><span class='text-primary fw-bold'>{$requestedDate}</span><br><small class='text-muted'>{$requestedTime}</small></td>
-                            <td><small>{$reason}</small></td>
-                            <td><small>{$requestedAt}</small></td>
-                            <td class='text-center'>
-                                <button class='btn btn-sm btn-success me-1' title='Approve' 
-                                    onclick='approveReschedule({$id})'>
-                                    <i class='bi bi-check-lg'></i>
-                                </button>
-                                <button class='btn btn-sm btn-danger' title='Reject' 
-                                    onclick='rejectReschedule({$id})'>
-                                    <i class='bi bi-x-lg'></i>
-                                </button>
-                            </td>
-                        </tr>";
+                                                <td>{$fullName}</td>
+                                                <td><span class='badge bg-secondary'>{$amenity}</span></td>
+                                                <td>{$row['reservation_code']}</td>
+                                                <td>{$currentDate}<br><small class='text-muted'>{$currentTime}</small></td>
+                                                <td><span class='text-primary fw-bold'>{$requestedDate}</span><br><small class='text-muted'>{$requestedTime}</small></td>
+                                                <td><small>{$reason}</small></td>
+                                                <td><small>{$requestedAt}</small></td>
+                                                <td class='text-center'>
+                                                    <button class='btn btn-sm btn-success me-1' title='Approve' 
+                                                        data-id='{$id}' 
+                                                        data-action='approve'
+                                                        data-name='{$fullName}'
+                                                        data-amenity='{$amenity}'
+                                                        data-date='{$requestedDate}'
+                                                        data-bs-toggle='modal' 
+                                                        data-bs-target='#confirmRescheduleModal'>
+                                                        <i class='bi bi-check-lg'></i>
+                                                    </button>
+                                                    <button class='btn btn-sm btn-danger' title='Reject' 
+                                                        data-id='{$id}'
+                                                        data-action='reject'
+                                                        data-name='{$fullName}'
+                                                        data-amenity='{$amenity}'
+                                                        data-date='{$requestedDate}'
+                                                        data-bs-toggle='modal' 
+                                                        data-bs-target='#confirmRescheduleModal'>
+                                                        <i class='bi bi-x-lg'></i>
+                                                    </button>
+                                                </td>
+                                            </tr>";
                                         }
                                     } else {
                                         echo "<tr><td colspan='8' class='text-center text-muted'>No pending reschedule requests.</td></tr>";
@@ -1083,6 +1095,30 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                             <button type="submit" class="btn btn-primary">Submit Reschedule Request</button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+        <!-- Confirm Reschedule Action Modal -->
+        <div class="modal fade" id="confirmRescheduleModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header" id="confirmModalHeader">
+                        <h5 class="modal-title" id="confirmModalTitle"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="confirmModalMessage"></p>
+                        <div class="alert alert-info">
+                            <strong>Guest:</strong> <span id="confirmGuestName"></span><br>
+                            <strong>Amenity:</strong> <span id="confirmAmenity"></span><br>
+                            <strong>New Date:</strong> <span id="confirmDate"></span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-cancel"
+                            data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn" id="confirmActionBtn"></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1707,17 +1743,52 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             }
         });
 
-        function approveReschedule(bookingId) {
-            if (confirm('Are you sure you want to approve this reschedule request?')) {
-                window.location.href = `amenity_booking/approve_reschedule.php?id=${bookingId}`;
-            }
-        }
+        // Handle reschedule confirmation modal
+        document.addEventListener('DOMContentLoaded', function () {
+            const confirmModal = document.getElementById('confirmRescheduleModal');
 
-        function rejectReschedule(bookingId) {
-            if (confirm('Are you sure you want to reject this reschedule request?')) {
-                window.location.href = `amenity_booking/reject_reschedule.php?id=${bookingId}`;
+            if (confirmModal) {
+                confirmModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const action = button.getAttribute('data-action');
+                    const bookingId = button.getAttribute('data-id');
+                    const guestName = button.getAttribute('data-name');
+                    const amenity = button.getAttribute('data-amenity');
+                    const date = button.getAttribute('data-date');
+
+                    const modalHeader = document.getElementById('confirmModalHeader');
+                    const modalTitle = document.getElementById('confirmModalTitle');
+                    const modalMessage = document.getElementById('confirmModalMessage');
+                    const confirmBtn = document.getElementById('confirmActionBtn');
+
+                    // Set modal content based on action
+                    if (action === 'approve') {
+                        modalHeader.className = 'modal-header bg-success text-white';
+                        modalTitle.textContent = 'Approve Reschedule Request';
+                        modalMessage.textContent = 'Are you sure you want to approve this reschedule request?';
+                        confirmBtn.className = 'btn btn-success';
+                        confirmBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Approve';
+                        confirmBtn.onclick = function () {
+                            window.location.href = `amenity_booking/approve_reschedule.php?id=${bookingId}`;
+                        };
+                    } else if (action === 'reject') {
+                        modalHeader.className = 'modal-header bg-danger text-white';
+                        modalTitle.textContent = 'Reject Reschedule Request';
+                        modalMessage.textContent = 'Are you sure you want to reject this reschedule request?';
+                        confirmBtn.className = 'btn btn-danger';
+                        confirmBtn.innerHTML = '<i class="bi bi-x-lg me-1"></i>Reject';
+                        confirmBtn.onclick = function () {
+                            window.location.href = `amenity_booking/reject_reschedule.php?id=${bookingId}`;
+                        };
+                    }
+
+                    // Set booking details
+                    document.getElementById('confirmGuestName').textContent = guestName;
+                    document.getElementById('confirmAmenity').textContent = amenity;
+                    document.getElementById('confirmDate').textContent = date;
+                });
             }
-        }
+        });
     </script>
 </body>
 
