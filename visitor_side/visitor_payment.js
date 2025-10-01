@@ -6,7 +6,7 @@ class VisitorPaymentManager {
         this.initializeModals();
         this.disableInOfficePayment(); // Disable in-office payment for visitors
         this.autoPopulateUserInfo(); // Auto-populate on load
-        this.setDefaultCategory(); // Default to Amenity Fee
+        this.setAndDisableCategory(); // Default and disable category to Amenity Fee
         this.attachEventListeners();
     }
 
@@ -104,16 +104,6 @@ class VisitorPaymentManager {
             this.userIdSelect.disabled = true;
             this.userIdSelect.style.backgroundColor = '#e9ecef';
             
-            // Hide Monthly Dues for visitors
-            const monthlyOption = [...this.categorySelect.options].find(opt => opt.value === "Monthly Dues");
-            if (monthlyOption) {
-                if (userType === 'Visitor') {
-                    monthlyOption.style.display = "none";
-                } else {
-                    monthlyOption.style.display = "block";
-                }
-            }
-            
             // Hide loading indicator
             this.loadingIndicator.classList.add('d-none');
         } else {
@@ -121,12 +111,13 @@ class VisitorPaymentManager {
         }
     }
 
-    setDefaultCategory() {
+    setAndDisableCategory() {
         // Default to Amenity Fee for visitors
-        const userType = this.userTypeSelect.value;
-        if (userType === 'Visitor') {
-            this.categorySelect.value = 'Amenity Fee';
-        }
+        this.categorySelect.value = 'Amenity Fee';
+        
+        // Disable the category select
+        this.categorySelect.disabled = true;
+        this.categorySelect.style.backgroundColor = '#e9ecef';
     }
 
     disableInOfficePayment() {
@@ -151,7 +142,6 @@ class VisitorPaymentManager {
         this.bankTransfer.addEventListener('click', () => this.selectPaymentMethod('bank'));
         
         // Form field changes
-        this.categorySelect.addEventListener('change', () => this.handleCategoryChange());
         this.invoiceInput.addEventListener('blur', () => this.fetchInvoiceDetails());
         this.invoiceInput.addEventListener('input', () => this.resetInvoiceValidation());
         
@@ -171,27 +161,6 @@ class VisitorPaymentManager {
         // Modal confirmation button
         if (this.confirmPaymentBtn) {
             this.confirmPaymentBtn.addEventListener('click', () => this.processPayment());
-        }
-    }
-    
-    handleCategoryChange() {
-        const selectedCategory = this.categorySelect.value;
-        
-        // Clear table if not Amenity Fee or Monthly Dues
-        if (selectedCategory !== 'Amenity Fee' && selectedCategory !== 'Monthly Dues') {
-            this.clearInvoiceTable();
-            this.refNo.textContent = "";
-            this.residentName.textContent = "";
-            this.issueDate.textContent = "";
-        } else if (this.invoiceInput.value) {
-            // If switching to Amenity Fee or Monthly Dues and invoice exists, fetch details
-            this.fetchInvoiceDetails();
-        }
-        
-        // Show validation message if Monthly Dues is selected but user type is Visitor
-        if (selectedCategory === 'Monthly Dues' && this.userTypeSelect.value === 'Visitor') {
-            this.refNo.textContent = "Monthly dues only apply to homeowners/residents";
-            this.clearInvoiceTable();
         }
     }
 
@@ -222,26 +191,11 @@ class VisitorPaymentManager {
         this.issueDate.textContent = "";
         this.clearInvoiceTable();
         
-        // Only fetch for Amenity Fee or Monthly Dues categories
-        if ((selectedCategory === "Amenity Fee" || selectedCategory === "Monthly Dues") && invoiceNumber && userId && userType) {
-            
-            // Validate Monthly Dues is only for homeowners/residents
-            if (selectedCategory === "Monthly Dues" && userType !== "Homeowner/Resident") {
-                this.refNo.textContent = "Monthly dues only apply to homeowners/residents";
-                this.invoiceInput.style.borderColor = '#dc3545';
-                this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
-                this.clearInvoiceTable();
-                return;
-            }
-            
+        // Only fetch for Amenity Fee (since category is locked for visitors)
+        if (selectedCategory === "Amenity Fee" && invoiceNumber && userId && userType) {
             try {
-                // Determine which endpoint to use
-                const action = selectedCategory === "Amenity Fee" 
-                    ? 'get_amenity_booking_by_invoice' 
-                    : 'get_monthly_dues_by_invoice';
-                    
                 const params = new URLSearchParams({
-                    action: action,
+                    action: 'get_amenity_booking_by_invoice',
                     invoice_number: invoiceNumber,
                     user_id: userId,
                     user_type: userType
@@ -258,15 +212,6 @@ class VisitorPaymentManager {
                     this.refNo.textContent = data.reference_number;
                     this.residentName.textContent = `${data.first_name} ${data.middle_name} ${data.last_name}`;
                     this.issueDate.textContent = new Date(data.created_at).toLocaleDateString();
-                    
-                    // For Monthly Dues, also show billing month if available
-                    if (selectedCategory === "Monthly Dues" && data.billing_month) {
-                        const billingMonth = new Date(data.billing_month).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'long' 
-                        });
-                        this.issueDate.textContent += ` (${billingMonth})`;
-                    }
                     
                     // Populate table
                     this.populateInvoiceTable(data.items);
@@ -445,7 +390,7 @@ class VisitorPaymentManager {
     }
 
     clearFormFields() {
-        // Only clear editable fields (don't clear category since it's defaulted to Amenity Fee)
+        // Only clear editable fields (category remains disabled and locked)
         this.invoiceInput.value = "";
         this.amountPaid.value = "";
         this.referenceNumber.value = "";
@@ -460,7 +405,6 @@ class VisitorPaymentManager {
         
         // Reset validation styles
         const fieldsToReset = [
-            this.categorySelect,
             this.invoiceInput,
             this.amountPaid
         ];
@@ -484,17 +428,13 @@ class VisitorPaymentManager {
         // Reset file upload
         this.fileInput.value = '';
         this.filePreview.innerHTML = '';
-        
-        // Re-set default category
-        this.setDefaultCategory();
     }
 
     handleSubmit(e) {
         e.preventDefault();
         
-        // Validate required fields
+        // Validate required fields (category is already set and disabled)
         const requiredFields = [
-            this.categorySelect,
             this.invoiceInput,
             this.amountPaid
         ];
@@ -551,10 +491,10 @@ class VisitorPaymentManager {
             return;
         }
         
-        // Additional validation for Amenity Fee and Monthly Dues
-        if (this.categorySelect.value === 'Amenity Fee' || this.categorySelect.value === 'Monthly Dues') {
+        // Additional validation for Amenity Fee
+        if (this.categorySelect.value === 'Amenity Fee') {
             if (!this.currentInvoiceData) {
-                this.showErrorModal(`Please enter a valid invoice number for ${this.categorySelect.value} payments.`);
+                this.showErrorModal('Please enter a valid invoice number for Amenity Fee payments.');
                 return;
             }
             
