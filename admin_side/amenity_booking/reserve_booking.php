@@ -775,14 +775,12 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     </div>
                                     <div class="col-6">
                                         <!-- User ID -->
-                                        <div class="mb-3">
-                                            <div class="d-flex align-items-center">
-                                                <input type="text" class="form-control search-select-input"
-                                                    id="userIdSearch" placeholder="Type to search..." disabled
-                                                    autocomplete="off">
-                                                <i class="bi bi-x-circle search-select-clear" id="searchClear"></i>
-                                                <div class="search-select-dropdown" id="userIdDropdown"></div>
-                                            </div>
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control search-select-input"
+                                                id="userIdSearch" name="search" disabled autocomplete="off">
+                                            <label for="search">Search User</label>
+                                            <i class="bi bi-x-circle search-select-clear" id="searchClear"></i>
+                                            <div class="search-select-dropdown" id="userIdDropdown"></div>
                                             <input type="hidden" id="userId" name="userId" required>
                                             <div class="loading d-none" id="loadingIndicator">
                                                 <i class="bi bi-arrow-clockwise"></i> Loading available IDs...
