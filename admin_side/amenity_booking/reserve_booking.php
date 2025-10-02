@@ -539,10 +539,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             margin-top: 10px;
         }
 
-        .search-select-wrapper {
-            position: relative;
-        }
-
         .search-select-input {
             width: 100%;
             padding: 0.375rem 2.25rem 0.375rem 0.75rem;
