@@ -259,7 +259,7 @@ if (!empty($admin['profile_picture'])) {
                     <div class="collapse show" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="../payment.php" class="nav-link px-2">Payments</a></li>
-                            <li><a href="../billing.php" class="nav-link px-2">Billing</a></li>
+                            <li><a href="../billing.php" class="nav-link px-2 actived">Billing</a></li>
                             <li><a href="../invoices.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
@@ -282,7 +282,7 @@ if (!empty($admin['profile_picture'])) {
                 <!-- Back Button -->
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <span class="small mb-0">Fill out the form below to issue a new invoice</span>
-                    <a href="../invoice.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                    <a href="../billing.php" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                         <i class="bi bi-arrow-left-short me-1"></i>Back
                     </a>
                 </div>

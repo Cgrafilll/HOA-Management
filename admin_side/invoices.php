@@ -532,9 +532,6 @@ function getNumericAmount($amountStr)
                     <!-- Button row -->
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="fw-semibold">List of Billing Statements</div>
-                        <a href="billing/add_billing.php" class="btn btn-primary btn-sm d-flex align-items-center">
-                            <i class="bi bi-plus-lg me-1"></i> New Billing
-                        </a>
                     </div>
                     <!-- Filter Dropdown -->
                     <form method="get" class="mb-3">
