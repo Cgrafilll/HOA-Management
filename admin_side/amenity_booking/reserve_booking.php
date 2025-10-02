@@ -918,14 +918,14 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <div class="col-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="chairs" name="chairs" min="0"
-                                                value="0">
+                                                value="0" max="40">
                                             <label for="chairs">Chairs <small>(₱12.00/pc)</small></label>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="tables" name="tables" min="0"
-                                                value="0">
+                                                value="0" max="15">
                                             <label for="tables">Tables <small>(₱20.00/pc)</small></label>
                                         </div>
                                     </div>
