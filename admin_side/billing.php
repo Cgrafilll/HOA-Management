@@ -59,154 +59,95 @@ try {
         $error_message = "Failed to fetch user details.";
     }
     
-    // Fetch invoices from amenity_bookings OR monthly_dues based on filter
-    $filter = $_GET['filter'] ?? 'all';
+    // Fetch invoices from amenity_bookings OR monthly_dues based on filters
+    $statusFilter = $_GET['status'] ?? 'all';
+    $typeFilter = $_GET['type'] ?? 'all';
 
     try {
-        if ($filter === 'all') {
-            // ✅ Fetch ALL invoices from both tables
-            $invoices = [];
-
-            // Fetch from monthly_dues
-            $stmt = $conn->prepare("
-                SELECT 
-                    md.id,
-                    md.invoice_number,
-                    md.household_id,
-                    md.billing_month,
-                    md.amount_paid,
-                    md.balance_remaining,
-                    md.due_date,
-                    md.status,
-                    CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) AS full_name,
-                    (md.amount_paid + md.balance_remaining) AS total_amount,
-                    'monthly_dues' AS source_table,
-                    md.due_date AS sort_date
-                FROM monthly_dues md
-                LEFT JOIN household_accounts ha ON md.household_id = ha.household_id
-            ");
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $monthlyDuesInvoices = $result->fetch_all(MYSQLI_ASSOC);
-
-            // Fetch from amenity_bookings
-            $stmt = $conn->prepare("
-                SELECT 
-                    ab.invoice_number,
-                    ab.reservation_code,
-                    ab.reservation_date,
-                    ab.created_at,
-                    ab.total_amount,
-                    ab.amount_paid,
-                    (ab.total_amount - ab.amount_paid) AS balance_remaining,
-                    ab.payment_method,
-                    ab.reference_number,
-                    ab.status,
-                    ab.amenity,
-                    ab.chairs,
-                    ab.tables,
-                    ab.rate,
-                    ab.user_type,
-                    ab.guests,
-                    CASE 
-                        WHEN ab.user_type = 'homeowner' 
-                            THEN CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name)
-                        WHEN ab.user_type = 'visitor' 
-                            THEN CONCAT(v.first_name, ' ', v.middle_name, ' ', v.last_name)
-                        ELSE 'Unknown'
-                    END AS full_name,
-                    'amenity_bookings' AS source_table,
-                    ab.created_at AS sort_date
-                FROM amenity_bookings ab
-                LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
-                LEFT JOIN visitor_details v ON ab.visitor_id = v.visitor_id
-            ");
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $amenityInvoices = $result->fetch_all(MYSQLI_ASSOC);
-
-            // Combine both arrays
-            $invoices = array_merge($monthlyDuesInvoices, $amenityInvoices);
-
-            // Sort by date (most recent first)
-            usort($invoices, function ($a, $b) {
-                return strtotime($b['sort_date']) - strtotime($a['sort_date']);
-            });
-
-        } elseif (in_array($filter, ['pending', 'partial', 'paid'])) {
-            // ✅ Filter by status across both tables
-            $invoices = [];
-            
-            // Fetch from monthly_dues with status filter
-            $stmt = $conn->prepare("
-                SELECT 
-                    md.id,
-                    md.invoice_number,
-                    md.household_id,
-                    md.billing_month,
-                    md.amount_paid,
-                    md.balance_remaining,
-                    md.due_date,
-                    md.status,
-                    CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) AS full_name,
-                    (md.amount_paid + md.balance_remaining) AS total_amount,
-                    'monthly_dues' AS source_table,
-                    md.due_date AS sort_date
-                FROM monthly_dues md
-                LEFT JOIN household_accounts ha ON md.household_id = ha.household_id
-                WHERE LOWER(md.status) = ?
-            ");
-            $stmt->bind_param("s", $filter);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $monthlyDuesInvoices = $result->fetch_all(MYSQLI_ASSOC);
-
-            // Fetch from amenity_bookings with status filter
-            $stmt = $conn->prepare("
-                SELECT 
-                    ab.invoice_number,
-                    ab.reservation_code,
-                    ab.reservation_date,
-                    ab.created_at,
-                    ab.total_amount,
-                    ab.amount_paid,
-                    (ab.total_amount - ab.amount_paid) AS balance_remaining,
-                    ab.payment_method,
-                    ab.reference_number,
-                    ab.status,
-                    ab.amenity,
-                    ab.chairs,
-                    ab.tables,
-                    ab.rate,
-                    ab.user_type,
-                    ab.guests,
-                    CASE 
-                        WHEN ab.user_type = 'homeowner' 
-                            THEN CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name)
-                        WHEN ab.user_type = 'visitor' 
-                            THEN CONCAT(v.first_name, ' ', v.middle_name, ' ', v.last_name)
-                        ELSE 'Unknown'
-                    END AS full_name,
-                    'amenity_bookings' AS source_table,
-                    ab.created_at AS sort_date
-                FROM amenity_bookings ab
-                LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
-                LEFT JOIN visitor_details v ON ab.visitor_id = v.visitor_id
-                WHERE LOWER(ab.status) = ?
-            ");
-            $stmt->bind_param("s", $filter);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $amenityInvoices = $result->fetch_all(MYSQLI_ASSOC);
-
-            // Combine both arrays
-            $invoices = array_merge($monthlyDuesInvoices, $amenityInvoices);
-
-            // Sort by date (most recent first)
-            usort($invoices, function ($a, $b) {
-                return strtotime($b['sort_date']) - strtotime($a['sort_date']);
-            });
+        $invoices = [];
+        
+        // Build status condition (exclude 'paid' status)
+        $statusCondition = "";
+        if ($statusFilter === 'all') {
+            $statusCondition = "LOWER(status) IN ('pending', 'partial')";
+        } elseif (in_array($statusFilter, ['pending', 'partial'])) {
+            $statusCondition = "LOWER(status) = '" . $conn->real_escape_string($statusFilter) . "'";
         }
+        
+        // Fetch based on type filter
+        if ($typeFilter === 'all' || $typeFilter === 'monthly_dues') {
+            // Fetch from monthly_dues
+            $sql = "
+                SELECT 
+                    md.id,
+                    md.invoice_number,
+                    md.household_id,
+                    md.billing_month,
+                    md.amount_paid,
+                    md.balance_remaining,
+                    md.due_date,
+                    md.status,
+                    CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) AS full_name,
+                    (md.amount_paid + md.balance_remaining) AS total_amount,
+                    'monthly_dues' AS source_table,
+                    md.due_date AS sort_date
+                FROM monthly_dues md
+                LEFT JOIN household_accounts ha ON md.household_id = ha.household_id
+                WHERE " . $statusCondition;
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $monthlyDuesInvoices = $result->fetch_all(MYSQLI_ASSOC);
+            $invoices = array_merge($invoices, $monthlyDuesInvoices);
+        }
+        
+        if ($typeFilter === 'all' || $typeFilter === 'amenity') {
+            // Fetch from amenity_bookings
+            $sql = "
+                SELECT 
+                    ab.invoice_number,
+                    ab.reservation_code,
+                    ab.reservation_date,
+                    ab.created_at,
+                    ab.total_amount,
+                    ab.amount_paid,
+                    (ab.total_amount - ab.amount_paid) AS balance_remaining,
+                    ab.payment_method,
+                    ab.reference_number,
+                    ab.status,
+                    ab.amenity,
+                    ab.chairs,
+                    ab.tables,
+                    ab.rate,
+                    ab.user_type,
+                    ab.guests,
+                    CASE 
+                        WHEN ab.user_type = 'homeowner' 
+                            THEN CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name)
+                        WHEN ab.user_type = 'visitor' 
+                            THEN CONCAT(v.first_name, ' ', v.middle_name, ' ', v.last_name)
+                        ELSE 'Unknown'
+                    END AS full_name,
+                    'amenity_bookings' AS source_table,
+                    ab.created_at AS sort_date
+                FROM amenity_bookings ab
+                LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
+                LEFT JOIN visitor_details v ON ab.visitor_id = v.visitor_id
+                WHERE " . $statusCondition;
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $amenityInvoices = $result->fetch_all(MYSQLI_ASSOC);
+            $invoices = array_merge($invoices, $amenityInvoices);
+        }
+
+        // Sort by date (most recent first)
+        usort($invoices, function ($a, $b) {
+            return strtotime($b['sort_date']) - strtotime($a['sort_date']);
+        });
+        
     } catch (Exception $e) {
         $invoices = [];
         $error_message = "Error fetching invoices: " . $e->getMessage();
@@ -509,8 +450,7 @@ function getNumericAmount($amountStr)
                     <div class="collapse show" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="payment.php" class="nav-link px-2">Payments</a></li>
-                            <li><a href="billing.php" class="nav-link px-2 actived">Billing</a></li>
-                            <li><a href="invoices.php" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="invoice.php" class="nav-link px-2 actived">Billing</a></li>
                         </ul>
                     </div>
                 </div>
@@ -532,21 +472,31 @@ function getNumericAmount($amountStr)
                     <!-- Button row -->
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="fw-semibold">List of Billing Statements</div>
-                        <a href="billing/add_billing.php" class="btn btn-primary btn-sm d-flex align-items-center">
-                            <i class="bi bi-plus-lg me-1"></i> New Billing
+                        <a href="invoice/add_invoice.php" class="btn btn-primary btn-sm d-flex align-items-center">
+                            <i class="bi bi-plus-lg me-1"></i> New Monthly Dues Billing
                         </a>
                     </div>
-                    <!-- Filter Dropdown -->
+                    <!-- Filter Dropdowns -->
                     <form method="get" class="mb-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <label for="filter" class="fw-semibold">Filter by Status:</label>
-                            <select name="filter" id="filter" class="form-select form-select-sm w-auto"
-                                onchange="this.form.submit()">
-                                <option value="all" <?= $filter == 'all' ? 'selected' : '' ?>>All</option>
-                                <option value="pending" <?= $filter == 'pending' ? 'selected' : '' ?>>Pending</option>
-                                <option value="partial" <?= $filter == 'partial' ? 'selected' : '' ?>>Partial</option>
-                                <option value="paid" <?= $filter == 'paid' ? 'selected' : '' ?>>Paid</option>
-                            </select>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <label for="status" class="fw-semibold">Status:</label>
+                                <select name="status" id="status" class="form-select form-select-sm w-auto"
+                                    onchange="this.form.submit()">
+                                    <option value="all" <?= $statusFilter == 'all' ? 'selected' : '' ?>>All</option>
+                                    <option value="pending" <?= $statusFilter == 'pending' ? 'selected' : '' ?>>Pending</option>
+                                    <option value="partial" <?= $statusFilter == 'partial' ? 'selected' : '' ?>>Partial</option>
+                                </select>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <label for="type" class="fw-semibold">Type:</label>
+                                <select name="type" id="type" class="form-select form-select-sm w-auto"
+                                    onchange="this.form.submit()">
+                                    <option value="all" <?= $typeFilter == 'all' ? 'selected' : '' ?>>All</option>
+                                    <option value="monthly_dues" <?= $typeFilter == 'monthly_dues' ? 'selected' : '' ?>>Monthly Dues</option>
+                                    <option value="amenity" <?= $typeFilter == 'amenity' ? 'selected' : '' ?>>Amenity Fees</option>
+                                </select>
+                            </div>
                         </div>
                     </form>
                     <div class="row g-3">
@@ -556,7 +506,7 @@ function getNumericAmount($amountStr)
                                 <div class="list-group list-group-flush">
                                     <?php if (!empty($invoices)): ?>
                                         <?php foreach ($invoices as $index => $inv): ?>
-                                            <a href="?filter=<?= htmlspecialchars($filter) ?>&invoice=<?= htmlspecialchars($inv['invoice_number']); ?>"
+                                            <a href="?status=<?= htmlspecialchars($statusFilter) ?>&type=<?= htmlspecialchars($typeFilter) ?>&invoice=<?= htmlspecialchars($inv['invoice_number']); ?>"
                                                 class="list-group-item list-group-item-action invoice <?= ($inv['invoice_number'] === $activeInvoiceNumber) ? 'active' : '' ?>">
                                                 <div class="d-flex w-100 justify-content-between">
                                                     <h6 class="mb-1">Invoice #<?= htmlspecialchars($inv['invoice_number']); ?>
