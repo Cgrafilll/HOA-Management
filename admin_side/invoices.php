@@ -526,12 +526,12 @@ function getNumericAmount($amountStr)
             <div class="bg-white shadow rounded p-3">
                 <!-- Top bar -->
                 <div class="bg-success text-white rounded-top p-3">
-                    <h5 class="mb-0 fw-bold">Billing</h5>
+                    <h5 class="mb-0 fw-bold">Invoices</h5>
                 </div>
                 <div class="p-3">
                     <!-- Button row -->
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="fw-semibold">List of Billing Statements</div>
+                        <div class="fw-semibold">List of Invoices</div>
                     </div>
                     <!-- Filter Dropdown -->
                     <form method="get" class="mb-3">
@@ -585,7 +585,7 @@ function getNumericAmount($amountStr)
                                             </a>
                                         <?php endforeach; ?>
                                     <?php else: ?>
-                                        <div class="p-5 text-muted medium">No billing statements found.</div>
+                                        <div class="p-5 text-muted medium">No invoices found.</div>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -823,7 +823,7 @@ function getNumericAmount($amountStr)
                                         <?php endif; ?>
                                     </div>
                                 <?php else: ?>
-                                    <div class="p-5 text-center text-muted">No billing statements available to display.</div>
+                                    <div class="p-5 text-center text-muted">No invoices available to display.</div>
                                 <?php endif; ?>
                             </div>
                         </div>
