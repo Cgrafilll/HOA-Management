@@ -626,30 +626,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         .search-select-clear.show {
             display: block;
         }
-
-        input[readonly] {
-            background-color: #e9ecef !important;
-            cursor: not-allowed !important;
-            pointer-events: none !important;
-        }
-
-        input[readonly]:focus {
-            background-color: #e9ecef !important;
-            border-color: #ced4da !important;
-            box-shadow: none !important;
-        }
-
-        input:disabled {
-            background-color: #e9ecef !important;
-            cursor: not-allowed !important;
-            opacity: 0.6 !important;
-        }
-
-        input:disabled:focus {
-            background-color: #e9ecef !important;
-            border-color: #ced4da !important;
-            box-shadow: none !important;
-        }
     </style>
 </head>
 
@@ -819,8 +795,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                     <div class="search-select-dropdown" id="userIdDropdown"></div>
                                                 </div>
                                                 <input type="hidden" id="userId" name="userId" required>
-                                                <label for="userIdSearch" id="userIdLabel">Select ID<small
-                                                        class="fw-bold text-danger">*</small></label>
                                             </div>
                                             <div class="loading d-none" id="loadingIndicator">
                                                 <i class="bi bi-arrow-clockwise"></i> Loading available IDs...
