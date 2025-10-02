@@ -691,7 +691,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="payment.php" class="nav-link px-2">Payments</a></li>
-                            <li><a href="invoice.php" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="billing.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>

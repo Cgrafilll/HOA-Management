@@ -4,7 +4,7 @@ ini_set('session.gc_maxlifetime', 7200); // 2 hours
 ini_set('session.cookie_lifetime', 7200); // 2 hours
 
 // Set session cookie parameters before starting session
-session_set_cookie_params([
+session_set_cookie_params(lifetime_or_options: [
     'lifetime' => 7200, // 2 hours
     'path' => '/',
     'domain' => '',
@@ -410,7 +410,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="../payment.php" class="nav-link px-2">Payments</a></li>
-                            <li><a href="../invoice.php" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="../billing.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>

@@ -823,7 +823,7 @@ if (isset($_GET['action'])) {
                     <div class="collapse show" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="payment.php" class="nav-link px-2 actived">Payments</a></li>
-                            <li><a href="invoice.php" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="billing.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
