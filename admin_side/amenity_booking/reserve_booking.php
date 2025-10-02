@@ -638,6 +638,18 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             border-color: #ced4da !important;
             box-shadow: none !important;
         }
+
+        input:disabled {
+            background-color: #e9ecef !important;
+            cursor: not-allowed !important;
+            opacity: 0.6 !important;
+        }
+
+        input:disabled:focus {
+            background-color: #e9ecef !important;
+            border-color: #ced4da !important;
+            box-shadow: none !important;
+        }
     </style>
 </head>
 
@@ -821,7 +833,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         <!-- First Name -->
                                         <div class="form-floating mb-3">
                                             <input type="text" class="form-control" id="firstName" name="firstName"
-                                                placeholder="First Name" required>
+                                                placeholder="First Name" required disabled>
                                             <label for="firstName">First Name<small
                                                     class="fw-bold text-danger">*</small></label>
                                         </div>
@@ -830,7 +842,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         <!-- Middle Name -->
                                         <div class="form-floating mb-3">
                                             <input type="text" class="form-control" id="middleName" name="middleName"
-                                                placeholder="Middle Name">
+                                                placeholder="Middle Name" disabled>
                                             <label for="middleName">Middle Name</label>
                                         </div>
                                     </div>
@@ -838,7 +850,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         <!-- Last Name -->
                                         <div class="form-floating mb-3">
                                             <input type="text" class="form-control" id="lastName" name="lastName"
-                                                placeholder="Last Name" required>
+                                                placeholder="Last Name" required disabled>
                                             <label for="lastName">Last Name<small
                                                     class="fw-bold text-danger">*</small></label>
                                         </div>
@@ -848,13 +860,14 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <div class="form-floating mb-3">
                                     <input type="tel" name="cellphone_number" class="form-control" pattern="[0-9]+"
                                         maxlength="15" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                                        placeholder="e.g., 09171234567" readonly />
-                                    <label class="form-label ">Cellphone Number</label>
+                                        placeholder="e.g., 09171234567" required disabled />
+                                    <label class="form-label">Cellphone Number<small
+                                            class="fw-bold text-danger">*</small></label>
                                 </div>
                                 <!-- Email Address -->
                                 <div class="form-floating mb-3">
                                     <input type="email" class="form-control" id="emailAddress" name="emailAddress"
-                                        placeholder="name@example.com" required>
+                                        placeholder="name@example.com" required disabled>
                                     <label for="emailAddress">Email Address<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
@@ -1652,7 +1665,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 }
 
                 const searchInput = document.getElementById('userIdSearch');
-                const idLabel = document.getElementById('userIdLabel');
                 const loadingIndicator = document.getElementById('loadingIndicator');
 
                 userData = {};
@@ -1666,10 +1678,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     }
 
                     if (userType === 'homeowner') {
-                        if (idLabel) {
-                            idLabel.innerHTML = 'Resident ID<span class="text-danger">*</span>';
-                        }
-
                         try {
                             const response = await fetch(`?action=get_households`);
                             const result = await response.json();
@@ -1700,10 +1708,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             searchInput.placeholder = 'Error loading data';
                         }
                     } else if (userType === 'visitor') {
-                        if (idLabel) {
-                            idLabel.innerHTML = 'Visitor ID<span class="text-danger">*</span>';
-                        }
-
                         try {
                             const response = await fetch(`?action=get_visitors`);
                             const result = await response.json();
@@ -1804,16 +1808,23 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             fields.forEach(field => {
                 const element = field.id ? document.getElementById(field.id) : document.querySelector(`[name="${field.name}"]`);
                 if (element) {
+                    // Enable the field first
+                    element.disabled = false;
+
+                    // Set the value
                     element.value = field.value;
+
+                    // Make it readonly (not editable)
                     element.readOnly = true;
                     element.setAttribute('readonly', 'readonly');
-                    element.disabled = false; // Keep enabled for form submission
+
+                    // Style it to look disabled but keep it enabled for form submission
                     element.style.backgroundColor = '#e9ecef';
                     element.style.opacity = '1';
                     element.style.cursor = 'not-allowed';
-                    element.style.pointerEvents = 'none'; // Prevent any interaction
+                    element.style.pointerEvents = 'none';
 
-                    // Remove any existing event listeners that might allow editing
+                    // Prevent editing attempts
                     element.addEventListener('keydown', preventEdit);
                     element.addEventListener('paste', preventEdit);
                     element.addEventListener('cut', preventEdit);
@@ -1840,7 +1851,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     element.value = '';
                     element.readOnly = false;
                     element.removeAttribute('readonly');
-                    element.disabled = false;
+
+                    // Disable the field
+                    element.disabled = true;
+
+                    // Reset styles
                     element.style.backgroundColor = '';
                     element.style.opacity = '';
                     element.style.cursor = '';
@@ -1860,7 +1875,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     element.value = '';
                     element.readOnly = false;
                     element.removeAttribute('readonly');
-                    element.disabled = false;
+
+                    // Disable the field
+                    element.disabled = true;
+
+                    // Reset styles
                     element.style.backgroundColor = '';
                     element.style.opacity = '';
                     element.style.cursor = '';
