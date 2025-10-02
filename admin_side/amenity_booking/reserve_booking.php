@@ -776,7 +776,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <div class="col-6">
                                         <!-- User ID -->
                                         <div class="mb-3">
-                                            <div class="search-select-wrapper">
+                                            <div class="d-flex align-items-center">
                                                 <input type="text" class="form-control search-select-input"
                                                     id="userIdSearch" placeholder="Type to search..." disabled
                                                     autocomplete="off">
