@@ -319,6 +319,15 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             background-color: #eff6ff;
         }
 
+        .file-drop-area.required-highlight {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .file-drop-area.required-highlight .cloud-icon {
+            color: #dc3545;
+        }
+
         .cloud-icon {
             font-size: 48px;
             color: #9ca3af;
@@ -1493,21 +1502,30 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (files.length > 0) {
                 const file = files[0];
                 filePreview.innerHTML = `
-            <div class="alert alert-success d-flex align-items-center">
-                <i class="bi bi-file-earmark-check me-2"></i>
-                <div>
-                    <strong>${file.name}</strong><br>
-                    <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
-                </div>
-                <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
-            </div>
-        `;
+                    <div class="alert alert-success d-flex align-items-center">
+                        <i class="bi bi-file-earmark-check me-2"></i>
+                        <div>
+                            <strong>${file.name}</strong><br>
+                            <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                        </div>
+                        <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
+                    </div>
+                `;
+
+                // Remove highlight when file is added
+                const fileDropArea = document.getElementById('fileDropArea');
+                if (fileDropArea) {
+                    fileDropArea.classList.remove('required-highlight');
+                }
             }
         }
 
         function clearFile() {
             if (fileInput) fileInput.value = '';
             if (filePreview) filePreview.innerHTML = '';
+
+            // Validate file upload after clearing
+            validateFileUpload();
         }
 
         // ============================================
@@ -1941,6 +1959,9 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     fileInputElement.setAttribute("required", "required");
                 }
             }
+            
+            // Validate file upload when payment method changes
+            validateFileUpload();
         }
 
         // ============================================
@@ -2050,6 +2071,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         function validateAmountPaid() {
             const totalField = document.getElementById("total");
             const amountPaidField = document.getElementById("amountPaid");
+            const paymentMethod = document.getElementById("selectedPayment")?.value;
 
             if (!totalField || !amountPaidField) return true;
 
@@ -2062,7 +2084,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 existingFeedback.remove();
             }
 
-            if (amountPaidValue > totalValue && totalValue > 0) {
+            // Only show error for BANK payment method
+            if (paymentMethod === 'bank' && amountPaidValue > totalValue && totalValue > 0) {
                 amountPaidField.classList.add('border-danger', 'is-invalid');
 
                 const errorDiv = document.createElement('div');
@@ -2075,6 +2098,29 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
 
             return true;
+        }
+
+        function validateFileUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const fileDropArea = document.getElementById('fileDropArea');
+            const paymentMethod = document.getElementById('selectedPayment')?.value;
+
+            if (!fileInput || !fileDropArea) return true;
+
+            // Only validate for bank payment
+            if (paymentMethod === 'bank') {
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    fileDropArea.classList.add('required-highlight');
+                    return false;
+                } else {
+                    fileDropArea.classList.remove('required-highlight');
+                    return true;
+                }
+            } else {
+                // Remove highlight for cash payment
+                fileDropArea.classList.remove('required-highlight');
+                return true;
+            }
         }
 
         // ============================================
@@ -2133,6 +2179,9 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 submitButton.addEventListener('click', function (e) {
                     e.preventDefault();
 
+                    // Validate file upload first
+                    const fileValid = validateFileUpload();
+
                     if (!form.checkValidity()) {
                         form.classList.add('was-validated');
                         return;
@@ -2141,6 +2190,14 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     if (!validateAmountPaid()) {
                         const amountPaidField = document.getElementById("amountPaid");
                         if (amountPaidField) amountPaidField.focus();
+                        return;
+                    }
+
+                    if (!fileValid) {
+                        const fileDropArea = document.getElementById('fileDropArea');
+                        if (fileDropArea) {
+                            fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
                         return;
                     }
 
