@@ -538,6 +538,87 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         #dateMessage {
             margin-top: 10px;
         }
+
+        .search-select-wrapper {
+            position: relative;
+        }
+
+        .search-select-input {
+            width: 100%;
+            padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+            font-size: 1rem;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+            background-color: #fff;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .search-select-input:focus {
+            border-color: #198754;
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+        }
+
+        .search-select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 250px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ced4da;
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+        }
+
+        .search-select-dropdown.show {
+            display: block;
+        }
+
+        .search-select-option {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        .search-select-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .search-select-option.selected {
+            background-color: #e7f5ea;
+            color: #198754;
+            font-weight: 500;
+        }
+
+        .search-select-option.no-results {
+            padding: 1rem;
+            text-align: center;
+            color: #6c757d;
+            cursor: default;
+        }
+
+        .search-select-option.no-results:hover {
+            background-color: transparent;
+        }
+
+        .search-select-clear {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6c757d;
+            display: none;
+        }
+
+        .search-select-clear.show {
+            display: block;
+        }
     </style>
 </head>
 
@@ -698,10 +779,15 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <div class="col-6">
                                         <!-- User ID -->
                                         <div class="form-floating mb-3">
-                                            <select class="form-select" id="userId" name="userId" disabled required>
-                                                <option value="" selected disabled>First select user type</option>
-                                            </select>
-                                            <label for="userId" id="userIdLabel">Select ID<small
+                                            <div class="search-select-wrapper">
+                                                <input type="text" class="form-control search-select-input"
+                                                    id="userIdSearch" placeholder="Type to search..." disabled
+                                                    autocomplete="off">
+                                                <i class="bi bi-x-circle search-select-clear" id="searchClear"></i>
+                                                <div class="search-select-dropdown" id="userIdDropdown"></div>
+                                            </div>
+                                            <input type="hidden" id="userId" name="userId" required>
+                                            <label for="userIdSearch" id="userIdLabel">Select ID<small
                                                     class="fw-bold text-danger">*</small></label>
                                             <div class="loading d-none" id="loadingIndicator">
                                                 <i class="bi bi-arrow-clockwise"></i> Loading available IDs...
@@ -724,8 +810,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         <div class="form-floating mb-3">
                                             <input type="text" class="form-control" id="middleName" name="middleName"
                                                 placeholder="Middle Name">
-                                            <label for="middleName">Middle Name<small
-                                                    class="fw-bold text-danger">*</small></label>
+                                            <label for="middleName">Middle Name</label>
                                         </div>
                                     </div>
                                     <div class="col-4">
@@ -1392,6 +1477,139 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         }
 
         // ============================================
+        // SEARCHABLE DROPDOWN FUNCTIONALITY
+        // ============================================
+        let userOptions = [];
+        let selectedUserId = null;
+
+        function initSearchableDropdown() {
+            const searchInput = document.getElementById('userIdSearch');
+            const dropdown = document.getElementById('userIdDropdown');
+            const clearBtn = document.getElementById('searchClear');
+            const hiddenInput = document.getElementById('userId');
+
+            if (!searchInput || !dropdown || !clearBtn || !hiddenInput) return;
+
+            // Show dropdown on focus
+            searchInput.addEventListener('focus', function () {
+                if (userOptions.length > 0) {
+                    renderDropdownOptions();
+                    dropdown.classList.add('show');
+                }
+            });
+
+            // Filter on input
+            searchInput.addEventListener('input', function () {
+                const searchTerm = this.value.toLowerCase();
+
+                if (searchTerm) {
+                    clearBtn.classList.add('show');
+                } else {
+                    clearBtn.classList.remove('show');
+                }
+
+                renderDropdownOptions(searchTerm);
+                dropdown.classList.add('show');
+            });
+
+            // Clear button
+            clearBtn.addEventListener('click', function () {
+                searchInput.value = '';
+                hiddenInput.value = '';
+                selectedUserId = null;
+                clearBtn.classList.remove('show');
+                clearUserFields();
+                renderDropdownOptions();
+                searchInput.focus();
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        }
+
+        function renderDropdownOptions(searchTerm = '') {
+            const dropdown = document.getElementById('userIdDropdown');
+            if (!dropdown) return;
+
+            dropdown.innerHTML = '';
+
+            const filteredOptions = userOptions.filter(option => {
+                const searchText = `${option.id} ${option.name}`.toLowerCase();
+                return searchText.includes(searchTerm.toLowerCase());
+            });
+
+            if (filteredOptions.length === 0) {
+                const noResults = document.createElement('div');
+                noResults.className = 'search-select-option no-results';
+                noResults.innerHTML = '<i class="bi bi-search"></i> No results found';
+                dropdown.appendChild(noResults);
+                return;
+            }
+
+            filteredOptions.forEach(option => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'search-select-option';
+                optionDiv.textContent = `${option.id} - ${option.name}`;
+                optionDiv.dataset.value = option.id;
+
+                if (option.id === selectedUserId) {
+                    optionDiv.classList.add('selected');
+                }
+
+                optionDiv.addEventListener('click', function () {
+                    selectUser(option);
+                });
+
+                dropdown.appendChild(optionDiv);
+            });
+        }
+
+        function selectUser(option) {
+            const searchInput = document.getElementById('userIdSearch');
+            const dropdown = document.getElementById('userIdDropdown');
+            const hiddenInput = document.getElementById('userId');
+            const clearBtn = document.getElementById('searchClear');
+
+            if (!searchInput || !dropdown || !hiddenInput) return;
+
+            selectedUserId = option.id;
+            searchInput.value = `${option.id} - ${option.name}`;
+            hiddenInput.value = option.id;
+            clearBtn.classList.add('show');
+            dropdown.classList.remove('show');
+
+            // Populate user fields
+            if (userData[option.id]) {
+                populateUserFields(userData[option.id]);
+                searchInput.style.borderColor = '#198754';
+                searchInput.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+            }
+        }
+
+        function resetSearchableDropdown() {
+            const searchInput = document.getElementById('userIdSearch');
+            const dropdown = document.getElementById('userIdDropdown');
+            const hiddenInput = document.getElementById('userId');
+            const clearBtn = document.getElementById('searchClear');
+
+            if (searchInput) {
+                searchInput.value = '';
+                searchInput.style.borderColor = '';
+                searchInput.style.boxShadow = '';
+            }
+            if (dropdown) dropdown.innerHTML = '';
+            if (hiddenInput) hiddenInput.value = '';
+            if (clearBtn) clearBtn.classList.remove('show');
+
+            userOptions = [];
+            selectedUserId = null;
+        }
+
+        // ============================================
         // RATES & USER TYPE FUNCTIONALITY
         // ============================================
         const amenityRates = <?php echo json_encode($amenityRates); ?>;
@@ -1412,16 +1630,16 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     prevSelectedRate = 'day';
                 }
 
-                const userIdSelect = document.getElementById('userId');
+                const searchInput = document.getElementById('userIdSearch');
                 const idLabel = document.getElementById('userIdLabel');
                 const loadingIndicator = document.getElementById('loadingIndicator');
 
                 userData = {};
                 clearUserFields();
+                resetSearchableDropdown();
 
-                if (userIdSelect) {
-                    userIdSelect.innerHTML = '<option value="">Loading...</option>';
-                    userIdSelect.disabled = true;
+                if (searchInput) {
+                    searchInput.disabled = true;
                     if (loadingIndicator) {
                         loadingIndicator.classList.remove('d-none');
                     }
@@ -1436,7 +1654,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             const result = await response.json();
 
                             if (result.success) {
-                                userIdSelect.innerHTML = '<option value="" selected disabled>Select Resident ID</option>';
+                                userOptions = result.data.map(household => ({
+                                    id: household.household_id,
+                                    name: household.name
+                                }));
+
                                 result.data.forEach(household => {
                                     userData[household.household_id] = {
                                         first_name: household.first_name,
@@ -1445,20 +1667,16 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         email: household.email,
                                         cellphone_number: household.cellphone_number || ''
                                     };
-
-                                    const option = document.createElement('option');
-                                    option.value = household.household_id;
-                                    option.textContent = `${household.household_id} - ${household.name}`;
-                                    option.setAttribute('data-address', household.address);
-                                    userIdSelect.appendChild(option);
                                 });
+
+                                searchInput.placeholder = 'Type to search residents...';
                             } else {
-                                userIdSelect.innerHTML = '<option value="">Error loading data</option>';
                                 console.error('Error:', result.error);
+                                searchInput.placeholder = 'Error loading data';
                             }
                         } catch (error) {
                             console.error('Error fetching household data:', error);
-                            userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                            searchInput.placeholder = 'Error loading data';
                         }
                     } else if (userType === 'visitor') {
                         if (idLabel) {
@@ -1470,7 +1688,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             const result = await response.json();
 
                             if (result.success) {
-                                userIdSelect.innerHTML = '<option value="" selected disabled>Select Visitor ID</option>';
+                                userOptions = result.data.map(visitor => ({
+                                    id: visitor.visitor_id,
+                                    name: visitor.name
+                                }));
+
                                 result.data.forEach(visitor => {
                                     userData[visitor.visitor_id] = {
                                         first_name: visitor.first_name,
@@ -1479,31 +1701,27 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         email: visitor.email,
                                         cellphone_number: visitor.cellphone_number || ''
                                     };
-
-                                    const option = document.createElement('option');
-                                    option.value = visitor.visitor_id;
-                                    option.textContent = `${visitor.visitor_id} - ${visitor.name}`;
-                                    option.setAttribute('data-purpose', visitor.purpose);
-                                    userIdSelect.appendChild(option);
                                 });
+
+                                searchInput.placeholder = 'Type to search visitors...';
                             } else {
-                                userIdSelect.innerHTML = '<option value="">Error loading data</option>';
                                 console.error('Error:', result.error);
+                                searchInput.placeholder = 'Error loading data';
                             }
                         } catch (error) {
                             console.error('Error fetching visitor data:', error);
-                            userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                            searchInput.placeholder = 'Error loading data';
                         }
                     }
 
                     if (loadingIndicator) {
                         loadingIndicator.classList.add('d-none');
                     }
-                    userIdSelect.disabled = false;
-                    userIdSelect.classList.add('fade-in');
+                    searchInput.disabled = false;
+                    searchInput.classList.add('fade-in');
 
                     setTimeout(() => {
-                        userIdSelect.classList.remove('fade-in');
+                        searchInput.classList.remove('fade-in');
                     }, 300);
                 }
 
@@ -1550,23 +1768,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 }
 
                 calculateTotal();
-            });
-        }
-
-        const userIdSelectElement = document.getElementById('userId');
-        if (userIdSelectElement) {
-            userIdSelectElement.addEventListener('change', function () {
-                const selectedUserId = this.value;
-
-                if (selectedUserId && userData[selectedUserId]) {
-                    populateUserFields(userData[selectedUserId]);
-                    this.style.borderColor = '#198754';
-                    this.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
-                } else {
-                    clearUserFields();
-                    this.style.borderColor = '#dee2e6';
-                    this.style.boxShadow = 'none';
-                }
             });
         }
 
@@ -1933,6 +2134,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             console.log('Page loaded, initializing...');
 
             fetchBookedDates();
+            initSearchableDropdown();
 
             const amountPaidField = document.getElementById("amountPaid");
             if (amountPaidField) {
