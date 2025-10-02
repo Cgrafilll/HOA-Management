@@ -2089,6 +2089,9 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (totalValue > 0 && amountPaidValue < minimumPayment) {
                 amountPaidField.classList.add('border-danger', 'is-invalid');
 
+                // Set custom validity to prevent HTML5 validation checkmark
+                amountPaidField.setCustomValidity('Amount must be at least 50% of total');
+
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'invalid-feedback';
                 errorDiv.style.display = 'block';
@@ -2102,6 +2105,9 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (paymentMethod === 'bank' && amountPaidValue > totalValue && totalValue > 0) {
                 amountPaidField.classList.add('border-danger', 'is-invalid');
 
+                // Set custom validity
+                amountPaidField.setCustomValidity('Amount cannot exceed total');
+
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'invalid-feedback';
                 errorDiv.style.display = 'block';
@@ -2111,6 +2117,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 return false;
             }
 
+            // Clear custom validity if validation passes
+            amountPaidField.setCustomValidity('');
             return true;
         }
 
@@ -2193,20 +2201,30 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 submitButton.addEventListener('click', function (e) {
                     e.preventDefault();
 
-                    // Validate file upload first
+                    // Validate amount paid FIRST (before HTML5 validation)
+                    const amountValid = validateAmountPaid();
+
+                    // Validate file upload
                     const fileValid = validateFileUpload();
 
+                    // If amount paid validation fails, stop here
+                    if (!amountValid) {
+                        const amountPaidField = document.getElementById("amountPaid");
+                        if (amountPaidField) {
+                            amountPaidField.focus();
+                            // Scroll to the field
+                            amountPaidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        return;
+                    }
+
+                    // Now check HTML5 validation
                     if (!form.checkValidity()) {
                         form.classList.add('was-validated');
                         return;
                     }
 
-                    if (!validateAmountPaid()) {
-                        const amountPaidField = document.getElementById("amountPaid");
-                        if (amountPaidField) amountPaidField.focus();
-                        return;
-                    }
-
+                    // Check file validation
                     if (!fileValid) {
                         const fileDropArea = document.getElementById('fileDropArea');
                         if (fileDropArea) {
