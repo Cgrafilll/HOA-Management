@@ -936,7 +936,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <div class="col-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="cars" name="cars" min="0"
-                                                value="0">
+                                                value="0" max="3">
                                             <label for="cars">No. of Vehicle/s</label>
                                         </div>
                                     </div>
@@ -2198,6 +2198,88 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         }
 
         // ============================================
+        // INPUT MAX VALUE CONSTRAINTS
+        // ============================================
+        function initializeMaxValueConstraints() {
+            const constraints = [
+                { id: 'chairs', max: 40, name: 'Chairs' },
+                { id: 'tables', max: 15, name: 'Tables' },
+                { id: 'cars', max: 3, name: 'Vehicles' }
+            ];
+
+            constraints.forEach(constraint => {
+                const field = document.getElementById(constraint.id);
+                if (field) {
+                    // Set max attribute
+                    field.setAttribute('max', constraint.max);
+
+                    // Add input event listener
+                    field.addEventListener('input', function () {
+                        const value = parseInt(this.value);
+
+                        // If value exceeds max, set it to max
+                        if (value > constraint.max) {
+                            this.value = constraint.max;
+
+                            // Optional: Show brief feedback
+                            showMaxValueNotification(constraint.name, constraint.max);
+                        }
+
+                        // If value is negative, set to 0
+                        if (value < 0) {
+                            this.value = 0;
+                        }
+                    });
+
+                    // Add change event listener as backup
+                    field.addEventListener('change', function () {
+                        const value = parseInt(this.value);
+
+                        if (value > constraint.max) {
+                            this.value = constraint.max;
+                        }
+
+                        if (value < 0 || isNaN(value)) {
+                            this.value = 0;
+                        }
+                    });
+                }
+            });
+        }
+
+        function showMaxValueNotification(itemName, maxValue) {
+            // Remove existing notification if any
+            const existingNotification = document.querySelector('.max-value-notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+
+            // Create notification
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-warning alert-dismissible fade show max-value-notification';
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '9999';
+            notification.style.minWidth = '300px';
+            notification.innerHTML = `
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Maximum Limit:</strong> ${itemName} cannot exceed ${maxValue}.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+            document.body.appendChild(notification);
+
+            // Auto-dismiss after 3 seconds
+            setTimeout(() => {
+                if (notification && notification.parentNode) {
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 150);
+                }
+            }, 3000);
+        }
+
+        // ============================================
         // FORM SUBMISSION
         // ============================================
         function initializeFormSubmission() {
@@ -2381,6 +2463,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             initializeFormSubmission();
             initializeVehicleField();
+            initializeMaxValueConstraints(); // Add this line
             initializeModals();
 
             const today = new Date().toISOString().split("T")[0];
