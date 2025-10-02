@@ -57,7 +57,7 @@
                         <tr>
                             <td>₱300.00 / per head</td>
                             <td>₱400.00 / per head</td>
-                            <td>₱500.00 / per head</td>
+                            <td>₱700.00 / per head</td>
                         </tr>
                     </tbody>
                 </table>
