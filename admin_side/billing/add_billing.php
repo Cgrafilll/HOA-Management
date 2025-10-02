@@ -507,7 +507,7 @@ if (!empty($admin['profile_picture'])) {
 
             // Redirect to invoice list on success
             document.getElementById('okButton').addEventListener('click', function () {
-                window.location.href = '../invoice.php';
+                window.location.href = '../billing.php';
             });
 
             // Remove red border when user types or selects
