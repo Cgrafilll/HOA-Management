@@ -545,18 +545,25 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
         .search-select-input {
             width: 100%;
-            padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+            padding: 1.625rem 2.25rem 0.625rem 0.75rem;
             font-size: 1rem;
+            line-height: 1.25;
             border: 1px solid #ced4da;
             border-radius: 0.375rem;
             background-color: #fff;
             transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            height: calc(3.5rem + 2px);
         }
 
         .search-select-input:focus {
             border-color: #198754;
             outline: 0;
             box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+        }
+
+        .search-select-input:disabled {
+            background-color: #e9ecef;
+            opacity: 1;
         }
 
         .search-select-dropdown {
@@ -618,6 +625,18 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
         .search-select-clear.show {
             display: block;
+        }
+
+        input[readonly] {
+            background-color: #e9ecef !important;
+            cursor: not-allowed !important;
+            pointer-events: none !important;
+        }
+
+        input[readonly]:focus {
+            background-color: #e9ecef !important;
+            border-color: #ced4da !important;
+            box-shadow: none !important;
         }
     </style>
 </head>
@@ -778,17 +797,19 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     </div>
                                     <div class="col-6">
                                         <!-- User ID -->
-                                        <div class="form-floating mb-3">
-                                            <div class="search-select-wrapper">
-                                                <input type="text" class="form-control search-select-input"
-                                                    id="userIdSearch" placeholder="Type to search..." disabled
-                                                    autocomplete="off">
-                                                <i class="bi bi-x-circle search-select-clear" id="searchClear"></i>
-                                                <div class="search-select-dropdown" id="userIdDropdown"></div>
+                                        <div class="mb-3">
+                                            <div class="form-floating">
+                                                <div class="search-select-wrapper">
+                                                    <input type="text" class="form-control search-select-input"
+                                                        id="userIdSearch" placeholder="Type to search..." disabled
+                                                        autocomplete="off">
+                                                    <i class="bi bi-x-circle search-select-clear" id="searchClear"></i>
+                                                    <div class="search-select-dropdown" id="userIdDropdown"></div>
+                                                </div>
+                                                <input type="hidden" id="userId" name="userId" required>
+                                                <label for="userIdSearch" id="userIdLabel">Select ID<small
+                                                        class="fw-bold text-danger">*</small></label>
                                             </div>
-                                            <input type="hidden" id="userId" name="userId" required>
-                                            <label for="userIdSearch" id="userIdLabel">Select ID<small
-                                                    class="fw-bold text-danger">*</small></label>
                                             <div class="loading d-none" id="loadingIndicator">
                                                 <i class="bi bi-arrow-clockwise"></i> Loading available IDs...
                                             </div>
@@ -1582,7 +1603,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             clearBtn.classList.add('show');
             dropdown.classList.remove('show');
 
-            // Populate user fields
+            // Populate and disable user fields
             if (userData[option.id]) {
                 populateUserFields(userData[option.id]);
                 searchInput.style.borderColor = '#198754';
@@ -1777,30 +1798,79 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 { id: 'middleName', value: user.middle_name || '' },
                 { id: 'lastName', value: user.last_name || '' },
                 { id: 'emailAddress', value: user.email || '' },
-                { id: 'cellphone_number', value: user.cellphone_number || '' }
+                { name: 'cellphone_number', value: user.cellphone_number || '' }
             ];
 
             fields.forEach(field => {
-                const element = document.querySelector(`[name="${field.id}"]`) || document.getElementById(field.id);
+                const element = field.id ? document.getElementById(field.id) : document.querySelector(`[name="${field.name}"]`);
                 if (element) {
                     element.value = field.value;
                     element.readOnly = true;
-                    element.style.backgroundColor = '#f8f9fa';
-                    element.style.opacity = '0.8';
+                    element.setAttribute('readonly', 'readonly');
+                    element.disabled = false; // Keep enabled for form submission
+                    element.style.backgroundColor = '#e9ecef';
+                    element.style.opacity = '1';
+                    element.style.cursor = 'not-allowed';
+                    element.style.pointerEvents = 'none'; // Prevent any interaction
+
+                    // Remove any existing event listeners that might allow editing
+                    element.addEventListener('keydown', preventEdit);
+                    element.addEventListener('paste', preventEdit);
+                    element.addEventListener('cut', preventEdit);
+                    element.addEventListener('contextmenu', preventEdit);
                 }
             });
         }
 
-        function clearUserFields() {
-            const fieldNames = ['firstName', 'middleName', 'lastName', 'emailAddress', 'cellphone_number'];
+        // Add this helper function to prevent any editing attempts
+        function preventEdit(e) {
+            if (e.target.readOnly) {
+                e.preventDefault();
+                return false;
+            }
+        }
 
-            fieldNames.forEach(fieldName => {
-                const element = document.querySelector(`[name="${fieldName}"]`) || document.getElementById(fieldName);
+        function clearUserFields() {
+            const fieldIds = ['firstName', 'middleName', 'lastName', 'emailAddress'];
+            const fieldNames = ['cellphone_number'];
+
+            fieldIds.forEach(fieldId => {
+                const element = document.getElementById(fieldId);
                 if (element) {
                     element.value = '';
                     element.readOnly = false;
+                    element.removeAttribute('readonly');
+                    element.disabled = false;
                     element.style.backgroundColor = '';
                     element.style.opacity = '';
+                    element.style.cursor = '';
+                    element.style.pointerEvents = '';
+
+                    // Remove event listeners
+                    element.removeEventListener('keydown', preventEdit);
+                    element.removeEventListener('paste', preventEdit);
+                    element.removeEventListener('cut', preventEdit);
+                    element.removeEventListener('contextmenu', preventEdit);
+                }
+            });
+
+            fieldNames.forEach(fieldName => {
+                const element = document.querySelector(`[name="${fieldName}"]`);
+                if (element) {
+                    element.value = '';
+                    element.readOnly = false;
+                    element.removeAttribute('readonly');
+                    element.disabled = false;
+                    element.style.backgroundColor = '';
+                    element.style.opacity = '';
+                    element.style.cursor = '';
+                    element.style.pointerEvents = '';
+
+                    // Remove event listeners
+                    element.removeEventListener('keydown', preventEdit);
+                    element.removeEventListener('paste', preventEdit);
+                    element.removeEventListener('cut', preventEdit);
+                    element.removeEventListener('contextmenu', preventEdit);
                 }
             });
         }
