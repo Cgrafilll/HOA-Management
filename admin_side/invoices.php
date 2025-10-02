@@ -544,15 +544,6 @@ function getNumericAmount($amountStr)
                                 <option value="partial" <?= $filter == 'partial' ? 'selected' : '' ?>>Partial</option>
                                 <option value="paid" <?= $filter == 'paid' ? 'selected' : '' ?>>Paid</option>
                             </select>
-                            <div class="d-flex align-items-center gap-2">
-                                <label for="type" class="fw-semibold">Type:</label>
-                                <select name="type" id="type" class="form-select form-select-sm w-auto"
-                                    onchange="this.form.submit()">
-                                    <option value="all" <?= $typeFilter == 'all' ? 'selected' : '' ?>>All</option>
-                                    <option value="monthly_dues" <?= $typeFilter == 'monthly_dues' ? 'selected' : '' ?>>Monthly Dues</option>
-                                    <option value="amenity" <?= $typeFilter == 'amenity' ? 'selected' : '' ?>>Amenity Fees</option>
-                                </select>
-                            </div>
                         </div>
                     </form>
                     <div class="row g-3">
