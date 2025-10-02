@@ -267,6 +267,7 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             overflow-y: auto;
             overflow-x: hidden;
             z-index: 1020;
+            transition: transform 0.3s ease;
         }
 
         .sidebar::-webkit-scrollbar {
@@ -287,6 +288,7 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             margin-top: 76px;
             min-height: calc(100vh - 76px);
             overflow-y: auto;
+            transition: margin-left 0.3s ease;
         }
 
         .sidebar a,
@@ -349,6 +351,7 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             color: white;
             border-radius: 12px;
             padding: 20px;
+            margin-bottom: 1rem;
         }
 
         .metric-card.green {
@@ -364,17 +367,42 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
         }
 
         .sidebar-nav {
-            padding-bottom: 20px;
+            padding-bottom: 80px;
         }
 
         .sidebar .logout {
-            margin-top: 20px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 250px;
+            background-color: #1F2937;
+            padding: 12px 24px;
+            z-index: 1021;
         }
 
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        /* Mobile Styles */
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
-                transition: transform 0.3s ease;
             }
 
             .sidebar.show {
@@ -385,8 +413,77 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                 margin-left: 0;
             }
 
-            header .me-4 {
+            header .logo-container {
                 width: auto !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+
+            .metric-card {
+                padding: 15px;
+            }
+
+            .metric-card h3 {
+                font-size: 1.5rem;
+            }
+
+            .metric-card h6 {
+                font-size: 0.9rem;
+            }
+
+            .card-header {
+                font-size: 0.9rem;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            .sidebar .logout {
+                width: 250px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                display: none;
+            }
+
+            main {
+                margin-top: 60px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 60px;
+                height: calc(100vh - 60px);
+            }
+
+            .chart-container {
+                height: 200px;
+            }
+
+            .metric-card {
+                padding: 12px;
+            }
+
+            .metric-card h3 {
+                font-size: 1.25rem;
+            }
+
+            .metric-card h6 {
+                font-size: 0.85rem;
             }
         }
     </style>
@@ -395,7 +492,10 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
 <body class="bg-light">
     <!-- Header -->
     <header class="shadow-sm py-3 px-4 d-flex align-items-center">
-        <div class="me-4" style="width: 250px;">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="me-4 logo-container" style="width: 250px;">
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
@@ -403,7 +503,7 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <span class="d-none d-md-inline">Hello, <?php echo htmlspecialchars($username); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -427,6 +527,8 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
         </div>
     </header>
 
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar p-3">
@@ -500,8 +602,7 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                     </div>
                 </div>
                 <a href="login/logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
-                    style="position: fixed; bottom: 0; width: 220px;">
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
@@ -554,25 +655,25 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             </div>
             <!-- Key Metrics -->
             <div class="row g-3 mb-4">
-                <div class="col-md-3">
+                <div class="col-12 col-sm-6 col-lg-3">
                     <div class="metric-card">
                         <h6 class="mb-2"><i class="bi bi-arrow-bar-right me-2"></i>Total Entries</h6>
                         <h3 class="mb-0"><?php echo number_format($total_entries); ?></h3>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-sm-6 col-lg-3">
                     <div class="metric-card green">
                         <h6 class="mb-2"><i class="bi bi-arrow-bar-left me-2"></i>Total Exits</h6>
                         <h3 class="mb-0"><?php echo number_format($total_exits); ?></h3>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-sm-6 col-lg-3">
                     <div class="metric-card orange">
                         <h6 class="mb-2"><i class="bi bi-cash-stack me-2"></i>Total Revenue</h6>
                         <h3 class="mb-0">₱<?php echo number_format($total_revenue, 2); ?></h3>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-12 col-sm-6 col-lg-3">
                     <div class="metric-card blue">
                         <h6 class="mb-2"><i class="bi bi-exclamation-circle me-2"></i>Outstanding</h6>
                         <h3 class="mb-0">₱<?php echo number_format($total_outstanding, 2); ?></h3>
@@ -650,7 +751,7 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             </div>
             <!-- Announcements and Events -->
             <div class="row g-4">
-                <div class="col-6">
+                <div class="col-12 col-lg-6">
                     <div class="card shadow-sm h-100 d-flex flex-column">
                         <div class="card-header bg-success text-white fw-semibold">Announcements</div>
                         <div class="card-body flex-grow-1 overflow-auto" style="max-height: 300px;">
@@ -686,7 +787,7 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-lg-6">
                     <div class="card shadow-sm h-100 d-flex flex-column">
                         <div class="card-header bg-success text-white fw-semibold">Events</div>
                         <div class="card-body flex-grow-1 overflow-auto" style="max-height: 300px;">
@@ -737,6 +838,34 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        if (mobileMenuBtn && sidebar && sidebarOverlay) {
+            mobileMenuBtn.addEventListener('click', function () {
+                sidebar.classList.toggle('show');
+                sidebarOverlay.classList.toggle('show');
+            });
+
+            sidebarOverlay.addEventListener('click', function () {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+            });
+
+            // Close sidebar when clicking a link on mobile
+            const sidebarLinks = sidebar.querySelectorAll('a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function () {
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('show');
+                        sidebarOverlay.classList.remove('show');
+                    }
+                });
+            });
+        }
+
         // Entry Trend Chart
         new Chart(document.getElementById('entryTrendChart'), {
             type: 'line',
