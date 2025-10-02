@@ -465,7 +465,7 @@ if (!empty($admin['profile_picture'])) {
                 const formData = new FormData(form);
 
                 // Submit via AJAX
-                fetch('process_add_invoice.php', {
+                fetch('process_add_billing.php', {
                     method: 'POST',
                     body: formData
                 })
