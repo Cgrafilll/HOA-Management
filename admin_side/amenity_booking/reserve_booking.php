@@ -1959,7 +1959,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     fileInputElement.setAttribute("required", "required");
                 }
             }
-            
+
             // Validate file upload when payment method changes
             validateFileUpload();
         }
@@ -2077,6 +2077,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             const totalValue = parseFloat(totalField.value.replace(/,/g, '')) || 0;
             const amountPaidValue = parseFloat(amountPaidField.value) || 0;
+            const minimumPayment = totalValue * 0.5; // 50% of total
 
             amountPaidField.classList.remove('border-danger', 'is-invalid');
             const existingFeedback = amountPaidField.parentNode.parentNode.querySelector('.invalid-feedback');
@@ -2084,7 +2085,20 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 existingFeedback.remove();
             }
 
-            // Only show error for BANK payment method
+            // Check if amount paid is less than minimum (50%)
+            if (totalValue > 0 && amountPaidValue < minimumPayment) {
+                amountPaidField.classList.add('border-danger', 'is-invalid');
+
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'invalid-feedback';
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>Amount paid must be at least 50% of total (₱${minimumPayment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+
+                amountPaidField.parentNode.parentNode.insertAdjacentElement('beforeend', errorDiv);
+                return false;
+            }
+
+            // Only show "exceeds total" error for BANK payment method
             if (paymentMethod === 'bank' && amountPaidValue > totalValue && totalValue > 0) {
                 amountPaidField.classList.add('border-danger', 'is-invalid');
 
@@ -2306,9 +2320,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 // Real-time validation and change calculation
                 amountPaidField.addEventListener('input', function () {
                     calculateChange();  // Update change in real-time
+                    validateAmountPaid(); // Validate in real-time
                 });
                 amountPaidField.addEventListener('change', function () {
                     calculateChange();  // Update on change event
+                    validateAmountPaid(); // Validate on change
                 });
                 amountPaidField.addEventListener('blur', validateAmountPaid);
             }
