@@ -545,25 +545,19 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
         .search-select-input {
             width: 100%;
-            padding: 1.625rem 2.25rem 0.625rem 0.75rem;
+            padding: 0.375rem 2.25rem 0.375rem 0.75rem;
             font-size: 1rem;
-            line-height: 1.25;
+            line-height: 1.5;
             border: 1px solid #ced4da;
             border-radius: 0.375rem;
             background-color: #fff;
             transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-            height: calc(3.5rem + 2px);
         }
 
         .search-select-input:focus {
             border-color: #198754;
             outline: 0;
             box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
-        }
-
-        .search-select-input:disabled {
-            background-color: #e9ecef;
-            opacity: 1;
         }
 
         .search-select-dropdown {
@@ -730,7 +724,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="../payment.php" class="nav-link px-2">Payments</a></li>
-                            <li><a href="../invoice.php" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="../billing.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
@@ -786,16 +780,14 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <div class="col-6">
                                         <!-- User ID -->
                                         <div class="mb-3">
-                                            <div class="form-floating">
-                                                <div class="search-select-wrapper">
-                                                    <input type="text" class="form-control search-select-input"
-                                                        id="userIdSearch" placeholder="Type to search..." disabled
-                                                        autocomplete="off">
-                                                    <i class="bi bi-x-circle search-select-clear" id="searchClear"></i>
-                                                    <div class="search-select-dropdown" id="userIdDropdown"></div>
-                                                </div>
-                                                <input type="hidden" id="userId" name="userId" required>
+                                            <div class="search-select-wrapper">
+                                                <input type="text" class="form-control search-select-input"
+                                                    id="userIdSearch" placeholder="Type to search..." disabled
+                                                    autocomplete="off">
+                                                <i class="bi bi-x-circle search-select-clear" id="searchClear"></i>
+                                                <div class="search-select-dropdown" id="userIdDropdown"></div>
                                             </div>
+                                            <input type="hidden" id="userId" name="userId" required>
                                             <div class="loading d-none" id="loadingIndicator">
                                                 <i class="bi bi-arrow-clockwise"></i> Loading available IDs...
                                             </div>
