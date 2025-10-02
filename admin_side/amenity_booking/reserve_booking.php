@@ -891,45 +891,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         <label for="guests">Guests<small class="fw-bold text-danger">*</small></label>
                                     </div>
                                 <?php endif; ?>
-                                <!-- Rates -->
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Rates<small
-                                            class="fw-bold text-danger">*</small></label>
-                                    <div id="ratesContainer" class="custom-radio-container">
-                                        <?php if ($currentRates): ?>
-                                            <div class="custom-radio-option selected" data-value="day"
-                                                onclick="selectRate(this, 'day')">
-                                                <div>
-                                                    <div><strong id="dayRate">Day • <?= $currentRates['day'] ?></strong>
-                                                    </div>
-                                                    <small class="text-muted">9:00 AM - 5:00 PM</small>
-                                                </div>
-                                                <div class="custom-radio-circle selected"></div>
-                                            </div>
-                                            <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
-                                                data-value="night" onclick="selectRate(this, 'night')">
-                                                <div>
-                                                    <div><strong id="nightRate">Night •
-                                                            <?= $currentRates['night'] ?></strong></div>
-                                                    <small class="text-muted">5:00 PM - 10:00 PM</small>
-                                                </div>
-                                                <div class="custom-radio-circle"></div>
-                                            </div>
-                                            <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
-                                                data-value="whole" onclick="selectRate(this, 'whole')">
-                                                <div>
-                                                    <div><strong id="wholeRate">Whole Day •
-                                                            <?= $currentRates['whole'] ?></strong></div>
-                                                    <small class="text-muted">9:00 AM - 10:00 PM</small>
-                                                </div>
-                                                <div class="custom-radio-circle"></div>
-                                            </div>
-                                        <?php else: ?>
-                                            <p class="text-danger">Rates not available for this amenity.</p>
-                                        <?php endif; ?>
-                                    </div>
-                                    <input type="hidden" name="rate" id="selectedRate" value="day" required>
-                                </div>
                                 <!-- Exclusive Booking -->
                                 <div class="form-floating mb-3">
                                     <select class="form-select" id="exclusiveBooking" name="exclusiveBooking" required>
@@ -985,6 +946,45 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             </div>
                             <!-- Right Column -->
                             <div class="col-lg-6">
+                                <!-- Rates -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Rates<small
+                                            class="fw-bold text-danger">*</small></label>
+                                    <div id="ratesContainer" class="custom-radio-container">
+                                        <?php if ($currentRates): ?>
+                                            <div class="custom-radio-option selected" data-value="day"
+                                                onclick="selectRate(this, 'day')">
+                                                <div>
+                                                    <div><strong id="dayRate">Day • <?= $currentRates['day'] ?></strong>
+                                                    </div>
+                                                    <small class="text-muted">9:00 AM - 5:00 PM</small>
+                                                </div>
+                                                <div class="custom-radio-circle selected"></div>
+                                            </div>
+                                            <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
+                                                data-value="night" onclick="selectRate(this, 'night')">
+                                                <div>
+                                                    <div><strong id="nightRate">Night •
+                                                            <?= $currentRates['night'] ?></strong></div>
+                                                    <small class="text-muted">5:00 PM - 10:00 PM</small>
+                                                </div>
+                                                <div class="custom-radio-circle"></div>
+                                            </div>
+                                            <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
+                                                data-value="whole" onclick="selectRate(this, 'whole')">
+                                                <div>
+                                                    <div><strong id="wholeRate">Whole Day •
+                                                            <?= $currentRates['whole'] ?></strong></div>
+                                                    <small class="text-muted">9:00 AM - 10:00 PM</small>
+                                                </div>
+                                                <div class="custom-radio-circle"></div>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-danger">Rates not available for this amenity.</p>
+                                        <?php endif; ?>
+                                    </div>
+                                    <input type="hidden" name="rate" id="selectedRate" value="day" required>
+                                </div>
                                 <!-- Payment -->
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Payment<small
@@ -1996,7 +1996,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             // Recalculate change if payment method is cash
             calculateChange();
         }
-        
+
         ["guests", "chairs", "tables", "userType"].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
