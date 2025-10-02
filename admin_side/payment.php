@@ -1032,7 +1032,7 @@ if (isset($_GET['action'])) {
                             <div class="col-6" id="confirmCategory"></div>
                         </div>
                         <div class="row">
-                            <div class="col-6"><strong>Invoice:</strong></div>
+                            <div class="col-6"><strong>Billing No.:</strong></div>
                             <div class="col-6" id="confirmInvoice"></div>
                         </div>
                         <div class="row">

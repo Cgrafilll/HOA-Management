@@ -530,8 +530,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
             }
             
             $reference_id = $dues['id'];
-            $new_amount_paid = $dues['amount_paid'] + $amount;
-            $new_balance = $dues['balance_remaining'] - $amount;
+            $new_amount_paid = round($dues['amount_paid'] + $amount, 2);
+            $new_balance = round($dues['balance_remaining'] - $amount, 2);
             
             // Ensure balance doesn't go negative
             if ($new_balance < 0) {
@@ -539,8 +539,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
             }
             
             // Determine new status
-            if ($new_balance <= 0) {
-                $new_status = 'Completed';
+            if ($new_balance <= 0.01) {
+                $new_status = 'Paid';  // ✅ CORRECT - matches ENUM value
             } elseif ($new_amount_paid > 0) {
                 $new_status = 'Partial';
             } else {
