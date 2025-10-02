@@ -929,44 +929,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         <?php endif; ?>
                                     </div>
                                     <input type="hidden" name="rate" id="selectedRate" value="day" required>
-                                </div><!-- Rates -->
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Rates<small
-                                            class="fw-bold text-danger">*</small></label>
-                                    <div id="ratesContainer" class="custom-radio-container">
-                                        <?php if ($currentRates): ?>
-                                            <div class="custom-radio-option selected" data-value="day"
-                                                onclick="selectRate(this, 'day')">
-                                                <div>
-                                                    <div><strong id="dayRate">Day • <?= $currentRates['day'] ?></strong>
-                                                    </div>
-                                                    <small class="text-muted">9:00 AM - 5:00 PM</small>
-                                                </div>
-                                                <div class="custom-radio-circle selected"></div>
-                                            </div>
-                                            <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
-                                                data-value="night" onclick="selectRate(this, 'night')">
-                                                <div>
-                                                    <div><strong id="nightRate">Night •
-                                                            <?= $currentRates['night'] ?></strong></div>
-                                                    <small class="text-muted">5:00 PM - 10:00 PM</small>
-                                                </div>
-                                                <div class="custom-radio-circle"></div>
-                                            </div>
-                                            <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
-                                                data-value="whole" onclick="selectRate(this, 'whole')">
-                                                <div>
-                                                    <div><strong id="wholeRate">Whole Day •
-                                                            <?= $currentRates['whole'] ?></strong></div>
-                                                    <small class="text-muted">9:00 AM - 10:00 PM</small>
-                                                </div>
-                                                <div class="custom-radio-circle"></div>
-                                            </div>
-                                        <?php else: ?>
-                                            <p class="text-danger">Rates not available for this amenity.</p>
-                                        <?php endif; ?>
-                                    </div>
-                                    <input type="hidden" name="rate" id="selectedRate" value="day" required>
                                 </div>
                                 <!-- Exclusive Booking -->
                                 <div class="form-floating mb-3">
@@ -976,6 +938,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     </select>
                                     <label for="exclusiveBooking">Is this an exclusive booking?<small
                                             class="fw-bold text-danger">*</small></label>
+                                </div>
+                                <div class="form-text text-muted mb-3">
+                                    <small><i class="bi bi-info-circle me-1"></i>Exclusive booking includes a 15%
+                                        surcharge on the rate only</small>
                                 </div>
                                 <!-- Add-Ons -->
                                 <div class="row">
@@ -1089,6 +1055,15 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         <span class="input-group-text">₱</span>
                                         <input type="number" class="form-control" id="amountPaid" name="amountPaid"
                                             placeholder="0.00" min="0" step="0.25" required>
+                                    </div>
+                                </div>
+                                <!-- Change (Only for Cash Payment) -->
+                                <div class="mb-3 d-none" id="changeContainer">
+                                    <label for="change" class="form-label">Change</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₱</span>
+                                        <input type="text" class="form-control" id="change" name="change"
+                                            placeholder="0.00" readonly style="background-color: #e9ecef;">
                                     </div>
                                 </div>
                                 <!-- File Upload -->
@@ -1934,10 +1909,12 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const cashInfo = document.getElementById("cashInfo");
             const referenceNumber = document.getElementById("referenceNumber");
             const fileInputElement = document.getElementById("fileInput");
+            const changeContainer = document.getElementById("changeContainer");
 
             if (value === "cash") {
                 if (cashInfo) cashInfo.classList.remove("d-none");
                 if (bankInfo) bankInfo.classList.add("d-none");
+                if (changeContainer) changeContainer.classList.remove("d-none");
 
                 if (referenceNumber) {
                     referenceNumber.closest(".form-floating")?.classList.add("d-none");
@@ -1947,9 +1924,13 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     fileInputElement.closest("#fileDropArea")?.classList.add("d-none");
                     fileInputElement.removeAttribute("required");
                 }
+
+                // Calculate change immediately
+                calculateChange();
             } else {
                 if (bankInfo) bankInfo.classList.remove("d-none");
                 if (cashInfo) cashInfo.classList.add("d-none");
+                if (changeContainer) changeContainer.classList.add("d-none");
 
                 if (referenceNumber) {
                     referenceNumber.closest(".form-floating")?.classList.remove("d-none");
@@ -1973,6 +1954,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         function calculateTotal() {
             const userType = document.getElementById("userType")?.value;
             const rateType = document.getElementById("selectedRate")?.value;
+            const exclusiveBooking = document.getElementById("exclusiveBooking")?.value;
 
             let guests = parseInt(document.getElementById("guests")?.value || 0);
             let chairs = parseInt(document.getElementById("chairs")?.value || 0);
@@ -1981,16 +1963,25 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             let rateStr = amenityRates[currentAmenity]?.[userType]?.[rateType] || "₱0";
             let rateValue = extractPrice(rateStr);
 
-            let total = 0;
+            let rateTotal = 0;
 
+            // Calculate base rate amount
             if (rateStr.includes("per person")) {
-                total += rateValue * guests;
+                rateTotal = rateValue * guests;
             } else {
-                total += rateValue;
+                rateTotal = rateValue;
             }
 
-            total += chairs * chairPrice;
-            total += tables * tablePrice;
+            // Apply exclusive booking surcharge (15% additional) ONLY to rate amount
+            if (exclusiveBooking === "yes") {
+                rateTotal = rateTotal * 1.15; // Add 15% for exclusive booking
+            }
+
+            // Calculate add-ons (NOT subject to exclusive booking fee)
+            let addOnsTotal = (chairs * chairPrice) + (tables * tablePrice);
+
+            // Final total = rate (with exclusive fee if applicable) + add-ons (no exclusive fee)
+            let total = rateTotal + addOnsTotal;
 
             const formattedTotal = total.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
@@ -2001,8 +1992,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (totalElement) {
                 totalElement.value = formattedTotal;
             }
-        }
 
+            // Recalculate change if payment method is cash
+            calculateChange();
+        }
+        
         ["guests", "chairs", "tables", "userType"].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -2011,12 +2005,53 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
         });
 
+        // Add event listener for exclusive booking
+        const exclusiveBookingEl = document.getElementById("exclusiveBooking");
+        if (exclusiveBookingEl) {
+            exclusiveBookingEl.addEventListener("change", calculateTotal);
+        }
+
+        function calculateChange() {
+            const totalField = document.getElementById("total");
+            const amountPaidField = document.getElementById("amountPaid");
+            const changeField = document.getElementById("change");
+            const paymentMethod = document.getElementById("selectedPayment")?.value;
+
+            if (!totalField || !amountPaidField || !changeField) return;
+
+            // Only calculate change for cash payments
+            if (paymentMethod !== 'cash') {
+                changeField.value = '';
+                return;
+            }
+
+            const totalValue = parseFloat(totalField.value.replace(/,/g, '')) || 0;
+            const amountPaidValue = parseFloat(amountPaidField.value) || 0;
+
+            const change = amountPaidValue - totalValue;
+
+            if (change >= 0) {
+                changeField.value = change.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            } else {
+                changeField.value = '';
+            }
+        }
+
         // ============================================
         // AMOUNT PAID VALIDATION
         // ============================================
         function validateAmountPaid() {
             const totalField = document.getElementById("total");
             const amountPaidField = document.getElementById("amountPaid");
+            if (amountPaidField) {
+                amountPaidField.addEventListener('input', validateAmountPaid);
+                amountPaidField.addEventListener('blur', validateAmountPaid);
+                amountPaidField.addEventListener('input', calculateChange); // Add this line
+                amountPaidField.addEventListener('change', calculateChange); // Add this line
+            }
 
             if (!totalField || !amountPaidField) return true;
 
