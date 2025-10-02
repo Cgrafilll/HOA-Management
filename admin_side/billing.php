@@ -59,84 +59,139 @@ try {
         $error_message = "Failed to fetch user details.";
     }
     
-    // Fetch invoices from amenity_bookings OR monthly_dues based on filters
+    // Get filter parameters
     $statusFilter = $_GET['status'] ?? 'all';
     $typeFilter = $_GET['type'] ?? 'all';
 
     try {
         $invoices = [];
         
-        // Build status condition (exclude 'paid' status)
-        $statusCondition = "";
-        if ($statusFilter === 'all') {
-            $statusCondition = "LOWER(status) IN ('pending', 'partial')";
-        } elseif (in_array($statusFilter, ['pending', 'partial'])) {
-            $statusCondition = "LOWER(status) = '" . $conn->real_escape_string($statusFilter) . "'";
-        }
-        
-        // Fetch based on type filter
+        // Fetch from monthly_dues if type filter allows
         if ($typeFilter === 'all' || $typeFilter === 'monthly_dues') {
-            // Fetch from monthly_dues
-            $sql = "
-                SELECT 
-                    md.id,
-                    md.invoice_number,
-                    md.household_id,
-                    md.billing_month,
-                    md.amount_paid,
-                    md.balance_remaining,
-                    md.due_date,
-                    md.status,
-                    CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) AS full_name,
-                    (md.amount_paid + md.balance_remaining) AS total_amount,
-                    'monthly_dues' AS source_table,
-                    md.due_date AS sort_date
-                FROM monthly_dues md
-                LEFT JOIN household_accounts ha ON md.household_id = ha.household_id
-                WHERE " . $statusCondition;
-            
-            $stmt = $conn->prepare($sql);
+            if ($statusFilter === 'all') {
+                // Fetch all pending and partial
+                $stmt = $conn->prepare("
+                    SELECT 
+                        md.id,
+                        md.invoice_number,
+                        md.household_id,
+                        md.billing_month,
+                        md.amount_paid,
+                        md.balance_remaining,
+                        md.due_date,
+                        md.status,
+                        CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) AS full_name,
+                        (md.amount_paid + md.balance_remaining) AS total_amount,
+                        'monthly_dues' AS source_table,
+                        md.due_date AS sort_date
+                    FROM monthly_dues md
+                    LEFT JOIN household_accounts ha ON md.household_id = ha.household_id
+                    WHERE LOWER(md.status) IN ('pending', 'partial')
+                    ORDER BY md.due_date DESC
+                ");
+            } else {
+                // Fetch specific status (pending or partial only)
+                $stmt = $conn->prepare("
+                    SELECT 
+                        md.id,
+                        md.invoice_number,
+                        md.household_id,
+                        md.billing_month,
+                        md.amount_paid,
+                        md.balance_remaining,
+                        md.due_date,
+                        md.status,
+                        CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) AS full_name,
+                        (md.amount_paid + md.balance_remaining) AS total_amount,
+                        'monthly_dues' AS source_table,
+                        md.due_date AS sort_date
+                    FROM monthly_dues md
+                    LEFT JOIN household_accounts ha ON md.household_id = ha.household_id
+                    WHERE LOWER(md.status) = ?
+                    ORDER BY md.due_date DESC
+                ");
+                $stmt->bind_param("s", $statusFilter);
+            }
             $stmt->execute();
             $result = $stmt->get_result();
             $monthlyDuesInvoices = $result->fetch_all(MYSQLI_ASSOC);
             $invoices = array_merge($invoices, $monthlyDuesInvoices);
         }
         
+        // Fetch from amenity_bookings if type filter allows
         if ($typeFilter === 'all' || $typeFilter === 'amenity') {
-            // Fetch from amenity_bookings
-            $sql = "
-                SELECT 
-                    ab.invoice_number,
-                    ab.reservation_code,
-                    ab.reservation_date,
-                    ab.created_at,
-                    ab.total_amount,
-                    ab.amount_paid,
-                    (ab.total_amount - ab.amount_paid) AS balance_remaining,
-                    ab.payment_method,
-                    ab.reference_number,
-                    ab.status,
-                    ab.amenity,
-                    ab.chairs,
-                    ab.tables,
-                    ab.rate,
-                    ab.user_type,
-                    ab.guests,
-                    CASE 
-                        WHEN ab.user_type = 'homeowner' 
-                            THEN CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name)
-                        WHEN ab.user_type = 'visitor' 
-                            THEN CONCAT(v.first_name, ' ', v.middle_name, ' ', v.last_name)
-                        ELSE 'Unknown'
-                    END AS full_name,
-                    'amenity_bookings' AS source_table,
-                    ab.created_at AS sort_date
-                FROM amenity_bookings ab
-                LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
-                LEFT JOIN visitor_details v ON ab.visitor_id = v.visitor_id
-                WHERE " . $statusCondition;
-            
-            $stmt = $conn->prepare($sql);
+            if ($statusFilter === 'all') {
+                // Fetch all pending and partial
+                $stmt = $conn->prepare("
+                    SELECT 
+                        ab.invoice_number,
+                        ab.reservation_code,
+                        ab.reservation_date,
+                        ab.created_at,
+                        ab.total_amount,
+                        ab.amount_paid,
+                        (ab.total_amount - ab.amount_paid) AS balance_remaining,
+                        ab.payment_method,
+                        ab.reference_number,
+                        ab.status,
+                        ab.amenity,
+                        ab.chairs,
+                        ab.tables,
+                        ab.rate,
+                        ab.user_type,
+                        ab.guests,
+                        CASE 
+                            WHEN ab.user_type = 'homeowner' 
+                                THEN CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name)
+                            WHEN ab.user_type = 'visitor' 
+                                THEN CONCAT(v.first_name, ' ', v.middle_name, ' ', v.last_name)
+                            ELSE 'Unknown'
+                        END AS full_name,
+                        'amenity_bookings' AS source_table,
+                        ab.created_at AS sort_date
+                    FROM amenity_bookings ab
+                    LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
+                    LEFT JOIN visitor_details v ON ab.visitor_id = v.visitor_id
+                    WHERE LOWER(ab.status) IN ('pending', 'partial')
+                    ORDER BY ab.created_at DESC
+                ");
+            } else {
+                // Fetch specific status (pending or partial only)
+                $stmt = $conn->prepare("
+                    SELECT 
+                        ab.invoice_number,
+                        ab.reservation_code,
+                        ab.reservation_date,
+                        ab.created_at,
+                        ab.total_amount,
+                        ab.amount_paid,
+                        (ab.total_amount - ab.amount_paid) AS balance_remaining,
+                        ab.payment_method,
+                        ab.reference_number,
+                        ab.status,
+                        ab.amenity,
+                        ab.chairs,
+                        ab.tables,
+                        ab.rate,
+                        ab.user_type,
+                        ab.guests,
+                        CASE 
+                            WHEN ab.user_type = 'homeowner' 
+                                THEN CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name)
+                            WHEN ab.user_type = 'visitor' 
+                                THEN CONCAT(v.first_name, ' ', v.middle_name, ' ', v.last_name)
+                            ELSE 'Unknown'
+                        END AS full_name,
+                        'amenity_bookings' AS source_table,
+                        ab.created_at AS sort_date
+                    FROM amenity_bookings ab
+                    LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
+                    LEFT JOIN visitor_details v ON ab.visitor_id = v.visitor_id
+                    WHERE LOWER(ab.status) = ?
+                    ORDER BY ab.created_at DESC
+                ");
+                $stmt->bind_param("s", $statusFilter);
+            }
             $stmt->execute();
             $result = $stmt->get_result();
             $amenityInvoices = $result->fetch_all(MYSQLI_ASSOC);
@@ -451,7 +506,7 @@ function getNumericAmount($amountStr)
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="payment.php" class="nav-link px-2">Payments</a></li>
                             <li><a href="billing.php" class="nav-link px-2 actived">Billing</a></li>
-                            <li><a href="invoices.php" class="nav-link px-2 actived">Invoices</a></li>
+                            <li><a href="invoices.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
@@ -473,8 +528,8 @@ function getNumericAmount($amountStr)
                     <!-- Button row -->
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="fw-semibold">List of Billing Statements</div>
-                        <a href="invoice/add_invoice.php" class="btn btn-primary btn-sm d-flex align-items-center">
-                            <i class="bi bi-plus-lg me-1"></i> New Monthly Dues Billing
+                        <a href="billing/add_billing.php" class="btn btn-primary btn-sm d-flex align-items-center">
+                            <i class="bi bi-plus-lg me-1"></i> New Billing
                         </a>
                     </div>
                     <!-- Filter Dropdowns -->
@@ -510,7 +565,7 @@ function getNumericAmount($amountStr)
                                             <a href="?status=<?= htmlspecialchars($statusFilter) ?>&type=<?= htmlspecialchars($typeFilter) ?>&invoice=<?= htmlspecialchars($inv['invoice_number']); ?>"
                                                 class="list-group-item list-group-item-action invoice <?= ($inv['invoice_number'] === $activeInvoiceNumber) ? 'active' : '' ?>">
                                                 <div class="d-flex w-100 justify-content-between">
-                                                    <h6 class="mb-1">Invoice #<?= htmlspecialchars($inv['invoice_number']); ?>
+                                                    <h6 class="mb-1">Billing #<?= htmlspecialchars($inv['invoice_number']); ?>
                                                     </h6>
                                                     <!-- Show different date info based on source -->
                                                     <?php if (isset($inv['source_table'])): ?>
@@ -598,13 +653,13 @@ function getNumericAmount($amountStr)
                                                 </div>
                                                 <div class="col-4">
                                                     <div class="text-end small">
-                                                        <div class="fw-bold mb-2 fs-6">Invoice No.
+                                                        <div class="fw-bold mb-2 fs-6">Billing No.
                                                             <?= htmlspecialchars($selectedInvoice['invoice_number']); ?>
                                                         </div>
                                                         <div class="mb-1"><span class="fw-semibold">Due Date:</span>
                                                             <?= date('M d, Y', strtotime($selectedInvoice['due_date'])); ?>
                                                         </div>
-                                                        <div><span class="fw-semibold">Invoice Type:</span>
+                                                        <div><span class="fw-semibold">Billing Type:</span>
                                                             Monthly Dues</div>
                                                     </div>
                                                 </div>
@@ -673,7 +728,7 @@ function getNumericAmount($amountStr)
                                                 </div>
                                                 <div class="col-4">
                                                     <div class="text-end small">
-                                                        <div class="fw-bold mb-2 fs-6">Invoice No.
+                                                        <div class="fw-bold mb-2 fs-6">Billing No.
                                                             <?= htmlspecialchars($selectedInvoice['invoice_number']); ?>
                                                         </div>
                                                         <div class="mb-1"><span class="fw-semibold">Payment Method:</span>
