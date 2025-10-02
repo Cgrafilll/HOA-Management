@@ -18,19 +18,22 @@
                         <tr>
                             <th class="bg-success text-white">Day</th>
                             <th class="bg-success text-white">Night</th>
+                            <th class="bg-success text-white">Whole Day</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>9:00 AM - 5:00 PM</td>
                             <td>5:00 PM - 10:00 PM</td>
+                            <td>9:00 AM - 10:00 PM</td>
                         </tr>
                         <tr>
                             <td>₱200.00 / per head</td>
                             <td>₱300.00 / per head</td>
+                            <td>₱500.00 / per head</td>
                         </tr>
                     </tbody>
-                </table> 
+                </table>
             </div>
         </div>
         <!-- Guest Table -->
@@ -42,16 +45,19 @@
                         <tr>
                             <th class="bg-success text-white">Day</th>
                             <th class="bg-success text-white">Night</th>
+                            <th class="bg-success text-white">Whole Day</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>9:00 AM - 5:00 PM</td>
                             <td>5:00 PM - 10:00 PM</td>
+                            <td>9:00 AM - 10:00 PM</td>
                         </tr>
                         <tr>
                             <td>₱300.00 / per head</td>
                             <td>₱400.00 / per head</td>
+                            <td>₱500.00 / per head</td>
                         </tr>
                     </tbody>
                 </table>

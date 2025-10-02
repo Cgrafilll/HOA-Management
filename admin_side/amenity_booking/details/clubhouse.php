@@ -26,7 +26,7 @@
                             <td>₱15,000.00</td>
                         </tr>
                     </tbody>
-                </table> 
+                </table>
             </div>
         </div>
         <!-- Add-Ons Table -->
