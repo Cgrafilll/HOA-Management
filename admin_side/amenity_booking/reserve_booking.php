@@ -1392,13 +1392,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (dateInput) {
                 dateInput.value = dateString;
 
-                // Remove any existing date error message when date is selected
-                const dateContainer = dateInput.closest('.mb-3');
-                if (dateContainer) {
-                    const existingError = dateContainer.querySelector('.date-error-message');
-                    if (existingError) {
-                        existingError.remove();
-                    }
+                // Remove error styling when date is selected
+                dateInput.classList.remove('border-danger', 'is-invalid');
+                const existingError = dateInput.parentNode.querySelector('.invalid-feedback');
+                if (existingError) {
+                    existingError.remove();
                 }
             }
 
@@ -2213,29 +2211,25 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     // Validate date FIRST
                     const dateInput = document.getElementById('reservationDate');
                     if (!dateInput || !dateInput.value) {
-                        // Show error for date
-                        const dateContainer = dateInput?.closest('.mb-3');
-                        if (dateContainer) {
-                            // Remove existing error if any
-                            const existingError = dateContainer.querySelector('.date-error-message');
-                            if (existingError) {
-                                existingError.remove();
-                            }
+                        // Add invalid styling to date input
+                        dateInput.classList.add('border-danger', 'is-invalid');
 
-                            // Add error message
-                            const errorDiv = document.createElement('div');
-                            errorDiv.className = 'alert alert-danger mt-2 date-error-message';
-                            errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Please select a reservation date from the calendar.';
-                            dateContainer.appendChild(errorDiv);
-
-                            // Scroll to calendar
-                            dateContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                            // Remove error after 5 seconds
-                            setTimeout(() => {
-                                errorDiv.remove();
-                            }, 5000);
+                        // Remove existing error if any
+                        const existingError = dateInput.parentNode.querySelector('.invalid-feedback');
+                        if (existingError) {
+                            existingError.remove();
                         }
+
+                        // Add compact error message
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'invalid-feedback';
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Please select a reservation date from the calendar.';
+                        dateInput.parentNode.appendChild(errorDiv);
+
+                        // Scroll to calendar
+                        dateInput.closest('.mb-3').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
                         return;
                     }
 
