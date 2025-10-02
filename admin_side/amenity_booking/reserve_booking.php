@@ -1791,28 +1791,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     // Make it readonly (not editable)
                     element.readOnly = true;
                     element.setAttribute('readonly', 'readonly');
-
-                    // Style it to look disabled but keep it enabled for form submission
-                    element.style.backgroundColor = '#e9ecef';
-                    element.style.opacity = '1';
-                    element.style.cursor = 'not-allowed';
-                    element.style.pointerEvents = 'none';
-
-                    // Prevent editing attempts
-                    element.addEventListener('keydown', preventEdit);
-                    element.addEventListener('paste', preventEdit);
-                    element.addEventListener('cut', preventEdit);
-                    element.addEventListener('contextmenu', preventEdit);
                 }
             });
-        }
-
-        // Add this helper function to prevent any editing attempts
-        function preventEdit(e) {
-            if (e.target.readOnly) {
-                e.preventDefault();
-                return false;
-            }
         }
 
         function clearUserFields() {
@@ -1828,18 +1808,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
                     // Disable the field
                     element.disabled = true;
-
-                    // Reset styles
-                    element.style.backgroundColor = '';
-                    element.style.opacity = '';
-                    element.style.cursor = '';
-                    element.style.pointerEvents = '';
-
-                    // Remove event listeners
-                    element.removeEventListener('keydown', preventEdit);
-                    element.removeEventListener('paste', preventEdit);
-                    element.removeEventListener('cut', preventEdit);
-                    element.removeEventListener('contextmenu', preventEdit);
                 }
             });
 
@@ -1852,18 +1820,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
                     // Disable the field
                     element.disabled = true;
-
-                    // Reset styles
-                    element.style.backgroundColor = '';
-                    element.style.opacity = '';
-                    element.style.cursor = '';
-                    element.style.pointerEvents = '';
-
-                    // Remove event listeners
-                    element.removeEventListener('keydown', preventEdit);
-                    element.removeEventListener('paste', preventEdit);
-                    element.removeEventListener('cut', preventEdit);
-                    element.removeEventListener('contextmenu', preventEdit);
                 }
             });
         }
