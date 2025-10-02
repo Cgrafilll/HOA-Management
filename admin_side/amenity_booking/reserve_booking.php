@@ -1391,6 +1391,15 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const dateInput = document.getElementById('reservationDate');
             if (dateInput) {
                 dateInput.value = dateString;
+
+                // Remove any existing date error message when date is selected
+                const dateContainer = dateInput.closest('.mb-3');
+                if (dateContainer) {
+                    const existingError = dateContainer.querySelector('.date-error-message');
+                    if (existingError) {
+                        existingError.remove();
+                    }
+                }
             }
 
             // Remove previous selection
@@ -2201,7 +2210,36 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 submitButton.addEventListener('click', function (e) {
                     e.preventDefault();
 
-                    // Validate amount paid FIRST (before HTML5 validation)
+                    // Validate date FIRST
+                    const dateInput = document.getElementById('reservationDate');
+                    if (!dateInput || !dateInput.value) {
+                        // Show error for date
+                        const dateContainer = dateInput?.closest('.mb-3');
+                        if (dateContainer) {
+                            // Remove existing error if any
+                            const existingError = dateContainer.querySelector('.date-error-message');
+                            if (existingError) {
+                                existingError.remove();
+                            }
+
+                            // Add error message
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'alert alert-danger mt-2 date-error-message';
+                            errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Please select a reservation date from the calendar.';
+                            dateContainer.appendChild(errorDiv);
+
+                            // Scroll to calendar
+                            dateContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                            // Remove error after 5 seconds
+                            setTimeout(() => {
+                                errorDiv.remove();
+                            }, 5000);
+                        }
+                        return;
+                    }
+
+                    // Validate amount paid
                     const amountValid = validateAmountPaid();
 
                     // Validate file upload
