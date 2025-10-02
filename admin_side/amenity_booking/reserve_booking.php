@@ -892,7 +892,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     </div>
                                 <?php endif; ?>
                                 <!-- Exclusive Booking -->
-                                <div class="form-floating mb-3">
+                                <div class="form-floating">
                                     <select class="form-select" id="exclusiveBooking" name="exclusiveBooking" required>
                                         <option value="no" selected>No</option>
                                         <option value="yes">Yes</option>
@@ -1063,7 +1063,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <div class="input-group">
                                         <span class="input-group-text">₱</span>
                                         <input type="text" class="form-control" id="change" name="change"
-                                            placeholder="0.00" readonly style="background-color: #e9ecef;">
+                                            placeholder="0.00" readonly>
                                     </div>
                                 </div>
                                 <!-- File Upload -->
@@ -2030,12 +2030,16 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             const change = amountPaidValue - totalValue;
 
-            if (change >= 0) {
+            // Only show change if it's positive (no negative values)
+            if (change > 0) {
                 changeField.value = change.toLocaleString("en-US", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
                 });
+            } else if (change === 0) {
+                changeField.value = '0.00';
             } else {
+                // If change would be negative, show 0.00 or empty
                 changeField.value = '';
             }
         }
@@ -2046,12 +2050,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         function validateAmountPaid() {
             const totalField = document.getElementById("total");
             const amountPaidField = document.getElementById("amountPaid");
-            if (amountPaidField) {
-                amountPaidField.addEventListener('input', validateAmountPaid);
-                amountPaidField.addEventListener('blur', validateAmountPaid);
-                amountPaidField.addEventListener('input', calculateChange); // Add this line
-                amountPaidField.addEventListener('change', calculateChange); // Add this line
-            }
 
             if (!totalField || !amountPaidField) return true;
 
@@ -2248,7 +2246,13 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             const amountPaidField = document.getElementById("amountPaid");
             if (amountPaidField) {
-                amountPaidField.addEventListener('input', validateAmountPaid);
+                // Real-time validation and change calculation
+                amountPaidField.addEventListener('input', function () {
+                    calculateChange();  // Update change in real-time
+                });
+                amountPaidField.addEventListener('change', function () {
+                    calculateChange();  // Update on change event
+                });
                 amountPaidField.addEventListener('blur', validateAmountPaid);
             }
 
