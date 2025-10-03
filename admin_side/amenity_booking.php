@@ -948,32 +948,30 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                         " . ucfirst($row['status']) . "
                                                     </span>
                                                 </td>
-                                                <td class='text-center'>
-                                                    <div class='text-center'>
-                                                        <button class='btn btn-sm btn-outline-success me-1' title='View' style='padding: 2px 6px; font-size: 0.9rem;' 
-                                                            onclick='showBookingDetailsFromTable({
-                                                                fullName: \"" . addslashes($fullName) . "\",
-                                                                amenity: \"" . addslashes($amenity) . "\",
-                                                                date: \"" . $bookingDate . "\",
-                                                                reservationCode: \"" . $resCode . "\",
-                                                                paymentStatus: \"" . ucfirst($row['status']) . "\",
-                                                                amount: \"₱" . number_format($row['amount_paid'], 2) . ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : "") . "\",
-                                                                time: \"" . $timeDisplay . "\"
-                                                            })'>
-                                                            <i class='bi bi-eye'></i>
-                                                        </button>
-                                                        <button class='btn btn-sm btn-outline-primary me-1' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'
-                                                            onclick='openRescheduleModal({
-                                                                id: \"" . $id . "\",
-                                                                fullName: \"" . addslashes($fullName) . "\",
-                                                                amenity: \"" . addslashes($amenity) . "\",
-                                                                date: \"" . $row['reservation_date'] . "\",
-                                                                time: \"" . $timeDisplay . "\",
-                                                                rate: \"" . $row['rate'] . "\"
-                                                            })'>
-                                                            <i class='bi bi-calendar2-week'></i>
-                                                        </button>
-                                                    </div>
+                                                <td class='text-center gap-1'>
+                                                    <button class='btn btn-sm btn-outline-success' title='View' style='padding: 2px 6px; font-size: 0.9rem;' 
+                                                        onclick='showBookingDetailsFromTable({
+                                                            fullName: \"" . addslashes($fullName) . "\",
+                                                            amenity: \"" . addslashes($amenity) . "\",
+                                                            date: \"" . $bookingDate . "\",
+                                                            reservationCode: \"" . $resCode . "\",
+                                                            paymentStatus: \"" . ucfirst($row['status']) . "\",
+                                                            amount: \"₱" . number_format($row['amount_paid'], 2) . ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : "") . "\",
+                                                            time: \"" . $timeDisplay . "\"
+                                                        })'>
+                                                        <i class='bi bi-eye'></i>
+                                                    </button>
+                                                    <button class='btn btn-sm btn-outline-primary' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'
+                                                        onclick='openRescheduleModal({
+                                                            id: \"" . $id . "\",
+                                                            fullName: \"" . addslashes($fullName) . "\",
+                                                            amenity: \"" . addslashes($amenity) . "\",
+                                                            date: \"" . $row['reservation_date'] . "\",
+                                                            time: \"" . $timeDisplay . "\",
+                                                            rate: \"" . $row['rate'] . "\"
+                                                        })'>
+                                                        <i class='bi bi-calendar2-week'></i>
+                                                    </button>
                                                 </td>
                                             </tr>";
                                             $rowCount++;
@@ -1170,8 +1168,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                         " . ucfirst($row['reschedule_status']) . "
                                                     </span>
                                                 </td>
-                                                <td class='text-center'>
-                                                    <button class='btn btn-sm btn-success me-1' title='Approve' 
+                                                <td class='text-center gap-2'>
+                                                    <button class='btn btn-sm btn-success' title='Approve' 
                                                         data-id='{$id}' 
                                                         data-action='approve'
                                                         data-name='{$fullName}'
