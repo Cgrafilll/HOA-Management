@@ -130,12 +130,50 @@ function sendBookingReceipt($recipientEmail, $recipientName, $bookingDetails)
     }
 }
 
-// Generate HTML email template (updated with vehicle information)
+// Generate HTML email template (updated with vehicle information and status-based messaging)
 function generateEmailTemplate($recipientName, $bookingDetails)
 {
     $reservationCode = htmlspecialchars($bookingDetails['reservation_code']);
     $amenity = htmlspecialchars($bookingDetails['amenity']);
     $reservationDate = date('F j, Y', strtotime($bookingDetails['reservation_date']));
+
+    // Determine status badge and message based on payment status
+    $status = $bookingDetails['status'] ?? 'pending';
+    $statusBadge = '';
+    $statusMessage = '';
+
+    switch ($status) {
+        case 'paid':
+            $statusBadge = '<span class="status-badge" style="background-color: #28a745;">Fully Paid</span>';
+            $statusMessage = 'Your payment has been received in full. Thank you!';
+            break;
+        case 'partial':
+            $statusBadge = '<span class="status-badge" style="background-color: #ffc107;">Partial Payment</span>';
+            $statusMessage = 'You have made a partial payment. Please complete the remaining balance before your scheduled date.';
+            break;
+        case 'pending':
+        default:
+            $statusBadge = '<span class="status-badge" style="background-color: #dc3545;">Payment Pending</span>';
+            $statusMessage = 'Your payment is pending. Please complete the payment to confirm your booking.';
+            break;
+    }
+
+    // Determine time slot with actual hours
+    $timeSlot = '';
+    switch ($bookingDetails['rate']) {
+        case 'day':
+            $timeSlot = 'Day Session (9:00 AM - 5:00 PM)';
+            break;
+        case 'night':
+            $timeSlot = 'Night Session (5:00 PM - 10:00 PM)';
+            break;
+        case 'whole':
+            $timeSlot = 'Whole Day (9:00 AM - 10:00 PM)';
+            break;
+        default:
+            $timeSlot = ucfirst($bookingDetails['rate']) . ' Session';
+            break;
+    }
 
     $html = '
     <!DOCTYPE html>
@@ -189,7 +227,7 @@ function generateEmailTemplate($recipientName, $bookingDetails)
             .footer h4 { margin-bottom: 15px; color: #3498db; }
             .footer p { margin: 5px 0; font-size: 13px; opacity: 0.8; }
             
-            .status-badge { display: inline-block; background-color: #ffc107; color: #212529; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+            .status-badge { display: inline-block; color: #ffffff; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
             
             @media only screen and (max-width: 600px) {
                 .email-container { width: 100% !important; }
@@ -213,7 +251,8 @@ function generateEmailTemplate($recipientName, $bookingDetails)
                 <div class="greeting">Hello ' . htmlspecialchars($recipientName) . '!</div>
                 
                 <div class="intro-text">
-                    Thank you for your amenity reservation! Your booking has been successfully submitted and is currently <span class="status-badge">Pending Approval</span>.
+                    Thank you for your amenity reservation! Your booking has been successfully submitted with status: ' . $statusBadge . '
+                    <br><br>' . $statusMessage . '
                 </div>
                 
                 <!-- Reservation Code Banner -->
@@ -239,7 +278,7 @@ function generateEmailTemplate($recipientName, $bookingDetails)
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">⏰ Time Slot</span>
-                        <span class="detail-value">' . ucfirst($bookingDetails['rate']) . ' Session</span>
+                        <span class="detail-value">' . $timeSlot . '</span>
                     </div>';
 
     // Add guests if applicable
@@ -324,17 +363,32 @@ function generateEmailTemplate($recipientName, $bookingDetails)
                     </div>';
     }
 
+    // Dynamic important reminders based on payment status
     $html .= '
                 </div>
                 
                 <!-- Important Information -->
                 <div class="important-section">
                     <h4>Important Reminders</h4>
-                    <ul>
-                        <li>Your booking status is currently <strong>PENDING</strong> and requires HOA approval.</li>
+                    <ul>';
+
+    // Status-specific reminders
+    if ($status === 'paid') {
+        $html .= '
+                        <li>Your booking is <strong>FULLY PAID</strong>. Thank you for your payment!</li>';
+    } elseif ($status === 'partial') {
+        $html .= '
+                        <li>Your booking has <strong>PARTIAL PAYMENT</strong>. Please complete the remaining balance before your scheduled date.</li>
+                        <li>Remaining balance: <strong>₱' . number_format($bookingDetails['total_amount'] - $bookingDetails['amount_paid'], 2) . '</strong></li>';
+    } else {
+        $html .= '
+                        <li>Your booking payment is <strong>PENDING</strong>. Please complete your payment to confirm your reservation.</li>
+                        <li>Minimum 50% down payment is required to proceed with your booking.</li>';
+    }
+
+    $html .= '
                         <li>Please save your reservation code <strong>' . $reservationCode . '</strong> for future reference.</li>
-                        <li>You will receive another email once your booking is approved or if additional information is needed.</li>
-                        <li>Minimum 50% down payment is required. Payment must be received before your scheduled date.</li>
+                        <li>Payment must be received before your scheduled date: <strong>' . $reservationDate . '</strong></li>
                         <li>Rescheduling is allowed but must be requested at least 24 hours in advance.</li>';
 
     // Add vehicle reminder if applicable
@@ -378,10 +432,32 @@ function generateEmailTemplate($recipientName, $bookingDetails)
 // Generate plain text version for email clients that don't support HTML (updated)
 function generatePlainTextEmail($recipientName, $bookingDetails)
 {
+    // Determine status message
+    $status = $bookingDetails['status'] ?? 'pending';
+    $statusText = strtoupper($status);
+
+    // Determine time slot with actual hours
+    $timeSlot = '';
+    switch ($bookingDetails['rate']) {
+        case 'day':
+            $timeSlot = 'Day Session (9:00 AM - 5:00 PM)';
+            break;
+        case 'night':
+            $timeSlot = 'Night Session (5:00 PM - 10:00 PM)';
+            break;
+        case 'whole':
+            $timeSlot = 'Whole Day (9:00 AM - 10:00 PM)';
+            break;
+        default:
+            $timeSlot = ucfirst($bookingDetails['rate']) . ' Session';
+            break;
+    }
+
     $text = "AMENITY BOOKING CONFIRMATION - NSSHAI\n";
     $text .= "=====================================\n\n";
     $text .= "Hello " . $recipientName . "!\n\n";
-    $text .= "Thank you for your amenity reservation. Your booking has been successfully submitted and is currently pending approval.\n\n";
+    $text .= "Thank you for your amenity reservation. Your booking has been successfully submitted.\n\n";
+    $text .= "PAYMENT STATUS: " . $statusText . "\n";
     $text .= "RESERVATION CODE: " . $bookingDetails['reservation_code'] . "\n";
 
     if (!empty($bookingDetails['invoice_number'])) {
@@ -391,7 +467,7 @@ function generatePlainTextEmail($recipientName, $bookingDetails)
     $text .= "\nBOOKING DETAILS:\n";
     $text .= "- Amenity: " . $bookingDetails['amenity'] . "\n";
     $text .= "- Date: " . date('F j, Y', strtotime($bookingDetails['reservation_date'])) . "\n";
-    $text .= "- Time Slot: " . ucfirst($bookingDetails['rate']) . "\n";
+    $text .= "- Time Slot: " . $timeSlot . "\n";
 
     if ($bookingDetails['guests'] > 0) {
         $text .= "- Guests: " . $bookingDetails['guests'] . "\n";
@@ -416,9 +492,20 @@ function generatePlainTextEmail($recipientName, $bookingDetails)
     }
 
     $text .= "\nIMPORTANT REMINDERS:\n";
-    $text .= "- Your booking is currently PENDING approval\n";
+
+    // Status-specific reminders
+    if ($status === 'paid') {
+        $text .= "- Your booking is FULLY PAID\n";
+    } elseif ($status === 'partial') {
+        $text .= "- Your booking has PARTIAL PAYMENT\n";
+        $text .= "- Remaining balance: ₱" . number_format($bookingDetails['total_amount'] - $bookingDetails['amount_paid'], 2) . "\n";
+    } else {
+        $text .= "- Your booking payment is PENDING\n";
+        $text .= "- Minimum 50% down payment required\n";
+    }
+
     $text .= "- Keep your reservation code safe\n";
-    $text .= "- You will receive updates via email\n";
+    $text .= "- Payment due before: " . date('F j, Y', strtotime($bookingDetails['reservation_date'])) . "\n";
     $text .= "- Contact us at 8-2457647 for questions\n";
 
     if ($bookingDetails['vehicles'] > 0) {
@@ -516,7 +603,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         // Less than 50% paid
         $status = 'pending';
     }
-    
+
     // Get the appropriate user ID based on user type
     $homeowner_id = null;
     $visitor_id = null;
@@ -621,7 +708,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $nameStmt->close();
         }
 
-        // Prepare booking details for email - updated to include vehicle information
+        // Prepare booking details for email - updated to include status
         $bookingDetails = [
             'reservation_code' => $reservation_code,
             'invoice_number' => $invoice_number,
@@ -637,7 +724,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             'payment_method' => $payment,
             'total_amount' => $total,
             'amount_paid' => $amountPaid,
-            'reference_number' => $referenceNumber
+            'reference_number' => $referenceNumber,
+            'status' => $status  // Add this line
         ];
 
         // Send the email receipt with PHPMailer
