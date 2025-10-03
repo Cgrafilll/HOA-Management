@@ -59,25 +59,21 @@ if (!empty($admin['profile_picture'])) {
     $photo = ''; // Explicitly empty if no image is saved
 }
 
-// How many records per page
-$limit = 10;
+// Pagination settings for bookings table
+$entriesPerPage = 10;
+$currentPage = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+$currentPage = max(1, $currentPage);
 
-// Current page number (default 1 if not set)
-$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
+// Calculate offset
+$offset = ($currentPage - 1) * $entriesPerPage;
 
-// Calculate offset for SQL query
-$offset = ($page - 1) * $limit;
+// Get total count for pagination
+$countSql = "SELECT COUNT(*) as total FROM amenity_bookings";
+$countResult = $conn->query($countSql);
+$totalEntries = $countResult->fetch_assoc()['total'];
+$totalPages = ceil($totalEntries / $entriesPerPage);
 
-// Get total number of records from amenity_bookings
-$totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings";
-$totalResult = $conn->query($totalQuery);
-$totalRow = $totalResult->fetch_assoc();
-$totalRecords = $totalRow['total'];
-
-// Calculate total pages
-$totalPages = ceil($totalRecords / $limit);
-
-// ✅ Updated query with JOINs for table data
+// Replace the existing $booking_sql with this:
 $booking_sql = "SELECT 
     ab.id,
     ab.reservation_code,
@@ -113,7 +109,7 @@ FROM amenity_bookings ab
 LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
 LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
 ORDER BY ab.reservation_date DESC 
-LIMIT $limit OFFSET $offset";
+LIMIT $entriesPerPage OFFSET $offset";
 
 $bookings_result = $conn->query($booking_sql);
 
@@ -863,7 +859,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
-
             <?php if (isset($_GET['error'])): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     <i class="bi bi-exclamation-triangle me-2"></i>
@@ -911,15 +906,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody class="small align-middle">
+                                <tbody class="small align-middle" style="min-height: 520px; display: table-row-group;">
                                     <?php
+                                    $rowCount = 0;
                                     if ($bookings_result->num_rows > 0) {
                                         while ($row = $bookings_result->fetch_assoc()) {
                                             $id = $row['id'];
-
-                                            // Construct full name
                                             $fullName = ucwords(trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']));
-
                                             $amenity = $row['amenity'];
                                             $bookingDate = date('F j, Y', strtotime($row['reservation_date']));
                                             $resCode = $row['reservation_code'];
@@ -928,8 +921,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                 : ($row['status'] === 'partial'
                                                     ? 'badge bg-primary text-white'
                                                     : 'badge bg-warning text-dark');
-
-                                            // Determine time display
                                             $timeDisplay = $row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : '9:00 AM - 10:00 PM');
 
                                             echo "<tr>
@@ -944,7 +935,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                 </td>
                                                 <td class='text-center'>
                                                     <div class='text-center'>
-                                                        <!-- View button -->
                                                         <button class='btn btn-sm btn-outline-success me-1' title='View' style='padding: 2px 6px; font-size: 0.9rem;' 
                                                             onclick='showBookingDetailsFromTable({
                                                                 fullName: \"" . addslashes($fullName) . "\",
@@ -957,7 +947,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                             })'>
                                                             <i class='bi bi-eye'></i>
                                                         </button>
-                                                        <!-- Reschedule button -->
                                                         <button class='btn btn-sm btn-outline-primary me-1' title='Reschedule' style='padding: 2px 6px; font-size: 0.9rem;'
                                                             onclick='openRescheduleModal({
                                                                 id: \"" . $id . "\",
@@ -972,39 +961,94 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                     </div>
                                                 </td>
                                             </tr>";
+                                            $rowCount++;
+                                        }
+                                    }
+
+                                    // Show "no data" message if no rows
+                                    if ($rowCount === 0) {
+                                        echo '<tr><td colspan="6" class="text-center text-muted">No bookings found.</td></tr>';
+                                        $minRows = 10;
+                                        for ($i = 1; $i < $minRows; $i++) {
+                                            echo '<tr style="height: 52px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
                                         }
                                     } else {
-                                        echo "<tr><td colspan='6' class='text-center text-muted'>No bookings found.</td></tr>";
+                                        // Add empty rows to maintain consistent height (minimum 10 rows)
+                                        $minRows = 10;
+                                        for ($i = $rowCount; $i < $minRows; $i++) {
+                                            echo '<tr style="height: 52px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+                                        }
                                     }
                                     ?>
                                 </tbody>
                             </table>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span class="small">Showing 1 to <?php echo $bookings_result->num_rows; ?> entries</span>
-                            <nav>
-                                <ul class="pagination justify-content-center">
-                                    <!-- Previous button -->
-                                    <li class="page-item <?php if ($page <= 1)
-                                        echo 'disabled'; ?>">
-                                        <a class="page-link" href="?page=<?php echo $page - 1; ?>">Previous</a>
-                                    </li>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <?php
+                                $start = $totalEntries > 0 ? $offset + 1 : 0;
+                                $end = min($offset + $entriesPerPage, $totalEntries);
+                                echo "<span class='small'>Showing $start to $end of $totalEntries entries</span>";
+                                ?>
+                                <nav>
+                                    <ul class="pagination pagination-sm m-0">
+                                        <?php
+                                        if ($totalEntries > 0) {
+                                            // Previous button
+                                            $prevDisabled = $currentPage <= 1 ? 'disabled' : '';
+                                            $prevPage = $currentPage - 1;
+                                            echo "<li class='page-item $prevDisabled'>";
+                                            if ($currentPage > 1) {
+                                                echo "<a class='page-link' href='?page=$prevPage'>Previous</a>";
+                                            } else {
+                                                echo "<a class='page-link'>Previous</a>";
+                                            }
+                                            echo "</li>";
 
-                                    <!-- Page numbers -->
-                                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                        <li class="page-item <?php if ($page == $i)
-                                            echo 'active'; ?>">
-                                            <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                                        </li>
-                                    <?php endfor; ?>
+                                            // Page numbers
+                                            $startPage = max(1, $currentPage - 2);
+                                            $endPage = min($totalPages, $currentPage + 2);
 
-                                    <!-- Next button -->
-                                    <li class="page-item <?php if ($page >= $totalPages)
-                                        echo 'disabled'; ?>">
-                                        <a class="page-link" href="?page=<?php echo $page + 1; ?>">Next</a>
-                                    </li>
-                                </ul>
-                            </nav>
+                                            // First page and ellipsis
+                                            if ($startPage > 1) {
+                                                echo "<li class='page-item'><a class='page-link' href='?page=1'>1</a></li>";
+                                                if ($startPage > 2) {
+                                                    echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
+                                                }
+                                            }
+
+                                            // Page range
+                                            for ($i = $startPage; $i <= $endPage; $i++) {
+                                                $activeClass = $i == $currentPage ? 'active' : '';
+                                                echo "<li class='page-item $activeClass'><a class='page-link' href='?page=$i'>$i</a></li>";
+                                            }
+
+                                            // Last page and ellipsis
+                                            if ($endPage < $totalPages) {
+                                                if ($endPage < $totalPages - 1) {
+                                                    echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
+                                                }
+                                                echo "<li class='page-item'><a class='page-link' href='?page=$totalPages'>$totalPages</a></li>";
+                                            }
+
+                                            // Next button
+                                            $nextDisabled = $currentPage >= $totalPages ? 'disabled' : '';
+                                            $nextPage = $currentPage + 1;
+                                            echo "<li class='page-item $nextDisabled'>";
+                                            if ($currentPage < $totalPages) {
+                                                echo "<a class='page-link' href='?page=$nextPage'>Next</a>";
+                                            } else {
+                                                echo "<a class='page-link'>Next</a>";
+                                            }
+                                            echo "</li>";
+                                        } else {
+                                            // Show disabled pagination when no entries
+                                            echo "<li class='page-item disabled'><a class='page-link'>Previous</a></li>";
+                                            echo "<li class='page-item active'><a class='page-link'>1</a></li>";
+                                            echo "<li class='page-item disabled'><a class='page-link'>Next</a></li>";
+                                        }
+                                        ?>
+                                    </ul>
+                                </nav>
+                            </div>
                         </div>
                     </div>
                     <!-- Calendar View -->
