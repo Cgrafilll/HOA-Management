@@ -291,10 +291,6 @@ try {
                 font-size: 1rem !important;
             }
 
-            .table-responsive {
-                font-size: 0.85rem;
-            }
-
             .btn-sm {
                 padding: 0.25rem 0.5rem;
                 font-size: 0.8rem;
@@ -326,14 +322,6 @@ try {
 
             .sidebar-overlay {
                 top: 0;
-            }
-
-            .table-responsive {
-                font-size: 0.75rem;
-            }
-
-            .pagination {
-                font-size: 0.8rem;
             }
 
             .d-flex.gap-2 {
@@ -615,7 +603,7 @@ try {
                                             </div>
                                             <div class="announcement-actions">
                                                 <!-- Edit button triggers modal -->
-                                                <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
                                                     data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id']; ?>"
                                                     title="Edit" style="padding: 2px 6px; font-size: 0.9rem;">
                                                     <i class="bi bi-pencil-square"></i>
