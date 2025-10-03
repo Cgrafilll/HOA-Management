@@ -156,7 +156,8 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
 
         .sidebar a:hover,
         .sidebar button:hover,
-        .collapse ul li a:hover {
+        .collapse ul li a:hover,
+        .collapse ul li a.actived {
             color: #80ed99;
         }
 
@@ -254,9 +255,8 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
-                top: 0;
+                top: 76px;
                 height: 100vh;
-                background-color: #283548;
             }
 
             .sidebar.show {
@@ -290,48 +290,6 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
 
             .sidebar-overlay {
                 top: 0;
-            }
-        }
-
-        @media (max-width: 576px) {
-            header {
-                height: auto;
-                padding: 0.75rem !important;
-            }
-
-            header h1 {
-                display: none;
-            }
-
-            main {
-                margin-top: 60px;
-                padding: 0.75rem !important;
-            }
-
-            .sidebar {
-                top: 0;
-                height: 100vh;
-            }
-
-            .sidebar-overlay {
-                top: 0;
-            }
-
-            .table-responsive {
-                font-size: 0.75rem;
-            }
-
-            .pagination {
-                font-size: 0.8rem;
-            }
-
-            .d-flex.gap-2 {
-                flex-direction: column;
-                gap: 0.5rem !important;
-            }
-
-            .d-flex.gap-2 .btn {
-                width: 100%;
             }
         }
     </style>
@@ -396,8 +354,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                     </button>
                     <div class="collapse show" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="admin_accounts.php" class="nav-link px-2" style="color: #80ed99;">Admin</a>
-                            </li>
+                            <li><a href="admin_accounts.php" class="nav-link px-2 actived">Admin</a></li>
                             <li><a href="household_accounts.php" class="nav-link px-2">Household</a></li>
                             <li><a href="visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
                         </ul>
