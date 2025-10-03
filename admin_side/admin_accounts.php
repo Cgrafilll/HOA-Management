@@ -645,18 +645,47 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             </div>
         </main>
     </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        if (mobileMenuBtn && sidebar && sidebarOverlay) {
+            mobileMenuBtn.addEventListener('click', function () {
+                sidebar.classList.toggle('show');
+                sidebarOverlay.classList.toggle('show');
+            });
+
+            sidebarOverlay.addEventListener('click', function () {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+            });
+
+            // Close sidebar when clicking a link on mobile
+            const sidebarLinks = sidebar.querySelectorAll('a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function () {
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('show');
+                        sidebarOverlay.classList.remove('show');
+                    }
+                });
+            });
+        }
+
+        // Your existing archive/delete functionality
         let selectedId = null;
 
-        // Capture ID when clicking "Delete Account" button
         document.querySelectorAll('.delete-account').forEach(btn => {
             btn.addEventListener('click', (event) => {
-                event.preventDefault(); // Prevent page reload!
+                event.preventDefault();
                 selectedId = btn.getAttribute('data-id');
             });
         });
 
-        // Handle confirmation proceed
         document.getElementById('confirmProceed').addEventListener('click', () => {
             if (selectedId) {
                 fetch('admin/archive_process.php', {
@@ -664,11 +693,11 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: 'admin_id=' + encodeURIComponent(selectedId)
                 })
-                    .then(res => res.text())  // read as text first
+                    .then(res => res.text())
                     .then(text => {
                         let data;
                         try {
-                            data = JSON.parse(text); // then parse
+                            data = JSON.parse(text);
                         } catch (e) {
                             throw new Error("Invalid JSON response");
                         }
@@ -686,12 +715,11 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                 alert("Invalid admin ID.");
             }
         });
-        // Redirect after success
+
         const redirect = () => window.location.href = 'admin_accounts.php';
         document.getElementById('doneButton').addEventListener('click', redirect);
         document.getElementById('successModal').addEventListener('hidden.bs.modal', redirect);
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
