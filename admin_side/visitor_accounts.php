@@ -540,13 +540,13 @@ $result = $conn->query($sql);
                                                 <td>' . $fullName . '</td>
                                                 <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
                                                 <td>
-                                                    <div class="text-center">
+                                                    <div class="text-center gap-1">
                                                         <!-- View button -->
-                                                        <a class="btn btn-sm btn-outline-success me-1" href="visitor/view_visitor.php?id=' . $visitor_id . '" title="View" style="padding: 2px 6px; font-size: 0.9rem;">
+                                                        <a class="btn btn-sm btn-outline-success" href="visitor/view_visitor.php?id=' . $visitor_id . '" title="View" style="padding: 2px 6px; font-size: 0.9rem;">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
                                                         <!-- Edit button -->
-                                                        <a class="btn btn-sm btn-outline-primary me-1" href="visitor/edit_visitor.php?id=' . $visitor_id . '" title="Edit" style="padding: 2px 6px; font-size: 0.9rem;">
+                                                        <a class="btn btn-sm btn-outline-primary" href="visitor/edit_visitor.php?id=' . $visitor_id . '" title="Edit" style="padding: 2px 6px; font-size: 0.9rem;">
                                                             <i class="bi bi-pencil-square"></i>
                                                         </a>
                                                         <!-- Archive button -->
