@@ -601,7 +601,7 @@ try {
                                                 style="font-weight: 600;font-size: 1rem;margin-bottom: 6px;">
                                                 <?= htmlspecialchars($row['title']); ?>
                                             </div>
-                                            <div class="announcement-actions">
+                                            <div class="announcement-actions gap-2">
                                                 <!-- Edit button triggers modal -->
                                                 <button type="button" class="btn btn-sm btn-outline-primary"
                                                     data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id']; ?>"

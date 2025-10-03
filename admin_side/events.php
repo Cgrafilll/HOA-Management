@@ -555,8 +555,8 @@ try {
                                                 style="font-weight: 600; font-size: 1rem; margin-bottom: 6px;">
                                                 <?= htmlspecialchars($row['title']); ?>
                                             </div>
-                                            <div class="event-actions">
-                                                <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                                            <div class="event-actions gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
                                                     data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id']; ?>"
                                                     title="Edit">
                                                     <i class="bi bi-pencil-square"></i>
