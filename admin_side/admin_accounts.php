@@ -155,17 +155,12 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
 
         .sidebar-nav {
             flex: 1;
-            /* Add */
             overflow-y: auto;
-            /* Add */
             overflow-x: hidden;
-            /* Add */
             min-height: 0;
-            /* Add - important for flex scrolling */
         }
 
         .sidebar-nav::-webkit-scrollbar {
-            /* Add custom scrollbar for nav */
             width: 6px;
         }
 
@@ -178,15 +173,10 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             border-radius: 3px;
         }
 
-        /* Remove the .sidebar::-webkit-scrollbar rules as scrollbar is now on .sidebar-nav */
-
         .sidebar .logout {
             flex-shrink: 0;
-            /* Add */
             border-top: 1px solid #374151;
-            /* Add visual separator */
             padding-top: 12px;
-            /* Add some spacing */
         }
 
         .sidebar .btn-toggle {
@@ -377,7 +367,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                         </span>
                     </button>
                     <div class="collapse show" id="accountsCollapse">
-                        <ul class="nav flex-column ms-3 mt-1 p-3">
+                        <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="admin_accounts.php" class="nav-link px-2 actived">Admin</a></li>
                             <li><a href="household_accounts.php" class="nav-link px-2">Household</a></li>
                             <li><a href="visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
@@ -393,7 +383,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                         </span>
                     </button>
                     <div class="collapse" id="recordCollapse">
-                        <ul class="nav flex-column ms-3 mt-1 p-3">
+                        <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
                             <li><a href="violation_tracking.php" class="nav-link px-2">Violation Tracking</a></li>
                             <li><a href="entry_logs.php" class="nav-link px-2">Gate Logs</a></li>
@@ -409,7 +399,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                         </span>
                     </button>
                     <div class="collapse" id="commCollapse">
-                        <ul class="nav flex-column ms-3 mt-1 p-3">
+                        <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="announcements.php" class="nav-link px-2">Announcements</a></li>
                             <li><a href="events.php" class="nav-link px-2">Events</a></li>
                             <li><a href="phonebook.php" class="nav-link px-2">Phone Book</a></li>
@@ -425,7 +415,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                         </span>
                     </button>
                     <div class="collapse" id="acctCollapse">
-                        <ul class="nav flex-column ms-3 mt-1 p-3">
+                        <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="payment.php" class="nav-link px-2">Payments</a></li>
                             <li><a href="billing.php" class="nav-link px-2">Billing</a></li>
                             <li><a href="invoices.php" class="nav-link px-2">Invoices</a></li>
@@ -433,8 +423,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                     </div>
                 </div>
                 <a href="login/logout.php"
-                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
-                    style="margin: 12px;"> <!-- Move logout outside nav with margin -->
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
