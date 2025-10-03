@@ -526,7 +526,6 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             </div>
         </div>
     </header>
-
     <!-- Sidebar Overlay for Mobile -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">

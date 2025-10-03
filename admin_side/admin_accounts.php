@@ -116,11 +116,10 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             top: 76px;
             left: 0;
             background-color: #1F2937;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
             z-index: 1020;
             transition: transform 0.3s ease;
-            display: flex;
-            flex-direction: column;
         }
 
         .sidebar::-webkit-scrollbar {
@@ -194,36 +193,43 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             transform: rotate(180deg);
         }
 
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 1rem;
+        }
+
+        .metric-card.green {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .metric-card.orange {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .metric-card.blue {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
         .sidebar-nav {
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            padding: 12px;
-            min-height: 0;
-        }
-
-        .sidebar-nav::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .sidebar-nav::-webkit-scrollbar-track {
-            background: #1F2937;
-        }
-
-        .sidebar-nav::-webkit-scrollbar-thumb {
-            background: #4B5563;
-            border-radius: 3px;
-        }
-
-        .sidebar .logout-wrapper {
-            flex-shrink: 0;
-            padding: 12px;
-            background-color: #1F2937;
-            border-top: 1px solid #374151;
+            padding-bottom: 80px;
         }
 
         .sidebar .logout {
-            width: 100%;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 250px;
+            background-color: #1F2937;
+            padding: 12px 24px;
+            z-index: 1021;
         }
 
         .mobile-menu-btn {
@@ -245,18 +251,11 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             display: block;
         }
 
-        #confirmModal .btn-cancel:hover {
-            background-color: #d6d8db;
-            color: #000;
-        }
-
         /* Mobile Styles */
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
-                top: 0;
-                height: 100vh;
-                background-color: #283548;
+                top: 76px;
             }
 
             .sidebar.show {
@@ -279,17 +278,8 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                 font-size: 1rem !important;
             }
 
-            .table-responsive {
-                font-size: 0.85rem;
-            }
-
-            .btn-sm {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.8rem;
-            }
-
-            .sidebar-overlay {
-                top: 0;
+            .sidebar .logout {
+                width: 250px;
             }
         }
 
@@ -304,34 +294,13 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             }
 
             main {
-                margin-top: 60px;
+                margin-top: 76px;
                 padding: 0.75rem !important;
             }
 
             .sidebar {
-                top: 0;
-                height: 100vh;
-            }
-
-            .sidebar-overlay {
-                top: 0;
-            }
-
-            .table-responsive {
-                font-size: 0.75rem;
-            }
-
-            .pagination {
-                font-size: 0.8rem;
-            }
-
-            .d-flex.gap-2 {
-                flex-direction: column;
-                gap: 0.5rem !important;
-            }
-
-            .d-flex.gap-2 .btn {
-                width: 100%;
+                top: 76px;
+                height: calc(100vh - 76px);
             }
         }
     </style>
@@ -347,7 +316,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">ACCOUNTS</h1>
+            <h1 class="h5 mb-0 fw-bold">ADMIN DASHBOARD</h1>
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
@@ -374,10 +343,8 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             </div>
         </div>
     </header>
-
     <!-- Sidebar Overlay for Mobile -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar p-3">
@@ -388,8 +355,8 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                 </a>
                 <!-- Accounts -->
                 <div>
-                    <button class="btn btn-toggle px-3 py-2 active" data-bs-toggle="collapse"
-                        data-bs-target="#accountsCollapse" aria-expanded="true">
+                    <button class="btn btn-toggle collapsed active px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#accountsCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-person-lines-fill me-2"></i> Accounts
                         </span>
