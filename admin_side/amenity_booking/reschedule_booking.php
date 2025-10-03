@@ -50,7 +50,7 @@ if ($new_date < $today) {
 }
 
 // Validate rate
-if (!in_array($new_rate, ['day', 'night'])) {
+if (!in_array($new_rate, ['day', 'night', 'whole'])) {
     header("Location: ../amenity_booking.php?error=" . urlencode("Invalid rate selected."));
     exit;
 }
