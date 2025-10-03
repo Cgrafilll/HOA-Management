@@ -544,13 +544,13 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                                                 <td>' . $role . '</td>
                                                 <td class="' . $status . ' text-center fw-bold">' . $statusText . '</td>
                                                 <td>
-                                                    <div class="text-center">
+                                                    <div class="text-center gap-1">
                                                         <!-- View button -->
-                                                        <a class="btn btn-sm btn-outline-success me-1" href="admin/view_admin.php?id=' . $table_admin_id . '" title="View" style="padding: 2px 6px; font-size: 0.9rem;">
+                                                        <a class="btn btn-sm btn-outline-success" href="admin/view_admin.php?id=' . $table_admin_id . '" title="View" style="padding: 2px 6px; font-size: 0.9rem;">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
                                                         <!-- Edit button -->
-                                                        <a class="btn btn-sm btn-outline-primary me-1" href="admin/edit_admin.php?id=' . $table_admin_id . '" title="Edit" style="padding: 2px 6px; font-size: 0.9rem;">
+                                                        <a class="btn btn-sm btn-outline-primary" href="admin/edit_admin.php?id=' . $table_admin_id . '" title="Edit" style="padding: 2px 6px; font-size: 0.9rem;">
                                                             <i class="bi bi-pencil-square"></i>
                                                         </a>
                                                         <!-- Archive button -->
