@@ -283,7 +283,7 @@ function getNumericAmount($amountStr) {
                                                     <?php endif; ?>
                                                 </div>
                                                 <p class="mb-1 small"><?= htmlspecialchars($inv['full_name'] ?? 'No Name'); ?></p>
-                                                <small class="fw-bold text-success">PAID</small>
+                                                <small class="fw-bold text-success">Paid</small>
                                             </a>
                                         <?php endforeach; ?>
                                     <?php else: ?>
