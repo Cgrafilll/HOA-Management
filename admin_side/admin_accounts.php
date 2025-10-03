@@ -321,7 +321,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="mb-0 fw-bold">ADMIN DASHBOARD</h1>
+            <h1 class="h5 mb-0 fw-bold">ADMIN DASHBOARD</h1>
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
