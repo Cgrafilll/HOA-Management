@@ -1222,7 +1222,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
 
             try {
-                // Use current page URL instead of hardcoded filename
                 const currentPage = window.location.pathname.split('/').pop() || 'reserve_booking.php';
                 const url = `${currentPage}?action=get_booked_dates&amenity=${encodeURIComponent(amenity)}`;
                 console.log('Fetch URL:', url);
@@ -1237,11 +1236,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 console.log('Fetched data:', data);
 
                 if (data.success) {
-                    // Convert array of bookings to object structure
                     bookedDates = {};
                     (data.bookings || []).forEach(booking => {
                         const dateKey = booking.date;
-                        const rate = booking.rate; // 'day' or 'night'
+                        const rate = booking.rate;
 
                         if (!bookedDates[dateKey]) {
                             bookedDates[dateKey] = { day: false, night: false };
@@ -1273,16 +1271,13 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
 
-            // Set month display
             monthDisplay.textContent = new Date(year, month).toLocaleDateString('en-US', {
                 month: 'long',
                 year: 'numeric'
             });
 
-            // Clear grid
             grid.innerHTML = '';
 
-            // Day headers
             const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             dayHeaders.forEach(day => {
                 const header = document.createElement('div');
@@ -1291,20 +1286,17 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 grid.appendChild(header);
             });
 
-            // Get first day of month and total days
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            // Empty cells before first day
             for (let i = 0; i < firstDay; i++) {
                 const emptyDay = document.createElement('div');
                 emptyDay.className = 'calendar-day empty';
                 grid.appendChild(emptyDay);
             }
 
-            // Days of month
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayElement = document.createElement('div');
                 dayElement.className = 'calendar-day';
@@ -1312,34 +1304,26 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
                 const cellDate = new Date(year, month, day);
                 cellDate.setHours(0, 0, 0, 0);
-
-                // Use timezone-safe date formatting
                 const dateString = formatDate(cellDate);
 
-                // Check if past date
                 if (cellDate < today) {
                     dayElement.classList.add('disabled');
                     dayElement.title = 'Past date';
                 } else {
-                    // Check booking status
                     const booking = bookedDates[dateString];
 
                     if (booking) {
                         const dayBooked = booking.day;
                         const nightBooked = booking.night;
 
-                        // Both rates booked - fully booked
                         if (dayBooked && nightBooked) {
                             dayElement.classList.add('booked');
                             dayElement.title = 'Fully booked (Day & Night)';
-                        }
-                        // Partially booked - still selectable
-                        else if (dayBooked || nightBooked) {
+                        } else if (dayBooked || nightBooked) {
                             dayElement.classList.add('partial-booked');
                             const available = dayBooked ? 'Night' : 'Day';
                             dayElement.title = `Partially booked - ${available} available`;
 
-                            // Add a small indicator
                             const indicator = document.createElement('span');
                             indicator.className = 'partial-indicator';
                             indicator.textContent = '◐';
@@ -1347,18 +1331,15 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         }
                     }
 
-                    // Check if today
                     if (cellDate.getTime() === today.getTime()) {
                         dayElement.classList.add('today');
                     }
                 }
 
-                // Check if selected
                 if (selectedDate && selectedDate === dateString) {
                     dayElement.classList.add('selected');
                 }
 
-                // Click handler - allow clicking on partially booked dates
                 if (!dayElement.classList.contains('disabled') && !dayElement.classList.contains('booked')) {
                     dayElement.addEventListener('click', () => selectDate(dateString, dayElement));
                 }
@@ -1367,7 +1348,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
         }
 
-        // Function to show error modal with custom message
         function showErrorModal(message) {
             const errorMessageElement = document.getElementById('errorMessage');
             const errorModalElement = document.getElementById('errorModal');
@@ -1383,7 +1363,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const selectedRateType = document.getElementById('selectedRate')?.value || 'day';
             const booking = bookedDates[dateString];
 
-            // Check if the selected rate is available
             if (booking && booking[selectedRateType]) {
                 showErrorModal(`This date is already booked for <strong>${selectedRateType}</strong>. Please select the other rate or choose a different date.`);
                 return;
@@ -1393,8 +1372,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const dateInput = document.getElementById('reservationDate');
             if (dateInput) {
                 dateInput.value = dateString;
-
-                // Remove error styling when date is selected
                 dateInput.classList.remove('border-danger', 'is-invalid');
                 const existingError = dateInput.parentNode.querySelector('.invalid-feedback');
                 if (existingError) {
@@ -1402,15 +1379,12 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 }
             }
 
-            // Remove previous selection
             document.querySelectorAll('.calendar-day.selected').forEach(el => {
                 el.classList.remove('selected');
             });
 
-            // Add selection to clicked element
             element.classList.add('selected');
 
-            // If date is partially booked, show which rate is available
             if (booking && (booking.day || booking.night)) {
                 const availableRate = booking.day ? 'night' : 'day';
                 showRateAvailabilityMessage(dateString, availableRate);
@@ -1422,20 +1396,17 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (messageDiv) {
                 messageDiv.innerHTML = `<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Note: For ${date}, only <strong>${availableRate}</strong> rate is available.</div>`;
 
-                // Auto-select the available rate
                 const rateOption = document.querySelector(`[data-value="${availableRate}"]`);
                 if (rateOption) {
                     selectRate(rateOption, availableRate);
                 }
 
-                // Remove message after 5 seconds
                 setTimeout(() => {
                     messageDiv.innerHTML = '';
                 }, 5000);
             }
         }
 
-        // Calendar navigation
         const prevMonthBtn = document.getElementById('prevMonth');
         const nextMonthBtn = document.getElementById('nextMonth');
 
@@ -1511,17 +1482,16 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (files.length > 0) {
                 const file = files[0];
                 filePreview.innerHTML = `
-                    <div class="alert alert-success d-flex align-items-center">
-                        <i class="bi bi-file-earmark-check me-2"></i>
-                        <div>
-                            <strong>${file.name}</strong><br>
-                            <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
-                        </div>
-                        <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
+                <div class="alert alert-success d-flex align-items-center">
+                    <i class="bi bi-file-earmark-check me-2"></i>
+                    <div>
+                        <strong>${file.name}</strong><br>
+                        <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
                     </div>
-                `;
+                    <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
+                </div>
+            `;
 
-                // Remove highlight when file is added
                 const fileDropArea = document.getElementById('fileDropArea');
                 if (fileDropArea) {
                     fileDropArea.classList.remove('required-highlight');
@@ -1532,8 +1502,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         function clearFile() {
             if (fileInput) fileInput.value = '';
             if (filePreview) filePreview.innerHTML = '';
-
-            // Validate file upload after clearing
             validateFileUpload();
         }
 
@@ -1551,7 +1519,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             if (!searchInput || !dropdown || !clearBtn || !hiddenInput) return;
 
-            // Show dropdown on focus
             searchInput.addEventListener('focus', function () {
                 if (userOptions.length > 0) {
                     renderDropdownOptions();
@@ -1559,7 +1526,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 }
             });
 
-            // Filter on input
             searchInput.addEventListener('input', function () {
                 const searchTerm = this.value.toLowerCase();
 
@@ -1573,7 +1539,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 dropdown.classList.add('show');
             });
 
-            // Clear button
             clearBtn.addEventListener('click', function () {
                 searchInput.value = '';
                 hiddenInput.value = '';
@@ -1584,7 +1549,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 searchInput.focus();
             });
 
-            // Close dropdown when clicking outside
             document.addEventListener('click', function (e) {
                 if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
                     dropdown.classList.remove('show');
@@ -1643,7 +1607,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             clearBtn.classList.add('show');
             dropdown.classList.remove('show');
 
-            // Populate and disable user fields
             if (userData[option.id]) {
                 populateUserFields(userData[option.id]);
                 searchInput.style.borderColor = '#198754';
@@ -1840,13 +1803,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             fields.forEach(field => {
                 const element = field.id ? document.getElementById(field.id) : document.querySelector(`[name="${field.name}"]`);
                 if (element) {
-                    // Enable the field first
                     element.disabled = false;
-
-                    // Set the value
                     element.value = field.value;
-
-                    // Make it readonly (not editable)
                     element.readOnly = true;
                     element.setAttribute('readonly', 'readonly');
                 }
@@ -1863,8 +1821,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     element.value = '';
                     element.readOnly = false;
                     element.removeAttribute('readonly');
-
-                    // Disable the field
                     element.disabled = true;
                 }
             });
@@ -1875,8 +1831,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     element.value = '';
                     element.readOnly = false;
                     element.removeAttribute('readonly');
-
-                    // Disable the field
                     element.disabled = true;
                 }
             });
@@ -1886,7 +1840,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         // RATE & PAYMENT SELECTION
         // ============================================
         function selectRate(option, value) {
-            // Check if selected date has this rate booked
             if (selectedDate && bookedDates[selectedDate] && bookedDates[selectedDate][value]) {
                 showErrorModal(`The <strong>${value}</strong> rate is already booked for <strong>${selectedDate}</strong>. Please select the other rate or choose a different date.`);
                 return;
@@ -1952,7 +1905,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     fileInputElement.removeAttribute("required");
                 }
 
-                // Calculate change immediately
                 calculateChange();
             } else {
                 if (bankInfo) bankInfo.classList.remove("d-none");
@@ -1969,7 +1921,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 }
             }
 
-            // Validate file upload when payment method changes
             validateFileUpload();
         }
 
@@ -2027,12 +1978,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             calculateChange();
         }
 
-        // Add event listener for exclusive booking
-        const exclusiveBookingEl = document.getElementById("exclusiveBooking");
-        if (exclusiveBookingEl) {
-            exclusiveBookingEl.addEventListener("change", calculateTotal);
-        }
-
         function calculateChange() {
             const totalField = document.getElementById("total");
             const amountPaidField = document.getElementById("amountPaid");
@@ -2041,7 +1986,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             if (!totalField || !amountPaidField || !changeField) return;
 
-            // Only calculate change for cash payments
             if (paymentMethod !== 'cash') {
                 changeField.value = '';
                 return;
@@ -2052,7 +1996,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             const change = amountPaidValue - totalValue;
 
-            // Only show change if it's positive (no negative values)
             if (change > 0) {
                 changeField.value = change.toLocaleString("en-US", {
                     minimumFractionDigits: 2,
@@ -2061,7 +2004,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             } else if (change === 0) {
                 changeField.value = '0.00';
             } else {
-                // If change would be negative, show 0.00 or empty
                 changeField.value = '';
             }
         }
@@ -2078,7 +2020,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             const totalValue = parseFloat(totalField.value.replace(/,/g, '')) || 0;
             const amountPaidValue = parseFloat(amountPaidField.value) || 0;
-            const minimumPayment = totalValue * 0.5; // 50% of total
+            const minimumPayment = totalValue * 0.5;
 
             amountPaidField.classList.remove('border-danger', 'is-invalid');
             const existingFeedback = amountPaidField.parentNode.parentNode.querySelector('.invalid-feedback');
@@ -2086,11 +2028,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 existingFeedback.remove();
             }
 
-            // Check if amount paid is less than minimum (50%)
             if (totalValue > 0 && amountPaidValue < minimumPayment) {
                 amountPaidField.classList.add('border-danger', 'is-invalid');
-
-                // Set custom validity to prevent HTML5 validation checkmark
                 amountPaidField.setCustomValidity('Amount must be at least 50% of total');
 
                 const errorDiv = document.createElement('div');
@@ -2102,11 +2041,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 return false;
             }
 
-            // Only show "exceeds total" error for BANK payment method
             if (paymentMethod === 'bank' && amountPaidValue > totalValue && totalValue > 0) {
                 amountPaidField.classList.add('border-danger', 'is-invalid');
-
-                // Set custom validity
                 amountPaidField.setCustomValidity('Amount cannot exceed total');
 
                 const errorDiv = document.createElement('div');
@@ -2118,7 +2054,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 return false;
             }
 
-            // Clear custom validity if validation passes
             amountPaidField.setCustomValidity('');
             return true;
         }
@@ -2130,7 +2065,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             if (!fileInput || !fileDropArea) return true;
 
-            // Only validate for bank payment
             if (paymentMethod === 'bank') {
                 if (!fileInput.files || fileInput.files.length === 0) {
                     fileDropArea.classList.add('required-highlight');
@@ -2140,7 +2074,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     return true;
                 }
             } else {
-                // Remove highlight for cash payment
                 fileDropArea.classList.remove('required-highlight');
                 return true;
             }
@@ -2204,28 +2137,21 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             constraints.forEach(constraint => {
                 const field = document.getElementById(constraint.id);
                 if (field) {
-                    // Set max attribute
                     field.setAttribute('max', constraint.max);
 
-                    // Add input event listener
                     field.addEventListener('input', function () {
                         const value = parseInt(this.value);
 
-                        // If value exceeds max, set it to max
                         if (value > constraint.max) {
                             this.value = constraint.max;
-
-                            // Optional: Show brief feedback
                             showMaxValueNotification(constraint.name, constraint.max);
                         }
 
-                        // If value is negative, set to 0
                         if (value < 0) {
                             this.value = 0;
                         }
                     });
 
-                    // Add change event listener as backup
                     field.addEventListener('change', function () {
                         const value = parseInt(this.value);
 
@@ -2242,13 +2168,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         }
 
         function showMaxValueNotification(itemName, maxValue) {
-            // Remove existing notification if any
             const existingNotification = document.querySelector('.max-value-notification');
             if (existingNotification) {
                 existingNotification.remove();
             }
 
-            // Create notification
             const notification = document.createElement('div');
             notification.className = 'alert alert-warning alert-dismissible fade show max-value-notification';
             notification.style.position = 'fixed';
@@ -2257,14 +2181,13 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             notification.style.zIndex = '9999';
             notification.style.minWidth = '300px';
             notification.innerHTML = `
-        <i class="bi bi-exclamation-triangle me-2"></i>
-        <strong>Maximum Limit:</strong> ${itemName} cannot exceed ${maxValue}.
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Maximum Limit:</strong> ${itemName} cannot exceed ${maxValue}.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
 
             document.body.appendChild(notification);
 
-            // Auto-dismiss after 3 seconds
             setTimeout(() => {
                 if (notification && notification.parentNode) {
                     notification.classList.remove('show');
@@ -2284,55 +2207,42 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 submitButton.addEventListener('click', function (e) {
                     e.preventDefault();
 
-                    // Validate date FIRST
                     const dateInput = document.getElementById('reservationDate');
                     if (!dateInput || !dateInput.value) {
-                        // Add invalid styling to date input
                         dateInput.classList.add('border-danger', 'is-invalid');
 
-                        // Remove existing error if any
                         const existingError = dateInput.parentNode.querySelector('.invalid-feedback');
                         if (existingError) {
                             existingError.remove();
                         }
 
-                        // Add compact error message
                         const errorDiv = document.createElement('div');
                         errorDiv.className = 'invalid-feedback';
                         errorDiv.style.display = 'block';
                         errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Please select a reservation date from the calendar.';
                         dateInput.parentNode.appendChild(errorDiv);
 
-                        // Scroll to calendar
                         dateInput.closest('.mb-3').scrollIntoView({ behavior: 'smooth', block: 'center' });
-
                         return;
                     }
 
-                    // Validate amount paid
                     const amountValid = validateAmountPaid();
-
-                    // Validate file upload
                     const fileValid = validateFileUpload();
 
-                    // If amount paid validation fails, stop here
                     if (!amountValid) {
                         const amountPaidField = document.getElementById("amountPaid");
                         if (amountPaidField) {
                             amountPaidField.focus();
-                            // Scroll to the field
                             amountPaidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
                         return;
                     }
 
-                    // Now check HTML5 validation
                     if (!form.checkValidity()) {
                         form.classList.add('was-validated');
                         return;
                     }
 
-                    // Check file validation
                     if (!fileValid) {
                         const fileDropArea = document.getElementById('fileDropArea');
                         if (fileDropArea) {
@@ -2443,21 +2353,36 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             const amountPaidField = document.getElementById("amountPaid");
             if (amountPaidField) {
-                // Real-time validation and change calculation
                 amountPaidField.addEventListener('input', function () {
-                    calculateChange();  // Update change in real-time
-                    validateAmountPaid(); // Validate in real-time
+                    calculateChange();
+                    validateAmountPaid();
                 });
                 amountPaidField.addEventListener('change', function () {
-                    calculateChange();  // Update on change event
-                    validateAmountPaid(); // Validate on change
+                    calculateChange();
+                    validateAmountPaid();
                 });
                 amountPaidField.addEventListener('blur', validateAmountPaid);
             }
 
+            // Add event listeners for calculation fields
+            ["guests", "chairs", "tables"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener("input", calculateTotal);
+                    el.addEventListener("change", calculateTotal);
+                }
+            });
+
+            // Add event listener for exclusive booking
+            const exclusiveBookingEl = document.getElementById("exclusiveBooking");
+            if (exclusiveBookingEl) {
+                exclusiveBookingEl.addEventListener("input", calculateTotal);
+                exclusiveBookingEl.addEventListener("change", calculateTotal);
+            }
+
             initializeFormSubmission();
             initializeVehicleField();
-            initializeMaxValueConstraints(); // Add this line
+            initializeMaxValueConstraints();
             initializeModals();
 
             const today = new Date().toISOString().split("T")[0];
