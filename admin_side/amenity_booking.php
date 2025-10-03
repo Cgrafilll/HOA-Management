@@ -160,6 +160,8 @@ while ($row = $calendar_result->fetch_assoc()) {
             $timeSlot = "9:00 AM - 5:00 PM";
         } elseif ($row['rate'] === "night") {
             $timeSlot = "5:00 PM - 10:00 PM";
+        } else {
+            $timeSlot = "9:00 AM - 10:00 PM";
         }
     }
 
@@ -244,7 +246,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         while ($row = $result->fetch_assoc()) {
             $bookings[] = [
                 'date' => $row['reservation_date'],
-                'rate' => $row['rate'] // 'day' or 'night'
+                'rate' => $row['rate'] // 'day', 'night', or 'whole'
             ];
         }
 
@@ -770,13 +772,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                             $fullName = ucwords(trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']));
 
                                             $amenity = $row['amenity'];
-                                            $bookingDate = $row['reservation_date'];
+                                            $bookingDate = date('F j, Y', strtotime($row['reservation_date']));
                                             $resCode = $row['reservation_code'];
                                             $statusClass = $row['status'] === 'paid'
                                                 ? 'badge bg-success text-white'
                                                 : ($row['status'] === 'partial'
                                                     ? 'badge bg-primary text-white'
                                                     : 'badge bg-warning text-dark');
+
+                                            // Determine time display
+                                            $timeDisplay = $row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : '9:00 AM - 10:00 PM');
 
                                             echo "<tr>
                                                 <td>{$bookingDate}</td>
@@ -799,7 +804,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                                 reservationCode: \"" . $resCode . "\",
                                                                 paymentStatus: \"" . ucfirst($row['status']) . "\",
                                                                 amount: \"₱" . number_format($row['amount_paid'], 2) . ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : "") . "\",
-                                                                time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\"
+                                                                time: \"" . $timeDisplay . "\"
                                                             })'>
                                                             <i class='bi bi-eye'></i>
                                                         </button>
@@ -809,8 +814,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                                 id: \"" . $id . "\",
                                                                 fullName: \"" . addslashes($fullName) . "\",
                                                                 amenity: \"" . addslashes($amenity) . "\",
-                                                                date: \"" . $bookingDate . "\",
-                                                                time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\",
+                                                                date: \"" . $row['reservation_date'] . "\",
+                                                                time: \"" . $timeDisplay . "\",
                                                                 rate: \"" . $row['rate'] . "\"
                                                             })'>
                                                             <i class='bi bi-calendar2-week'></i>
@@ -928,10 +933,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                             $id = $row['id'];
                                             $fullName = ucwords(trim($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']));
                                             $amenity = $row['amenity'];
-                                            $currentDate = date('M d, Y', strtotime($row['reservation_date']));
-                                            $requestedDate = date('M d, Y', strtotime($row['requested_date']));
-                                            $currentTime = $row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : '5:00 PM - 10:00 PM';
-                                            $requestedTime = $row['requested_rate'] === 'day' ? '9:00 AM - 5:00 PM' : '5:00 PM - 10:00 PM';
+                                            $currentDate = date('F j, Y', strtotime($row['reservation_date']));
+                                            $requestedDate = date('F j, Y', strtotime($row['requested_date']));
+                                            $currentTime = $row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : '9:00 AM - 10:00 PM');
+                                            $requestedTime = $row['requested_rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['requested_rate'] === 'night' ? '5:00 PM - 10:00 PM' : '9:00 AM - 10:00 PM');
                                             $reason = htmlspecialchars($row['reschedule_reason']);
                                             $statusClass = $row['reschedule_status'] === 'approved'
                                                 ? 'badge bg-success text-white'
@@ -978,7 +983,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                             </tr>";
                                         }
                                     } else {
-                                        echo "<tr><td colspan='8' class='text-center text-muted'>No pending reschedule requests.</td></tr>";
+                                        echo "<tr><td colspan='9' class='text-center text-muted'>No pending reschedule requests.</td></tr>";
                                     }
                                     ?>
                                 </tbody>
@@ -1072,9 +1077,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                         <div class="border rounded p-2 h-100 rate-option" data-value="day"
                                             onclick="selectRescheduleRate(this, 'day')" style="cursor: pointer;">
                                             <div class="d-flex align-items-center gap-2">
-                                                <i class="bi bi-sun fs-4 text-primary"></i>
+                                                <i class="bi bi-sun fs-4 text-warning"></i>
                                                 <div>
-                                                    <strong class="d-block small">Day Rate</strong>
+                                                    <strong class="d-block small">Day</strong>
                                                     <small class="text-muted">9:00 AM - 5:00 PM</small>
                                                 </div>
                                             </div>
@@ -1086,8 +1091,20 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                             <div class="d-flex align-items-center gap-2">
                                                 <i class="bi bi-moon-stars fs-4 text-primary"></i>
                                                 <div>
-                                                    <strong class="d-block small">Night Rate</strong>
+                                                    <strong class="d-block small">Night</strong>
                                                     <small class="text-muted">5:00 PM - 10:00 PM</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4" style="display: none;">
+                                        <div class="border rounded p-2 h-100 rate-option" data-value="whole"
+                                            onclick="selectRescheduleRate(this, 'whole')" style="cursor: pointer;">
+                                            <div class="d-flex flex-column align-items-center gap-1">
+                                                <i class="bi bi-sun-fill fs-4 text-success"></i>
+                                                <div class="text-center">
+                                                    <strong class="d-block small">Whole Day</strong>
+                                                    <small class="text-muted">9:00 AM - 10:00 PM</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -1398,32 +1415,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             new bootstrap.Modal(document.getElementById('bookingModal')).show();
         }
 
-        // Function to open reschedule modal
-        function openRescheduleModal(booking) {
-            // Set booking ID
-            document.getElementById('reschedule_booking_id').value = booking.id;
-
-            // Display current booking info
-            document.getElementById('currentBookingInfo').innerHTML = `
-                <div><strong>Guest:</strong> ${booking.fullName}</div>
-                <div><strong>Amenity:</strong> ${booking.amenity}</div>
-                <div><strong>Current Date:</strong> ${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                <div><strong>Current Time:</strong> ${booking.time}</div>
-            `;
-
-            // Set minimum date to today
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('new_date').setAttribute('min', today);
-
-            // Clear form
-            document.getElementById('new_date').value = '';
-            document.getElementById('new_rate').value = '';
-            document.getElementById('reschedule_reason').value = '';
-
-            // Show modal
-            new bootstrap.Modal(document.getElementById('rescheduleModal')).show();
-        }
-
         function previousMonth() {
             currentDate.setMonth(currentDate.getMonth() - 1);
             renderCalendar();
@@ -1442,7 +1433,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         function setView(view) {
             currentView = view;
             document.getElementById('monthBtn').classList.toggle('active', view === 'month');
-            document.getElementById('weekBtn').classList.toggle('active', view === 'week');
 
             if (view === 'week') {
                 // You can implement week view here
@@ -1468,6 +1458,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             document.getElementById('reschedule_amenity').value = booking.amenity;
             rescheduleAmenity = booking.amenity;
 
+            // Store the current rate to determine which options to show
+            const currentRate = booking.rate;
+
             // Display current booking info
             document.getElementById('currentBookingInfo').innerHTML = `
                 <div><strong>Guest:</strong> ${booking.fullName}</div>
@@ -1476,12 +1469,35 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 <div><strong>Current Time:</strong> ${booking.time}</div>
             `;
 
+            // Show/hide whole day option based on current booking rate
+            const wholeOption = document.querySelector('.rate-option[data-value="whole"]');
+            const dayOption = document.querySelector('.rate-option[data-value="day"]');
+            const nightOption = document.querySelector('.rate-option[data-value="night"]');
+
+            if (wholeOption && dayOption && nightOption) {
+                if (currentRate === 'whole') {
+                    // Show all 3 options
+                    wholeOption.closest('.col-4').style.display = 'block';
+                    dayOption.closest('.col-6').className = 'col-4';
+                    nightOption.closest('.col-6').className = 'col-4';
+                } else {
+                    // Hide whole option, show only day and night in col-6
+                    wholeOption.closest('.col-4').style.display = 'none';
+                    dayOption.closest('.col-4').className = 'col-6';
+                    nightOption.closest('.col-4').className = 'col-6';
+                }
+            }
+
             // Reset selections
             rescheduleSelectedDate = null;
             document.getElementById('new_date').value = '';
+            document.getElementById('selected_date_display').value = '';
             document.getElementById('new_rate').value = '';
             document.getElementById('reschedule_reason').value = '';
-            document.querySelectorAll('.rate-option').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.rate-option').forEach(el => {
+                el.classList.remove('selected', 'border-primary', 'border-2', 'bg-primary', 'bg-opacity-10');
+                el.style.borderWidth = '1px';
+            });
 
             // Fetch booked dates and render calendar
             fetchRescheduleBookedDates();
@@ -1513,9 +1529,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         const rate = booking.rate;
 
                         if (!rescheduleBookedDates[dateKey]) {
-                            rescheduleBookedDates[dateKey] = { day: false, night: false };
+                            rescheduleBookedDates[dateKey] = { day: false, night: false, whole: false };
                         }
+
+                        // Mark the specific rate as booked
                         rescheduleBookedDates[dateKey][rate] = true;
+
+                        // If whole is booked, mark both day and night as booked too
+                        if (rate === 'whole') {
+                            rescheduleBookedDates[dateKey].day = true;
+                            rescheduleBookedDates[dateKey].night = true;
+                        }
                     });
 
                     renderRescheduleCalendar();
@@ -1599,7 +1623,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         // Both rates booked - fully booked
                         if (dayBooked && nightBooked) {
                             dayElement.classList.add('booked');
-                            dayElement.title = 'Fully booked (Day & Night)';
+                            dayElement.title = 'Fully booked';
                         }
                         // Partially booked - still selectable
                         else if (dayBooked || nightBooked) {
@@ -1699,25 +1723,43 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         function updateRescheduleRateOptions(booking) {
             const dayOption = document.querySelector('.rate-option[data-value="day"]');
             const nightOption = document.querySelector('.rate-option[data-value="night"]');
+            const wholeOption = document.querySelector('.rate-option[data-value="whole"]');
 
-            // Reset both options
+            // Reset all options
             [dayOption, nightOption].forEach(option => {
-                option.classList.remove('bg-secondary', 'bg-opacity-10', 'border-primary', 'border-2', 'bg-primary');
-                option.style.opacity = '1';
-                option.style.cursor = 'pointer';
-                option.style.borderWidth = '1px';
+                if (option) {
+                    option.classList.remove('bg-secondary', 'bg-opacity-10', 'border-primary', 'border-2', 'bg-primary');
+                    option.style.opacity = '1';
+                    option.style.cursor = 'pointer';
+                    option.style.borderWidth = '1px';
+                }
             });
 
+            if (wholeOption) {
+                wholeOption.classList.remove('bg-secondary', 'bg-opacity-10', 'border-primary', 'border-2', 'bg-primary');
+                wholeOption.style.opacity = '1';
+                wholeOption.style.cursor = 'pointer';
+                wholeOption.style.borderWidth = '1px';
+            }
+
             if (booking) {
-                if (booking.day) {
+                // Disable day if booked
+                if (booking.day && dayOption) {
                     dayOption.classList.add('bg-secondary', 'bg-opacity-10');
                     dayOption.style.opacity = '0.5';
                     dayOption.style.cursor = 'not-allowed';
                 }
-                if (booking.night) {
+                // Disable night if booked
+                if (booking.night && nightOption) {
                     nightOption.classList.add('bg-secondary', 'bg-opacity-10');
                     nightOption.style.opacity = '0.5';
                     nightOption.style.cursor = 'not-allowed';
+                }
+                // Disable whole if either is booked
+                if ((booking.day || booking.night) && wholeOption) {
+                    wholeOption.classList.add('bg-secondary', 'bg-opacity-10');
+                    wholeOption.style.opacity = '0.5';
+                    wholeOption.style.cursor = 'not-allowed';
                 }
             }
 
