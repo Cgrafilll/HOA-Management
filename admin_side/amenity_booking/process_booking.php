@@ -505,12 +505,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $amountPaid = isset($_POST['amountPaid']) ? (float) $_POST['amountPaid'] : 0.0;
 
-    // Determine status based on payment method
-    if ($payment === 'cash') {
-        $status = "partial";
+    // Calculate status based on amount paid vs total amount
+    if ($amountPaid >= $total) {
+        // Full payment or overpayment
+        $status = 'paid';
+    } elseif ($amountPaid >= ($total * 0.5)) {
+        // 50% or more paid (but less than full)
+        $status = 'partial';
     } else {
-        $status = "pending";
+        // Less than 50% paid
+        $status = 'pending';
     }
+    
     // Get the appropriate user ID based on user type
     $homeowner_id = null;
     $visitor_id = null;
