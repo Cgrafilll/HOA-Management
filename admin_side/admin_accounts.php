@@ -194,17 +194,13 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
         }
 
         .sidebar-nav {
-            padding-bottom: 80px;
+            padding-bottom: 20px;
         }
 
         .sidebar .logout {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 250px;
-            background-color: #1F2937;
-            padding: 12px 24px;
-            z-index: 1021;
+            position: relative;
+            width: 100%;
+            margin-top: 1rem;
         }
 
         .mobile-menu-btn {
@@ -257,10 +253,6 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                 font-size: 1rem !important;
             }
 
-            .sidebar .logout {
-                width: 250px;
-            }
-
             .table-responsive {
                 font-size: 0.85rem;
             }
@@ -289,6 +281,10 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             .sidebar {
                 top: 60px;
                 height: calc(100vh - 60px);
+            }
+
+            .sidebar-overlay {
+                top: 60px;
             }
 
             .table-responsive {
@@ -348,8 +344,10 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             </div>
         </div>
     </header>
+
     <!-- Sidebar Overlay for Mobile -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar p-3">
@@ -430,7 +428,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             </nav>
         </aside>
         <!-- Main Content -->
-        <main class="flex-fill p-4">
+        <main class="flex-grow-1 p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Admin Account Management</h5>
@@ -645,7 +643,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             </div>
         </main>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Mobile Menu Toggle
