@@ -356,10 +356,10 @@ $exit_result = $conn->query($exit_sql);
 
 <body class="bg-light">
     <!-- Header -->
-    <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
-        <i class="bi bi-list"></i>
-    </button>
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
         <div class="me-4 logo-container" style="width: 250px;">
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
