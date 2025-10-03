@@ -1100,9 +1100,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                     <div class="col-4">
                                         <div class="border rounded p-2 h-100 rate-option" data-value="whole"
                                             onclick="selectRescheduleRate(this, 'whole')" style="cursor: pointer;">
-                                            <div class="d-flex flex-column align-items-center gap-2">
+                                            <div class="d-flex align-items-center gap-2">
                                                 <i class="bi bi-sun-fill fs-4 text-success"></i>
-                                                <div class="text-center">
+                                                <div>
                                                     <strong class="d-block small">Whole Day</strong>
                                                     <small class="text-muted">9:00 AM - 10:00 PM</small>
                                                 </div>
@@ -1450,6 +1450,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         let rescheduleCurrentDate = new Date();
         let rescheduleSelectedDate = null;
         let rescheduleAmenity = null;
+        let rescheduleOriginalRate = null; // Add this new variable
 
         // Function to open reschedule modal
         function openRescheduleModal(booking) {
@@ -1460,14 +1461,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
 
             // Store the current rate to determine which options to show
             const currentRate = booking.rate;
+            rescheduleOriginalRate = currentRate; // Store it globally
 
             // Display current booking info
             document.getElementById('currentBookingInfo').innerHTML = `
-        <div><strong>Guest:</strong> ${booking.fullName}</div>
-        <div><strong>Amenity:</strong> ${booking.amenity}</div>
-        <div><strong>Current Date:</strong> ${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-        <div><strong>Current Time:</strong> ${booking.time}</div>
-    `;
+                <div><strong>Guest:</strong> ${booking.fullName}</div>
+                <div><strong>Amenity:</strong> ${booking.amenity}</div>
+                <div><strong>Current Date:</strong> ${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                <div><strong>Current Time:</strong> ${booking.time}</div>
+            `;
 
             // Get rate option elements
             const wholeOption = document.querySelector('.rate-option[data-value="whole"]');
@@ -1504,16 +1506,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     nightOption.style.opacity = '0.5';
                     nightOption.style.cursor = 'not-allowed';
                     nightOption.style.pointerEvents = 'none';
-
-                    // Whole option remains enabled (already reset above)
                 } else {
                     // If original booking is DAY or NIGHT: enable day and night, disable whole
                     wholeOption.classList.add('bg-secondary', 'bg-opacity-10');
                     wholeOption.style.opacity = '0.5';
                     wholeOption.style.cursor = 'not-allowed';
                     wholeOption.style.pointerEvents = 'none';
-
-                    // Day and night options remain enabled (already reset above)
                 }
             }
 
@@ -1754,41 +1752,76 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             const nightOption = document.querySelector('.rate-option[data-value="night"]');
             const wholeOption = document.querySelector('.rate-option[data-value="whole"]');
 
-            // Reset all options
-            [dayOption, nightOption].forEach(option => {
-                if (option) {
-                    option.classList.remove('bg-secondary', 'bg-opacity-10', 'border-primary', 'border-2', 'bg-primary');
-                    option.style.opacity = '1';
-                    option.style.cursor = 'pointer';
-                    option.style.borderWidth = '1px';
-                }
-            });
-
-            if (wholeOption) {
-                wholeOption.classList.remove('bg-secondary', 'bg-opacity-10', 'border-primary', 'border-2', 'bg-primary');
-                wholeOption.style.opacity = '1';
-                wholeOption.style.cursor = 'pointer';
-                wholeOption.style.borderWidth = '1px';
-            }
-
-            if (booking) {
-                // Disable day if booked
-                if (booking.day && dayOption) {
+            // First, apply the original booking rate restrictions
+            if (rescheduleOriginalRate === 'whole') {
+                // If original booking is WHOLE: always keep day and night disabled
+                if (dayOption) {
                     dayOption.classList.add('bg-secondary', 'bg-opacity-10');
                     dayOption.style.opacity = '0.5';
                     dayOption.style.cursor = 'not-allowed';
+                    dayOption.style.pointerEvents = 'none';
                 }
-                // Disable night if booked
-                if (booking.night && nightOption) {
+                if (nightOption) {
                     nightOption.classList.add('bg-secondary', 'bg-opacity-10');
                     nightOption.style.opacity = '0.5';
                     nightOption.style.cursor = 'not-allowed';
+                    nightOption.style.pointerEvents = 'none';
                 }
-                // Disable whole if either is booked
-                if ((booking.day || booking.night) && wholeOption) {
+                // Reset whole option (it should be enabled unless booked on selected date)
+                if (wholeOption) {
+                    wholeOption.classList.remove('bg-secondary', 'bg-opacity-10', 'border-primary', 'border-2', 'bg-primary');
+                    wholeOption.style.opacity = '1';
+                    wholeOption.style.cursor = 'pointer';
+                    wholeOption.style.pointerEvents = 'auto';
+                    wholeOption.style.borderWidth = '1px';
+                }
+            } else {
+                // If original booking is DAY or NIGHT: always keep whole disabled
+                if (wholeOption) {
                     wholeOption.classList.add('bg-secondary', 'bg-opacity-10');
                     wholeOption.style.opacity = '0.5';
                     wholeOption.style.cursor = 'not-allowed';
+                    wholeOption.style.pointerEvents = 'none';
+                }
+                // Reset day and night options (they should be enabled unless booked on selected date)
+                [dayOption, nightOption].forEach(option => {
+                    if (option) {
+                        option.classList.remove('bg-secondary', 'bg-opacity-10', 'border-primary', 'border-2', 'bg-primary');
+                        option.style.opacity = '1';
+                        option.style.cursor = 'pointer';
+                        option.style.pointerEvents = 'auto';
+                        option.style.borderWidth = '1px';
+                    }
+                });
+            }
+
+            // Then, apply additional restrictions based on what's booked on the selected date
+            if (booking) {
+                // Only apply these restrictions if the options aren't already permanently disabled
+                if (rescheduleOriginalRate !== 'whole') {
+                    // Day and night are available options, so check if they're booked
+                    if (booking.day && dayOption) {
+                        dayOption.classList.add('bg-secondary', 'bg-opacity-10');
+                        dayOption.style.opacity = '0.5';
+                        dayOption.style.cursor = 'not-allowed';
+                        dayOption.style.pointerEvents = 'none';
+                    }
+                    if (booking.night && nightOption) {
+                        nightOption.classList.add('bg-secondary', 'bg-opacity-10');
+                        nightOption.style.opacity = '0.5';
+                        nightOption.style.cursor = 'not-allowed';
+                        nightOption.style.pointerEvents = 'none';
+                    }
+                }
+
+                if (rescheduleOriginalRate === 'whole') {
+                    // Whole is the available option, check if it's booked
+                    if ((booking.day || booking.night) && wholeOption) {
+                        wholeOption.classList.add('bg-secondary', 'bg-opacity-10');
+                        wholeOption.style.opacity = '0.5';
+                        wholeOption.style.cursor = 'not-allowed';
+                        wholeOption.style.pointerEvents = 'none';
+                    }
                 }
             }
 
