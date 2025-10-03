@@ -982,73 +982,73 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                     ?>
                                 </tbody>
                             </table>
-                            <div class="d-flex justify-content-between align-items-center mt-2">
-                                <?php
-                                $start = $totalEntries > 0 ? $offset + 1 : 0;
-                                $end = min($offset + $entriesPerPage, $totalEntries);
-                                echo "<span class='small'>Showing $start to $end of $totalEntries entries</span>";
-                                ?>
-                                <nav>
-                                    <ul class="pagination pagination-sm m-0">
-                                        <?php
-                                        if ($totalEntries > 0) {
-                                            // Previous button
-                                            $prevDisabled = $currentPage <= 1 ? 'disabled' : '';
-                                            $prevPage = $currentPage - 1;
-                                            echo "<li class='page-item $prevDisabled'>";
-                                            if ($currentPage > 1) {
-                                                echo "<a class='page-link' href='?page=$prevPage'>Previous</a>";
-                                            } else {
-                                                echo "<a class='page-link'>Previous</a>";
-                                            }
-                                            echo "</li>";
-
-                                            // Page numbers
-                                            $startPage = max(1, $currentPage - 2);
-                                            $endPage = min($totalPages, $currentPage + 2);
-
-                                            // First page and ellipsis
-                                            if ($startPage > 1) {
-                                                echo "<li class='page-item'><a class='page-link' href='?page=1'>1</a></li>";
-                                                if ($startPage > 2) {
-                                                    echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
-                                                }
-                                            }
-
-                                            // Page range
-                                            for ($i = $startPage; $i <= $endPage; $i++) {
-                                                $activeClass = $i == $currentPage ? 'active' : '';
-                                                echo "<li class='page-item $activeClass'><a class='page-link' href='?page=$i'>$i</a></li>";
-                                            }
-
-                                            // Last page and ellipsis
-                                            if ($endPage < $totalPages) {
-                                                if ($endPage < $totalPages - 1) {
-                                                    echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
-                                                }
-                                                echo "<li class='page-item'><a class='page-link' href='?page=$totalPages'>$totalPages</a></li>";
-                                            }
-
-                                            // Next button
-                                            $nextDisabled = $currentPage >= $totalPages ? 'disabled' : '';
-                                            $nextPage = $currentPage + 1;
-                                            echo "<li class='page-item $nextDisabled'>";
-                                            if ($currentPage < $totalPages) {
-                                                echo "<a class='page-link' href='?page=$nextPage'>Next</a>";
-                                            } else {
-                                                echo "<a class='page-link'>Next</a>";
-                                            }
-                                            echo "</li>";
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <?php
+                            $start = $totalEntries > 0 ? $offset + 1 : 0;
+                            $end = min($offset + $entriesPerPage, $totalEntries);
+                            echo "<span class='small'>Showing $start to $end of $totalEntries entries</span>";
+                            ?>
+                            <nav>
+                                <ul class="pagination pagination-sm m-0">
+                                    <?php
+                                    if ($totalEntries > 0) {
+                                        // Previous button
+                                        $prevDisabled = $currentPage <= 1 ? 'disabled' : '';
+                                        $prevPage = $currentPage - 1;
+                                        echo "<li class='page-item $prevDisabled'>";
+                                        if ($currentPage > 1) {
+                                            echo "<a class='page-link' href='?page=$prevPage'>Previous</a>";
                                         } else {
-                                            // Show disabled pagination when no entries
-                                            echo "<li class='page-item disabled'><a class='page-link'>Previous</a></li>";
-                                            echo "<li class='page-item active'><a class='page-link'>1</a></li>";
-                                            echo "<li class='page-item disabled'><a class='page-link'>Next</a></li>";
+                                            echo "<a class='page-link'>Previous</a>";
                                         }
-                                        ?>
-                                    </ul>
-                                </nav>
-                            </div>
+                                        echo "</li>";
+
+                                        // Page numbers
+                                        $startPage = max(1, $currentPage - 2);
+                                        $endPage = min($totalPages, $currentPage + 2);
+
+                                        // First page and ellipsis
+                                        if ($startPage > 1) {
+                                            echo "<li class='page-item'><a class='page-link' href='?page=1'>1</a></li>";
+                                            if ($startPage > 2) {
+                                                echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
+                                            }
+                                        }
+
+                                        // Page range
+                                        for ($i = $startPage; $i <= $endPage; $i++) {
+                                            $activeClass = $i == $currentPage ? 'active' : '';
+                                            echo "<li class='page-item $activeClass'><a class='page-link' href='?page=$i'>$i</a></li>";
+                                        }
+
+                                        // Last page and ellipsis
+                                        if ($endPage < $totalPages) {
+                                            if ($endPage < $totalPages - 1) {
+                                                echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
+                                            }
+                                            echo "<li class='page-item'><a class='page-link' href='?page=$totalPages'>$totalPages</a></li>";
+                                        }
+
+                                        // Next button
+                                        $nextDisabled = $currentPage >= $totalPages ? 'disabled' : '';
+                                        $nextPage = $currentPage + 1;
+                                        echo "<li class='page-item $nextDisabled'>";
+                                        if ($currentPage < $totalPages) {
+                                            echo "<a class='page-link' href='?page=$nextPage'>Next</a>";
+                                        } else {
+                                            echo "<a class='page-link'>Next</a>";
+                                        }
+                                        echo "</li>";
+                                    } else {
+                                        // Show disabled pagination when no entries
+                                        echo "<li class='page-item disabled'><a class='page-link'>Previous</a></li>";
+                                        echo "<li class='page-item active'><a class='page-link'>1</a></li>";
+                                        echo "<li class='page-item disabled'><a class='page-link'>Next</a></li>";
+                                    }
+                                    ?>
+                                </ul>
+                            </nav>
                         </div>
                     </div>
                     <!-- Calendar View -->
