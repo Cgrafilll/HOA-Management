@@ -1607,6 +1607,13 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             clearBtn.classList.add('show');
             dropdown.classList.remove('show');
 
+            // Remove error styling when user is selected
+            searchInput.classList.remove('border-danger', 'is-invalid');
+            const existingError = searchInput.parentNode.querySelector('.invalid-feedback');
+            if (existingError) {
+                existingError.remove();
+            }
+
             if (userData[option.id]) {
                 populateUserFields(userData[option.id]);
                 searchInput.style.borderColor = '#198754';
@@ -2199,6 +2206,9 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         // ============================================
         // FORM SUBMISSION
         // ============================================
+        // ============================================
+        // FORM SUBMISSION
+        // ============================================
         function initializeFormSubmission() {
             const form = document.getElementById('reservationForm');
             const submitButton = form?.querySelector('button[type="submit"]');
@@ -2207,6 +2217,35 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 submitButton.addEventListener('click', function (e) {
                     e.preventDefault();
 
+                    // Validate user selection FIRST
+                    const userIdInput = document.getElementById('userId');
+                    const userIdSearch = document.getElementById('userIdSearch');
+
+                    if (!userIdInput || !userIdInput.value) {
+                        // Add invalid styling to search input
+                        if (userIdSearch) {
+                            userIdSearch.classList.add('border-danger', 'is-invalid');
+
+                            // Remove existing error if any
+                            const existingError = userIdSearch.parentNode.querySelector('.invalid-feedback');
+                            if (existingError) {
+                                existingError.remove();
+                            }
+
+                            // Add compact error message
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'invalid-feedback';
+                            errorDiv.style.display = 'block';
+                            errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Please select a user from the dropdown.';
+                            userIdSearch.parentNode.appendChild(errorDiv);
+
+                            // Scroll to field
+                            userIdSearch.closest('.mb-3').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        return;
+                    }
+
+                    // Validate date
                     const dateInput = document.getElementById('reservationDate');
                     if (!dateInput || !dateInput.value) {
                         dateInput.classList.add('border-danger', 'is-invalid');
@@ -2226,6 +2265,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         return;
                     }
 
+                    // Validate amount paid
                     const amountValid = validateAmountPaid();
                     const fileValid = validateFileUpload();
 
