@@ -896,8 +896,13 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <?php if ($amenity !== "Gazebo" && $amenity !== "Clubhouse"): ?>
                                     <!-- Guests -->
                                     <div class="form-floating mb-3">
-                                        <input type="number" class="form-control" id="guests" name="guests" min="0">
+                                        <input type="number" class="form-control" id="guests" name="guests" min="10"
+                                            max="25" value="10">
                                         <label for="guests">Guests<small class="fw-bold text-danger">*</small></label>
+                                    </div>
+                                    <div class="form-text text-muted mb-3">
+                                        <small><i class="bi bi-info-circle me-1"></i>Minimum: 10 guests, Maximum: 25
+                                            guests</small>
                                     </div>
                                 <?php endif; ?>
                                 <?php if ($amenity === "Swimming Pool"): ?>
@@ -1607,8 +1612,9 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             clearBtn.classList.add('show');
             dropdown.classList.remove('show');
 
-            // Remove error styling when user is selected
+            // Remove error styling and clear custom validity when user is selected
             searchInput.classList.remove('border-danger', 'is-invalid');
+            searchInput.setCustomValidity(''); // Clear custom validity
             const existingError = searchInput.parentNode.querySelector('.invalid-feedback');
             if (existingError) {
                 existingError.remove();
@@ -1619,7 +1625,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 searchInput.style.borderColor = '#198754';
                 searchInput.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
             }
-        }
+        } z
 
         function resetSearchableDropdown() {
             const searchInput = document.getElementById('userIdSearch');
@@ -2136,29 +2142,44 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         // ============================================
         function initializeMaxValueConstraints() {
             const constraints = [
-                { id: 'chairs', max: 40, name: 'Chairs' },
-                { id: 'tables', max: 15, name: 'Tables' },
-                { id: 'cars', max: 3, name: 'Vehicles' }
+                { id: 'guests', min: 10, max: 25, name: 'Guests' },
+                { id: 'chairs', min: 0, max: 40, name: 'Chairs' },
+                { id: 'tables', min: 0, max: 15, name: 'Tables' },
+                { id: 'cars', min: 0, max: 3, name: 'Vehicles' }
             ];
 
             constraints.forEach(constraint => {
                 const field = document.getElementById(constraint.id);
                 if (field) {
+                    // Set min and max attributes
+                    if (constraint.min !== undefined) {
+                        field.setAttribute('min', constraint.min);
+                    }
                     field.setAttribute('max', constraint.max);
 
+                    // Add input event listener
                     field.addEventListener('input', function () {
                         const value = parseInt(this.value);
 
+                        // If value exceeds max, set it to max
                         if (value > constraint.max) {
                             this.value = constraint.max;
-                            showMaxValueNotification(constraint.name, constraint.max);
+                            showMaxValueNotification(constraint.name, constraint.max, 'maximum');
                         }
 
+                        // If value is below min (and field has a min), set it to min
+                        if (constraint.min !== undefined && value < constraint.min && this.value !== '') {
+                            this.value = constraint.min;
+                            showMinValueNotification(constraint.name, constraint.min);
+                        }
+
+                        // If value is negative for fields without explicit min, set to their min or 0
                         if (value < 0) {
-                            this.value = 0;
+                            this.value = constraint.min !== undefined ? constraint.min : 0;
                         }
                     });
 
+                    // Add change event listener as backup
                     field.addEventListener('change', function () {
                         const value = parseInt(this.value);
 
@@ -2166,7 +2187,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             this.value = constraint.max;
                         }
 
-                        if (value < 0 || isNaN(value)) {
+                        if (constraint.min !== undefined && (value < constraint.min || isNaN(value))) {
+                            this.value = constraint.min;
+                        }
+
+                        if (!constraint.min && (value < 0 || isNaN(value))) {
                             this.value = 0;
                         }
                     });
@@ -2174,7 +2199,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             });
         }
 
-        function showMaxValueNotification(itemName, maxValue) {
+        function showMaxValueNotification(itemName, maxValue, type = 'maximum') {
             const existingNotification = document.querySelector('.max-value-notification');
             if (existingNotification) {
                 existingNotification.remove();
@@ -2188,10 +2213,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             notification.style.zIndex = '9999';
             notification.style.minWidth = '300px';
             notification.innerHTML = `
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            <strong>Maximum Limit:</strong> ${itemName} cannot exceed ${maxValue}.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Maximum Limit:</strong> ${itemName} cannot exceed ${maxValue}.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
 
             document.body.appendChild(notification);
 
@@ -2203,9 +2228,35 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }, 3000);
         }
 
-        // ============================================
-        // FORM SUBMISSION
-        // ============================================
+        function showMinValueNotification(itemName, minValue) {
+            const existingNotification = document.querySelector('.max-value-notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-warning alert-dismissible fade show max-value-notification';
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '9999';
+            notification.style.minWidth = '300px';
+            notification.innerHTML = `
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Minimum Requirement:</strong> ${itemName} must be at least ${minValue}.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification && notification.parentNode) {
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 150);
+                }
+            }, 3000);
+        }
+
         // ============================================
         // FORM SUBMISSION
         // ============================================
@@ -2226,6 +2277,9 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         if (userIdSearch) {
                             userIdSearch.classList.add('border-danger', 'is-invalid');
 
+                            // Set custom validity to remove checkmark
+                            userIdSearch.setCustomValidity('Please select a user');
+
                             // Remove existing error if any
                             const existingError = userIdSearch.parentNode.querySelector('.invalid-feedback');
                             if (existingError) {
@@ -2236,7 +2290,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             const errorDiv = document.createElement('div');
                             errorDiv.className = 'invalid-feedback';
                             errorDiv.style.display = 'block';
-                            errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Please select a user.';
+                            errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Please select a user from the dropdown.';
                             userIdSearch.parentNode.appendChild(errorDiv);
 
                             // Scroll to field
