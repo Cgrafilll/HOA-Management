@@ -154,12 +154,14 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
 
         .sidebar a:hover,
         .sidebar button:hover,
-        .collapse ul li a:hover {
+        .collapse ul li a:hover,
+        .collapse ul li a.actived {
             color: #80ed99;
         }
 
         .sidebar .nav-link.active,
-        .sidebar .btn-toggle:not(.collapsed) {
+        .sidebar .btn-toggle:not(.collapsed),
+        .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
         }
@@ -193,45 +195,6 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             transform: rotate(180deg);
         }
 
-        .chart-container {
-            position: relative;
-            height: 300px;
-        }
-
-        .metric-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 1rem;
-        }
-
-        .metric-card.green {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        }
-
-        .metric-card.orange {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .metric-card.blue {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-
-        .sidebar-nav {
-            padding-bottom: 80px;
-        }
-
-        .sidebar .logout {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 250px;
-            background-color: #1F2937;
-            padding: 12px 24px;
-            z-index: 1021;
-        }
-
         .mobile-menu-btn {
             display: none;
         }
@@ -256,6 +219,8 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             .sidebar {
                 transform: translateX(-100%);
                 top: 76px;
+                height: 100vh;
+                background-color: #283548;
             }
 
             .sidebar.show {
@@ -278,8 +243,17 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                 font-size: 1rem !important;
             }
 
-            .sidebar .logout {
-                width: 250px;
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .sidebar-overlay {
+                top: 0;
             }
         }
 
@@ -300,7 +274,28 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
 
             .sidebar {
                 top: 76px;
-                height: calc(100vh - 76px);
+                height: 100vh;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .table-responsive {
+                font-size: 0.75rem;
+            }
+
+            .pagination {
+                font-size: 0.8rem;
+            }
+
+            .d-flex.gap-2 {
+                flex-direction: column;
+                gap: 0.5rem !important;
+            }
+
+            .d-flex.gap-2 .btn {
+                width: 100%;
             }
         }
     </style>
