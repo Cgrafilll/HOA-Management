@@ -1950,9 +1950,20 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const rateType = document.getElementById("selectedRate")?.value;
             const exclusiveBooking = document.getElementById("exclusiveBooking")?.value;
 
-            let guests = parseInt(document.getElementById("guests")?.value || 0);
+            // Get and validate guests (min 10, max 25)
+            let guests = parseInt(document.getElementById("guests")?.value || 10);
+            if (guests < 10) guests = 10;
+            if (guests > 25) guests = 25;
+
+            // Get and validate chairs (min 0, max 40)
             let chairs = parseInt(document.getElementById("chairs")?.value || 0);
+            if (chairs < 0) chairs = 0;
+            if (chairs > 40) chairs = 40;
+
+            // Get and validate tables (min 0, max 15)
             let tables = parseInt(document.getElementById("tables")?.value || 0);
+            if (tables < 0) tables = 0;
+            if (tables > 15) tables = 15;
 
             let rateStr = amenityRates[currentAmenity]?.[userType]?.[rateType] || "₱0";
             let rateValue = extractPrice(rateStr);
@@ -1990,7 +2001,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             // Recalculate change if payment method is cash
             calculateChange();
         }
-
+        
         function calculateChange() {
             const totalField = document.getElementById("total");
             const amountPaidField = document.getElementById("amountPaid");
