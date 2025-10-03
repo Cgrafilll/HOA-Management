@@ -270,19 +270,6 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             transition: transform 0.3s ease;
         }
 
-        .sidebar::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .sidebar::-webkit-scrollbar-track {
-            background: #1F2937;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background: #4B5563;
-            border-radius: 3px;
-        }
-
         main {
             margin-left: 250px;
             margin-top: 76px;
@@ -302,14 +289,42 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
 
         .sidebar a:hover,
         .sidebar button:hover,
-        .collapse ul li a:hover {
+        .collapse ul li a:hover,
+        .collapse ul li a.actived {
             color: #80ed99;
         }
 
         .sidebar .nav-link.active,
-        .sidebar .btn-toggle:not(.collapsed) {
+        .sidebar .btn-toggle:not(.collapsed),
+        .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar .logout {
+            flex-shrink: 0;
+            border-top: 1px solid #374151;
+            padding-top: 12px;
         }
 
         .sidebar .btn-toggle {
@@ -341,6 +356,25 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             transform: rotate(180deg);
         }
 
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
         .chart-container {
             position: relative;
             height: 300px;
@@ -366,20 +400,6 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         }
 
-        .sidebar-nav {
-            padding-bottom: 80px;
-        }
-
-        .sidebar .logout {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 250px;
-            background-color: #1F2937;
-            padding: 12px 24px;
-            z-index: 1021;
-        }
-
         .mobile-menu-btn {
             display: none;
         }
@@ -403,6 +423,7 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
+                top: 76px;
             }
 
             .sidebar.show {
@@ -419,6 +440,23 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
 
             .mobile-menu-btn {
                 display: inline-block;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .sidebar-overlay {
+                top: 0;
             }
 
             .chart-container {
@@ -440,14 +478,6 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             .card-header {
                 font-size: 0.9rem;
             }
-
-            header h1 {
-                font-size: 1rem !important;
-            }
-
-            .sidebar .logout {
-                width: 250px;
-            }
         }
 
         @media (max-width: 576px) {
@@ -457,17 +487,20 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             }
 
             header h1 {
-                display: none;
+                font-size: 1rem !important;
             }
 
             main {
-                margin-top: 60px;
+                margin-top: 76px;
                 padding: 0.75rem !important;
             }
 
             .sidebar {
-                top: 60px;
-                height: calc(100vh - 60px);
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
             }
 
             .chart-container {
@@ -530,8 +563,8 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1 sidebar-nav">
+        <aside class="sidebar">
+            <nav class="nav flex-column gap-1 sidebar-nav p-3">
                 <a href="admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -836,35 +869,8 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="javascripts/mobileSidebar.js"></script>
     <script>
-        // Mobile Menu Toggle
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const sidebar = document.querySelector('.sidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-        if (mobileMenuBtn && sidebar && sidebarOverlay) {
-            mobileMenuBtn.addEventListener('click', function () {
-                sidebar.classList.toggle('show');
-                sidebarOverlay.classList.toggle('show');
-            });
-
-            sidebarOverlay.addEventListener('click', function () {
-                sidebar.classList.remove('show');
-                sidebarOverlay.classList.remove('show');
-            });
-
-            // Close sidebar when clicking a link on mobile
-            const sidebarLinks = sidebar.querySelectorAll('a');
-            sidebarLinks.forEach(link => {
-                link.addEventListener('click', function () {
-                    if (window.innerWidth <= 768) {
-                        sidebar.classList.remove('show');
-                        sidebarOverlay.classList.remove('show');
-                    }
-                });
-            });
-        }
-
         // Entry Trend Chart
         new Chart(document.getElementById('entryTrendChart'), {
             type: 'line',
@@ -895,11 +901,44 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                 datasets: [{
                     label: 'Bookings',
                     data: <?php echo json_encode($amenity_bookings); ?>,
-                    backgroundColor: '#198754',
+                    backgroundColor: [
+                        '#198754', // Clubhouse - Green
+                        '#0d6efd', // Swimming Pool - Blue
+                        '#ffc107', // Gazebo - Yellow
+                        '#dc3545'  // Basketball - Red
+                    ],
                     borderRadius: 6
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            generateLabels: function (chart) {
+                                const data = chart.data;
+                                return data.labels.map((label, i) => ({
+                                    text: label,
+                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                    hidden: false,
+                                    index: i
+                                }));
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
         });
 
         // Revenue Category Chart

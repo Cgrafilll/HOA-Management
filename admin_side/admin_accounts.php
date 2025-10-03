@@ -646,35 +646,8 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="javascripts/mobileSidebar.js"></script>
     <script>
-        // Mobile Menu Toggle
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-        const sidebar = document.querySelector('.sidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-        if (mobileMenuBtn && sidebar && sidebarOverlay) {
-            mobileMenuBtn.addEventListener('click', function () {
-                sidebar.classList.toggle('show');
-                sidebarOverlay.classList.toggle('show');
-            });
-
-            sidebarOverlay.addEventListener('click', function () {
-                sidebar.classList.remove('show');
-                sidebarOverlay.classList.remove('show');
-            });
-
-            // Close sidebar when clicking a link on mobile
-            const sidebarLinks = sidebar.querySelectorAll('a');
-            sidebarLinks.forEach(link => {
-                link.addEventListener('click', function () {
-                    if (window.innerWidth <= 768) {
-                        sidebar.classList.remove('show');
-                        sidebarOverlay.classList.remove('show');
-                    }
-                });
-            });
-        }
-
         // Your existing archive/delete functionality
         let selectedId = null;
 
