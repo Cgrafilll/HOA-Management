@@ -1625,7 +1625,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 searchInput.style.borderColor = '#198754';
                 searchInput.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
             }
-        } z
+        }
 
         function resetSearchableDropdown() {
             const searchInput = document.getElementById('userIdSearch');
