@@ -1128,8 +1128,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                         <th>Reservation Code</th>
                                         <th>Current Date</th>
                                         <th>Requested Date</th>
-                                        <th>Reason</th>
                                         <th>Requested At</th>
+                                        <th>Reason</th>
                                         <th class="text-center">Status</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
@@ -1152,44 +1152,47 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                 : ($row['reschedule_status'] === 'rejected'
                                                     ? 'badge bg-danger text-white'
                                                     : 'badge bg-warning text-dark');
-                                            $requestedAt = date('M d, Y h:i A', strtotime($row['reschedule_requested_at']));
+
+                                            // Format requested at date and time separately
+                                            $requestedAtDate = date('F j, Y', strtotime($row['reschedule_requested_at']));
+                                            $requestedAtTime = date('h:i A', strtotime($row['reschedule_requested_at']));
 
                                             echo "<tr>
-                <td>{$fullName}</td>
-                <td><span class='badge bg-secondary'>{$amenity}</span></td>
-                <td>{$row['reservation_code']}</td>
-                <td>{$currentDate}<br><small class='text-muted'>{$currentTime}</small></td>
-                <td><span class='text-primary fw-bold'>{$requestedDate}</span><br><small class='text-muted'>{$requestedTime}</small></td>
-                <td>{$reason}</td>
-                <td>{$requestedAt}</td>
-                <td class='text-center'>
-                    <span class='" . $statusClass . " fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>
-                        " . ucfirst($row['reschedule_status']) . "
-                    </span>
-                </td>
-                <td class='text-center'>
-                    <button class='btn btn-sm btn-success me-1' title='Approve' 
-                        data-id='{$id}' 
-                        data-action='approve'
-                        data-name='{$fullName}'
-                        data-amenity='{$amenity}'
-                        data-date='{$requestedDate}'
-                        data-bs-toggle='modal' 
-                        data-bs-target='#confirmRescheduleModal'>
-                        <i class='bi bi-check2-circle'></i>
-                    </button>
-                    <button class='btn btn-sm btn-danger' title='Reject' 
-                        data-id='{$id}'
-                        data-action='reject'
-                        data-name='{$fullName}'
-                        data-amenity='{$amenity}'
-                        data-date='{$requestedDate}'
-                        data-bs-toggle='modal' 
-                        data-bs-target='#confirmRescheduleModal'>
-                        <i class='bi bi-x-circle'></i>
-                    </button>
-                </td>
-            </tr>";
+                                                <td>{$fullName}</td>
+                                                <td><span class='badge bg-secondary'>{$amenity}</span></td>
+                                                <td>{$row['reservation_code']}</td>
+                                                <td>{$currentDate}<br><small class='text-muted'>{$currentTime}</small></td>
+                                                <td><span class='text-primary fw-bold'>{$requestedDate}</span><br><small class='text-muted'>{$requestedTime}</small></td>
+                                                <td>{$requestedAtDate}<br><small class='text-muted'>{$requestedAtTime}</small></td>
+                                                <td>{$reason}</td>
+                                                <td class='text-center'>
+                                                    <span class='" . $statusClass . " fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>
+                                                        " . ucfirst($row['reschedule_status']) . "
+                                                    </span>
+                                                </td>
+                                                <td class='text-center'>
+                                                    <button class='btn btn-sm btn-success me-1' title='Approve' 
+                                                        data-id='{$id}' 
+                                                        data-action='approve'
+                                                        data-name='{$fullName}'
+                                                        data-amenity='{$amenity}'
+                                                        data-date='{$requestedDate}'
+                                                        data-bs-toggle='modal' 
+                                                        data-bs-target='#confirmRescheduleModal'>
+                                                        <i class='bi bi-check2-circle'></i>
+                                                    </button>
+                                                    <button class='btn btn-sm btn-danger' title='Reject' 
+                                                        data-id='{$id}'
+                                                        data-action='reject'
+                                                        data-name='{$fullName}'
+                                                        data-amenity='{$amenity}'
+                                                        data-date='{$requestedDate}'
+                                                        data-bs-toggle='modal' 
+                                                        data-bs-target='#confirmRescheduleModal'>
+                                                        <i class='bi bi-x-circle'></i>
+                                                    </button>
+                                                </td>
+                                            </tr>";
                                             $rescheduleRowCount++;
                                         }
                                     }
