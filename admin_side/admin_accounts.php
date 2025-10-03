@@ -120,6 +120,8 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             overflow-x: hidden;
             z-index: 1020;
             transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         .sidebar::-webkit-scrollbar {
@@ -194,13 +196,34 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
         }
 
         .sidebar-nav {
-            padding-bottom: 20px;
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-bottom: 1rem;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar .logout-wrapper {
+            margin-top: auto;
+            padding: 12px;
+            background-color: #1F2937;
+            border-top: 1px solid #374151;
         }
 
         .sidebar .logout {
-            position: relative;
             width: 100%;
-            margin-top: 1rem;
         }
 
         .mobile-menu-btn {
@@ -231,6 +254,9 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
+                top: 0;
+                height: 100vh;
+                background-color: #283548;
             }
 
             .sidebar.show {
@@ -261,6 +287,10 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                 padding: 0.25rem 0.5rem;
                 font-size: 0.8rem;
             }
+
+            .sidebar-overlay {
+                top: 0;
+            }
         }
 
         @media (max-width: 576px) {
@@ -279,12 +309,12 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             }
 
             .sidebar {
-                top: 60px;
-                height: calc(100vh - 60px);
+                top: 0;
+                height: 100vh;
             }
 
             .sidebar-overlay {
-                top: 60px;
+                top: 0;
             }
 
             .table-responsive {
