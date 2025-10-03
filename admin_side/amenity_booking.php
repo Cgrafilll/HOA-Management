@@ -73,6 +73,20 @@ $countResult = $conn->query($countSql);
 $totalEntries = $countResult->fetch_assoc()['total'];
 $totalPages = ceil($totalEntries / $entriesPerPage);
 
+// Pagination for reschedule requests
+$rescheduleEntriesPerPage = 5;
+$rescheduleCurrentPage = isset($_GET['reschedule_page']) ? (int) $_GET['reschedule_page'] : 1;
+$rescheduleCurrentPage = max(1, $rescheduleCurrentPage);
+
+// Calculate offset
+$rescheduleOffset = ($rescheduleCurrentPage - 1) * $rescheduleEntriesPerPage;
+
+// Get total count for reschedule pagination
+$rescheduleCountSql = "SELECT COUNT(*) as total FROM amenity_bookings WHERE reschedule_status IN ('pending', 'approved', 'rejected')";
+$rescheduleCountResult = $conn->query($rescheduleCountSql);
+$rescheduleTotalEntries = $rescheduleCountResult->fetch_assoc()['total'];
+$rescheduleTotalPages = ceil($rescheduleTotalEntries / $rescheduleEntriesPerPage);
+
 // Replace the existing $booking_sql with this:
 $booking_sql = "SELECT 
     ab.id,
@@ -178,7 +192,7 @@ while ($row = $calendar_result->fetch_assoc()) {
     ];
 }
 
-// Query for reschedule requests
+// Query for reschedule requests with pagination
 $reschedule_sql = "SELECT 
     ab.id,
     ab.reservation_code,
@@ -211,7 +225,8 @@ FROM amenity_bookings ab
 LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
 LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
 WHERE ab.reschedule_status IN ('pending', 'approved', 'rejected')
-ORDER BY ab.reschedule_requested_at DESC";
+ORDER BY ab.reschedule_requested_at DESC
+LIMIT $rescheduleEntriesPerPage OFFSET $rescheduleOffset";
 
 $reschedule_result = $conn->query($reschedule_sql);
 
@@ -1119,8 +1134,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody class="small align-middle">
+                                <tbody class="small align-middle" style="min-height: 260px; display: table-row-group;">
                                     <?php
+                                    $rescheduleRowCount = 0;
                                     if ($reschedule_result->num_rows > 0) {
                                         while ($row = $reschedule_result->fetch_assoc()) {
                                             $id = $row['id'];
@@ -1139,48 +1155,130 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                             $requestedAt = date('M d, Y h:i A', strtotime($row['reschedule_requested_at']));
 
                                             echo "<tr>
-                                                <td>{$fullName}</td>
-                                                <td><span class='badge bg-secondary'>{$amenity}</span></td>
-                                                <td>{$row['reservation_code']}</td>
-                                                <td>{$currentDate}<br><small class='text-muted'>{$currentTime}</small></td>
-                                                <td><span class='text-primary fw-bold'>{$requestedDate}</span><br><small class='text-muted'>{$requestedTime}</small></td>
-                                                <td>{$reason}</td>
-                                                <td>{$requestedAt}</td>
-                                                <td class='text-center'>
-                                                    <span class='" . $statusClass . " fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>
-                                                        " . ucfirst($row['reschedule_status']) . "
-                                                    </span>
-                                                </td>
-                                                <td class='text-center'>
-                                                    <button class='btn btn-sm btn-success me-1' title='Approve' 
-                                                        data-id='{$id}' 
-                                                        data-action='approve'
-                                                        data-name='{$fullName}'
-                                                        data-amenity='{$amenity}'
-                                                        data-date='{$requestedDate}'
-                                                        data-bs-toggle='modal' 
-                                                        data-bs-target='#confirmRescheduleModal'>
-                                                        <i class='bi bi-check2-circle'></i>
-                                                    </button>
-                                                    <button class='btn btn-sm btn-danger' title='Reject' 
-                                                        data-id='{$id}'
-                                                        data-action='reject'
-                                                        data-name='{$fullName}'
-                                                        data-amenity='{$amenity}'
-                                                        data-date='{$requestedDate}'
-                                                        data-bs-toggle='modal' 
-                                                        data-bs-target='#confirmRescheduleModal'>
-                                                        <i class='bi bi-x-circle'></i>
-                                                    </button>
-                                                </td>
-                                            </tr>";
+                <td>{$fullName}</td>
+                <td><span class='badge bg-secondary'>{$amenity}</span></td>
+                <td>{$row['reservation_code']}</td>
+                <td>{$currentDate}<br><small class='text-muted'>{$currentTime}</small></td>
+                <td><span class='text-primary fw-bold'>{$requestedDate}</span><br><small class='text-muted'>{$requestedTime}</small></td>
+                <td>{$reason}</td>
+                <td>{$requestedAt}</td>
+                <td class='text-center'>
+                    <span class='" . $statusClass . " fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>
+                        " . ucfirst($row['reschedule_status']) . "
+                    </span>
+                </td>
+                <td class='text-center'>
+                    <button class='btn btn-sm btn-success me-1' title='Approve' 
+                        data-id='{$id}' 
+                        data-action='approve'
+                        data-name='{$fullName}'
+                        data-amenity='{$amenity}'
+                        data-date='{$requestedDate}'
+                        data-bs-toggle='modal' 
+                        data-bs-target='#confirmRescheduleModal'>
+                        <i class='bi bi-check2-circle'></i>
+                    </button>
+                    <button class='btn btn-sm btn-danger' title='Reject' 
+                        data-id='{$id}'
+                        data-action='reject'
+                        data-name='{$fullName}'
+                        data-amenity='{$amenity}'
+                        data-date='{$requestedDate}'
+                        data-bs-toggle='modal' 
+                        data-bs-target='#confirmRescheduleModal'>
+                        <i class='bi bi-x-circle'></i>
+                    </button>
+                </td>
+            </tr>";
+                                            $rescheduleRowCount++;
+                                        }
+                                    }
+
+                                    // Show "no data" message if no rows
+                                    if ($rescheduleRowCount === 0) {
+                                        echo '<tr><td colspan="9" class="text-center text-muted">No pending reschedule requests.</td></tr>';
+                                        $minRows = 5;
+                                        for ($i = 1; $i < $minRows; $i++) {
+                                            echo '<tr style="height: 52px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
                                         }
                                     } else {
-                                        echo "<tr><td colspan='9' class='text-center text-muted'>No pending reschedule requests.</td></tr>";
+                                        // Add empty rows to maintain consistent height (minimum 5 rows)
+                                        $minRows = 5;
+                                        for ($i = $rescheduleRowCount; $i < $minRows; $i++) {
+                                            echo '<tr style="height: 52px; visibility: hidden;"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+                                        }
                                     }
                                     ?>
                                 </tbody>
                             </table>
+                            <!-- Pagination for reschedule requests -->
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <?php
+                                $rescheduleStart = $rescheduleTotalEntries > 0 ? $rescheduleOffset + 1 : 0;
+                                $rescheduleEnd = min($rescheduleOffset + $rescheduleEntriesPerPage, $rescheduleTotalEntries);
+                                echo "<span class='small'>Showing $rescheduleStart to $rescheduleEnd of $rescheduleTotalEntries entries</span>";
+                                ?>
+                                <nav>
+                                    <ul class="pagination pagination-sm m-0">
+                                        <?php
+                                        if ($rescheduleTotalEntries > 0) {
+                                            // Previous button
+                                            $prevDisabled = $rescheduleCurrentPage <= 1 ? 'disabled' : '';
+                                            $prevPage = $rescheduleCurrentPage - 1;
+                                            echo "<li class='page-item $prevDisabled'>";
+                                            if ($rescheduleCurrentPage > 1) {
+                                                echo "<a class='page-link' href='?reschedule_page=$prevPage#reschedule'>Previous</a>";
+                                            } else {
+                                                echo "<a class='page-link'>Previous</a>";
+                                            }
+                                            echo "</li>";
+
+                                            // Page numbers
+                                            $startPage = max(1, $rescheduleCurrentPage - 2);
+                                            $endPage = min($rescheduleTotalPages, $rescheduleCurrentPage + 2);
+
+                                            // First page and ellipsis
+                                            if ($startPage > 1) {
+                                                echo "<li class='page-item'><a class='page-link' href='?reschedule_page=1#reschedule'>1</a></li>";
+                                                if ($startPage > 2) {
+                                                    echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
+                                                }
+                                            }
+
+                                            // Page range
+                                            for ($i = $startPage; $i <= $endPage; $i++) {
+                                                $activeClass = $i == $rescheduleCurrentPage ? 'active' : '';
+                                                echo "<li class='page-item $activeClass'><a class='page-link' href='?reschedule_page=$i#reschedule'>$i</a></li>";
+                                            }
+
+                                            // Last page and ellipsis
+                                            if ($endPage < $rescheduleTotalPages) {
+                                                if ($endPage < $rescheduleTotalPages - 1) {
+                                                    echo "<li class='page-item disabled'><a class='page-link'>...</a></li>";
+                                                }
+                                                echo "<li class='page-item'><a class='page-link' href='?reschedule_page=$rescheduleTotalPages#reschedule'>$rescheduleTotalPages</a></li>";
+                                            }
+
+                                            // Next button
+                                            $nextDisabled = $rescheduleCurrentPage >= $rescheduleTotalPages ? 'disabled' : '';
+                                            $nextPage = $rescheduleCurrentPage + 1;
+                                            echo "<li class='page-item $nextDisabled'>";
+                                            if ($rescheduleCurrentPage < $rescheduleTotalPages) {
+                                                echo "<a class='page-link' href='?reschedule_page=$nextPage#reschedule'>Next</a>";
+                                            } else {
+                                                echo "<a class='page-link'>Next</a>";
+                                            }
+                                            echo "</li>";
+                                        } else {
+                                            // Show disabled pagination when no entries
+                                            echo "<li class='page-item disabled'><a class='page-link'>Previous</a></li>";
+                                            echo "<li class='page-item active'><a class='page-link'>1</a></li>";
+                                            echo "<li class='page-item disabled'><a class='page-link'>Next</a></li>";
+                                        }
+                                        ?>
+                                    </ul>
+                                </nav>
+                            </div>
                         </div>
                     </div>
                 </div>
