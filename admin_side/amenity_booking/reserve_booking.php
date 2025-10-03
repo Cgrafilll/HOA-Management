@@ -895,7 +895,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 </div>
                                 <?php if ($amenity !== "Gazebo" && $amenity !== "Clubhouse"): ?>
                                     <!-- Guests -->
-                                    <div class="form-floating mb-3">
+                                    <div class="form-floating">
                                         <input type="number" class="form-control" id="guests" name="guests" min="10"
                                             max="25" value="10">
                                         <label for="guests">Guests<small class="fw-bold text-danger">*</small></label>
