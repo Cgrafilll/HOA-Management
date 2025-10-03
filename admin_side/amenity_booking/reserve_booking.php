@@ -2290,7 +2290,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             const errorDiv = document.createElement('div');
                             errorDiv.className = 'invalid-feedback';
                             errorDiv.style.display = 'block';
-                            errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Please select a user from the dropdown.';
+                            errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Please select a user.';
                             userIdSearch.parentNode.appendChild(errorDiv);
 
                             // Scroll to field
