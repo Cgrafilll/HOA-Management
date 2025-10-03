@@ -1463,28 +1463,31 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
 
             // Display current booking info
             document.getElementById('currentBookingInfo').innerHTML = `
-                <div><strong>Guest:</strong> ${booking.fullName}</div>
-                <div><strong>Amenity:</strong> ${booking.amenity}</div>
-                <div><strong>Current Date:</strong> ${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                <div><strong>Current Time:</strong> ${booking.time}</div>
-            `;
+        <div><strong>Guest:</strong> ${booking.fullName}</div>
+        <div><strong>Amenity:</strong> ${booking.amenity}</div>
+        <div><strong>Current Date:</strong> ${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+        <div><strong>Current Time:</strong> ${booking.time}</div>
+    `;
 
-            // Show/hide whole day option based on current booking rate
+            // Get rate option elements
             const wholeOption = document.querySelector('.rate-option[data-value="whole"]');
             const dayOption = document.querySelector('.rate-option[data-value="day"]');
             const nightOption = document.querySelector('.rate-option[data-value="night"]');
 
             if (wholeOption && dayOption && nightOption) {
                 if (currentRate === 'whole') {
-                    // Show all 3 options
+                    // If original booking is WHOLE, show ONLY whole option
                     wholeOption.closest('.col-4').style.display = 'block';
-                    dayOption.closest('.col-6').className = 'col-4';
-                    nightOption.closest('.col-6').className = 'col-4';
+                    wholeOption.closest('.col-4').className = 'col-12'; // Full width
+                    dayOption.closest('.col-6').style.display = 'none';
+                    nightOption.closest('.col-6').style.display = 'none';
                 } else {
-                    // Hide whole option, show only day and night in col-6
+                    // If original booking is day or night, show ONLY day and night options
                     wholeOption.closest('.col-4').style.display = 'none';
-                    dayOption.closest('.col-4').className = 'col-6';
-                    nightOption.closest('.col-4').className = 'col-6';
+                    dayOption.closest('.col-6').style.display = 'block';
+                    dayOption.closest('.col-6').className = 'col-6';
+                    nightOption.closest('.col-6').style.display = 'block';
+                    nightOption.closest('.col-6').className = 'col-6';
                 }
             }
 
@@ -1505,7 +1508,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             // Show modal
             new bootstrap.Modal(document.getElementById('rescheduleModal')).show();
         }
-
+        
         async function fetchRescheduleBookedDates() {
             if (!rescheduleAmenity) {
                 console.error('Amenity is not defined!');
