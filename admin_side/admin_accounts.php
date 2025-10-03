@@ -122,19 +122,6 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             transition: transform 0.3s ease;
         }
 
-        .sidebar::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .sidebar::-webkit-scrollbar-track {
-            background: #1F2937;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background: #4B5563;
-            border-radius: 3px;
-        }
-
         main {
             margin-left: 250px;
             margin-top: 76px;
@@ -164,6 +151,42 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
         .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            /* Add */
+            overflow-y: auto;
+            /* Add */
+            overflow-x: hidden;
+            /* Add */
+            min-height: 0;
+            /* Add - important for flex scrolling */
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            /* Add custom scrollbar for nav */
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        /* Remove the .sidebar::-webkit-scrollbar rules as scrollbar is now on .sidebar-nav */
+
+        .sidebar .logout {
+            flex-shrink: 0;
+            /* Add */
+            border-top: 1px solid #374151;
+            /* Add visual separator */
+            padding-top: 12px;
+            /* Add some spacing */
         }
 
         .sidebar .btn-toggle {
@@ -219,7 +242,6 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             .sidebar {
                 transform: translateX(-100%);
                 top: 76px;
-                background-color: #283548;
             }
 
             .sidebar.show {
@@ -340,8 +362,8 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1 sidebar-nav">
+        <aside class="sidebar">
+            <nav class="nav flex-column gap-1 sidebar-nav p-3">
                 <a href="admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -355,7 +377,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                         </span>
                     </button>
                     <div class="collapse show" id="accountsCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
+                        <ul class="nav flex-column ms-3 mt-1 p-3">
                             <li><a href="admin_accounts.php" class="nav-link px-2 actived">Admin</a></li>
                             <li><a href="household_accounts.php" class="nav-link px-2">Household</a></li>
                             <li><a href="visitor_accounts.php" class="nav-link px-2">Visitors</a></li>
@@ -371,7 +393,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                         </span>
                     </button>
                     <div class="collapse" id="recordCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
+                        <ul class="nav flex-column ms-3 mt-1 p-3">
                             <li><a href="amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
                             <li><a href="violation_tracking.php" class="nav-link px-2">Violation Tracking</a></li>
                             <li><a href="entry_logs.php" class="nav-link px-2">Gate Logs</a></li>
@@ -387,7 +409,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                         </span>
                     </button>
                     <div class="collapse" id="commCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
+                        <ul class="nav flex-column ms-3 mt-1 p-3">
                             <li><a href="announcements.php" class="nav-link px-2">Announcements</a></li>
                             <li><a href="events.php" class="nav-link px-2">Events</a></li>
                             <li><a href="phonebook.php" class="nav-link px-2">Phone Book</a></li>
@@ -403,7 +425,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                         </span>
                     </button>
                     <div class="collapse" id="acctCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
+                        <ul class="nav flex-column ms-3 mt-1 p-3">
                             <li><a href="payment.php" class="nav-link px-2">Payments</a></li>
                             <li><a href="billing.php" class="nav-link px-2">Billing</a></li>
                             <li><a href="invoices.php" class="nav-link px-2">Invoices</a></li>
@@ -411,7 +433,8 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                     </div>
                 </div>
                 <a href="login/logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
+                    style="margin: 12px;"> <!-- Move logout outside nav with margin -->
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
