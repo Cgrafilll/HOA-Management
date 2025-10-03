@@ -116,8 +116,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             top: 76px;
             left: 0;
             background-color: #1F2937;
-            overflow-y: auto;
-            overflow-x: hidden;
+            overflow: hidden;
             z-index: 1020;
             transition: transform 0.3s ease;
             display: flex;
@@ -156,8 +155,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
 
         .sidebar a:hover,
         .sidebar button:hover,
-        .collapse ul li a:hover,
-        .collapse ul li a.actived {
+        .collapse ul li a:hover {
             color: #80ed99;
         }
 
@@ -200,7 +198,8 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             flex: 1;
             overflow-y: auto;
             overflow-x: hidden;
-            padding-bottom: 1rem;
+            padding: 12px;
+            min-height: 0;
         }
 
         .sidebar-nav::-webkit-scrollbar {
@@ -217,7 +216,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
         }
 
         .sidebar .logout-wrapper {
-            margin-top: auto;
+            flex-shrink: 0;
             padding: 12px;
             background-color: #1F2937;
             border-top: 1px solid #374151;
@@ -255,8 +254,9 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
-                top: 76px;
+                top: 0;
                 height: 100vh;
+                background-color: #283548;
             }
 
             .sidebar.show {
@@ -290,6 +290,48 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
 
             .sidebar-overlay {
                 top: 0;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                display: none;
+            }
+
+            main {
+                margin-top: 60px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 0;
+                height: 100vh;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .table-responsive {
+                font-size: 0.75rem;
+            }
+
+            .pagination {
+                font-size: 0.8rem;
+            }
+
+            .d-flex.gap-2 {
+                flex-direction: column;
+                gap: 0.5rem !important;
+            }
+
+            .d-flex.gap-2 .btn {
+                width: 100%;
             }
         }
     </style>
