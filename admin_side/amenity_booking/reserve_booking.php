@@ -900,19 +900,21 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         <label for="guests">Guests<small class="fw-bold text-danger">*</small></label>
                                     </div>
                                 <?php endif; ?>
-                                <!-- Exclusive Booking -->
-                                <div class="form-floating">
-                                    <select class="form-select" id="exclusiveBooking" name="exclusiveBooking" required>
-                                        <option value="no" selected>No</option>
-                                        <option value="yes">Yes</option>
-                                    </select>
-                                    <label for="exclusiveBooking">Is this an exclusive booking?<small
-                                            class="fw-bold text-danger">*</small></label>
-                                </div>
-                                <div class="form-text text-muted mb-3">
-                                    <small><i class="bi bi-info-circle me-1"></i>Exclusive booking includes a 15%
-                                        surcharge on the rate only</small>
-                                </div>
+                                <?php if ($amenity === "Swimming Pool"): ?>
+                                    <!-- Exclusive Booking -->
+                                    <div class="form-floating">
+                                        <select class="form-select" id="exclusiveBooking" name="exclusiveBooking" required>
+                                            <option value="no" selected>No</option>
+                                            <option value="yes">Yes</option>
+                                        </select>
+                                        <label for="exclusiveBooking">Is this an exclusive booking?<small
+                                                class="fw-bold text-danger">*</small></label>
+                                    </div>
+                                    <div class="form-text text-muted mb-3">
+                                        <small><i class="bi bi-info-circle me-1"></i>Exclusive booking adds ₱100.00 per
+                                            head</small>
+                                    </div>
+                                <?php endif; ?>
                                 <!-- Add-Ons -->
                                 <div class="row">
                                     <div class="col-6">
@@ -1995,14 +1997,14 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             // Calculate base rate amount
             if (rateStr.includes("per person")) {
-                rateTotal = rateValue * guests;
+                // Apply exclusive booking surcharge (₱100 per guest) ONLY for Swimming Pool
+                if (exclusiveBooking === "yes" && currentAmenity === "Swimming Pool") {
+                    rateTotal = (rateValue + 100) * guests; // Add ₱100 per guest
+                } else {
+                    rateTotal = rateValue * guests;
+                }
             } else {
                 rateTotal = rateValue;
-            }
-
-            // Apply exclusive booking surcharge (15% additional) ONLY to rate amount
-            if (exclusiveBooking === "yes") {
-                rateTotal = rateTotal * 1.15; // Add 15% for exclusive booking
             }
 
             // Calculate add-ons (NOT subject to exclusive booking fee)
@@ -2024,14 +2026,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             // Recalculate change if payment method is cash
             calculateChange();
         }
-
-        ["guests", "chairs", "tables", "userType"].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener("input", calculateTotal);
-                el.addEventListener("change", calculateTotal);
-            }
-        });
 
         // Add event listener for exclusive booking
         const exclusiveBookingEl = document.getElementById("exclusiveBooking");
