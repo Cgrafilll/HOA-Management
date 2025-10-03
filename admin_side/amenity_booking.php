@@ -1073,7 +1073,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                 <label class="form-label fw-bold">Select New Time Slot<span
                                         class="text-danger">*</span></label>
                                 <div class="row g-2">
-                                    <div class="col-6">
+                                    <div class="col-4">
                                         <div class="border rounded p-2 h-100 rate-option" data-value="day"
                                             onclick="selectRescheduleRate(this, 'day')" style="cursor: pointer;">
                                             <div class="d-flex align-items-center gap-2">
@@ -1085,7 +1085,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-4">
                                         <div class="border rounded p-2 h-100 rate-option" data-value="night"
                                             onclick="selectRescheduleRate(this, 'night')" style="cursor: pointer;">
                                             <div class="d-flex align-items-center gap-2">
@@ -1097,10 +1097,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-4" style="display: none;">
+                                    <div class="col-4">
                                         <div class="border rounded p-2 h-100 rate-option" data-value="whole"
                                             onclick="selectRescheduleRate(this, 'whole')" style="cursor: pointer;">
-                                            <div class="d-flex flex-column align-items-center gap-1">
+                                            <div class="d-flex flex-column align-items-center gap-2">
                                                 <i class="bi bi-sun-fill fs-4 text-success"></i>
                                                 <div class="text-center">
                                                     <strong class="d-block small">Whole Day</strong>
@@ -1475,19 +1475,45 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             const nightOption = document.querySelector('.rate-option[data-value="night"]');
 
             if (wholeOption && dayOption && nightOption) {
+                // Always show all 3 options in 3-column layout
+                wholeOption.closest('.col-4').style.display = 'block';
+                dayOption.closest('.col-4').style.display = 'block';
+                nightOption.closest('.col-4').style.display = 'block';
+
+                // Reset all to col-4 (3 columns)
+                dayOption.closest('.col-4').className = 'col-4';
+                nightOption.closest('.col-4').className = 'col-4';
+                wholeOption.closest('.col-4').className = 'col-4';
+
+                // Reset all options first
+                [dayOption, nightOption, wholeOption].forEach(option => {
+                    option.classList.remove('bg-secondary', 'bg-opacity-10');
+                    option.style.opacity = '1';
+                    option.style.cursor = 'pointer';
+                    option.style.pointerEvents = 'auto';
+                });
+
                 if (currentRate === 'whole') {
-                    // If original booking is WHOLE, show ONLY whole option
-                    wholeOption.closest('.col-4').style.display = 'block';
-                    wholeOption.closest('.col-4').className = 'col-12'; // Full width
-                    dayOption.closest('.col-6').style.display = 'none';
-                    nightOption.closest('.col-6').style.display = 'none';
+                    // If original booking is WHOLE: disable day and night, enable whole
+                    dayOption.classList.add('bg-secondary', 'bg-opacity-10');
+                    dayOption.style.opacity = '0.5';
+                    dayOption.style.cursor = 'not-allowed';
+                    dayOption.style.pointerEvents = 'none';
+
+                    nightOption.classList.add('bg-secondary', 'bg-opacity-10');
+                    nightOption.style.opacity = '0.5';
+                    nightOption.style.cursor = 'not-allowed';
+                    nightOption.style.pointerEvents = 'none';
+
+                    // Whole option remains enabled (already reset above)
                 } else {
-                    // If original booking is day or night, show ONLY day and night options
-                    wholeOption.closest('.col-4').style.display = 'none';
-                    dayOption.closest('.col-6').style.display = 'block';
-                    dayOption.closest('.col-6').className = 'col-6';
-                    nightOption.closest('.col-6').style.display = 'block';
-                    nightOption.closest('.col-6').className = 'col-6';
+                    // If original booking is DAY or NIGHT: enable day and night, disable whole
+                    wholeOption.classList.add('bg-secondary', 'bg-opacity-10');
+                    wholeOption.style.opacity = '0.5';
+                    wholeOption.style.cursor = 'not-allowed';
+                    wholeOption.style.pointerEvents = 'none';
+
+                    // Day and night options remain enabled (already reset above)
                 }
             }
 
@@ -1508,7 +1534,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             // Show modal
             new bootstrap.Modal(document.getElementById('rescheduleModal')).show();
         }
-        
+
         async function fetchRescheduleBookedDates() {
             if (!rescheduleAmenity) {
                 console.error('Amenity is not defined!');
