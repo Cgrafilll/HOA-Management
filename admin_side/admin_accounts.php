@@ -219,7 +219,6 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             .sidebar {
                 transform: translateX(-100%);
                 top: 76px;
-                height: 100vh;
                 background-color: #283548;
             }
 
@@ -274,7 +273,6 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
 
             .sidebar {
                 top: 76px;
-                height: 100vh;
             }
 
             .sidebar-overlay {
