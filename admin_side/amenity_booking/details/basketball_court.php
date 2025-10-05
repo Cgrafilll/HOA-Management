@@ -1,14 +1,14 @@
 <!-- Pool Image -->
-<div class="my-3" style="overflow: hidden; border-radius: 0.5rem; 
+<div class="mb-3" style="overflow: hidden; border-radius: 0.5rem; 
     height: 450px; 
     background-image: url('../../images/gazebo.png'); 
     background-size: 90%;   /* zoom level */
     background-position: center; 
     background-repeat: no-repeat;">
 </div>
-<h5 class="fw-bold mb-4">BASKETBALL COURT RATES</h5>
-<div class="container my-5">
-    <div class="row">
+<h5 class="fw-bold mb-3">BASKETBALL COURT RATES</h5>
+<div class="container mb-5">
+    <div class="row mb-3">
         <!-- Homeowner Table -->
         <div class="col-md-6">
             <h6 class="fw-bold">Homeowner</h6>
@@ -65,7 +65,7 @@
         </div>
     </div>
     <!-- Add-Ons Table -->
-    <div class="row mt-4">
+    <div class="row mb-3">
         <div class="col-md-12">
             <h6 class="fw-bold">Add-Ons</h6>
             <div class="table-responsive">
