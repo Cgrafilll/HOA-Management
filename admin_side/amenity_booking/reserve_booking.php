@@ -226,26 +226,44 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
         * {
             font-family: "Montserrat", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow-x: hidden;
         }
 
         header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 1030;
+            height: 76px;
+            background-color: white;
         }
 
         .sidebar {
             width: 250px;
-            height: 100vh;
+            height: calc(100vh - 76px);
             position: fixed;
-            top: 20;
+            top: 76px;
             left: 0;
             background-color: #1F2937;
             overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1020;
+            transition: transform 0.3s ease;
         }
 
         main {
             margin-left: 250px;
+            margin-top: 76px;
+            min-height: calc(100vh - 76px);
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
         }
 
         .sidebar a,
@@ -269,6 +287,32 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar .logout {
+            flex-shrink: 0;
+            border-top: 1px solid #374151;
+            padding-top: 12px;
         }
 
         .sidebar .btn-toggle {
@@ -298,6 +342,25 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
         }
 
         .file-drop-area {
@@ -440,6 +503,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 15px;
+            overflow: hidden;
         }
 
         .calendar-header {
@@ -467,6 +531,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 5px;
+            width: 100%;
         }
 
         .calendar-day-header {
@@ -487,6 +552,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             cursor: pointer;
             border: 1px solid #dee2e6;
             background: white;
+            min-height: 0;
+            /* Allow shrinking */
+            padding: 2px;
+            /* Add small padding */
         }
 
         .calendar-day:hover:not(.disabled):not(.booked) {
@@ -547,10 +616,29 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
         .partial-indicator {
             position: absolute;
-            top: 2px;
-            right: 2px;
-            font-size: 10px;
+            top: 1px;
+            right: 1px;
+            font-size: 8px;
             color: #856404;
+        }
+
+        .calendar-legend {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .calendar-legend small {
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .calendar-legend .badge {
+            flex-shrink: 0;
         }
 
         #dateMessage {
@@ -634,7 +722,233 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         .search-select-clear.show {
             display: block;
         }
-        
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                top: 76px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            header .logo-container {
+                width: auto !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            /* Form adjustments */
+            .row .col-6,
+            .row .col-4 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            .bg-white.shadow.rounded.p-3 {
+                padding: 1rem !important;
+            }
+
+            .calendar-view {
+                padding: 10px;
+            }
+
+            .calendar-grid {
+                gap: 3px;
+            }
+
+            .calendar-day {
+                font-size: 11px;
+                padding: 1px;
+            }
+
+            .calendar-day-header {
+                padding: 4px 1px;
+                font-size: 9px;
+            }
+
+            .partial-indicator {
+                font-size: 7px;
+                top: 0px;
+                right: 0px;
+            }
+
+            .calendar-legend {
+                gap: 8px;
+                font-size: 0.75rem;
+            }
+
+            .custom-radio-container {
+                font-size: 0.85rem;
+            }
+
+            .custom-radio-option {
+                padding: 10px 15px;
+                min-height: 50px;
+            }
+
+            .custom-radio-option strong {
+                font-size: 0.9rem;
+            }
+
+            .custom-radio-option small {
+                font-size: 0.75rem;
+            }
+
+            /* Alert messages */
+            .alert {
+                font-size: 0.85rem;
+                padding: 0.5rem;
+            }
+
+            .alert small {
+                font-size: 0.75rem;
+            }
+
+            #dateMessage .alert {
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            main {
+                margin-top: 76px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .bg-success.text-white.rounded-top.p-3 h5 {
+                font-size: 1rem;
+            }
+
+            .d-flex.justify-content-center span {
+                font-size: 1.5rem !important;
+                letter-spacing: 2px !important;
+            }
+
+            /* Form fields */
+            .form-floating {
+                margin-bottom: 0.75rem !important;
+            }
+
+            .form-floating label {
+                font-size: 0.9rem;
+            }
+
+            .calendar-view {
+                padding: 8px;
+            }
+
+            .calendar-grid {
+                gap: 2px;
+            }
+
+            .calendar-day {
+                font-size: 10px;
+                padding: 1px;
+                border-width: 1px;
+            }
+
+            .calendar-day-header {
+                font-size: 8px;
+                padding: 3px 0;
+            }
+
+            .partial-indicator {
+                font-size: 6px;
+            }
+
+            /* Buttons */
+            .btn {
+                font-size: 0.9rem;
+                padding: 0.5rem 1rem;
+            }
+
+            .d-grid .btn-lg {
+                padding: 0.75rem;
+            }
+
+            .calendar-legend {
+                gap: 6px;
+                font-size: 0.7rem;
+            }
+
+            .calendar-legend small {
+                font-size: 0.65rem;
+            }
+
+            .calendar-legend .badge {
+                font-size: 0.6rem;
+                padding: 0.15em 0.35em;
+            }
+
+            /* Rate options more compact */
+            .custom-radio-container {
+                font-size: 0.8rem;
+            }
+
+            .custom-radio-option {
+                padding: 8px 12px;
+                min-height: 45px;
+            }
+
+            .custom-radio-option strong {
+                font-size: 0.85rem;
+                display: block;
+                margin-bottom: 2px;
+            }
+
+            .custom-radio-option small {
+                font-size: 0.7rem;
+            }
+
+            /* Alert messages smaller */
+            .alert {
+                font-size: 0.8rem;
+                padding: 0.4rem;
+            }
+
+            .alert small {
+                font-size: 0.7rem;
+            }
+
+            #dateMessage .alert {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.5rem;
+            }
+
+            #dateMessage .alert strong {
+                font-size: 0.8rem;
+            }
+        }
     </style>
 </head>
 
@@ -873,7 +1187,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                         <div class="calendar-grid" id="calendarGrid">
                                             <!-- Calendar will be generated by JavaScript -->
                                         </div>
-                                        <div class="d-flex gap-3 mt-2 justify-content-center flex-wrap">
+                                        <div class="calendar-legend">
                                             <small class="d-flex align-items-center">
                                                 <span class="badge bg-success me-1">●</span> Available
                                             </small>
