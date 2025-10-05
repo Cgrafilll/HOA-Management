@@ -1337,11 +1337,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                             $currentTime = $row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : '9:00 AM - 10:00 PM');
                                             $requestedTime = $row['requested_rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['requested_rate'] === 'night' ? '5:00 PM - 10:00 PM' : '9:00 AM - 10:00 PM');
                                             $reason = htmlspecialchars($row['reschedule_reason']);
-                                            $statusClass = $row['reschedule_status'] === 'approved'
+                                            $rescheduleStatus = $row['reschedule_status'];
+                                            $statusClass = $rescheduleStatus === 'approved'
                                                 ? 'badge bg-success text-white'
-                                                : ($row['reschedule_status'] === 'rejected'
+                                                : ($rescheduleStatus === 'rejected'
                                                     ? 'badge bg-danger text-white'
                                                     : 'badge bg-warning text-dark');
+
+                                            // Determine if buttons should be disabled
+                                            $isDisabled = ($rescheduleStatus === 'approved' || $rescheduleStatus === 'rejected');
+                                            $disabledAttr = $isDisabled ? 'disabled' : '';
+                                            $disabledClass = $isDisabled ? 'disabled' : '';
 
                                             // Format requested at date and time separately
                                             $requestedAtDate = date('F j, Y', strtotime($row['reschedule_requested_at']));
@@ -1357,28 +1363,30 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                 <td>{$reason}</td>
                                                 <td class='text-center'>
                                                     <span class='" . $statusClass . " fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>
-                                                        " . ucfirst($row['reschedule_status']) . "
+                                                        " . ucfirst($rescheduleStatus) . "
                                                     </span>
                                                 </td>
                                                 <td class='text-center gap-2'>
-                                                    <button class='btn btn-sm btn-success' title='Approve' 
+                                                    <button class='btn btn-sm btn-success {$disabledClass}' title='Approve' 
                                                         data-id='{$id}' 
                                                         data-action='approve'
                                                         data-name='{$fullName}'
                                                         data-amenity='{$amenity}'
                                                         data-date='{$requestedDate}'
                                                         data-bs-toggle='modal' 
-                                                        data-bs-target='#confirmRescheduleModal'>
+                                                        data-bs-target='#confirmRescheduleModal'
+                                                        {$disabledAttr}>
                                                         <i class='bi bi-check2-circle'></i>
                                                     </button>
-                                                    <button class='btn btn-sm btn-danger' title='Reject' 
+                                                    <button class='btn btn-sm btn-danger {$disabledClass}' title='Reject' 
                                                         data-id='{$id}'
                                                         data-action='reject'
                                                         data-name='{$fullName}'
                                                         data-amenity='{$amenity}'
                                                         data-date='{$requestedDate}'
                                                         data-bs-toggle='modal' 
-                                                        data-bs-target='#confirmRescheduleModal'>
+                                                        data-bs-target='#confirmRescheduleModal'
+                                                        {$disabledAttr}>
                                                         <i class='bi bi-x-circle'></i>
                                                     </button>
                                                 </td>
