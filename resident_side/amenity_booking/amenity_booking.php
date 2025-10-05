@@ -1096,7 +1096,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                             fullName: \"" . addslashes($fullName) . "\",
                                                             amenity: \"" . addslashes($amenity) . "\",
                                                             date: \"" . $bookingDate . "\",
-                                                            time: \"" . $timeDisplay . "\"
+                                                            time: \"" . $timeDisplay . "\",
                                                             rate: \"" . $row['rate'] . "\"
                                                         })'>
                                                         <i class='bi bi-calendar2-week'></i>
