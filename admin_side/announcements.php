@@ -323,15 +323,6 @@ try {
             .sidebar-overlay {
                 top: 0;
             }
-
-            .d-flex.gap-2 {
-                flex-direction: column;
-                gap: 0.5rem !important;
-            }
-
-            .d-flex.gap-2 .btn {
-                width: 100%;
-            }
         }
 
         .announcement-card {
