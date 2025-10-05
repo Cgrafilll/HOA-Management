@@ -449,6 +449,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 font-size: 1rem !important;
             }
 
+            .nav-item {
+                font-size: 0.9rem;
+            }
+
             .table-responsive {
                 font-size: 0.85rem;
             }
@@ -490,7 +494,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 font-size: 0.75rem;
             }
 
-            .pagination {
+            .pagination,
+            .nav-item {
                 font-size: 0.8rem;
             }
         }
