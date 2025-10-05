@@ -150,6 +150,8 @@ while ($row = $calendar_result->fetch_assoc()) {
             $timeSlot = "9:00 AM - 5:00 PM";
         } elseif ($row['rate'] === "night") {
             $timeSlot = "5:00 PM - 10:00 PM";
+        } else {
+            $timeSlot = "9:00 AM - 10:00 PM";
         }
     }
 
@@ -1491,12 +1493,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         bgClass = 'bg-warning text-dark';
                     }
 
-                    bookingElement.className = `booking-item ${bgClass} overflow-hidden text-nowrap rounded-2`;
+                    bookingElement.className = `booking-item ${bgClass} overflow-hidden rounded-2`;
                     bookingElement.style.fontSize = '0.75rem';
                     bookingElement.style.padding = '0.25rem 0.5rem';
 
                     if (booking.homeownerId == loggedInHouseholdId) {
+                        // User's own booking - show name with initials on mobile
                         bookingElement.style.cursor = 'pointer';
+                        bookingElement.style.whiteSpace = 'nowrap';
+                        bookingElement.style.textOverflow = 'ellipsis';
                         bookingElement.textContent = getInitials(booking.fullName);
 
                         const amenityBadge = createAmenityBadge(booking);
@@ -1504,10 +1509,21 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         bookingContainer.appendChild(amenityBadge);
                         bookingContainer.onclick = () => showBookingDetails(booking);
                     } else {
+                        // Other user's booking - show "Booked" with time below
                         bookingElement.style.cursor = 'not-allowed';
-                        bookingElement.textContent = `Booked - ${booking.time}`;
+                        bookingElement.style.opacity = '0.8';
+                        bookingElement.style.whiteSpace = 'normal'; // Allow text to wrap
+                        bookingElement.style.lineHeight = '1.3';
+
+                        // Create two-line text: "Booked" and time below
+                        bookingElement.innerHTML = `
+                            <div style="font-weight: 600;">Booked</div>
+                            <div style="font-size: 0.65rem; margin-top: 2px;">${booking.time}</div>
+                        `;
+
                         bookingContainer.appendChild(bookingElement);
 
+                        // Still show amenity badge for paid/partial bookings
                         if (booking.paymentStatus === 'Paid' || booking.paymentStatus === 'Partial') {
                             const amenityBadge = createAmenityBadge(booking);
                             bookingContainer.appendChild(amenityBadge);
