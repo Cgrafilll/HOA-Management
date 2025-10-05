@@ -1518,7 +1518,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         // Create two-line text: "Booked" and time below
                         bookingElement.innerHTML = `
                             <div style="font-weight: 600;">Booked</div>
-                            <div style="font-size: 0.65rem; margin-top: 2px;">${booking.time}</div>
                         `;
 
                         bookingContainer.appendChild(bookingElement);
