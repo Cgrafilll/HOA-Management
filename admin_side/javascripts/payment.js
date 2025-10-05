@@ -127,11 +127,14 @@ class PaymentManager {
             this.inOffice.classList.remove('active');
             this.selectedMethod.textContent = "Bank Transfer";
             this.referenceNumberGroup.style.display = 'block';
+            this.referenceNumber.setAttribute('required', 'required'); // Add required for bank transfer
         } else {
             this.inOffice.classList.add('active');
             this.bankTransfer.classList.remove('active');
             this.selectedMethod.textContent = "In-Office Payment";
             this.referenceNumberGroup.style.display = 'none';
+            this.referenceNumber.removeAttribute('required'); // Remove required for in-office
+            this.referenceNumber.value = ''; // Clear the value
         }
         this.clearFormFields();
     }
@@ -487,6 +490,11 @@ class PaymentManager {
             this.amountPaid
         ];
         
+        // Only add reference number to validation if bank transfer is selected
+        if (this.selectedMethod.textContent === "Bank Transfer") {
+            requiredFields.push(this.referenceNumber);
+        }
+        
         let isValid = true;
         requiredFields.forEach(field => {
             if (!field.value) {
@@ -508,13 +516,17 @@ class PaymentManager {
             isValid = false;
         }
         
-        if (this.selectedMethod.textContent === "Bank Transfer" && !this.fileInput.files.length) {
-            this.fileDropArea.style.borderColor = '#dc3545';
-            this.fileDropArea.style.backgroundColor = '#f8d7da';
-            isValid = false;
-        } else {
-            this.fileDropArea.style.borderColor = '#d1d5db';
-            this.fileDropArea.style.backgroundColor = '#f9fafb';
+        // Only validate proof of payment for bank transfer
+        if (this.selectedMethod.textContent === "Bank Transfer") {
+            if (!this.fileInput.files.length) {
+                this.fileDropArea.style.borderColor = '#dc3545';
+                this.fileDropArea.style.backgroundColor = '#f8d7da';
+                this.showErrorModal('Please upload proof of payment for bank transfer.');
+                isValid = false;
+            } else {
+                this.fileDropArea.style.borderColor = '#d1d5db';
+                this.fileDropArea.style.backgroundColor = '#f9fafb';
+            }
         }
         
         if (!isValid) {
