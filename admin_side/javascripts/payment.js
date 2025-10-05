@@ -621,6 +621,7 @@ class PaymentManager {
             this.confirmPaymentBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Processing...';
             
             const formData = new FormData();
+            formData.append('action', 'process_payment');  // Add this line
             formData.append('category', this.categorySelect.value);
             formData.append('user_type', this.userTypeSelect.value);
             formData.append('user_id', this.userIdSelect.value);
@@ -633,8 +634,8 @@ class PaymentManager {
                 formData.append('proof_of_payment', this.fileInput.files[0]);
             }
             
-            // FIX: Send to the same page with action parameter
-            const response = await fetch('payment.php?action=process_payment', {
+            // CHANGE THIS: Point to the new payment processing file
+            const response = await fetch('payment/process_payment.php', {
                 method: 'POST',
                 body: formData
             });
@@ -644,6 +645,13 @@ class PaymentManager {
             if (result.success) {
                 this.confirmModal.hide();
                 this.successModal.show();
+                
+                // Show email status if available
+                if (result.email_sent) {
+                    console.log('✅ Payment receipt sent to user email');
+                } else {
+                    console.log('⚠️ Payment processed but email not sent');
+                }
                 
                 setTimeout(() => {
                     this.clearFormFields();
