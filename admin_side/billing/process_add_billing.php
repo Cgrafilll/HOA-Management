@@ -252,7 +252,7 @@ try {
         <body>
             <div class="email-container">
                 <div class="header">
-                    <h1>' . $categoryName . ' Invoice</h1>
+                    <h1>' . $categoryName . ' Billing</h1>
                     <p>Neopolitan Sitio Seville Homeowners Association</p>
                 </div>
                 
@@ -260,12 +260,12 @@ try {
                     <div class="greeting">Hello ' . htmlspecialchars($recipientName) . '!</div>
                     
                     <div class="intro-text">
-                        A new ' . strtolower($categoryName) . ' invoice has been generated for your household. Please review the details below and ensure payment is made by the due date.
+                        A new ' . strtolower($categoryName) . ' billing has been generated for your household. Please review the details below and ensure payment is made by the due date.
                     </div>
                     
                     <div class="invoice-banner">
                         <div class="icon">' . $categoryIcon . '</div>
-                        <h3>Invoice Number</h3>
+                        <h3>Billing Number</h3>
                         <div class="invoice">' . $invoiceNumber . '</div>
                     </div>
                     
@@ -347,17 +347,17 @@ try {
         $text = strtoupper($categoryName) . " INVOICE - NSSHAI\n";
         $text .= "=============================\n\n";
         $text .= "Hello " . $recipientName . "!\n\n";
-        $text .= "A new " . strtolower($categoryName) . " invoice has been generated for your household.\n\n";
-        $text .= "INVOICE NUMBER: " . $invoiceDetails['invoice_number'] . "\n\n";
+        $text .= "A new " . strtolower($categoryName) . " billing has been generated for your household.\n\n";
+        $text .= "BILLING NUMBER: " . $invoiceDetails['invoice_number'] . "\n\n";
 
-        $text .= "INVOICE DETAILS:\n";
+        $text .= "BILLING DETAILS:\n";
         if ($category === 'monthly_dues') {
             $billingMonth = date('F Y', strtotime($invoiceDetails['billing_month']));
             $text .= "- Billing Period: " . $billingMonth . "\n";
         }
         $text .= "- Household ID: " . $invoiceDetails['household_id'] . "\n";
         $text .= "- Category: " . $categoryName . "\n";
-        $text .= "- Invoice Date: " . date('F j, Y') . "\n";
+        $text .= "- Billing Date: " . date('F j, Y') . "\n";
         $text .= "- Due Date: " . $dueDate . "\n";
         $text .= "- Amount Due: ₱" . $amount . "\n\n";
 
