@@ -493,21 +493,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             .pagination {
                 font-size: 0.8rem;
             }
-
-            .d-flex.gap-2 {
-                flex-direction: column;
-                gap: 0.5rem !important;
-            }
-
-            .d-flex.gap-2 .btn {
-                width: 100%;
-            }
         }
 
-        /* Make Cancel button slightly darker on hover */
         #confirmModal .btn-cancel:hover {
             background-color: #d6d8db;
-            /* slightly darker gray */
             color: #000;
         }
 
@@ -607,7 +596,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             border-bottom: none;
         }
 
-        /* Reschedule Calendar - following reserve_booking.php style */
         .calendar-grid-reschedule {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -744,6 +732,138 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         .rate-option i {
             font-size: 24px;
             color: #0d6efd;
+        }
+
+        /* Responsive Calendar Styles */
+        @media (max-width: 992px) {
+            .calendar-day {
+                min-height: 100px;
+                padding: 0.35rem;
+            }
+
+            .calendar-day-header {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.75rem;
+            }
+
+            .day-number {
+                font-size: 0.75rem !important;
+            }
+
+            .booking-item {
+                font-size: 0.65rem !important;
+                padding: 0.2rem 0.4rem !important;
+            }
+
+            /* Reschedule Calendar */
+            .calendar-grid-reschedule .calendar-day {
+                font-size: 12px;
+            }
+
+            .calendar-grid-reschedule .calendar-day-header {
+                font-size: 10px;
+                padding: 6px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .calendar-day {
+                min-height: 80px;
+                padding: 0.25rem;
+            }
+
+            .calendar-day-header {
+                padding: 0.4rem 0.2rem;
+                font-size: 0.7rem;
+            }
+
+            .day-number {
+                font-size: 0.7rem !important;
+            }
+
+            .booking-item {
+                font-size: 0.6rem !important;
+                padding: 0.15rem 0.3rem !important;
+            }
+
+            /* Amenity badge adjustments */
+            .booking-container span[class*="badge"] {
+                font-size: 0.5rem !important;
+                width: 18px !important;
+                height: 16px !important;
+                top: -6px !important;
+                right: -6px !important;
+            }
+
+            /* Reschedule Calendar */
+            .calendar-grid-reschedule .calendar-day {
+                font-size: 10px;
+            }
+
+            .calendar-grid-reschedule .calendar-day-header {
+                font-size: 9px;
+                padding: 4px;
+            }
+
+            /* Rate options in reschedule modal */
+            .rate-options {
+                grid-template-columns: 1fr;
+            }
+
+            .rate-option {
+                padding: 12px;
+            }
+
+            .rate-option i {
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .calendar-day {
+                min-height: 60px;
+                padding: 0.2rem;
+            }
+
+            .calendar-day-header {
+                padding: 0.3rem 0.1rem;
+                font-size: 0.65rem;
+            }
+
+            .day-number {
+                font-size: 0.65rem !important;
+            }
+
+            .booking-item {
+                font-size: 0.55rem !important;
+                padding: 0.1rem 0.25rem !important;
+            }
+
+            /* Hide amenity badges on very small screens */
+            .booking-container span[class*="badge"] {
+                display: none;
+            }
+
+            /* Reschedule Calendar */
+            .calendar-grid-reschedule .calendar-day {
+                font-size: 9px;
+                padding: 4px;
+            }
+
+            .calendar-grid-reschedule .calendar-day-header {
+                font-size: 8px;
+                padding: 3px;
+            }
+
+            /* Legend adjustments */
+            .legend {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .legend-item {
+                font-size: 0.75rem;
+            }
         }
     </style>
 </head>
