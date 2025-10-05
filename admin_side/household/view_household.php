@@ -521,6 +521,7 @@ if ($view_household) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../javascripts/mobileSidebar.js"></script>
     <script>
         // Auto-calculate age from DOB
         document.querySelector('input[name="dob"]').addEventListener('change', function () {
