@@ -433,27 +433,25 @@ $amenities = [
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold w-100">Amenity Booking Management</h5>
                 </div>
-                <div class="p-3">
-                    <?php if ($amenity && isset($amenities[$amenity])): ?>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="small"><?php echo htmlspecialchars($amenity); ?></span>
-                            <div>
-                                <a href="choose_booking.php" class="btn btn-outline-secondary btn-sm me-2">
-                                    <i class="bi bi-arrow-left-short me-1"></i>Back
-                                </a>
-                                <a href="reserve_booking.php?reserve=<?php echo htmlspecialchars($amenity); ?>"
-                                    class="btn btn-primary btn-sm">Book Now</a>
-                            </div>
+                <?php if ($amenity && isset($amenities[$amenity])): ?>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="small"><?php echo htmlspecialchars($amenity); ?></span>
+                        <div class="gap-1">
+                            <a href="choose_booking.php" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-arrow-left-short me-1"></i>Back
+                            </a>
+                            <a href="reserve_booking.php?reserve=<?php echo htmlspecialchars($amenity); ?>"
+                                class="btn btn-primary btn-sm">Book Now</a>
                         </div>
-                        <hr class="my-2" style="border-top: 2px solid #7a7a7aff;">
-                        <!-- Amenity-Specific Content -->
-                        <div class="mt-2">
-                            <?php include __DIR__ . '/' . $amenities[$amenity]['file']; ?>
-                        </div>
-                    <?php else: ?>
-                        <p class="text-danger">Invalid or missing amenity selection.</p>
-                    <?php endif; ?>
-                </div>
+                    </div>
+                    <hr class="my-2" style="border-top: 2px solid #7a7a7aff;">
+                    <!-- Amenity-Specific Content -->
+                    <div class="mt-2">
+                        <?php include __DIR__ . '/' . $amenities[$amenity]['file']; ?>
+                    </div>
+                <?php else: ?>
+                    <p class="text-danger">Invalid or missing amenity selection.</p>
+                <?php endif; ?>
             </div>
         </main>
     </div>
