@@ -1085,7 +1085,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     </li>
                     <li class="nav-item">
                         <a class="nav-link link-secondary" id="calendar-tab" data-bs-toggle="tab" href="#calendar"
-                            role="tab">Calendar View</a>
+                            role="tab">Calendar</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link link-secondary" id="reschedule-tab" data-bs-toggle="tab" href="#reschedule"
