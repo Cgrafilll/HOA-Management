@@ -210,80 +210,81 @@ class PaymentManager {
     }
 
     async fetchInvoiceDetails() {
-        const invoiceNumber = this.invoiceInput.value.trim();
-        const selectedCategory = this.categorySelect.value;
-        const userId = this.userIdSelect.value;
-        const userType = this.userTypeSelect.value;
+    const invoiceNumber = this.invoiceInput.value.trim();
+    const selectedCategory = this.categorySelect.value;
+    const userId = this.userIdSelect.value;
+    const userType = this.userTypeSelect.value;
+    
+    this.refNo.textContent = "";
+    this.residentName.textContent = "";
+    this.issueDate.textContent = "";
+    this.clearInvoiceTable();
+    
+    // Categories that require invoice lookup
+    const lookupCategories = ["Amenity Fee", "Monthly Dues", "Penalty Fees", "Other Fees"];
+    
+    if (lookupCategories.includes(selectedCategory) && invoiceNumber && userId && userType) {
         
-        this.refNo.textContent = "";
-        this.residentName.textContent = "";
-        this.issueDate.textContent = "";
-        this.clearInvoiceTable();
+        // Validate that HOA fees are only for homeowners/residents
+        if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory) && userType !== "Homeowner/Resident") {
+            this.refNo.textContent = selectedCategory + " only apply to homeowners/residents";
+            this.invoiceInput.style.borderColor = '#dc3545';
+            this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+            this.clearInvoiceTable();
+            return;
+        }
         
-        // Categories that require invoice lookup
-        const lookupCategories = ["Amenity Fee", "Monthly Dues", "Penalty Fees", "Other Fees"];
-        
-        if (lookupCategories.includes(selectedCategory) && invoiceNumber && userId && userType) {
-            
-            // Validate that HOA fees are only for homeowners/residents
-            if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory) && userType !== "Homeowner/Resident") {
-                this.refNo.textContent = selectedCategory + " only apply to homeowners/residents";
-                this.invoiceInput.style.borderColor = '#dc3545';
-                this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
-                this.clearInvoiceTable();
-                return;
+        try {
+            // Determine which endpoint to use
+            let action;
+            if (selectedCategory === "Amenity Fee") {
+                action = 'get_amenity_booking_by_invoice';
+            } else {
+                // Monthly Dues, Penalty Fees, Other Fees all use the same table
+                action = 'get_billing_by_invoice';
             }
+                
+            const params = new URLSearchParams({
+                action: action,
+                invoice_number: invoiceNumber,
+                user_id: userId,
+                user_type: userType,
+                category: selectedCategory
+            });
             
-            try {
-                // Determine which endpoint to use
-                let action;
-                if (selectedCategory === "Amenity Fee") {
-                    action = 'get_amenity_booking_by_invoice';
-                } else {
-                    // Monthly Dues, Penalty Fees, Other Fees all use the same table
-                    action = 'get_billing_by_invoice';
-                }
-                    
-                const params = new URLSearchParams({
-                    action: action,
-                    invoice_number: invoiceNumber,
-                    user_id: userId,
-                    user_type: userType,
-                    category: selectedCategory
-                });
+            // FIX: Make sure we're fetching from the correct location
+            const response = await fetch(`payment.php?${params.toString()}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                const data = result.data;
+                this.currentInvoiceData = data;
                 
-                const response = await fetch(`?${params}`);
-                const result = await response.json();
+                this.refNo.textContent = data.reference_number;
+                this.residentName.textContent = `${data.first_name} ${data.middle_name} ${data.last_name}`;
+                this.issueDate.textContent = new Date(data.created_at).toLocaleDateString();
                 
-                if (result.success) {
-                    const data = result.data;
-                    this.currentInvoiceData = data;
-                    
-                    this.refNo.textContent = data.reference_number;
-                    this.residentName.textContent = `${data.first_name} ${data.middle_name} ${data.last_name}`;
-                    this.issueDate.textContent = new Date(data.created_at).toLocaleDateString();
-                    
-                    // For billing categories, show additional info
-                    if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory)) {
-                        if (data.billing_month) {
-                            const billingMonth = new Date(data.billing_month).toLocaleDateString('en-US', { 
-                                year: 'numeric', 
-                                month: 'long' 
-                            });
-                            this.issueDate.textContent += ` (${billingMonth})`;
-                        }
-                        if (data.description) {
-                            this.refNo.textContent += ` - ${data.description}`;
-                        }
+                // For billing categories, show additional info
+                if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory)) {
+                    if (data.billing_month) {
+                        const billingMonth = new Date(data.billing_month).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long' 
+                        });
+                        this.issueDate.textContent += ` (${billingMonth})`;
                     }
-                    
-                    this.populateInvoiceTable(data.items);
-                    
-                    this.subtotal.textContent = `₱${data.subtotal}`;
-                    this.previouslyPaid.textContent = `₱${data.amount_paid}`;
-                    this.balanceDue.textContent = `₱${data.balance_due}`;
-                    
-                    if (data.status === 'Partial') {
+                    if (data.description) {
+                        this.refNo.textContent += ` - ${data.description}`;
+                    }
+                }
+                
+                this.populateInvoiceTable(data.items);
+                
+                this.subtotal.textContent = `₱${data.subtotal}`;
+                this.previouslyPaid.textContent = `₱${data.amount_paid}`;
+                this.balanceDue.textContent = `₱${data.balance_due}`;
+                
+                if (data.status === 'Partial') {
                         this.balanceDue.parentElement.classList.add('text-warning');
                         this.balanceDue.parentElement.classList.remove('text-success');
                     } else if (data.status === 'Paid' || data.status === 'Completed') {
@@ -581,7 +582,6 @@ class PaymentManager {
             this.confirmPaymentBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Processing...';
             
             const formData = new FormData();
-            formData.append('action', 'process_payment');
             formData.append('category', this.categorySelect.value);
             formData.append('user_type', this.userTypeSelect.value);
             formData.append('user_id', this.userIdSelect.value);
@@ -594,7 +594,8 @@ class PaymentManager {
                 formData.append('proof_of_payment', this.fileInput.files[0]);
             }
             
-            const response = await fetch('payment/process_payment.php', {
+            // FIX: Send to the same page with action parameter
+            const response = await fetch('payment.php?action=process_payment', {
                 method: 'POST',
                 body: formData
             });
