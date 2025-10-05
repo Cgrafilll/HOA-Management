@@ -384,6 +384,7 @@ if (!empty($admin['profile_picture'])) {
                         <div class="col-md-6">
                             <label for="due_date" class="form-label fw-semibold">Due Date <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="due_date" name="due_date" required>
+                            <small class="text-muted" id="dueDateHint">Will be set automatically for monthly dues (28th of billing month)</small>
                         </div>
                     </div>
 
@@ -504,6 +505,7 @@ if (!empty($admin['profile_picture'])) {
             const submitBtn = document.getElementById('submitBtn');
             const submitBtnText = document.getElementById('submitBtnText');
             const confirmMessage = document.getElementById('confirmMessage');
+            const dueDateHint = document.getElementById('dueDateHint');
 
             // Initialize Select2 for household dropdown with search
             $(householdSelect).select2({
@@ -542,6 +544,9 @@ if (!empty($admin['profile_picture'])) {
                     billingMonthContainer.classList.remove('field-hidden');
                     householdSelect.setAttribute('required', 'required');
                     billingMonthInput.setAttribute('required', 'required');
+                    dueDateInput.setAttribute('readonly', 'readonly');
+                    dueDateInput.style.backgroundColor = '#e9ecef';
+                    dueDateInput.style.cursor = 'not-allowed';
                     updatePaymentDate();
                     submitBtnText.textContent = 'Save Invoice';
                     
@@ -550,6 +555,9 @@ if (!empty($admin['profile_picture'])) {
                     descriptionContainer.classList.remove('field-hidden');
                     householdSelect.setAttribute('required', 'required');
                     descriptionInput.setAttribute('required', 'required');
+                    dueDateInput.removeAttribute('readonly');
+                    dueDateInput.style.backgroundColor = '';
+                    dueDateInput.style.cursor = '';
                     submitBtnText.textContent = 'Save Invoice';
                 }
             });
