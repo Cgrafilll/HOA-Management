@@ -1684,12 +1684,28 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
         }
 
+        // Add this code inside the selectDate function, after the existing booking check
         function selectDate(dateString, element) {
             const selectedRateType = document.getElementById('selectedRate')?.value || 'day';
             const booking = bookedDates[dateString];
 
+            // Existing check for selected rate
             if (booking && booking[selectedRateType]) {
                 showErrorModal(`This date is already booked for <strong>${selectedRateType}</strong>. Please select the other rate or choose a different date.`);
+                return;
+            }
+
+            // NEW: Check if whole day is selected but day or night is booked
+            if (selectedRateType === 'whole' && booking && (booking.day || booking.night)) {
+                const bookedPeriod = booking.day ? 'day' : 'night';
+                showErrorModal(`Cannot select <strong>whole day</strong> rate because <strong>${bookedPeriod}</strong> is already booked for <strong>${dateString}</strong>. Please select the available rate first.`);
+
+                // Auto-select the available rate
+                const availableRate = booking.day ? 'night' : 'day';
+                const rateOption = document.querySelector(`[data-value="${availableRate}"]`);
+                if (rateOption) {
+                    selectRate(rateOption, availableRate);
+                }
                 return;
             }
 
@@ -2172,7 +2188,19 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         // ============================================
         // RATE & PAYMENT SELECTION
         // ============================================
+        // Update the selectRate function to handle the whole day restriction
         function selectRate(option, value) {
+            // Check if trying to select whole day when day or night is booked
+            if (value === 'whole' && selectedDate && bookedDates[selectedDate]) {
+                const booking = bookedDates[selectedDate];
+                if (booking.day || booking.night) {
+                    const bookedPeriod = booking.day ? 'day' : 'night';
+                    showErrorModal(`Cannot select <strong>whole day</strong> rate because <strong>${bookedPeriod}</strong> is already booked for <strong>${selectedDate}</strong>. Please select the available rate or choose a different date.`);
+                    return;
+                }
+            }
+
+            // Existing check for day/night rates
             if (selectedDate && bookedDates[selectedDate] && bookedDates[selectedDate][value]) {
                 showErrorModal(`The <strong>${value}</strong> rate is already booked for <strong>${selectedDate}</strong>. Please select the other rate or choose a different date.`);
                 return;
