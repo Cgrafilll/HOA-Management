@@ -20,7 +20,7 @@ require '../rfid-api/db.php'; // Adjust path as needed
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_id'])) {
-    header("Location: auth/login.php?error=" . urlencode("Please log in to access this page."));
+    header("Location: login/login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
 
@@ -29,7 +29,7 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
     // Session expired
     session_unset();
     session_destroy();
-    header("Location: auth/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    header("Location: login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
     exit;
 }
 
@@ -398,25 +398,6 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
 
         .metric-card.blue {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-
-        .mobile-menu-btn {
-            display: none;
-        }
-
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 76px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1019;
-        }
-
-        .sidebar-overlay.show {
-            display: block;
         }
 
         /* Mobile Styles */
