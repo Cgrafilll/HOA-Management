@@ -12,7 +12,7 @@
         <!-- Homeowner Table -->
         <div class="col-md-6">
             <h6 class="fw-bold">Homeowner</h6>
-            <div style="max-width: 100%;">
+            <div class="table-responsive">
                 <table class="table table-sm text-center table-bordered">
                     <thead>
                         <tr>
@@ -29,26 +29,23 @@
                 </table>
             </div>
         </div>
-        <!-- Add-Ons Table -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <h6 class="fw-bold">Add-Ons</h6>
-                <div style="max-width: 635px;">
-                    <table class="table table-sm text-center table-bordered">
-                        <thead>
-                            <tr>
-                                <th class="bg-success text-white">Tables</th>
-                                <th class="bg-success text-white">Chairs</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>₱20.00 / per table</td>
-                                <td>₱12.00 / per chair</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+        <div class="col-md-6">
+            <h6 class="fw-bold">Add-Ons</h6>
+            <div class="table-responsive">
+                <table class="table table-sm text-center table-bordered">
+                    <thead>
+                        <tr>
+                            <th class="bg-success text-white">Tables</th>
+                            <th class="bg-success text-white">Chairs</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>₱20.00 / per table</td>
+                            <td>₱12.00 / per chair</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

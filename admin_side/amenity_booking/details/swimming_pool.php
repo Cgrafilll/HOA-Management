@@ -48,7 +48,7 @@
             <!-- Homeowner Table -->
             <div class="col-md-6">
                 <h6 class="fw-bold">Homeowner</h6>
-                <div style="max-width: 100%;">
+                <div class="table-responsive">
                     <table class="table table-sm text-center table-bordered">
                         <thead>
                             <tr>
@@ -75,7 +75,7 @@
             <!-- Guest Table -->
             <div class="col-md-6">
                 <h6 class="fw-bold">Guest</h6>
-                <div style="max-width: 100%;">
+                <div class="table-responsive">
                     <table class="table table-sm text-center table-bordered">
                         <thead>
                             <tr>
@@ -102,9 +102,9 @@
         </div>
         <!-- Add-Ons Table -->
         <div class="row mt-4">
-            <div class="col-12">
+            <div class="col-md-12">
                 <h6 class="fw-bold">Add-Ons</h6>
-                <div style="max-width: 635px;">
+                <div class="table-responsive">
                     <table class="table table-sm text-center table-bordered">
                         <thead>
                             <tr>
