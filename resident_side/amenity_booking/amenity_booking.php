@@ -262,26 +262,44 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
 
         * {
             font-family: "Montserrat", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow-x: hidden;
         }
 
         header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 1030;
+            height: 76px;
+            background-color: white;
         }
 
         .sidebar {
             width: 250px;
-            min-height: 100vh;
+            height: calc(100vh - 76px);
             position: fixed;
-            top: 20;
+            top: 76px;
             left: 0;
             background-color: #1F2937;
             overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1020;
+            transition: transform 0.3s ease;
         }
 
         main {
             margin-left: 250px;
+            margin-top: 76px;
+            min-height: calc(100vh - 76px);
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
         }
 
         .sidebar a,
@@ -295,15 +313,42 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
 
         .sidebar a:hover,
         .sidebar button:hover,
-        .collapse ul li a:hover {
+        .collapse ul li a:hover,
+        .collapse ul li a.actived {
             color: #80ed99;
         }
 
         .sidebar .nav-link.active,
         .sidebar .btn-toggle:not(.collapsed),
-        .sidebar .logout:hover {
+        .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar .logout {
+            flex-shrink: 0;
+            border-top: 1px solid #374151;
+            padding-top: 12px;
         }
 
         .sidebar .btn-toggle {
@@ -333,6 +378,114 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                top: 76px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            header .logo-container {
+                width: auto !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            .nav-item {
+                font-size: 0.9rem;
+            }
+
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            main {
+                margin-top: 76px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .table-responsive {
+                font-size: 0.75rem;
+            }
+
+            .pagination,
+            .nav-item {
+                font-size: 0.8rem;
+            }
+        }
+
+        #confirmModal .btn-cancel:hover {
+            background-color: #d6d8db;
+            color: #000;
+        }
+
+        /* Cancel hover */
+        .btn-cancel:hover {
+            background-color: #d6d8db;
+            color: #000;
         }
 
         .calendar-container {
@@ -404,6 +557,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         .legend-item {
             display: flex;
             align-items: center;
+            justify-content: start;
             gap: 0.5rem;
             font-size: 0.875rem;
         }
@@ -425,20 +579,18 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             border-bottom: none;
         }
 
-        /* Reschedule Calendar */
         .calendar-grid-reschedule {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 5px;
             max-width: 100%;
-            overflow: hidden;
         }
 
         .calendar-grid-reschedule .calendar-day-header {
             text-align: center;
             font-weight: 600;
-            font-size: 12px;
-            padding: 8px;
+            font-size: 11px;
+            padding: 6px 4px;
             color: #6c757d;
         }
 
@@ -448,12 +600,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             align-items: center;
             justify-content: center;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             border: 1px solid #dee2e6;
             background: white;
             position: relative;
             user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
         .calendar-grid-reschedule .calendar-day:hover:not(.disabled):not(.booked) {
@@ -519,12 +674,25 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             pointer-events: none;
         }
 
+        #dateMessageReschedule {
+            margin-top: 10px;
+        }
+
+        .rate-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
         .rate-option {
             border: 2px solid #dee2e6;
             border-radius: 8px;
             padding: 15px;
             cursor: pointer;
             transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .rate-option:hover {
@@ -536,13 +704,225 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             border-color: #0d6efd;
             background: #cfe2ff;
         }
+
+        .rate-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #e9ecef;
+        }
+
+        .rate-option i {
+            font-size: 24px;
+            color: #0d6efd;
+        }
+
+        /* Responsive Calendar Styles */
+        @media (max-width: 992px) {
+            .calendar-day {
+                min-height: 100px;
+                padding: 0.35rem;
+            }
+
+            .calendar-day-header {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.75rem;
+            }
+
+            .day-number {
+                font-size: 0.75rem !important;
+            }
+
+            .booking-item {
+                font-size: 0.65rem !important;
+                padding: 0.2rem 0.4rem !important;
+            }
+
+            .calendar-grid-reschedule {
+                gap: 2px;
+            }
+
+            .calendar-grid-reschedule .calendar-day-header {
+                font-size: 10px;
+                padding: 5px 2px;
+            }
+
+            .calendar-grid-reschedule .calendar-day {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .calendar-day {
+                min-height: 80px;
+                padding: 0.25rem;
+            }
+
+            .calendar-day-header {
+                padding: 0.4rem 0.2rem;
+                font-size: 0.7rem;
+            }
+
+            .day-number {
+                font-size: 0.7rem !important;
+            }
+
+            .booking-item {
+                font-size: 0.6rem !important;
+                padding: 0.15rem 0.3rem !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Reschedule Calendar - More compact */
+            .calendar-grid-reschedule {
+                gap: 1px;
+            }
+
+            .calendar-grid-reschedule .calendar-day-header {
+                font-size: 8px;
+                padding: 3px 1px;
+                font-weight: 600;
+            }
+
+            .calendar-grid-reschedule .calendar-day {
+                font-size: 10px;
+                min-height: auto;
+                padding: 6px 2px;
+                aspect-ratio: 1;
+            }
+
+            .calendar-grid-reschedule .partial-indicator {
+                font-size: 6px;
+                top: 0px;
+                right: 1px;
+            }
+
+            /* Reschedule calendar container */
+            .bg-light.border.rounded.p-3.mb-2 {
+                padding: 0.5rem !important;
+            }
+
+            /* Month navigation buttons */
+            #prevMonthReschedule,
+            #nextMonthReschedule {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
+
+            #currentMonthReschedule {
+                font-size: 0.85rem;
+            }
+
+            /* Legend at bottom of calendar */
+            .d-flex.gap-3.mt-2.justify-content-center {
+                flex-wrap: wrap;
+                gap: 0.5rem !important;
+            }
+
+            .d-flex.gap-3.mt-2.justify-content-center small {
+                font-size: 0.7rem;
+            }
+
+            /* Amenity badge adjustments */
+            .booking-container span[class*="badge"] {
+                font-size: 0.5rem !important;
+                width: 18px !important;
+                height: 16px !important;
+                top: -6px !important;
+                right: -6px !important;
+            }
+
+            /* Rate options in reschedule modal */
+            .rate-options {
+                grid-template-columns: 1fr;
+            }
+
+            .rate-option {
+                padding: 12px;
+            }
+
+            .rate-option i {
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .calendar-day {
+                min-height: 60px;
+                padding: 0.2rem;
+            }
+
+            .calendar-day-header {
+                padding: 0.3rem 0.1rem;
+                font-size: 0.65rem;
+            }
+
+            .day-number {
+                font-size: 0.65rem !important;
+            }
+
+            .booking-item {
+                font-size: 0.55rem !important;
+                padding: 0.1rem 0.25rem !important;
+            }
+
+            /* Hide amenity badges on very small screens */
+            .booking-container span[class*="badge"] {
+                display: none;
+            }
+
+            .calendar-grid-reschedule {
+                gap: 0.5px;
+            }
+
+            .calendar-grid-reschedule .calendar-day-header {
+                font-size: 7px;
+                padding: 2px 0px;
+            }
+
+            .calendar-grid-reschedule .calendar-day {
+                font-size: 9px;
+                padding: 4px 1px;
+            }
+
+            #currentMonthReschedule {
+                font-size: 0.75rem;
+            }
+
+            .d-flex.gap-3.mt-2.justify-content-center small {
+                font-size: 0.65rem;
+            }
+
+            /* Adjust modal padding */
+            #rescheduleModal .modal-body {
+                padding: 0.75rem;
+            }
+
+            #rescheduleModal .alert {
+                padding: 0.5rem;
+                font-size: 0.85rem;
+            }
+
+            /* Legend adjustments */
+            .legend {
+                gap: 0.5rem;
+            }
+
+            .legend-item {
+                font-size: 0.75rem;
+            }
+        }
     </style>
 </head>
 
 <body class="bg-light">
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
-        <div class="me-4" style="width: 250px;">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="me-4 logo-container" style="width: 250px;">
             <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
@@ -550,7 +930,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <span class="d-none d-md-inline">Hello, <?php echo htmlspecialchars($username); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -574,10 +954,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             </div>
         </div>
     </header>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1">
+        <aside class="sidebar">
+            <nav class="nav flex-column gap-1 sidebar-nav p-3">
                 <a href="../dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -606,14 +988,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     </div>
                 </div>
                 <a href="../logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
-                    style="position: fixed; bottom: 0; width: 220px;">
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-left me-2"></i> Logout
                 </a>
             </nav>
         </aside>
         <!-- Main Content -->
-        <main class="flex-fill p-4">
+        <main class="flex-grow-1 p-4">
             <?php if (isset($_GET['success'])): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     <i class="bi bi-check-circle me-2"></i>
@@ -641,11 +1022,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     </li>
                     <li class="nav-item">
                         <a class="nav-link link-secondary" id="calendar-tab" data-bs-toggle="tab" href="#calendar"
-                            role="tab">Calendar View</a>
+                            role="tab">Calendar</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link link-secondary" id="reschedule-tab" data-bs-toggle="tab" href="#reschedule"
-                            role="tab">Reschedule Requests</a>
+                            role="tab">Reschedules</a>
                     </li>
                 </ul>
                 <!-- Tab Content -->
@@ -984,6 +1365,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../admin_side/javascripts/mobileSidebar.js"></script>
     <script>
         const bookings = <?= json_encode($bookings) ?>;
         const loggedInHouseholdId = <?= json_encode($household_id) ?>;
