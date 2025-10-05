@@ -572,9 +572,9 @@ try {
                             </div>
                         </div>
                         <!-- Evidence -->
-                        <div class="row">
+                        <div class="row mb-3">
                             <span class="fw-bold mb-3">Evidence</span>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <!-- File Upload -->
                                 <div class="file-drop-area" id="fileDropArea" style="height: 250px;">
                                     <div class="cloud-icon">
@@ -593,7 +593,7 @@ try {
                                         class="fw-bold text-danger">*</small></label>
                                 <div id="filePreview" class="mt-2"></div>
                             </div>
-                            <div class="col-4">
+                            <div class="col-md-4">
                                 <textarea name="description_of_incident" class="form-control" required
                                     style="height: 250px; resize: none;"
                                     placeholder="Specifically describe what happened . . ."></textarea>
