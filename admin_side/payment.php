@@ -935,9 +935,9 @@ if (isset($_GET['action'])) {
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Invoice Number<small class="fw-bold text-danger">*</small></label>
+                                        <label class="form-label">Billing Number<small class="fw-bold text-danger">*</small></label>
                                         <input type="text" class="form-control" id="invoiceInput"
-                                            placeholder="Enter Invoice Number" required>
+                                            placeholder="Enter Billing Number" required>
                                     </div>
                                 </div>
 
