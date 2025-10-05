@@ -541,13 +541,13 @@ $bookings_result = $bookings_stmt->get_result();
                                         $statusClass = '';
                                         switch (strtolower($row['status'])) {
                                             case 'paid':
-                                                $statusClass = 'text-success';
+                                                $statusClass = 'badge bg-success text-white';
                                                 break;
                                             case 'partial':
-                                                $statusClass = 'text-warning';
+                                                $statusClass = 'badge bg-primary text-white';
                                                 break;
                                             case 'pending':
-                                                $statusClass = 'text-secondary';
+                                                $statusClass = 'badge bg-secondary text-dark';
                                                 break;
                                             default:
                                                 $statusClass = 'text-muted';
