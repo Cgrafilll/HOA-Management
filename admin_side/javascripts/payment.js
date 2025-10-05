@@ -127,13 +127,13 @@ class PaymentManager {
             this.inOffice.classList.remove('active');
             this.selectedMethod.textContent = "Bank Transfer";
             this.referenceNumberGroup.style.display = 'block';
-            this.referenceNumber.setAttribute('required', 'required'); // Add required for bank transfer
+            this.referenceNumber.setAttribute('required', 'required');
         } else {
             this.inOffice.classList.add('active');
             this.bankTransfer.classList.remove('active');
             this.selectedMethod.textContent = "In-Office Payment";
             this.referenceNumberGroup.style.display = 'none';
-            this.referenceNumber.removeAttribute('required'); // Remove required for in-office
+            this.referenceNumber.removeAttribute('required');
             this.referenceNumber.value = ''; // Clear the value
         }
         this.clearFormFields();
@@ -482,7 +482,9 @@ class PaymentManager {
 
     handleSubmit(e) {
         e.preventDefault();
+        e.stopPropagation();
         
+        // Manual validation for all fields
         const requiredFields = [
             this.userTypeSelect,
             this.userIdSelect,

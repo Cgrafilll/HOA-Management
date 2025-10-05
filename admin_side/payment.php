@@ -954,7 +954,7 @@ if (isset($_GET['action'])) {
                                 <div class="mb-3" id="referenceNumberGroup" style="display: none;">
                                     <label class="form-label">Reference Number</label>
                                     <input type="text" class="form-control" id="referenceNumber"
-                                        placeholder="Bank transfer reference number" required>
+                                        placeholder="Bank transfer reference number">
                                 </div>
 
                                 <!-- Summary Display -->
