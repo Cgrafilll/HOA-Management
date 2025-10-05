@@ -550,14 +550,14 @@ $bookings_result = $bookings_stmt->get_result();
                                                 $statusClass = 'badge bg-secondary text-dark';
                                                 break;
                                             default:
-                                                $statusClass = 'text-muted';
+                                                $statusClass = 'badge bg-warning text-dark';
                                         }
                                         echo "<tr>
                                     <td>{$bookingDate}</td>
                                     <td>{$fullName}</td>
                                     <td>{$amenity}</td>
                                     <td>{$resCode}</td>
-                                    <td class='{$statusClass} fw-bold'>{$status}</td>
+                                    <td class='{$statusClass} fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>{$status}</td>
                                   </tr>";
                                     }
                                 } else {
