@@ -575,6 +575,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         .legend-item {
             display: flex;
             align-items: center;
+            justify-content: start;
             gap: 0.5rem;
             font-size: 0.875rem;
         }
