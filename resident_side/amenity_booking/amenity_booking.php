@@ -1065,6 +1065,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                 : ($row['status'] === 'partial'
                                                     ? 'badge bg-primary text-white'
                                                     : 'badge bg-warning text-dark');
+                                            $timeDisplay = $row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : '9:00 AM - 10:00 PM');
 
                                             echo "<tr>
                                                 <td>{$bookingDate}</td>
@@ -1085,9 +1086,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                             reservationCode: \"" . $resCode . "\",
                                                             paymentStatus: \"" . ucfirst($row['status']) . "\",
                                                             amount: \"₱" . number_format($row['amount_paid'], 2) . ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : "") . "\",
-                                                            time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\"
-                                                        })'>
-                                                        <i class='bi bi-eye'></i>
+                                                            time: \"" . $timeDisplay . "\"
                                                     </button>
                                                     <button class='btn btn-sm btn-outline-primary' title='Reschedule'
                                                         onclick='openRescheduleModal({
@@ -1095,7 +1094,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                             fullName: \"" . addslashes($fullName) . "\",
                                                             amenity: \"" . addslashes($amenity) . "\",
                                                             date: \"" . $bookingDate . "\",
-                                                            time: \"" . ($row['rate'] === 'day' ? '9:00 AM - 5:00 PM' : ($row['rate'] === 'night' ? '5:00 PM - 10:00 PM' : 'N/A')) . "\",
+                                                            time: \"" . $timeDisplay . "\"
                                                             rate: \"" . $row['rate'] . "\"
                                                         })'>
                                                         <i class='bi bi-calendar2-week'></i>
