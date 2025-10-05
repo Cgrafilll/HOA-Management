@@ -1,5 +1,5 @@
 <!-- Pool Image -->
-<div class="my-3" style="overflow: hidden; border-radius: 0.5rem; 
+<div class="mb-3 img-fluid" style="overflow: hidden; border-radius: 0.5rem; 
         height: 450px; 
         background-image: url('../../images/pool.png'); 
         background-size: 90%;   /* zoom level */
@@ -7,14 +7,14 @@
         background-repeat: no-repeat;">
 </div>
 <!-- Pool Guidelines -->
-<div class="mt-4">
+<div class="mb-3">
     <h5 class="fw-bold">CLUBHOUSE POOL USAGE GUIDELINES</h5>
     <p>
         We're happy to announce that our pool is now open to walk-ins! To ensure a safe and
         enjoyable
         experience for everyone, please take note of the following guidelines:
     </p>
-    <h6 class="fw-bold mt-3">General Access of Pool:</h6>
+    <h6 class="fw-bold mb-3">General Access of Pool:</h6>
     <div class="ms-3">
         <p class="mb-1">Walk-in Homeowners/Guests</p>
         <p class="mb-1">We now welcome walk-ins at a ₱100 rate per head.</p>
@@ -27,7 +27,7 @@
             </ul>
         </div>
     </div>
-    <h6 class="fw-bold mt-3">Exclusive Use of Pool:</h6>
+    <h6 class="fw-bold mb-3">Exclusive Use of Pool:</h6>
     <div class="ms-3">
         <p class="mb-1">Special Requests for Pool Exclusivity:</p>
         <p class="mb-1">We continue to accommodate exclusive use of the pool upon special request:
@@ -42,9 +42,9 @@
             </ul>
         </div>
     </div>
-    <h5 class="fw-bold mb-4">POOL RATES</h5>
-    <div class="container my-5">
-        <div class="row">
+    <h5 class="fw-bold mb-3">POOL RATES</h5>
+    <div class="container">
+        <div class="row mb-3">
             <!-- Homeowner Table -->
             <div class="col-md-6">
                 <h6 class="fw-bold">Homeowner</h6>
@@ -101,7 +101,7 @@
             </div>
         </div>
         <!-- Add-Ons Table -->
-        <div class="row mt-4">
+        <div class="row mb-3">
             <div class="col-md-12">
                 <h6 class="fw-bold">Add-Ons</h6>
                 <div class="table-responsive">
@@ -124,7 +124,7 @@
         </div>
     </div>
     <!-- Reminders Section -->
-    <div class="mt-5">
+    <div class="mb-3">
         <h6 class="fw-bold">REMINDERS FOR ALL GUESTS:</h6>
         <ul>
             <li>Please observe proper swimwear at all times.</li>

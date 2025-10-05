@@ -434,7 +434,7 @@ $amenities = [
                     <h5 class="mb-0 fw-bold w-100">Amenity Booking Management</h5>
                 </div>
                 <?php if ($amenity && isset($amenities[$amenity])): ?>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex justify-content-between align-items-center p-3">
                         <span class="small"><?php echo htmlspecialchars($amenity); ?></span>
                         <div class="gap-1">
                             <a href="choose_booking.php" class="btn btn-outline-secondary btn-sm">
