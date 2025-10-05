@@ -736,12 +736,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 padding: 1rem !important;
             }
 
-            .p-3.d-flex.justify-content-between {
-                flex-direction: column;
-                gap: 0.5rem;
-                align-items: flex-start !important;
-            }
-
             /* Calendar adjustments */
             .calendar-view {
                 padding: 10px;
@@ -966,7 +960,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         <?php echo htmlspecialchars($amenity); ?>
                     </span>
                     <a href="add_booking.php?amenity=<?php echo htmlspecialchars($amenity); ?>"
-                        class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-end">
+                        class="btn btn-outline-secondary btn-sm d-flex align-items-center">
                         <i class="bi bi-arrow-left-short me-1"></i>Back
                     </a>
                 </div>
