@@ -929,7 +929,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
 
             /* Legend adjustments */
             .legend {
-                flex-direction: column;
                 gap: 0.5rem;
             }
 
