@@ -246,8 +246,20 @@ if (isset($_GET['action'])) {
                 $booking = $stmt->get_result()->fetch_assoc();
 
                 if ($booking && $user_data) {
+                    // CHECK IF ALREADY PAID
+                    if (strtolower($booking['status']) === 'paid') {
+                        echo json_encode(['success' => false, 'error' => 'This invoice has already been paid in full']);
+                        exit;
+                    }
+                    
                     // Calculate balance
                     $balance_due = $booking['total_amount'] - $booking['amount_paid'];
+                    
+                    // Additional check: if balance is 0 or negative
+                    if ($balance_due <= 0) {
+                        echo json_encode(['success' => false, 'error' => 'This invoice has no remaining balance']);
+                        exit;
+                    }
 
                     // Build items array for table population
                     $items = [];
@@ -398,6 +410,19 @@ if (isset($_GET['action'])) {
                 $billing = $stmt->get_result()->fetch_assoc();
 
                 if ($billing && $user_data) {
+                    // CHECK IF ALREADY PAID
+                    $status_lower = strtolower(trim($billing['status']));
+                    if ($status_lower === 'paid' || $status_lower === 'completed') {
+                        echo json_encode(['success' => false, 'error' => 'This invoice has already been paid in full']);
+                        exit;
+                    }
+                    
+                    // Additional check: if balance remaining is 0 or negative
+                    if ($billing['balance_remaining'] <= 0) {
+                        echo json_encode(['success' => false, 'error' => 'This invoice has no remaining balance']);
+                        exit;
+                    }
+
                     // Calculate total amount
                     $total_amount = $billing['amount_paid'] + $billing['balance_remaining'];
 
