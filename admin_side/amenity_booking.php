@@ -597,9 +597,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             border-bottom: none;
         }
 
-        /* Reschedule Calendar - Make it more compact */
         .calendar-grid-reschedule {
-            gap: 3px;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
             max-width: 100%;
         }
 
@@ -623,7 +624,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             background: white;
             position: relative;
             user-select: none;
-            padding: 2px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
         .calendar-grid-reschedule .calendar-day:hover:not(.disabled):not(.booked) {
