@@ -193,7 +193,7 @@ try {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>' . $categoryName . ' Invoice</title>
+            <title>' . $categoryName . ' Billing</title>
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f9fc; margin: 0; padding: 0; }
@@ -270,7 +270,7 @@ try {
                     </div>
                     
                     <div class="invoice-details">
-                        <h3>Invoice Details</h3>
+                        <h3>Billing Details</h3>
                         ' . $billingPeriodRow . '
                         <div class="detail-row">
                             <span class="detail-label">🏠 Household ID</span>
@@ -281,7 +281,7 @@ try {
                             <span class="detail-value">' . $categoryName . '</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">📅 Invoice Date</span>
+                            <span class="detail-label">📅 Billing Date</span>
                             <span class="detail-value">' . date('F j, Y') . '</span>
                         </div>
                         <div class="detail-row">
@@ -484,8 +484,20 @@ try {
         throw new Exception('Invalid due date format', 400);
     }
 
-    if ($due_date <= date('Y-m-d')) {
-        throw new Exception('Cannot create invoice with a due date that has already passed (' . date('F j, Y', strtotime($due_date)) . ')', 400);
+    // Different validation based on category
+    if ($category === 'monthly_dues') {
+        // For monthly dues, due date must be in the future (28th of billing month)
+        // Don't allow creating monthly dues if the 28th has already passed
+        if ($due_date <= date('Y-m-d')) {
+            throw new Exception('Cannot create monthly dues invoice - the due date (' . date('F j, Y', strtotime($due_date)) . ') has already passed', 400);
+        }
+    } else {
+        // For penalty_fees and other_fees:
+        // - Can create with today's date (same day is allowed)
+        // - Cannot create with past dates (before today)
+        if ($due_date < date('Y-m-d')) {
+            throw new Exception('Cannot create invoice with a due date in the past (' . date('F j, Y', strtotime($due_date)) . ')', 400);
+        }
     }
 
     // Category-specific validation

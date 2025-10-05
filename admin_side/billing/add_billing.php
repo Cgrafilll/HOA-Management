@@ -547,6 +547,7 @@ if (!empty($admin['profile_picture'])) {
                     dueDateInput.setAttribute('readonly', 'readonly');
                     dueDateInput.style.backgroundColor = '#e9ecef';
                     dueDateInput.style.cursor = 'not-allowed';
+                    dueDateHint.style.display = 'block';
                     updatePaymentDate();
                     submitBtnText.textContent = 'Save Invoice';
                     
@@ -558,6 +559,7 @@ if (!empty($admin['profile_picture'])) {
                     dueDateInput.removeAttribute('readonly');
                     dueDateInput.style.backgroundColor = '';
                     dueDateInput.style.cursor = '';
+                    dueDateHint.style.display = 'none';
                     submitBtnText.textContent = 'Save Invoice';
                 }
             });
@@ -709,9 +711,12 @@ if (!empty($admin['profile_picture'])) {
             // Update payment_date whenever billing_month changes
             billingMonthInput.addEventListener('change', updatePaymentDate);
 
-            // Set minimum due date to today
+            // Set minimum due date to today (allow same day)
             const todayStr = today.toISOString().split('T')[0];
             dueDateInput.setAttribute('min', todayStr);
+            
+            // Note: The min attribute allows selecting the min date itself
+            // No additional changes needed - the issue is in backend validation
 
             // Remove red border when user types or selects
             [categorySelect, householdSelect, billingMonthInput, descriptionInput, dueDateInput].forEach(field => {
