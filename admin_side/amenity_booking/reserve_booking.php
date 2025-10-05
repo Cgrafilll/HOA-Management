@@ -698,6 +698,27 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             display: block;
         }
 
+        /* Legend styles */
+        .legend {
+            display: flex;
+            gap: 1rem;
+            padding: 0.75rem;
+            border-radius: 4px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .legend small {
+            white-space: nowrap;
+        }
+
         /* Mobile Styles */
         @media (max-width: 768px) {
             .sidebar {
@@ -772,14 +793,18 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 min-height: 50px;
             }
 
-            /* Legend at bottom of calendar */
             .legend {
-                flex-wrap: wrap;
-                gap: 0.5rem !important;
+                gap: 0.5rem;
+                padding: 0.5rem;
             }
 
-            .legend-item {
-                font-size: 0.7rem;
+            .legend-item,
+            .legend small {
+                font-size: 0.75rem;
+            }
+
+            .legend .badge {
+                font-size: 0.6rem !important;
             }
         }
 
@@ -845,8 +870,25 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 padding: 0.75rem;
             }
 
-            .legend-item {
-                font-size: 0.65rem;
+            .legend {
+                gap: 0.25rem;
+                padding: 0.25rem;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .legend-item,
+            .legend small {
+                font-size: 0.7rem;
+            }
+
+            .legend .badge {
+                font-size: 0.55rem !important;
+                width: 12px;
+                height: 12px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
             }
         }
     </style>
