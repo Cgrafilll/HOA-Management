@@ -447,7 +447,7 @@ $amenities = [
                         </div>
                         <hr class="my-2" style="border-top: 2px solid #7a7a7aff;">
                         <!-- Amenity-Specific Content -->
-                        <div class="border">
+                        <div class="mt-2">
                             <?php include __DIR__ . '/' . $amenities[$amenity]['file']; ?>
                         </div>
                     <?php else: ?>

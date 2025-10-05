@@ -1,5 +1,5 @@
 <!-- Pool Image -->
-<div class="mb-3" style="overflow: hidden; border-radius: 0.5rem; 
+<div class="mb-3 img-fluid" style="overflow: hidden; border-radius: 0.5rem; 
     height: 450px; 
     background-image: url('../../images/gazebo.png'); 
     background-size: 90%;   /* zoom level */
@@ -7,7 +7,7 @@
     background-repeat: no-repeat;">
 </div>
 <h5 class="fw-bold mb-3">BASKETBALL COURT RATES</h5>
-<div class="container mb-5">
+<div class="container">
     <div class="row mb-3">
         <!-- Homeowner Table -->
         <div class="col-md-6">
