@@ -70,6 +70,8 @@ if (!empty($admin['profile_picture'])) {
     <title>NSSHAI HOA Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
     <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
@@ -166,6 +168,15 @@ if (!empty($admin['profile_picture'])) {
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 15px;
+        }
+
+        /* Select2 custom styling */
+        .select2-container--bootstrap-5 .select2-selection {
+            min-height: 38px;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            line-height: 38px;
         }
     </style>
 </head>
@@ -467,6 +478,8 @@ if (!empty($admin['profile_picture'])) {
         </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const form = document.getElementById('invoiceForm');
@@ -492,13 +505,22 @@ if (!empty($admin['profile_picture'])) {
             const submitBtnText = document.getElementById('submitBtnText');
             const confirmMessage = document.getElementById('confirmMessage');
 
+            // Initialize Select2 for household dropdown with search
+            $(householdSelect).select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Search for a household...',
+                allowClear: true,
+                width: '100%',
+                dropdownParent: householdContainer
+            });
+
             // Category change handler
             categorySelect.addEventListener('change', function() {
                 const category = this.value;
                 
                 // Reset all fields
                 bulkCheckbox.checked = false;
-                householdSelect.value = '';
+                $(householdSelect).val(null).trigger('change'); // Reset Select2
                 billingMonthInput.value = '';
                 descriptionInput.value = '';
                 dueDateInput.value = '';
@@ -537,7 +559,7 @@ if (!empty($admin['profile_picture'])) {
                 if (this.checked) {
                     householdContainer.classList.add('field-hidden');
                     householdSelect.removeAttribute('required');
-                    householdSelect.value = '';
+                    $(householdSelect).val(null).trigger('change'); // Clear Select2
                     submitBtnText.textContent = 'Create Bulk Invoices';
                 } else {
                     householdContainer.classList.remove('field-hidden');
