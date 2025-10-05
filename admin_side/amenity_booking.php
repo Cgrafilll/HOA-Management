@@ -490,12 +490,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 top: 0;
             }
 
-            .table-responsive,
-            .nav-item {
+            .table-responsive {
                 font-size: 0.75rem;
             }
 
-            .pagination {
+            .pagination,
+            .nav-item {
                 font-size: 0.8rem;
             }
         }
@@ -1089,7 +1089,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     </li>
                     <li class="nav-item">
                         <a class="nav-link link-secondary" id="reschedule-tab" data-bs-toggle="tab" href="#reschedule"
-                            role="tab">Reschedule Requests</a>
+                            role="tab">Reschedules</a>
                     </li>
                 </ul>
                 <!-- Tab Content -->
