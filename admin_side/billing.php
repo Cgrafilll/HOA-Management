@@ -61,136 +61,142 @@ try {
     
     // Get filter parameters
     $statusFilter = $_GET['status'] ?? 'all';
-    $typeFilter = $_GET['type'] ?? 'all';
+    $categoryFilter = $_GET['category'] ?? 'all';
+    $searchQuery = $_GET['search'] ?? '';
 
     try {
         $invoices = [];
         
-        // Fetch from monthly_dues if type filter allows
-        if ($typeFilter === 'all' || $typeFilter === 'monthly_dues') {
-            if ($statusFilter === 'all') {
-                // Fetch all pending and partial
-                $stmt = $conn->prepare("
-                    SELECT 
-                        md.id,
-                        md.invoice_number,
-                        md.household_id,
-                        md.billing_month,
-                        md.amount_paid,
-                        md.balance_remaining,
-                        md.due_date,
-                        md.status,
-                        CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) AS full_name,
-                        (md.amount_paid + md.balance_remaining) AS total_amount,
-                        'monthly_dues' AS source_table,
-                        md.due_date AS sort_date
-                    FROM monthly_dues md
-                    LEFT JOIN household_accounts ha ON md.household_id = ha.household_id
-                    WHERE LOWER(md.status) IN ('pending', 'partial')
-                    ORDER BY md.due_date DESC
-                ");
-            } else {
-                // Fetch specific status (pending or partial only)
-                $stmt = $conn->prepare("
-                    SELECT 
-                        md.id,
-                        md.invoice_number,
-                        md.household_id,
-                        md.billing_month,
-                        md.amount_paid,
-                        md.balance_remaining,
-                        md.due_date,
-                        md.status,
-                        CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) AS full_name,
-                        (md.amount_paid + md.balance_remaining) AS total_amount,
-                        'monthly_dues' AS source_table,
-                        md.due_date AS sort_date
-                    FROM monthly_dues md
-                    LEFT JOIN household_accounts ha ON md.household_id = ha.household_id
-                    WHERE LOWER(md.status) = ?
-                    ORDER BY md.due_date DESC
-                ");
-                $stmt->bind_param("s", $statusFilter);
-            }
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $monthlyDuesInvoices = $result->fetch_all(MYSQLI_ASSOC);
-            $invoices = array_merge($invoices, $monthlyDuesInvoices);
+        // Build the WHERE clause based on filters
+        $whereConditions = [];
+        $params = [];
+        $paramTypes = '';
+        
+        // Status filter
+        if ($statusFilter === 'all') {
+            $whereConditions[] = "LOWER(md.status) IN ('pending', 'partial')";
+        } else {
+            $whereConditions[] = "LOWER(md.status) = ?";
+            $params[] = $statusFilter;
+            $paramTypes .= 's';
         }
         
-        // Fetch from amenity_bookings if type filter allows
-        if ($typeFilter === 'all' || $typeFilter === 'amenity') {
+        // Category filter
+        if ($categoryFilter !== 'all') {
+            $whereConditions[] = "md.category = ?";
+            $params[] = $categoryFilter;
+            $paramTypes .= 's';
+        }
+        
+        // Search filter
+        if (!empty($searchQuery)) {
+            $whereConditions[] = "(md.invoice_number LIKE ? OR md.household_id LIKE ? OR CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) LIKE ?)";
+            $searchParam = '%' . $searchQuery . '%';
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+            $paramTypes .= 'sss';
+        }
+        
+        $whereClause = implode(' AND ', $whereConditions);
+        
+        // Fetch from monthly_dues table with all categories
+        $sql = "
+            SELECT 
+                md.id,
+                md.invoice_number,
+                md.household_id,
+                md.category,
+                md.billing_month,
+                md.description,
+                md.amount_paid,
+                md.balance_remaining,
+                md.due_date,
+                md.status,
+                md.created_at,
+                CONCAT(ha.first_name, ' ', COALESCE(ha.middle_name, ''), ' ', ha.last_name) AS full_name,
+                (md.amount_paid + md.balance_remaining) AS total_amount
+            FROM monthly_dues md
+            LEFT JOIN household_accounts ha ON md.household_id = ha.household_id
+            WHERE $whereClause
+            ORDER BY md.created_at DESC
+        ";
+        
+        $stmt = $conn->prepare($sql);
+        if (!empty($params)) {
+            $stmt->bind_param($paramTypes, ...$params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $invoices = $result->fetch_all(MYSQLI_ASSOC);
+        
+        // Fetch amenity bookings if category filter allows
+        if ($categoryFilter === 'all' || $categoryFilter === 'amenity') {
+            $amenityWhereConditions = [];
+            $amenityParams = [];
+            $amenityParamTypes = '';
+            
+            // Status filter for amenity
             if ($statusFilter === 'all') {
-                // Fetch all pending and partial
-                $stmt = $conn->prepare("
-                    SELECT 
-                        ab.invoice_number,
-                        ab.reservation_code,
-                        ab.reservation_date,
-                        ab.created_at,
-                        ab.total_amount,
-                        ab.amount_paid,
-                        (ab.total_amount - ab.amount_paid) AS balance_remaining,
-                        ab.payment_method,
-                        ab.reference_number,
-                        ab.status,
-                        ab.amenity,
-                        ab.chairs,
-                        ab.tables,
-                        ab.rate,
-                        ab.user_type,
-                        ab.guests,
-                        CASE 
-                            WHEN ab.user_type = 'homeowner' 
-                                THEN CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name)
-                            WHEN ab.user_type = 'visitor' 
-                                THEN CONCAT(v.first_name, ' ', v.middle_name, ' ', v.last_name)
-                            ELSE 'Unknown'
-                        END AS full_name,
-                        'amenity_bookings' AS source_table,
-                        ab.created_at AS sort_date
-                    FROM amenity_bookings ab
-                    LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
-                    LEFT JOIN visitor_details v ON ab.visitor_id = v.visitor_id
-                    WHERE LOWER(ab.status) IN ('pending', 'partial')
-                    ORDER BY ab.created_at DESC
-                ");
+                $amenityWhereConditions[] = "LOWER(ab.status) IN ('pending', 'partial')";
             } else {
-                // Fetch specific status (pending or partial only)
-                $stmt = $conn->prepare("
-                    SELECT 
-                        ab.invoice_number,
-                        ab.reservation_code,
-                        ab.reservation_date,
-                        ab.created_at,
-                        ab.total_amount,
-                        ab.amount_paid,
-                        (ab.total_amount - ab.amount_paid) AS balance_remaining,
-                        ab.payment_method,
-                        ab.reference_number,
-                        ab.status,
-                        ab.amenity,
-                        ab.chairs,
-                        ab.tables,
-                        ab.rate,
-                        ab.user_type,
-                        ab.guests,
-                        CASE 
-                            WHEN ab.user_type = 'homeowner' 
-                                THEN CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name)
-                            WHEN ab.user_type = 'visitor' 
-                                THEN CONCAT(v.first_name, ' ', v.middle_name, ' ', v.last_name)
-                            ELSE 'Unknown'
-                        END AS full_name,
-                        'amenity_bookings' AS source_table,
-                        ab.created_at AS sort_date
-                    FROM amenity_bookings ab
-                    LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
-                    LEFT JOIN visitor_details v ON ab.visitor_id = v.visitor_id
-                    WHERE LOWER(ab.status) = ?
-                    ORDER BY ab.created_at DESC
-                ");
-                $stmt->bind_param("s", $statusFilter);
+                $amenityWhereConditions[] = "LOWER(ab.status) = ?";
+                $amenityParams[] = $statusFilter;
+                $amenityParamTypes .= 's';
+            }
+            
+            // Search filter for amenity
+            if (!empty($searchQuery)) {
+                $amenityWhereConditions[] = "(ab.invoice_number LIKE ? OR ab.reservation_code LIKE ? OR 
+                    CASE 
+                        WHEN ab.user_type = 'homeowner' THEN CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name)
+                        WHEN ab.user_type = 'visitor' THEN CONCAT(v.first_name, ' ', v.middle_name, ' ', v.last_name)
+                    END LIKE ?)";
+                $searchParam = '%' . $searchQuery . '%';
+                $amenityParams[] = $searchParam;
+                $amenityParams[] = $searchParam;
+                $amenityParams[] = $searchParam;
+                $amenityParamTypes .= 'sss';
+            }
+            
+            $amenityWhereClause = implode(' AND ', $amenityWhereConditions);
+            
+            $amenitySql = "
+                SELECT 
+                    ab.invoice_number,
+                    ab.reservation_code,
+                    ab.reservation_date,
+                    ab.created_at,
+                    ab.total_amount,
+                    ab.amount_paid,
+                    (ab.total_amount - ab.amount_paid) AS balance_remaining,
+                    ab.payment_method,
+                    ab.reference_number,
+                    ab.status,
+                    ab.amenity,
+                    ab.chairs,
+                    ab.tables,
+                    ab.rate,
+                    ab.user_type,
+                    ab.guests,
+                    CASE 
+                        WHEN ab.user_type = 'homeowner' 
+                            THEN CONCAT(ha.first_name, ' ', COALESCE(ha.middle_name, ''), ' ', ha.last_name)
+                        WHEN ab.user_type = 'visitor' 
+                            THEN CONCAT(v.first_name, ' ', COALESCE(v.middle_name, ''), ' ', v.last_name)
+                        ELSE 'Unknown'
+                    END AS full_name,
+                    'amenity' AS category
+                FROM amenity_bookings ab
+                LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
+                LEFT JOIN visitor_details v ON ab.visitor_id = v.visitor_id
+                WHERE $amenityWhereClause
+                ORDER BY ab.created_at DESC
+            ";
+            
+            $stmt = $conn->prepare($amenitySql);
+            if (!empty($amenityParams)) {
+                $stmt->bind_param($amenityParamTypes, ...$amenityParams);
             }
             $stmt->execute();
             $result = $stmt->get_result();
@@ -198,9 +204,11 @@ try {
             $invoices = array_merge($invoices, $amenityInvoices);
         }
 
-        // Sort by date (most recent first)
+        // Sort by creation date (most recent first)
         usort($invoices, function ($a, $b) {
-            return strtotime($b['sort_date']) - strtotime($a['sort_date']);
+            $dateA = $a['created_at'] ?? $a['due_date'] ?? '1970-01-01';
+            $dateB = $b['created_at'] ?? $b['due_date'] ?? '1970-01-01';
+            return strtotime($dateB) - strtotime($dateA);
         });
         
     } catch (Exception $e) {
@@ -231,7 +239,7 @@ try {
     $error_message = "Error fetching user details: " . $e->getMessage();
 }
 
-// Define rates
+// Define rates for amenities
 $amenityRates = [
     "Swimming Pool" => [
         "homeowner" => [
@@ -280,6 +288,28 @@ function getNumericAmount($amountStr)
 {
     $amountStr = preg_replace('/[^\d.]/', '', $amountStr);
     return floatval($amountStr);
+}
+
+// Helper function to get category display name
+function getCategoryDisplayName($category) {
+    $names = [
+        'monthly_dues' => 'Monthly Dues',
+        'penalty_fees' => 'Penalty Fees',
+        'other_fees' => 'Other Fees',
+        'amenity' => 'Amenity Fees'
+    ];
+    return $names[$category] ?? ucwords(str_replace('_', ' ', $category));
+}
+
+// Helper function to get category icon
+function getCategoryIcon($category) {
+    $icons = [
+        'monthly_dues' => '🏠',
+        'penalty_fees' => '⚠️',
+        'other_fees' => '📝',
+        'amenity' => '🎯'
+    ];
+    return $icons[$category] ?? '📄';
 }
 ?>
 
@@ -400,6 +430,33 @@ function getNumericAmount($amountStr)
 
         .invoice {
             transition: all 0.3s ease-in-out;
+        }
+
+        .category-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+        }
+
+        .badge-monthly-dues {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .badge-penalty-fees {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-other-fees {
+            background-color: #cff4fc;
+            color: #055160;
+        }
+
+        .badge-amenity {
+            background-color: #fff3cd;
+            color: #856404;
         }
     </style>
 </head>
@@ -532,65 +589,99 @@ function getNumericAmount($amountStr)
                             <i class="bi bi-plus-lg me-1"></i> New Billing
                         </a>
                     </div>
-                    <!-- Filter Dropdowns -->
+                    <!-- Filter Dropdowns and Search -->
                     <form method="get" class="mb-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <label for="status" class="fw-semibold">Status:</label>
-                                <select name="status" id="status" class="form-select form-select-sm w-auto"
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" name="search" class="form-control" 
+                                           placeholder="Search by invoice#, household, or name..." 
+                                           value="<?= htmlspecialchars($searchQuery) ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <select name="status" id="status" class="form-select form-select-sm"
                                     onchange="this.form.submit()">
-                                    <option value="all" <?= $statusFilter == 'all' ? 'selected' : '' ?>>All</option>
+                                    <option value="all" <?= $statusFilter == 'all' ? 'selected' : '' ?>>All Status</option>
                                     <option value="pending" <?= $statusFilter == 'pending' ? 'selected' : '' ?>>Pending</option>
                                     <option value="partial" <?= $statusFilter == 'partial' ? 'selected' : '' ?>>Partial</option>
                                 </select>
                             </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <label for="type" class="fw-semibold">Type:</label>
-                                <select name="type" id="type" class="form-select form-select-sm w-auto"
+                            <div class="col-md-3">
+                                <select name="category" id="category" class="form-select form-select-sm"
                                     onchange="this.form.submit()">
-                                    <option value="all" <?= $typeFilter == 'all' ? 'selected' : '' ?>>All</option>
-                                    <option value="monthly_dues" <?= $typeFilter == 'monthly_dues' ? 'selected' : '' ?>>Monthly Dues</option>
-                                    <option value="amenity" <?= $typeFilter == 'amenity' ? 'selected' : '' ?>>Amenity Fees</option>
+                                    <option value="all" <?= $categoryFilter == 'all' ? 'selected' : '' ?>>All Categories</option>
+                                    <option value="monthly_dues" <?= $categoryFilter == 'monthly_dues' ? 'selected' : '' ?>>Monthly Dues</option>
+                                    <option value="penalty_fees" <?= $categoryFilter == 'penalty_fees' ? 'selected' : '' ?>>Penalty Fees</option>
+                                    <option value="other_fees" <?= $categoryFilter == 'other_fees' ? 'selected' : '' ?>>Other Fees</option>
+                                    <option value="amenity" <?= $categoryFilter == 'amenity' ? 'selected' : '' ?>>Amenity Fees</option>
                                 </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-sm btn-success w-100">
+                                    <i class="bi bi-funnel me-1"></i>Filter
+                                </button>
                             </div>
                         </div>
                     </form>
                     <div class="row g-3">
                         <!-- LEFT: List of invoices -->
                         <div class="col-md-4">
-                            <div class="border rounded-3">
+                            <div class="border rounded-3" style="max-height: 600px; overflow-y: auto;">
                                 <div class="list-group list-group-flush">
                                     <?php if (!empty($invoices)): ?>
                                         <?php foreach ($invoices as $index => $inv): ?>
-                                            <a href="?status=<?= htmlspecialchars($statusFilter) ?>&type=<?= htmlspecialchars($typeFilter) ?>&invoice=<?= htmlspecialchars($inv['invoice_number']); ?>"
+                                            <?php
+                                            $queryParams = [
+                                                'status' => $statusFilter,
+                                                'category' => $categoryFilter,
+                                                'search' => $searchQuery,
+                                                'invoice' => $inv['invoice_number']
+                                            ];
+                                            $queryString = http_build_query($queryParams);
+                                            ?>
+                                            <a href="?<?= $queryString ?>"
                                                 class="list-group-item list-group-item-action invoice <?= ($inv['invoice_number'] === $activeInvoiceNumber) ? 'active' : '' ?>">
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <h6 class="mb-1">Billing #<?= htmlspecialchars($inv['invoice_number']); ?>
-                                                    </h6>
-                                                    <!-- Show different date info based on source -->
-                                                    <?php if (isset($inv['source_table'])): ?>
-                                                        <?php if ($inv['source_table'] === 'monthly_dues' && !empty($inv['due_date'])): ?>
-                                                            <small><?= date('M d, Y', strtotime($inv['due_date'])); ?></small>
-                                                        <?php elseif ($inv['source_table'] === 'amenity_bookings' && !empty($inv['created_at'])): ?>
-                                                            <small><?= date('M d, Y', strtotime($inv['created_at'])); ?></small>
-                                                        <?php endif; ?>
-                                                    <?php endif; ?>
+                                                <div class="d-flex w-100 justify-content-between align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="mb-1">
+                                                            <?= getCategoryIcon($inv['category']) ?> 
+                                                            #<?= htmlspecialchars($inv['invoice_number']); ?>
+                                                        </h6>
+                                                        <p class="mb-1 small">
+                                                            <?= htmlspecialchars($inv['full_name'] ?? 'No Name'); ?>
+                                                        </p>
+                                                        <div class="d-flex gap-2 align-items-center">
+                                                            <span class="category-badge badge-<?= $inv['category'] ?>">
+                                                                <?= getCategoryDisplayName($inv['category']) ?>
+                                                            </span>
+                                                            <small class="fw-bold <?php
+                                                            $status = strtolower($inv['status']);
+                                                            if ($status === 'pending') {
+                                                                echo 'text-warning';
+                                                            } elseif ($status === 'partial') {
+                                                                echo 'text-primary';
+                                                            } else {
+                                                                echo 'text-success';
+                                                            }
+                                                            ?>">
+                                                                <?= htmlspecialchars(ucfirst($inv['status'])); ?>
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        <?php
+                                                        if ($inv['category'] === 'monthly_dues' && !empty($inv['due_date'])) {
+                                                            echo date('M d, Y', strtotime($inv['due_date']));
+                                                        } elseif (!empty($inv['created_at'])) {
+                                                            echo date('M d, Y', strtotime($inv['created_at']));
+                                                        } elseif ($inv['category'] === 'amenity' && !empty($inv['reservation_date'])) {
+                                                            echo date('M d, Y', strtotime($inv['reservation_date']));
+                                                        }
+                                                        ?>
+                                                    </small>
                                                 </div>
-                                                <p class="mb-1 small">
-                                                    <?= htmlspecialchars($inv['full_name'] ?? 'No Name'); ?>
-                                                </p>
-                                                <small class="fw-bold <?php
-                                                $status = strtolower($inv['status']);
-                                                if ($status === 'pending') {
-                                                    echo 'text-warning';
-                                                } elseif ($status === 'partial') {
-                                                    echo 'text-primary';
-                                                } else {
-                                                    echo 'text-success';
-                                                }
-                                                ?>">
-                                                    <?= htmlspecialchars(ucfirst($inv['status'])); ?>
-                                                </small>
                                             </a>
                                         <?php endforeach; ?>
                                     <?php else: ?>
@@ -599,6 +690,7 @@ function getNumericAmount($amountStr)
                                 </div>
                             </div>
                         </div>
+                        <!-- RIGHT: Invoice Details -->
                         <div class="col-md-8">
                             <div class="border rounded-3">
                                 <?php if ($selectedInvoice): ?>
@@ -620,18 +712,10 @@ function getNumericAmount($amountStr)
                                     </div>
                                     <div class="p-3">
                                         <?php
-                                        // Determine if this is a monthly dues invoice
-                                        $isMonthlyDues = false;
-                                        if (isset($selectedInvoice['source_table'])) {
-                                            $isMonthlyDues = ($selectedInvoice['source_table'] === 'monthly_dues');
-                                        } else {
-                                            // Fallback: check if it has monthly dues specific fields
-                                            $isMonthlyDues = isset($selectedInvoice['billing_month']) && isset($selectedInvoice['household_id']);
-                                        }
-
-                                        if ($isMonthlyDues): ?>
-                                            <!-- Monthly Dues Invoice Detail -->
-                                            <!-- Company Header -->
+                                        $category = $selectedInvoice['category'];
+                                        
+                                        if ($category === 'monthly_dues'): ?>
+                                            <!-- MONTHLY DUES INVOICE -->
                                             <div class="row mb-3">
                                                 <div class="col-8">
                                                     <div class="fw-bold mb-1">NEOPOLITAN SITIO SEVILLE HOMEOWNERS INC.</div>
@@ -659,12 +743,11 @@ function getNumericAmount($amountStr)
                                                         <div class="mb-1"><span class="fw-semibold">Due Date:</span>
                                                             <?= date('M d, Y', strtotime($selectedInvoice['due_date'])); ?>
                                                         </div>
-                                                        <div><span class="fw-semibold">Billing Type:</span>
-                                                            Monthly Dues</div>
+                                                        <div><span class="fw-semibold">Category:</span>
+                                                            <?= getCategoryDisplayName($category); ?></div>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <!-- Monthly Dues Items table -->
                                             <div class="table-responsive">
                                                 <table class="table table-bordered mb-3">
                                                     <thead class="table-success">
@@ -686,7 +769,6 @@ function getNumericAmount($amountStr)
                                                     </tbody>
                                                 </table>
                                             </div>
-                                            <!-- Monthly Dues Summary -->
                                             <div class="d-flex justify-content-end">
                                                 <div class="text-end small" style="min-width: 200px;">
                                                     <div class="d-flex justify-content-between mb-1">
@@ -705,9 +787,89 @@ function getNumericAmount($amountStr)
                                                     </div>
                                                 </div>
                                             </div>
-                                        <?php else: ?>
-                                            <!-- Amenity Booking Invoice Detail -->
-                                            <!-- Company Header -->
+
+                                        <?php elseif ($category === 'penalty_fees' || $category === 'other_fees'): ?>
+                                            <!-- PENALTY FEES / OTHER FEES INVOICE -->
+                                            <div class="row mb-3">
+                                                <div class="col-8">
+                                                    <div class="fw-bold mb-1">NEOPOLITAN SITIO SEVILLE HOMEOWNERS INC.</div>
+                                                    <div class="small text-muted mb-3">
+                                                        NON VAT REG. TIN: 404-587-404-0000<br>
+                                                        NSSHAI Clubhouse Narra St. Neopolitan Sitio Seville<br>
+                                                        North Fairview III-B Quezon City NCR, Second District Philippines
+                                                    </div>
+
+                                                    <div class="small">
+                                                        <div class="mb-1"><span class="fw-semibold">Name:</span>
+                                                            <?= htmlspecialchars($selectedInvoice['full_name']); ?></div>
+                                                        <div class="mb-1"><span class="fw-semibold">Household ID:</span>
+                                                            <?= htmlspecialchars($selectedInvoice['household_id']); ?></div>
+                                                        <div><span class="fw-semibold">Invoice Date:</span>
+                                                            <?= date('M d, Y', strtotime($selectedInvoice['created_at'])); ?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="text-end small">
+                                                        <div class="fw-bold mb-2 fs-6">Billing No.
+                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?>
+                                                        </div>
+                                                        <div class="mb-1"><span class="fw-semibold">Due Date:</span>
+                                                            <?= date('M d, Y', strtotime($selectedInvoice['due_date'])); ?>
+                                                        </div>
+                                                        <div><span class="fw-semibold">Category:</span>
+                                                            <?= getCategoryDisplayName($category); ?></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Description Section -->
+                                            <div class="alert alert-info mb-3">
+                                                <h6 class="alert-heading mb-2">
+                                                    <i class="bi bi-info-circle me-2"></i>Fee Description
+                                                </h6>
+                                                <p class="mb-0 small"><?= nl2br(htmlspecialchars($selectedInvoice['description'])); ?></p>
+                                            </div>
+
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered mb-3">
+                                                    <thead class="table-success">
+                                                        <tr class="small">
+                                                            <th>Description</th>
+                                                            <th class="text-end">Amount</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="small">
+                                                        <tr>
+                                                            <td><?= getCategoryDisplayName($category); ?></td>
+                                                            <td class="text-end">₱
+                                                                <?= number_format($selectedInvoice['total_amount'], 2); ?>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="d-flex justify-content-end">
+                                                <div class="text-end small" style="min-width: 200px;">
+                                                    <div class="d-flex justify-content-between mb-1">
+                                                        <span class="fw-semibold">Total Amount</span>
+                                                        <span>₱
+                                                            <?= number_format($selectedInvoice['total_amount'], 2); ?></span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mb-1">
+                                                        <span class="fw-semibold">Amount Paid</span>
+                                                        <span>₱ <?= number_format($selectedInvoice['amount_paid'], 2); ?></span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between fw-bold border-top pt-1">
+                                                        <span>Balance Due</span>
+                                                        <span>₱
+                                                            <?= number_format($selectedInvoice['balance_remaining'], 2); ?></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        <?php elseif ($category === 'amenity'): ?>
+                                            <!-- AMENITY BOOKING INVOICE -->
                                             <div class="row mb-3">
                                                 <div class="col-8">
                                                     <div class="fw-bold mb-1">NEOPOLITAN SITIO SEVILLE HOMEOWNERS INC.</div>
@@ -742,7 +904,6 @@ function getNumericAmount($amountStr)
                                                 </div>
                                             </div>
 
-                                            <!-- Amenity Items table -->
                                             <div class="table-responsive">
                                                 <table class="table table-bordered mb-3">
                                                     <thead class="table-success">
@@ -758,13 +919,12 @@ function getNumericAmount($amountStr)
                                                         <?php
                                                         $amenity = $selectedInvoice['amenity'];
                                                         $userType = $selectedInvoice['user_type'];
-                                                        $dayOrNight = $selectedInvoice['rate']; // "day" or "night"
-                                                        $numGuests = $selectedInvoice['guests'] ?? 1; // fallback 1 just in case
+                                                        $dayOrNight = $selectedInvoice['rate'];
+                                                        $numGuests = $selectedInvoice['guests'] ?? 1;
                                                 
                                                         $rateStr = $amenityRates[$amenity][$userType][$dayOrNight] ?? "₱0.00";
                                                         $numericRate = getNumericAmount($rateStr);
 
-                                                        // Determine total based on amenity type
                                                         if (in_array($amenity, ['Swimming Pool', 'Basketball Court'])) {
                                                             $qty = $numGuests;
                                                             $totalAmount = $numericRate * $qty;
@@ -805,7 +965,6 @@ function getNumericAmount($amountStr)
                                                     </tbody>
                                                 </table>
                                             </div>
-                                            <!-- Amenity Summary -->
                                             <div class="d-flex justify-content-end">
                                                 <div class="text-end small" style="min-width: 200px;">
                                                     <?php
