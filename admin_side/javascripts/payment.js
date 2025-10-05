@@ -502,27 +502,33 @@ class PaymentManager {
         e.preventDefault();
         e.stopPropagation();
         
-        // Manual validation for all fields
+        // Base required fields
         const requiredFields = [
-            this.userTypeSelect,
-            this.userIdSelect,
-            this.categorySelect,
-            this.invoiceInput,
-            this.amountPaid
+            { field: this.userTypeSelect, name: 'User Type' },
+            { field: this.userIdSelect, name: 'User ID' },
+            { field: this.categorySelect, name: 'Category' },
+            { field: this.invoiceInput, name: 'Invoice Number' },
+            { field: this.amountPaid, name: 'Amount Paid' }
         ];
         
-        // Only add reference number to validation if bank transfer is selected
+        // Add reference number validation for bank transfer only
         if (this.selectedMethod.textContent === "Bank Transfer") {
-            requiredFields.push(this.referenceNumber);
+            requiredFields.push({ field: this.referenceNumber, name: 'Reference Number' });
         }
         
         let isValid = true;
-        requiredFields.forEach(field => {
-            if (!field.value) {
+        let firstInvalidField = null;
+        
+        requiredFields.forEach(item => {
+            const field = item.field;
+            if (!field.value || field.value.trim() === '') {
                 field.classList.add('is-invalid');
                 field.style.borderColor = '#dc3545';
                 field.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
                 isValid = false;
+                if (!firstInvalidField) {
+                    firstInvalidField = field;
+                }
             } else {
                 field.classList.remove('is-invalid');
                 field.style.borderColor = '#dee2e6';
@@ -530,27 +536,42 @@ class PaymentManager {
             }
         });
         
+        // Validate amount is positive
         if (!this.amountPaid.value || parseFloat(this.amountPaid.value) <= 0) {
             this.amountPaid.classList.add('is-invalid');
             this.amountPaid.style.borderColor = '#dc3545';
             this.amountPaid.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
             isValid = false;
-        }
-        
-        // Only validate proof of payment for bank transfer
-        if (this.selectedMethod.textContent === "Bank Transfer") {
-            if (!this.fileInput.files.length) {
-                this.fileDropArea.style.borderColor = '#dc3545';
-                this.fileDropArea.style.backgroundColor = '#f8d7da';
-                this.showErrorModal('Please upload proof of payment for bank transfer.');
-                isValid = false;
-            } else {
-                this.fileDropArea.style.borderColor = '#d1d5db';
-                this.fileDropArea.style.backgroundColor = '#f9fafb';
+            if (!firstInvalidField) {
+                firstInvalidField = this.amountPaid;
             }
         }
         
+        // Validate proof of payment for BOTH payment methods
+        if (!this.fileInput.files.length) {
+            this.fileDropArea.style.borderColor = '#dc3545';
+            this.fileDropArea.style.backgroundColor = '#f8d7da';
+            isValid = false;
+            if (!firstInvalidField) {
+                // Scroll to file upload area
+                this.fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            // Different message based on payment method
+            const paymentType = this.selectedMethod.textContent === "Bank Transfer" 
+                ? "bank transfer" 
+                : "in-office payment";
+            this.showErrorModal(`Please upload proof of payment for ${paymentType}.`);
+        } else {
+            this.fileDropArea.style.borderColor = '#d1d5db';
+            this.fileDropArea.style.backgroundColor = '#f9fafb';
+        }
+        
         if (!isValid) {
+            // Focus on first invalid field
+            if (firstInvalidField) {
+                firstInvalidField.focus();
+            }
             return;
         }
         
@@ -573,29 +594,6 @@ class PaymentManager {
         
         this.showConfirmationModal();
     }
-
-    showErrorModal(message) {
-        if (this.errorModal && this.errorMessage) {
-            this.errorMessage.textContent = message;
-            this.errorModal.show();
-        } else {
-            alert(message);
-        }
-    }
-
-    showConfirmationModal() {
-        const selectedUserOption = this.userIdSelect.options[this.userIdSelect.selectedIndex];
-        const userName = selectedUserOption.textContent.split(' - ')[1] || 'Unknown';
-        
-        this.confirmName.textContent = userName;
-        this.confirmCategory.textContent = this.categorySelect.value;
-        this.confirmInvoice.textContent = this.invoiceInput.value;
-        this.confirmAmount.textContent = `₱${parseFloat(this.amountPaid.value).toFixed(2)}`;
-        this.confirmMethod.textContent = this.selectedMethod.textContent;
-        
-        this.confirmModal.show();
-    }
-
     async processPayment() {
         try {
             this.confirmPaymentBtn.disabled = true;
