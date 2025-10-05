@@ -1415,6 +1415,22 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             });
         });
 
+        // Add this function in your script section
+        function getInitials(fullName) {
+            const isMobile = window.innerWidth <= 768;
+
+            if (isMobile) {
+                const names = fullName.trim().split(' ');
+                if (names.length >= 2) {
+                    // First name initial + Last name initial
+                    return names[0].charAt(0) + names[names.length - 1].charAt(0);
+                }
+                return names[0].charAt(0);
+            }
+
+            return fullName;
+        }
+
         function renderCalendar() {
             const grid = document.getElementById('calendarGrid');
             const monthYear = document.getElementById('monthYear');
@@ -1481,7 +1497,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
 
                     if (booking.homeownerId == loggedInHouseholdId) {
                         bookingElement.style.cursor = 'pointer';
-                        bookingElement.textContent = booking.fullName;
+                        bookingElement.textContent = getInitials(booking.fullName);
 
                         const amenityBadge = createAmenityBadge(booking);
                         bookingContainer.appendChild(bookingElement);
