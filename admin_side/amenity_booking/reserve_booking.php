@@ -725,21 +725,21 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 font-size: 1rem !important;
             }
 
-            .nav-item {
-                font-size: 0.9rem;
+            /* Form adjustments */
+            .row .col-6,
+            .row .col-4 {
+                flex: 0 0 100%;
+                max-width: 100%;
             }
 
-            .table-responsive {
-                font-size: 0.85rem;
+            .bg-white.shadow.rounded.p-3 {
+                padding: 1rem !important;
             }
 
-            .btn-sm {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.8rem;
-            }
-
-            .sidebar-overlay {
-                top: 0;
+            .p-3.d-flex.justify-content-between {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: flex-start !important;
             }
 
             /* Calendar adjustments */
@@ -774,8 +774,26 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         }
 
         @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
             main {
-                padding: 1rem !important;
+                margin-top: 76px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
             }
 
             .bg-success.text-white.rounded-top.p-3 h5 {
