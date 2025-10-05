@@ -1087,6 +1087,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                             paymentStatus: \"" . ucfirst($row['status']) . "\",
                                                             amount: \"₱" . number_format($row['amount_paid'], 2) . ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : "") . "\",
                                                             time: \"" . $timeDisplay . "\"
+                                                        })'>
+                                                        <i class='bi bi-eye'></i>
                                                     </button>
                                                     <button class='btn btn-sm btn-outline-primary' title='Reschedule'
                                                         onclick='openRescheduleModal({
