@@ -490,12 +490,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 top: 0;
             }
 
-            .table-responsive {
+            .table-responsive,
+            .nav-item {
                 font-size: 0.75rem;
             }
 
-            .pagination,
-            .nav-item {
+            .pagination {
                 font-size: 0.8rem;
             }
         }
