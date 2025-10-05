@@ -338,19 +338,22 @@ if (isset($_GET['action'])) {
                 }
                 break;
 
-            case 'get_monthly_dues_by_invoice':
+            // Add this case to the switch statement in payment.php (around line 150)
+
+            case 'get_billing_by_invoice':
                 $invoice_number = $_GET['invoice_number'] ?? '';
                 $user_id = $_GET['user_id'] ?? '';
                 $user_type = $_GET['user_type'] ?? '';
+                $category = $_GET['category'] ?? '';
 
-                if (empty($invoice_number) || empty($user_id) || empty($user_type)) {
+                if (empty($invoice_number) || empty($user_id) || empty($user_type) || empty($category)) {
                     echo json_encode(['success' => false, 'error' => 'Missing required parameters']);
                     exit;
                 }
 
-                // Monthly dues only apply to homeowners/residents
+                // Only homeowners/residents can have these types of fees
                 if ($user_type !== 'Homeowner/Resident') {
-                    echo json_encode(['success' => false, 'error' => 'Monthly dues only apply to homeowners/residents']);
+                    echo json_encode(['success' => false, 'error' => $category . ' only apply to homeowners/residents']);
                     exit;
                 }
 
@@ -360,38 +363,67 @@ if (isset($_GET['action'])) {
                 $stmt->execute();
                 $user_data = $stmt->get_result()->fetch_assoc();
 
-                // Get monthly dues details
+                // Map category to database value
+                $db_category = '';
+                if ($category === 'Monthly Dues') {
+                    $db_category = 'monthly_dues';
+                } elseif ($category === 'Penalty Fees') {
+                    $db_category = 'penalty_fees';
+                } elseif ($category === 'Other Fees') {
+                    $db_category = 'other_fees';
+                } else {
+                    echo json_encode(['success' => false, 'error' => 'Invalid category']);
+                    exit;
+                }
+
+                // Get billing details from monthly_dues table
                 $stmt = $conn->prepare("
                     SELECT 
                         id,
                         invoice_number,
+                        category,
                         billing_month,
+                        description,
                         amount_paid,
                         balance_remaining,
                         due_date,
-                        status
+                        status,
+                        created_at
                     FROM monthly_dues 
-                    WHERE household_id = ? AND invoice_number = ?
+                    WHERE household_id = ? AND invoice_number = ? AND category = ?
                     LIMIT 1
                 ");
-                $stmt->bind_param("ss", $user_id, $invoice_number);
+                $stmt->bind_param("sss", $user_id, $invoice_number, $db_category);
                 $stmt->execute();
-                $dues = $stmt->get_result()->fetch_assoc();
+                $billing = $stmt->get_result()->fetch_assoc();
 
-                if ($dues && $user_data) {
-                    // Calculate total amount (amount_paid + balance_remaining)
-                    $total_amount = $dues['amount_paid'] + $dues['balance_remaining'];
+                if ($billing && $user_data) {
+                    // Calculate total amount
+                    $total_amount = $billing['amount_paid'] + $billing['balance_remaining'];
 
                     // Build items array for table population
                     $items = [];
 
-                    // Format billing month for display
-                    $billing_month = date('F Y', strtotime($dues['billing_month']));
+                    // Create display name based on category
+                    $itemName = '';
+                    if ($db_category === 'monthly_dues') {
+                        $billing_month = date('F Y', strtotime($billing['billing_month']));
+                        $itemName = "Association Dues - {$billing_month}";
+                    } elseif ($db_category === 'penalty_fees') {
+                        $itemName = "Penalty Fee";
+                    } elseif ($db_category === 'other_fees') {
+                        $itemName = "Other Fee";
+                    }
 
-                    // Main monthly dues item
+                    // Add description if exists
+                    if (!empty($billing['description'])) {
+                        $itemName .= " - " . $billing['description'];
+                    }
+
+                    // Main billing item
                     $items[] = [
-                        'category' => 'Monthly Dues',
-                        'item' => "Association Dues - {$billing_month}",
+                        'category' => $category,
+                        'item' => $itemName,
                         'rate' => number_format($total_amount, 2),
                         'qty' => 1,
                         'amount' => number_format($total_amount, 2)
@@ -400,22 +432,23 @@ if (isset($_GET['action'])) {
                     echo json_encode([
                         'success' => true,
                         'data' => [
-                            'dues_id' => $dues['id'],
-                            'reference_number' => $invoice_number, // Using invoice_number as reference
+                            'billing_id' => $billing['id'],
+                            'reference_number' => $invoice_number,
                             'first_name' => $user_data['first_name'],
                             'middle_name' => $user_data['middle_name'],
                             'last_name' => $user_data['last_name'],
-                            'created_at' => $dues['due_date'], // Using due_date as created_at equivalent
-                            'billing_month' => $dues['billing_month'],
+                            'created_at' => $billing['created_at'] ?? $billing['due_date'],
+                            'billing_month' => $billing['billing_month'] ?? null,
+                            'description' => $billing['description'] ?? null,
                             'items' => $items,
                             'subtotal' => number_format($total_amount, 2),
-                            'amount_paid' => number_format($dues['amount_paid'], 2),
-                            'balance_due' => number_format($dues['balance_remaining'], 2),
-                            'status' => $dues['status']
+                            'amount_paid' => number_format($billing['amount_paid'], 2),
+                            'balance_due' => number_format($billing['balance_remaining'], 2),
+                            'status' => $billing['status']
                         ]
                     ]);
                 } else {
-                    echo json_encode(['success' => false, 'error' => 'No monthly dues record found']);
+                    echo json_encode(['success' => false, 'error' => 'No billing record found']);
                 }
                 break;
 
@@ -888,20 +921,21 @@ if (isset($_GET['action'])) {
                                     </div>
                                 </div>
 
+                                
+
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Category<small
-                                                class="fw-bold text-danger">*</small></label>
+                                        <label class="form-label">Category<small class="fw-bold text-danger">*</small></label>
                                         <select class="form-select" id="categorySelect" required>
                                             <option value="">Select Category</option>
                                             <option value="Monthly Dues">Monthly Dues</option>
+                                            <option value="Penalty Fees">Penalty Fees</option>
+                                            <option value="Other Fees">Other Fees</option>
                                             <option value="Amenity Fee">Amenity Fee</option>
-                                            <option value="Other">Other</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Invoice Number<small
-                                                class="fw-bold text-danger">*</small></label>
+                                        <label class="form-label">Invoice Number<small class="fw-bold text-danger">*</small></label>
                                         <input type="text" class="form-control" id="invoiceInput"
                                             placeholder="Enter Invoice Number" required>
                                     </div>
