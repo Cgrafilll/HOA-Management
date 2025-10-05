@@ -110,26 +110,44 @@ if ($view_visitor) {
 
         * {
             font-family: "Montserrat", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow-x: hidden;
         }
 
         header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 1030;
+            height: 76px;
+            background-color: white;
         }
 
         .sidebar {
             width: 250px;
-            height: 100vh;
+            height: calc(100vh - 76px);
             position: fixed;
-            top: 20;
+            top: 76px;
             left: 0;
             background-color: #1F2937;
             overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1020;
+            transition: transform 0.3s ease;
         }
 
         main {
             margin-left: 250px;
+            margin-top: 76px;
+            min-height: calc(100vh - 76px);
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
         }
 
         .sidebar a,
@@ -153,6 +171,32 @@ if ($view_visitor) {
         .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar .logout {
+            flex-shrink: 0;
+            border-top: 1px solid #374151;
+            padding-top: 12px;
         }
 
         .sidebar .btn-toggle {
@@ -184,6 +228,98 @@ if ($view_visitor) {
             transform: rotate(180deg);
         }
 
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                top: 76px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            header .logo-container {
+                width: auto !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            main {
+                margin-top: 76px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .table-responsive {
+                font-size: 0.75rem;
+            }
+
+            .pagination {
+                font-size: 0.8rem;
+            }
+        }
+
         #preview img {
             width: 100%;
             height: 100%;
@@ -195,7 +331,10 @@ if ($view_visitor) {
 <body class="bg-light">
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
-        <div class="me-4" style="width: 250px;">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="me-4 logo-container" style="width: 250px;">
             <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
@@ -203,7 +342,7 @@ if ($view_visitor) {
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <span class="d-none d-md-inline">Hello, <?php echo htmlspecialchars($username); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -226,10 +365,12 @@ if ($view_visitor) {
             </div>
         </div>
     </header>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1">
+        <aside class="sidebar">
+            <nav class="nav flex-column gap-1 sidebar-nav p-3">
                 <a href="../admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -299,14 +440,13 @@ if ($view_visitor) {
                     </div>
                 </div>
                 <a href="../login/logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
-                    style="position: fixed; bottom: 0; width: 220px;">
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
         <!-- Main Content -->
-        <main class="flex-fill p-4">
+        <main class="flex-grow-1 p-4">
             <div class="bg-white shadow rounded p-3">
                 <!-- Header -->
                 <div class="bg-success text-white rounded-top p-3">
@@ -364,6 +504,7 @@ if ($view_visitor) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../javascripts/mobileSidebar.js"></script>
     <script>
         // Auto-calculate age from DOB
         document.querySelector('input[name="dob"]').addEventListener('change', function () {
