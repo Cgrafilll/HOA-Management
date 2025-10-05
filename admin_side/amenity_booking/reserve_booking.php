@@ -226,44 +226,26 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
         * {
             font-family: "Montserrat", sans-serif;
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            overflow-x: hidden;
         }
 
         header {
-            position: fixed;
+            position: sticky;
             top: 0;
-            left: 0;
-            right: 0;
             z-index: 1030;
-            height: 76px;
-            background-color: white;
         }
 
         .sidebar {
             width: 250px;
-            height: calc(100vh - 76px);
+            height: 100vh;
             position: fixed;
-            top: 76px;
+            top: 20;
             left: 0;
             background-color: #1F2937;
             overflow-y: auto;
-            overflow-x: hidden;
-            z-index: 1020;
-            transition: transform 0.3s ease;
         }
 
         main {
             margin-left: 250px;
-            margin-top: 76px;
-            min-height: calc(100vh - 76px);
-            overflow-y: auto;
-            transition: margin-left 0.3s ease;
         }
 
         .sidebar a,
@@ -287,32 +269,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            min-height: 0;
-        }
-
-        .sidebar-nav::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .sidebar-nav::-webkit-scrollbar-track {
-            background: #1F2937;
-        }
-
-        .sidebar-nav::-webkit-scrollbar-thumb {
-            background: #4B5563;
-            border-radius: 3px;
-        }
-
-        .sidebar .logout {
-            flex-shrink: 0;
-            border-top: 1px solid #374151;
-            padding-top: 12px;
         }
 
         .sidebar .btn-toggle {
@@ -342,25 +298,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
-        }
-
-        .mobile-menu-btn {
-            display: none;
-        }
-
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 76px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1019;
-        }
-
-        .sidebar-overlay.show {
-            display: block;
         }
 
         .file-drop-area {
@@ -697,128 +634,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         .search-select-clear.show {
             display: block;
         }
-
-        /* Mobile Styles */
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-                top: 76px;
-            }
-
-            .sidebar.show {
-                transform: translateX(0);
-            }
-
-            main {
-                margin-left: 0;
-            }
-
-            header .logo-container {
-                width: auto !important;
-            }
-
-            .mobile-menu-btn {
-                display: inline-block;
-            }
-
-            header h1 {
-                font-size: 1rem !important;
-            }
-
-            /* Form adjustments */
-            .row .col-6,
-            .row .col-4 {
-                flex: 0 0 100%;
-                max-width: 100%;
-            }
-
-            .bg-white.shadow.rounded.p-3 {
-                padding: 1rem !important;
-            }
-
-            .p-3.d-flex.justify-content-between {
-                flex-direction: column;
-                gap: 0.5rem;
-                align-items: flex-start !important;
-            }
-
-            /* Calendar adjustments */
-            .calendar-view {
-                padding: 10px;
-            }
-
-            .calendar-grid {
-                gap: 2px;
-            }
-
-            .calendar-day {
-                min-height: 40px;
-                padding: 4px 2px;
-                font-size: 12px;
-            }
-
-            .calendar-day-header {
-                padding: 4px 2px;
-                font-size: 10px;
-            }
-
-            /* Rate options */
-            .custom-radio-container {
-                font-size: 0.9rem;
-            }
-
-            .custom-radio-option {
-                padding: 10px 15px;
-                min-height: 50px;
-            }
-        }
-
-        @media (max-width: 576px) {
-            main {
-                margin-top: 76px;
-                padding: 0.75rem !important;
-            }
-
-            .bg-success.text-white.rounded-top.p-3 h5 {
-                font-size: 1rem;
-            }
-
-            .d-flex.justify-content-center span {
-                font-size: 1.5rem !important;
-                letter-spacing: 2px !important;
-            }
-
-            /* Form fields */
-            .form-floating {
-                margin-bottom: 0.75rem !important;
-            }
-
-            .form-floating label {
-                font-size: 0.9rem;
-            }
-
-            /* Calendar */
-            .calendar-day {
-                min-height: 35px;
-                font-size: 11px;
-            }
-
-            .calendar-day-header {
-                font-size: 9px;
-                padding: 3px 1px;
-            }
-
-            /* Buttons */
-            .btn {
-                font-size: 0.9rem;
-                padding: 0.5rem 1rem;
-            }
-
-            .d-grid .btn-lg {
-                padding: 0.75rem;
-            }
-        }
-
+        
     </style>
 </head>
 
