@@ -520,24 +520,36 @@ if (isset($_GET['action'])) {
                         $stmt->bind_param("dsi", $new_amount_paid, $new_status, $reference_id);
                         $stmt->execute();
 
-                    } elseif ($category === 'Monthly Dues') {
+                        $db_category = 'amenity';
+
+                    } elseif (in_array($category, ['Monthly Dues', 'Penalty Fees', 'Other Fees'])) {
                         if ($user_type !== 'Homeowner/Resident') {
-                            throw new Exception('Monthly dues only apply to homeowners/residents');
+                            throw new Exception($category . ' only apply to homeowners/residents');
                         }
 
-                        // Get monthly dues details
-                        $stmt = $conn->prepare("SELECT id, amount_paid, balance_remaining FROM monthly_dues WHERE household_id = ? AND invoice_number = ?");
-                        $stmt->bind_param("ss", $user_id, $invoice_number);
+                        // Map category to database value
+                        $db_billing_category = '';
+                        if ($category === 'Monthly Dues') {
+                            $db_billing_category = 'monthly_dues';
+                        } elseif ($category === 'Penalty Fees') {
+                            $db_billing_category = 'penalty_fees';
+                        } elseif ($category === 'Other Fees') {
+                            $db_billing_category = 'other_fees';
+                        }
+
+                        // Get billing details
+                        $stmt = $conn->prepare("SELECT id, amount_paid, balance_remaining FROM monthly_dues WHERE household_id = ? AND invoice_number = ? AND category = ?");
+                        $stmt->bind_param("sss", $user_id, $invoice_number, $db_billing_category);
                         $stmt->execute();
-                        $dues = $stmt->get_result()->fetch_assoc();
+                        $billing = $stmt->get_result()->fetch_assoc();
 
-                        if (!$dues) {
-                            throw new Exception('Monthly dues record not found');
+                        if (!$billing) {
+                            throw new Exception($category . ' record not found');
                         }
 
-                        $reference_id = $dues['id'];
-                        $new_amount_paid = $dues['amount_paid'] + $amount;
-                        $new_balance = $dues['balance_remaining'] - $amount;
+                        $reference_id = $billing['id'];
+                        $new_amount_paid = $billing['amount_paid'] + $amount;
+                        $new_balance = $billing['balance_remaining'] - $amount;
 
                         // Ensure balance doesn't go negative
                         if ($new_balance < 0) {
@@ -553,14 +565,17 @@ if (isset($_GET['action'])) {
                             $new_status = 'Pending';
                         }
 
-                        // Update monthly dues
+                        // Update billing record
                         $stmt = $conn->prepare("UPDATE monthly_dues SET amount_paid = ?, balance_remaining = ?, status = ? WHERE id = ?");
                         $stmt->bind_param("ddsi", $new_amount_paid, $new_balance, $new_status, $reference_id);
                         $stmt->execute();
+
+                        $db_category = 'monthly_dues';
+                    } else {
+                        throw new Exception('Invalid category');
                     }
 
                     // Insert payment record
-                    $db_category = ($category === 'Amenity Fee') ? 'amenity' : 'monthly_dues';
                     $stmt = $conn->prepare("
                         INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
