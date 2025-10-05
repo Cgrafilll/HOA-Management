@@ -1209,15 +1209,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         <div class="row mb-3 align-items-center">
                             <div class="col-md-4">
                                 <div class="legend border">
-                                    <div class="legend-item">
+                                    <div class="legend-item text-nowrwap">
                                         <div class="legend-color paid bg-success"></div>
                                         <span>Paid</span>
                                     </div>
-                                    <div class="legend-item">
+                                    <div class="legend-item text-nowrwap">
                                         <div class="legend-color partial bg-warning"></div>
                                         <span>Partial Payment</span>
                                     </div>
-                                    <div class="legend-item">
+                                    <div class="legend-item text-nowrwap">
                                         <div class="legend-color pending bg-secondary"></div>
                                         <span>Pending Payment</span>
                                     </div>
