@@ -597,19 +597,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             border-bottom: none;
         }
 
+        /* Reschedule Calendar - Make it more compact */
         .calendar-grid-reschedule {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
+            gap: 3px;
             max-width: 100%;
-            overflow: hidden;
         }
 
         .calendar-grid-reschedule .calendar-day-header {
             text-align: center;
             font-weight: 600;
-            font-size: 12px;
-            padding: 8px;
+            font-size: 11px;
+            padding: 6px 4px;
             color: #6c757d;
         }
 
@@ -619,15 +617,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             align-items: center;
             justify-content: center;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             border: 1px solid #dee2e6;
             background: white;
             position: relative;
             user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
+            padding: 2px;
         }
 
         .calendar-grid-reschedule .calendar-day:hover:not(.disabled):not(.booked) {
@@ -756,14 +752,17 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 padding: 0.2rem 0.4rem !important;
             }
 
-            /* Reschedule Calendar */
-            .calendar-grid-reschedule .calendar-day {
-                font-size: 12px;
+            .calendar-grid-reschedule {
+                gap: 2px;
             }
 
             .calendar-grid-reschedule .calendar-day-header {
                 font-size: 10px;
-                padding: 6px;
+                padding: 5px 2px;
+            }
+
+            .calendar-grid-reschedule .calendar-day {
+                font-size: 12px;
             }
         }
 
@@ -790,19 +789,23 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 text-overflow: ellipsis;
             }
 
-            /* Reschedule Calendar - Reduce gap and adjust sizing */
             .calendar-grid-reschedule {
                 gap: 2px;
             }
 
-            .calendar-grid-reschedule .calendar-day {
-                font-size: 11px;
-                padding: 4px 2px;
-            }
-
             .calendar-grid-reschedule .calendar-day-header {
                 font-size: 9px;
-                padding: 5px 2px;
+                padding: 4px 1px;
+            }
+
+            .calendar-grid-reschedule .calendar-day {
+                font-size: 11px;
+            }
+
+            .calendar-grid-reschedule .partial-indicator {
+                font-size: 7px;
+                top: 1px;
+                right: 1px;
             }
 
             /* Amenity badge adjustments */
@@ -853,25 +856,21 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 display: none;
             }
 
-            /* Reschedule Calendar - Further reduce for small screens */
             .calendar-grid-reschedule {
                 gap: 1px;
             }
 
-            .calendar-grid-reschedule .calendar-day {
-                font-size: 10px;
+            .calendar-grid-reschedule .calendar-day-header {
+                font-size: 8px;
                 padding: 3px 1px;
             }
 
-            .calendar-grid-reschedule .calendar-day-header {
-                font-size: 8px;
-                padding: 4px 1px;
+            .calendar-grid-reschedule .calendar-day {
+                font-size: 10px;
             }
 
             .calendar-grid-reschedule .partial-indicator {
-                font-size: 8px;
-                top: 1px;
-                right: 1px;
+                font-size: 6px;
             }
 
             /* Legend adjustments */
@@ -1208,18 +1207,18 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         <!-- Calendar Controls -->
                         <div class="row mb-3 align-items-center">
                             <div class="col-md-4">
-                                <div class="legend border">
-                                    <div class="legend-item text-nowrwap">
+                                <div class="legend">
+                                    <div class="legend-item">
                                         <div class="legend-color paid bg-success"></div>
                                         <span>Paid</span>
                                     </div>
-                                    <div class="legend-item text-nowrwap">
+                                    <div class="legend-item">
                                         <div class="legend-color partial bg-warning"></div>
-                                        <span>Partial Payment</span>
+                                        <span>Partial</span>
                                     </div>
-                                    <div class="legend-item text-nowrwap">
+                                    <div class="legend-item">
                                         <div class="legend-color pending bg-secondary"></div>
-                                        <span>Pending Payment</span>
+                                        <span>Pending</span>
                                     </div>
                                 </div>
                             </div>
