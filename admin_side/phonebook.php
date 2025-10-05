@@ -336,15 +336,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             .pagination {
                 font-size: 0.8rem;
             }
-
-            .d-flex.gap-2 {
-                flex-direction: column;
-                gap: 0.5rem !important;
-            }
-
-            .d-flex.gap-2 .btn {
-                width: 100%;
-            }
         }
 
         /* Make Cancel button slightly darker on hover */
