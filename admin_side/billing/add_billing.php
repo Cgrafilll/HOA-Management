@@ -155,6 +155,18 @@ if (!empty($admin['profile_picture'])) {
             height: 100%;
             object-fit: contain;
         }
+
+        .field-hidden {
+            display: none;
+        }
+
+        .bulk-option {
+            background-color: #e8f5e8;
+            border: 1px solid #198754;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 
@@ -292,14 +304,39 @@ if (!empty($admin['profile_picture'])) {
                 <form id="invoiceForm" class="p-4">
                     <div class="row g-3">
 
-                        <!-- Household ID (FK) -->
+                        <!-- Category Selection -->
                         <div class="col-md-6">
-                            <label for="household_id" class="form-label fw-semibold">Household</label>
-                            <select class="form-select" id="household_id" name="household_id" required>
+                            <label for="category" class="form-label fw-semibold">Billing Category <span class="text-danger">*</span></label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="" selected disabled>Select Category</option>
+                                <option value="monthly_dues">Monthly Dues</option>
+                                <option value="penalty_fees">Penalty Fees</option>
+                                <option value="other_fees">Other Fees</option>
+                            </select>
+                            <small class="text-muted">Choose the type of fee to bill</small>
+                        </div>
+
+                        <!-- Bulk Selection Option (Only for Monthly Dues) -->
+                        <div class="col-12 field-hidden" id="bulkOptionContainer">
+                            <div class="bulk-option">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="bulkInvoice" name="bulkInvoice">
+                                    <label class="form-check-label fw-semibold" for="bulkInvoice">
+                                        <i class="bi bi-people-fill me-2"></i>Create invoices for all households
+                                    </label>
+                                    <div class="small text-muted mt-1">Check this to automatically generate monthly dues invoices for all registered households</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Household ID (Hidden when bulk is selected) -->
+                        <div class="col-md-6" id="householdContainer">
+                            <label for="household_id" class="form-label fw-semibold">Household <span class="text-danger">*</span></label>
+                            <select class="form-select" id="household_id" name="household_id">
                                 <option value="" selected disabled>Select Household</option>
                                 <?php
                                 // Populate dropdown with household_accounts
-                                $households = $conn->query("SELECT household_id, CONCAT(first_name, ' ', last_name) AS name FROM household_accounts");
+                                $households = $conn->query("SELECT household_id, CONCAT(first_name, ' ', last_name) AS name FROM household_accounts ORDER BY household_id");
                                 while ($row = $households->fetch_assoc()) {
                                     echo "<option value='{$row['household_id']}'>{$row['household_id']} - {$row['name']}</option>";
                                 }
@@ -307,30 +344,42 @@ if (!empty($admin['profile_picture'])) {
                             </select>
                         </div>
 
-                        <!-- Billing Month -->
-                        <div class="col-md-6">
-                            <label for="billing_month" class="form-label fw-semibold">Billing Month</label>
-                            <input type="month" class="form-control" id="billing_month" name="billing_month" required>
+                        <!-- Billing Month (Only for Monthly Dues) -->
+                        <div class="col-md-6 field-hidden" id="billingMonthContainer">
+                            <label for="billing_month" class="form-label fw-semibold">Billing Month <span class="text-danger">*</span></label>
+                            <input type="month" class="form-control" id="billing_month" name="billing_month">
+                            <small class="text-muted">Month for which dues are being charged</small>
+                        </div>
+
+                        <!-- Description (Only for Penalty and Other Fees) -->
+                        <div class="col-12 field-hidden" id="descriptionContainer">
+                            <label for="description" class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                placeholder="Enter details about the fee..."></textarea>
+                            <small class="text-muted">Provide specific details about this charge</small>
                         </div>
 
                         <!-- Balance Remaining -->
                         <div class="col-md-6">
-                            <label for="balance_remaining" class="form-label fw-semibold">Balance to be Paid:</label>
-                            <input type="number" step="0.01" class="form-control" id="balance_remaining"
-                                name="balance_remaining" min="0" required>
+                            <label for="balance_remaining" class="form-label fw-semibold">Amount to be Paid <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₱</span>
+                                <input type="number" step="0.01" class="form-control" id="balance_remaining"
+                                    name="balance_remaining" min="0.01" placeholder="0.00" required>
+                            </div>
                         </div>
 
-                        <!-- Payment Date -->
+                        <!-- Due Date -->
                         <div class="col-md-6">
-                            <label for="due_date" class="form-label fw-semibold">Due Date:</label>
-                            <input type="date" class="form-control" id="due_date" name="due_date" readonly>
+                            <label for="due_date" class="form-label fw-semibold">Due Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="due_date" name="due_date" required>
                         </div>
                     </div>
 
                     <!-- Submit -->
                     <div class="mt-4 text-end">
                         <button type="submit" class="btn btn-success" id="submitBtn">
-                            <i class="bi bi-save me-1"></i> Save Invoice
+                            <i class="bi bi-save me-1"></i> <span id="submitBtnText">Save Invoice</span>
                         </button>
                     </div>
                 </form>
@@ -347,7 +396,7 @@ if (!empty($admin['profile_picture'])) {
                             <div class="modal-body">
                                 <i class="bi bi-question-circle text-success" style="font-size: 64px;"></i>
                                 <p class="mb-2"><b>Are you sure?</b></p>
-                                <p class="mb-3">Do you really want to create this invoice?</p>
+                                <p class="mb-3" id="confirmMessage">Do you really want to create this invoice?</p>
                                 <button type="button" class="btn btn-success" id="confirmPublish">Yes, Create
                                     Invoice</button>
                                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
@@ -367,7 +416,7 @@ if (!empty($admin['profile_picture'])) {
                             </div>
                             <div class="modal-body">
                                 <i class="bi bi-check-circle-fill text-success" style="font-size: 64px;"></i>
-                                <p class="mt-3 mb-2"><b>Invoice created successfully!</b></p>
+                                <p class="mt-3 mb-2"><b>Invoice(s) created successfully!</b></p>
                                 <p class="mb-3" id="successMessage">The invoice has been created and email notification
                                     sent.</p>
                                 <button type="button" class="btn btn-success" id="okButton">OK</button>
@@ -421,33 +470,131 @@ if (!empty($admin['profile_picture'])) {
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const form = document.getElementById('invoiceForm');
-            const requiredFields = Array.from(form.querySelectorAll("input:not([type='file']), select"));
+            const categorySelect = document.getElementById('category');
+            const bulkCheckbox = document.getElementById('bulkInvoice');
+            const householdSelect = document.getElementById('household_id');
+            const billingMonthInput = document.getElementById('billing_month');
+            const descriptionInput = document.getElementById('description');
+            const dueDateInput = document.getElementById('due_date');
+            
+            // Containers
+            const bulkOptionContainer = document.getElementById('bulkOptionContainer');
+            const householdContainer = document.getElementById('householdContainer');
+            const billingMonthContainer = document.getElementById('billingMonthContainer');
+            const descriptionContainer = document.getElementById('descriptionContainer');
+            
             const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
             const successModal = new bootstrap.Modal(document.getElementById('successModal'));
             const errorInvoiceModal = new bootstrap.Modal(document.getElementById('errorInvoiceModal'));
             const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
             const confirmPublishBtn = document.getElementById('confirmPublish');
             const submitBtn = document.getElementById('submitBtn');
+            const submitBtnText = document.getElementById('submitBtnText');
+            const confirmMessage = document.getElementById('confirmMessage');
+
+            // Category change handler
+            categorySelect.addEventListener('change', function() {
+                const category = this.value;
+                
+                // Reset all fields
+                bulkCheckbox.checked = false;
+                householdSelect.value = '';
+                billingMonthInput.value = '';
+                descriptionInput.value = '';
+                dueDateInput.value = '';
+                
+                // Hide all conditional fields
+                bulkOptionContainer.classList.add('field-hidden');
+                billingMonthContainer.classList.add('field-hidden');
+                descriptionContainer.classList.add('field-hidden');
+                householdContainer.classList.remove('field-hidden');
+                
+                // Remove all required attributes first
+                householdSelect.removeAttribute('required');
+                billingMonthInput.removeAttribute('required');
+                descriptionInput.removeAttribute('required');
+                
+                if (category === 'monthly_dues') {
+                    // Show bulk option and billing month
+                    bulkOptionContainer.classList.remove('field-hidden');
+                    billingMonthContainer.classList.remove('field-hidden');
+                    householdSelect.setAttribute('required', 'required');
+                    billingMonthInput.setAttribute('required', 'required');
+                    updatePaymentDate();
+                    submitBtnText.textContent = 'Save Invoice';
+                    
+                } else if (category === 'penalty_fees' || category === 'other_fees') {
+                    // Show description, hide billing month
+                    descriptionContainer.classList.remove('field-hidden');
+                    householdSelect.setAttribute('required', 'required');
+                    descriptionInput.setAttribute('required', 'required');
+                    submitBtnText.textContent = 'Save Invoice';
+                }
+            });
+
+            // Bulk checkbox handler
+            bulkCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    householdContainer.classList.add('field-hidden');
+                    householdSelect.removeAttribute('required');
+                    householdSelect.value = '';
+                    submitBtnText.textContent = 'Create Bulk Invoices';
+                } else {
+                    householdContainer.classList.remove('field-hidden');
+                    householdSelect.setAttribute('required', 'required');
+                    submitBtnText.textContent = 'Save Invoice';
+                }
+            });
 
             // Form submission handler
             form.addEventListener("submit", function (e) {
                 e.preventDefault();
 
+                const category = categorySelect.value;
+                const isBulk = bulkCheckbox.checked;
+                
+                // Validate based on category
                 let valid = true;
+                let errorMsg = '';
 
-                // Validate required fields
-                requiredFields.forEach(field => {
-                    if (!field.value) {
-                        field.classList.add("border", "border-danger");
+                if (!category) {
+                    errorMsg = 'Please select a billing category.';
+                    valid = false;
+                } else if (category === 'monthly_dues') {
+                    if (!isBulk && !householdSelect.value) {
+                        errorMsg = 'Please select a household.';
                         valid = false;
-                    } else {
-                        field.classList.remove("border", "border-danger");
                     }
-                });
+                    if (!billingMonthInput.value) {
+                        errorMsg = 'Please select a billing month.';
+                        valid = false;
+                    }
+                } else {
+                    if (!householdSelect.value) {
+                        errorMsg = 'Please select a household.';
+                        valid = false;
+                    }
+                    if (!descriptionInput.value.trim()) {
+                        errorMsg = 'Please provide a description.';
+                        valid = false;
+                    }
+                }
+
+                if (!dueDateInput.value) {
+                    errorMsg = 'Please select a due date.';
+                    valid = false;
+                }
 
                 if (!valid) {
-                    alert("Please fill in all required fields.");
+                    alert(errorMsg);
                     return;
+                }
+
+                // Set confirmation message
+                if (isBulk) {
+                    confirmMessage.textContent = 'This will create invoices for ALL households. Continue?';
+                } else {
+                    confirmMessage.textContent = 'Do you really want to create this invoice?';
                 }
 
                 // Show confirmation modal
@@ -473,16 +620,12 @@ if (!empty($admin['profile_picture'])) {
                     .then(response => response.json())
                     .then(data => {
                         // Reset button
-                        submitBtn.innerHTML = '<i class="bi bi-save me-1"></i> Save Invoice';
+                        submitBtn.innerHTML = '<i class="bi bi-save me-1"></i> <span id="submitBtnText">Save Invoice</span>';
                         submitBtn.disabled = false;
 
                         if (data.success) {
                             // Show success message
-                            const emailStatus = data.email_sent ?
-                                `Invoice ${data.invoice_number} created successfully! Email notification sent to ${data.recipient_email}.` :
-                                `Invoice ${data.invoice_number} created successfully! (Email notification could not be sent)`;
-
-                            document.getElementById('successMessage').textContent = emailStatus;
+                            document.getElementById('successMessage').innerHTML = data.message || 'Invoice created successfully!';
                             successModal.show();
                         } else {
                             // Show error
@@ -497,7 +640,7 @@ if (!empty($admin['profile_picture'])) {
                     })
                     .catch(error => {
                         // Reset button
-                        submitBtn.innerHTML = '<i class="bi bi-save me-1"></i> Save Invoice';
+                        submitBtn.innerHTML = '<i class="bi bi-save me-1"></i> <span id="submitBtnText">Save Invoice</span>';
                         submitBtn.disabled = false;
 
                         console.error('Error:', error);
@@ -511,48 +654,40 @@ if (!empty($admin['profile_picture'])) {
                 window.location.href = '../billing.php';
             });
 
-            // Remove red border when user types or selects
-            requiredFields.forEach(field => {
-                field.addEventListener("input", () => field.classList.remove("border", "border-danger"));
-                field.addEventListener("change", () => field.classList.remove("border", "border-danger"));
-            });
-
-            // Billing month and due date logics
-            const billingMonth = document.getElementById('billing_month');
-            const paymentDate = document.getElementById('due_date');
-
+            // Billing month and due date logic
             function updatePaymentDate() {
-                if (billingMonth.value) {
-                    const [year, month] = billingMonth.value.split('-');
-                    
-                    // Always set due date to the 28th of the SELECTED billing month
-                    // Don't push it forward - let PHP validation handle past dates
+                if (billingMonthInput.value && categorySelect.value === 'monthly_dues') {
+                    const [year, month] = billingMonthInput.value.split('-');
                     let dueDate = new Date(year, month - 1, 28);
 
-                    // Format as YYYY-MM-DD without timezone conversion
                     const year_str = dueDate.getFullYear();
                     const month_str = String(dueDate.getMonth() + 1).padStart(2, '0');
                     const day_str = String(dueDate.getDate()).padStart(2, '0');
                     const dueDateStr = `${year_str}-${month_str}-${day_str}`;
                     
-                    paymentDate.value = dueDateStr;
-                } else {
-                    paymentDate.value = '';
+                    dueDateInput.value = dueDateStr;
                 }
             }
 
-            // Set default on page load
-            updatePaymentDate();
-
-           // Set minimum date to current month (disable past months)
+            // Set minimum date to current month
             const today = new Date();
             const currentYear = today.getFullYear();
             const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
             const minMonth = `${currentYear}-${currentMonth}`;
-            billingMonth.setAttribute('min', minMonth);
+            billingMonthInput.setAttribute('min', minMonth);
 
             // Update payment_date whenever billing_month changes
-            billingMonth.addEventListener('change', updatePaymentDate);
+            billingMonthInput.addEventListener('change', updatePaymentDate);
+
+            // Set minimum due date to today
+            const todayStr = today.toISOString().split('T')[0];
+            dueDateInput.setAttribute('min', todayStr);
+
+            // Remove red border when user types or selects
+            [categorySelect, householdSelect, billingMonthInput, descriptionInput, dueDateInput].forEach(field => {
+                field.addEventListener("input", () => field.classList.remove("border", "border-danger"));
+                field.addEventListener("change", () => field.classList.remove("border", "border-danger"));
+            });
         });
     </script>
 
