@@ -1074,8 +1074,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                                         " . ucfirst($row['status']) . "
                                                     </span>
                                                 </td>
-                                                <td class='text-center'>
-                                                    <button class='btn btn-sm btn-outline-success me-1' title='View'
+                                                <td class='text-center gap-1'>
+                                                    <button class='btn btn-sm btn-outline-success' title='View'
                                                         onclick='showBookingDetails({
                                                             fullName: \"" . addslashes($fullName) . "\",
                                                             amenity: \"" . addslashes($amenity) . "\",
@@ -1141,11 +1141,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                     </div>
                                     <div class="legend-item">
                                         <div class="legend-color partial bg-warning"></div>
-                                        <span>Partial Payment</span>
+                                        <span>Partial</span>
                                     </div>
                                     <div class="legend-item">
                                         <div class="legend-color pending bg-secondary"></div>
-                                        <span>Pending Payment</span>
+                                        <span>Pending</span>
                                     </div>
                                 </div>
                             </div>
@@ -1319,26 +1319,38 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                 <label class="form-label fw-bold">Select New Time Slot<span
                                         class="text-danger">*</span></label>
                                 <div class="row g-2">
-                                    <div class="col-6">
+                                    <div class="col-4">
                                         <div class="border rounded p-2 h-100 rate-option" data-value="day"
                                             onclick="selectRescheduleRate(this, 'day')" style="cursor: pointer;">
                                             <div class="d-flex align-items-center gap-2">
-                                                <i class="bi bi-sun fs-4 text-primary"></i>
+                                                <i class="bi bi-sun fs-4 text-warning"></i>
                                                 <div>
-                                                    <strong class="d-block small">Day Rate</strong>
+                                                    <strong class="d-block small">Day</strong>
                                                     <small class="text-muted">9:00 AM - 5:00 PM</small>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-4">
                                         <div class="border rounded p-2 h-100 rate-option" data-value="night"
                                             onclick="selectRescheduleRate(this, 'night')" style="cursor: pointer;">
                                             <div class="d-flex align-items-center gap-2">
                                                 <i class="bi bi-moon-stars fs-4 text-primary"></i>
                                                 <div>
-                                                    <strong class="d-block small">Night Rate</strong>
+                                                    <strong class="d-block small">Night</strong>
                                                     <small class="text-muted">5:00 PM - 10:00 PM</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="border rounded p-2 h-100 rate-option" data-value="whole"
+                                            onclick="selectRescheduleRate(this, 'whole')" style="cursor: pointer;">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-sun-fill fs-4 text-success"></i>
+                                                <div>
+                                                    <strong class="d-block small">Whole Day</strong>
+                                                    <small class="text-muted">9:00 AM - 10:00 PM</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -1554,35 +1566,35 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         function showBookingDetails(booking) {
             const modalContent = document.getElementById('modalContent');
             modalContent.innerHTML = `
-                <div class="booking-detail">
-                    <strong>Guest Name:</strong>
-                    <span>${booking.fullName}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Amenity:</strong>
-                    <span class="badge bg-${getAmenityBadgeClass(booking.amenity)}">${booking.amenity}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Date:</strong>
-                    <span>${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Time:</strong>
-                    <span>${booking.time}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Reservation Code:</strong>
-                    <span>${booking.reservationCode}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Payment Status:</strong>
-                    <span class="badge bg-${booking.paymentStatus === 'Paid' ? 'success' : booking.paymentStatus === 'Partial' ? 'warning text-dark' : 'secondary'}">${booking.paymentStatus}</span>
-                </div>
-                <div class="booking-detail">
-                    <strong>Amount:</strong>
-                    <span>${booking.amount}</span>
-                </div>
-            `;
+            <div class="booking-detail">
+                <strong>Guest Name:</strong>
+                <span>${booking.fullName}</span>
+            </div>
+            <div class="booking-detail">
+                <strong>Amenity:</strong>
+                <span class="badge bg-${getAmenityBadgeClass(booking.amenity)}">${booking.amenity}</span>
+            </div>
+            <div class="booking-detail">
+                <strong>Date:</strong>
+                <span>${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            </div>
+            <div class="booking-detail">
+                <strong>Time:</strong>
+                <span>${booking.time}</span>
+            </div>
+            <div class="booking-detail">
+                <strong>Reservation Code:</strong>
+                <span>${booking.reservationCode}</span>
+            </div>
+            <div class="booking-detail">
+                <strong>Payment Status:</strong>
+                <span class="badge bg-${booking.paymentStatus === 'Paid' ? 'success' : booking.paymentStatus === 'Partial' ? 'warning text-dark' : 'secondary'}">${booking.paymentStatus}</span>
+            </div>
+            <div class="booking-detail">
+                <strong>Amount:</strong>
+                <span>${booking.amount}</span>
+            </div>
+        `;
 
             new bootstrap.Modal(document.getElementById('bookingModal')).show();
         }
@@ -1623,25 +1635,72 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         let rescheduleCurrentDate = new Date();
         let rescheduleSelectedDate = null;
         let rescheduleAmenity = null;
+        let rescheduleOriginalRate = null;
 
         function openRescheduleModal(booking) {
             document.getElementById('reschedule_booking_id').value = booking.id;
             document.getElementById('reschedule_amenity').value = booking.amenity;
             rescheduleAmenity = booking.amenity;
 
+            // Store the current rate
+            const currentRate = booking.rate;
+            rescheduleOriginalRate = currentRate;
+
             document.getElementById('currentBookingInfo').innerHTML = `
-                <div><strong>Guest:</strong> ${booking.fullName}</div>
-                <div><strong>Amenity:</strong> ${booking.amenity}</div>
-                <div><strong>Current Date:</strong> ${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                <div><strong>Current Time:</strong> ${booking.time}</div>
-            `;
+            <div><strong>Guest:</strong> ${booking.fullName}</div>
+            <div><strong>Amenity:</strong> ${booking.amenity}</div>
+            <div><strong>Current Date:</strong> ${new Date(booking.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+            <div><strong>Current Time:</strong> ${booking.time}</div>
+        `;
+
+            // Get rate option elements
+            const wholeOption = document.querySelector('.rate-option[data-value="whole"]');
+            const dayOption = document.querySelector('.rate-option[data-value="day"]');
+            const nightOption = document.querySelector('.rate-option[data-value="night"]');
+
+            if (wholeOption && dayOption && nightOption) {
+                // Show all 3 options
+                wholeOption.closest('.col-4').style.display = 'block';
+                dayOption.closest('.col-4').style.display = 'block';
+                nightOption.closest('.col-4').style.display = 'block';
+
+                // Reset all options first
+                [dayOption, nightOption, wholeOption].forEach(option => {
+                    option.classList.remove('bg-secondary', 'bg-opacity-10');
+                    option.style.opacity = '1';
+                    option.style.cursor = 'pointer';
+                    option.style.pointerEvents = 'auto';
+                });
+
+                if (currentRate === 'whole') {
+                    // If original booking is WHOLE: disable day and night
+                    dayOption.classList.add('bg-secondary', 'bg-opacity-10');
+                    dayOption.style.opacity = '0.5';
+                    dayOption.style.cursor = 'not-allowed';
+                    dayOption.style.pointerEvents = 'none';
+
+                    nightOption.classList.add('bg-secondary', 'bg-opacity-10');
+                    nightOption.style.opacity = '0.5';
+                    nightOption.style.cursor = 'not-allowed';
+                    nightOption.style.pointerEvents = 'none';
+                } else {
+                    // If original booking is DAY or NIGHT: disable whole
+                    wholeOption.classList.add('bg-secondary', 'bg-opacity-10');
+                    wholeOption.style.opacity = '0.5';
+                    wholeOption.style.cursor = 'not-allowed';
+                    wholeOption.style.pointerEvents = 'none';
+                }
+            }
 
             rescheduleSelectedDate = null;
             document.getElementById('new_date').value = '';
             document.getElementById('new_rate').value = '';
             document.getElementById('reschedule_reason').value = '';
             document.getElementById('selected_date_display').value = '';
-            document.querySelectorAll('.rate-option').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.rate-option').forEach(el => {
+                el.classList.remove('selected', 'border-primary', 'border-2', 'bg-primary', 'bg-opacity-10');
+                el.style.borderWidth = '1px';
+            });
 
             fetchRescheduleBookedDates();
             new bootstrap.Modal(document.getElementById('rescheduleModal')).show();
@@ -1670,9 +1729,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         const rate = booking.rate;
 
                         if (!rescheduleBookedDates[dateKey]) {
-                            rescheduleBookedDates[dateKey] = { day: false, night: false };
+                            rescheduleBookedDates[dateKey] = { day: false, night: false, whole: false };
                         }
+
                         rescheduleBookedDates[dateKey][rate] = true;
+
+                        // If whole is booked, mark both day and night as booked too
+                        if (rate === 'whole') {
+                            rescheduleBookedDates[dateKey].day = true;
+                            rescheduleBookedDates[dateKey].night = true;
+                        }
                     });
 
                     renderRescheduleCalendar();
@@ -1746,7 +1812,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
 
                         if (dayBooked && nightBooked) {
                             dayElement.classList.add('booked');
-                            dayElement.title = 'Fully booked (Day & Night)';
+                            dayElement.title = 'Fully booked';
                         } else if (dayBooked || nightBooked) {
                             dayElement.classList.add('partial-booked');
                             const available = dayBooked ? 'Night' : 'Day';
@@ -1828,24 +1894,75 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
         function updateRescheduleRateOptions(booking) {
             const dayOption = document.querySelector('.rate-option[data-value="day"]');
             const nightOption = document.querySelector('.rate-option[data-value="night"]');
+            const wholeOption = document.querySelector('.rate-option[data-value="whole"]');
 
-            [dayOption, nightOption].forEach(option => {
-                option.classList.remove('bg-secondary', 'bg-opacity-10', 'border-primary', 'border-2', 'bg-primary', 'selected');
-                option.style.opacity = '1';
-                option.style.cursor = 'pointer';
-                option.style.borderWidth = '1px';
-            });
-
-            if (booking) {
-                if (booking.day) {
+            // First, apply the original booking rate restrictions
+            if (rescheduleOriginalRate === 'whole') {
+                // If original booking is WHOLE: always keep day and night disabled
+                if (dayOption) {
                     dayOption.classList.add('bg-secondary', 'bg-opacity-10');
                     dayOption.style.opacity = '0.5';
                     dayOption.style.cursor = 'not-allowed';
+                    dayOption.style.pointerEvents = 'none';
                 }
-                if (booking.night) {
+                if (nightOption) {
                     nightOption.classList.add('bg-secondary', 'bg-opacity-10');
                     nightOption.style.opacity = '0.5';
                     nightOption.style.cursor = 'not-allowed';
+                    nightOption.style.pointerEvents = 'none';
+                }
+                // Reset whole option
+                if (wholeOption) {
+                    wholeOption.classList.remove('bg-secondary', 'bg-opacity-10', 'border-primary', 'border-2', 'bg-primary');
+                    wholeOption.style.opacity = '1';
+                    wholeOption.style.cursor = 'pointer';
+                    wholeOption.style.pointerEvents = 'auto';
+                    wholeOption.style.borderWidth = '1px';
+                }
+            } else {
+                // If original booking is DAY or NIGHT: always keep whole disabled
+                if (wholeOption) {
+                    wholeOption.classList.add('bg-secondary', 'bg-opacity-10');
+                    wholeOption.style.opacity = '0.5';
+                    wholeOption.style.cursor = 'not-allowed';
+                    wholeOption.style.pointerEvents = 'none';
+                }
+                // Reset day and night options
+                [dayOption, nightOption].forEach(option => {
+                    if (option) {
+                        option.classList.remove('bg-secondary', 'bg-opacity-10', 'border-primary', 'border-2', 'bg-primary');
+                        option.style.opacity = '1';
+                        option.style.cursor = 'pointer';
+                        option.style.pointerEvents = 'auto';
+                        option.style.borderWidth = '1px';
+                    }
+                });
+            }
+
+            // Then, apply additional restrictions based on what's booked on the selected date
+            if (booking) {
+                if (rescheduleOriginalRate !== 'whole') {
+                    if (booking.day && dayOption) {
+                        dayOption.classList.add('bg-secondary', 'bg-opacity-10');
+                        dayOption.style.opacity = '0.5';
+                        dayOption.style.cursor = 'not-allowed';
+                        dayOption.style.pointerEvents = 'none';
+                    }
+                    if (booking.night && nightOption) {
+                        nightOption.classList.add('bg-secondary', 'bg-opacity-10');
+                        nightOption.style.opacity = '0.5';
+                        nightOption.style.cursor = 'not-allowed';
+                        nightOption.style.pointerEvents = 'none';
+                    }
+                }
+
+                if (rescheduleOriginalRate === 'whole') {
+                    if ((booking.day || booking.night) && wholeOption) {
+                        wholeOption.classList.add('bg-secondary', 'bg-opacity-10');
+                        wholeOption.style.opacity = '0.5';
+                        wholeOption.style.cursor = 'not-allowed';
+                        wholeOption.style.pointerEvents = 'none';
+                    }
                 }
             }
 
