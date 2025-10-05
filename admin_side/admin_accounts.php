@@ -298,15 +298,6 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             .pagination {
                 font-size: 0.8rem;
             }
-
-            .d-flex.gap-2 {
-                flex-direction: column;
-                gap: 0.5rem !important;
-            }
-
-            .d-flex.gap-2 .btn {
-                width: 100%;
-            }
         }
     </style>
 </head>
