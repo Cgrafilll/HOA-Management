@@ -431,7 +431,7 @@ $bookings_result = $bookings_stmt->get_result();
         <main class="flex-grow-1 p-4">
             <!-- Announcements and Events -->
             <div class="row g-4 mb-3">
-                <div class="col-6">
+                <div class="col-md-6">
                     <div class="card shadow-sm h-100 d-flex flex-column">
                         <div class="card-header bg-success text-white fw-semibold">Announcements</div>
                         <div class="card-body flex-grow-1 overflow-auto" style="max-height: 400px;">
@@ -609,7 +609,7 @@ $bookings_result = $bookings_stmt->get_result();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="admin_side/javascripts/mobileSidebar.js"></script>
+    <script src="../admin_side/javascripts/mobileSidebar.js"></script>
 </body>
 
 </html>
