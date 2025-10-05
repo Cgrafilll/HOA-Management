@@ -334,7 +334,7 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span class"d-none d-md-inline">Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <span class="d-none d-md-inline">Hello, <?php echo htmlspecialchars($username); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -530,9 +530,9 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">Violations</span>
-                        <div>
+                        <div class="gap-1">
                             <a href="violations/archive_violation.php"
-                                class="btn btn-outline-secondary btn-sm me-2">Archived Violation</a>
+                                class="btn btn-outline-secondary btn-sm">Archived Violation</a>
                             <a href="violations/add_violations.php" class="btn btn-primary btn-sm">+ Create Violation
                                 Report</a>
                         </div>
@@ -623,9 +623,9 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                                                         <span class="' . $badge_class . ' status-badge">' . htmlspecialchars($row['action_taken']) . '</span>
                                                     </td>
                                                     <td class="text-center align-middle">
-                                                        <div class="action-buttons">
+                                                        <div class="action-buttons gap-1">
                                                             <!-- Edit button -->
-                                                            <button class="btn btn-sm btn-outline-primary me-1 edit-btn" title="Edit" style="padding: 2px 6px; font-size: 0.9rem;">
+                                                            <button class="btn btn-sm btn-outline-primary edit-btn" title="Edit" style="padding: 2px 6px; font-size: 0.9rem;">
                                                                 <i class="bi bi-pencil-square"></i>
                                                             </button>
                                                             <!-- Archive button -->
@@ -635,8 +635,8 @@ $totalPages = ceil($totalEntries / $entriesPerPage);
                                                                 <i class="bi bi-archive"></i>
                                                             </button>
                                                         </div>
-                                                        <div class="edit-buttons d-none">
-                                                            <button class="btn btn-sm btn-success me-1 save-btn" title="Save" style="padding: 2px 6px; font-size: 0.9rem;">
+                                                        <div class="edit-buttons gap-1 d-none">
+                                                            <button class="btn btn-sm btn-success save-btn" title="Save" style="padding: 2px 6px; font-size: 0.9rem;">
                                                                 <i class="bi bi-check-lg"></i>
                                                             </button>
                                                             <button class="btn btn-sm btn-secondary cancel-btn" title="Cancel" style="padding: 2px 6px; font-size: 0.9rem;">
