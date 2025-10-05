@@ -594,6 +594,27 @@ class PaymentManager {
         
         this.showConfirmationModal();
     }
+    showErrorModal(message) {
+        if (this.errorModal && this.errorMessage) {
+            this.errorMessage.textContent = message;
+            this.errorModal.show();
+        } else {
+            alert(message);
+        }
+    }
+
+    showConfirmationModal() {
+        const selectedUserOption = this.userIdSelect.options[this.userIdSelect.selectedIndex];
+        const userName = selectedUserOption.textContent.split(' - ')[1] || 'Unknown';
+        
+        this.confirmName.textContent = userName;
+        this.confirmCategory.textContent = this.categorySelect.value;
+        this.confirmInvoice.textContent = this.invoiceInput.value;
+        this.confirmAmount.textContent = `₱${parseFloat(this.amountPaid.value).toFixed(2)}`;
+        this.confirmMethod.textContent = this.selectedMethod.textContent;
+        
+        this.confirmModal.show();
+    }
     async processPayment() {
         try {
             this.confirmPaymentBtn.disabled = true;
