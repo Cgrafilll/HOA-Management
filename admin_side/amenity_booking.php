@@ -1259,7 +1259,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     <div class="tab-pane fade" id="calendar" role="tabpanel">
                         <!-- Calendar Controls -->
                         <div class="row mb-3 align-items-center">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <div class="legend">
                                     <div class="legend-item">
                                         <div class="legend-color paid bg-success"></div>
@@ -1275,7 +1275,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-8 text-end">
+                            <div class="col-md-6 text-end">
                                 <button class="btn btn-primary btn-sm" onclick="goToToday()">
                                     <i class="bi bi-calendar-date me-1"></i>Today
                                 </button>
