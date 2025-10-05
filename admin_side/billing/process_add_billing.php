@@ -126,7 +126,7 @@ try {
             // Set subject based on category
             $category = $invoiceDetails['category'];
             $categoryName = ucwords(str_replace('_', ' ', $category));
-            $mail->Subject = $categoryName . ' Invoice - NSSHAI [' . $invoiceDetails['invoice_number'] . ']';
+            $mail->Subject = $categoryName . ' Billing - NSSHAI [' . $invoiceDetails['invoice_number'] . ']';
             
             // Generate email template based on category
             $mail->Body = generateInvoiceEmailTemplate($recipientName, $invoiceDetails);
