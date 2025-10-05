@@ -557,7 +557,7 @@ $bookings_result = $bookings_stmt->get_result();
                                     <td>{$fullName}</td>
                                     <td>{$amenity}</td>
                                     <td>{$resCode}</td>
-                                    <td class='{$statusClass} fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>{$status}</td>
+                                    <td class='text-center'><span class='{$statusClass} fw-bold d-inline-flex align-items-center justify-content-center' style='min-width: 70px;'>{$status}</span</td>
                                   </tr>";
                                     }
                                 } else {
