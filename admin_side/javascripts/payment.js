@@ -215,17 +215,22 @@ class PaymentManager {
     const userId = this.userIdSelect.value;
     const userType = this.userTypeSelect.value;
     
+    console.log('Fetching invoice details:', {
+        invoiceNumber,
+        selectedCategory,
+        userId,
+        userType
+    });
+    
     this.refNo.textContent = "";
     this.residentName.textContent = "";
     this.issueDate.textContent = "";
     this.clearInvoiceTable();
     
-    // Categories that require invoice lookup
     const lookupCategories = ["Amenity Fee", "Monthly Dues", "Penalty Fees", "Other Fees"];
     
     if (lookupCategories.includes(selectedCategory) && invoiceNumber && userId && userType) {
         
-        // Validate that HOA fees are only for homeowners/residents
         if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory) && userType !== "Homeowner/Resident") {
             this.refNo.textContent = selectedCategory + " only apply to homeowners/residents";
             this.invoiceInput.style.borderColor = '#dc3545';
@@ -235,12 +240,10 @@ class PaymentManager {
         }
         
         try {
-            // Determine which endpoint to use
             let action;
             if (selectedCategory === "Amenity Fee") {
                 action = 'get_amenity_booking_by_invoice';
             } else {
-                // Monthly Dues, Penalty Fees, Other Fees all use the same table
                 action = 'get_billing_by_invoice';
             }
                 
@@ -252,9 +255,23 @@ class PaymentManager {
                 category: selectedCategory
             });
             
-            // FIX: Make sure we're fetching from the correct location
-            const response = await fetch(`payment.php?${params.toString()}`);
-            const result = await response.json();
+            const url = `?${params.toString()}`;
+            console.log('Fetch URL:', url);
+            
+            const response = await fetch(url);
+            const text = await response.text();
+            console.log('Raw response:', text);
+            
+            // Try to parse as JSON
+            let result;
+            try {
+                result = JSON.parse(text);
+                console.log('Parsed result:', result);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                console.error('Response was not valid JSON');
+                throw new Error('Invalid response from server');
+            }
             
             if (result.success) {
                 const data = result.data;
@@ -264,7 +281,6 @@ class PaymentManager {
                 this.residentName.textContent = `${data.first_name} ${data.middle_name} ${data.last_name}`;
                 this.issueDate.textContent = new Date(data.created_at).toLocaleDateString();
                 
-                // For billing categories, show additional info
                 if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory)) {
                     if (data.billing_month) {
                         const billingMonth = new Date(data.billing_month).toLocaleDateString('en-US', { 
@@ -285,34 +301,36 @@ class PaymentManager {
                 this.balanceDue.textContent = `₱${data.balance_due}`;
                 
                 if (data.status === 'Partial') {
-                        this.balanceDue.parentElement.classList.add('text-warning');
-                        this.balanceDue.parentElement.classList.remove('text-success');
-                    } else if (data.status === 'Paid' || data.status === 'Completed') {
-                        this.balanceDue.parentElement.classList.add('text-success');
-                        this.balanceDue.parentElement.classList.remove('text-warning');
-                    } else {
-                        this.balanceDue.parentElement.classList.remove('text-success', 'text-warning');
-                    }
-                    
-                    this.invoiceInput.style.borderColor = '#198754';
-                    this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+                    this.balanceDue.parentElement.classList.add('text-warning');
+                    this.balanceDue.parentElement.classList.remove('text-success');
+                } else if (data.status === 'Paid' || data.status === 'Completed') {
+                    this.balanceDue.parentElement.classList.add('text-success');
+                    this.balanceDue.parentElement.classList.remove('text-warning');
                 } else {
-                    this.refNo.textContent = result.error || "Invoice not found";
-                    this.invoiceInput.style.borderColor = '#dc3545';
-                    this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
-                    this.clearInvoiceTable();
+                    this.balanceDue.parentElement.classList.remove('text-success', 'text-warning');
                 }
-            } catch (error) {
-                console.error('Error fetching invoice details:', error);
-                this.refNo.textContent = "Error loading";
+                
+                this.invoiceInput.style.borderColor = '#198754';
+                this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+            } else {
+                console.error('Server returned error:', result.error);
+                this.refNo.textContent = result.error || "Invoice not found";
                 this.invoiceInput.style.borderColor = '#dc3545';
                 this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
                 this.clearInvoiceTable();
             }
-        } else {
+        } catch (error) {
+            console.error('Error fetching invoice details:', error);
+            this.refNo.textContent = "Error loading: " + error.message;
+            this.invoiceInput.style.borderColor = '#dc3545';
+            this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
             this.clearInvoiceTable();
         }
+    } else {
+        console.log('Missing required fields for fetch');
+        this.clearInvoiceTable();
     }
+}
     
     populateInvoiceTable(items) {
         if (!items || items.length === 0) {
