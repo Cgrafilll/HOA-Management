@@ -1207,7 +1207,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                         <!-- Calendar Controls -->
                         <div class="row mb-3 align-items-center">
                             <div class="col-md-4">
-                                <div class="legend">
+                                <div class="legend border">
                                     <div class="legend-item">
                                         <div class="legend-color paid bg-success"></div>
                                         <span>Paid</span>
