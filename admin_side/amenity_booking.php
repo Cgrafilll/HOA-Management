@@ -784,6 +784,24 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             .booking-item {
                 font-size: 0.6rem !important;
                 padding: 0.15rem 0.3rem !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Reschedule Calendar - Reduce gap and adjust sizing */
+            .calendar-grid-reschedule {
+                gap: 2px;
+            }
+
+            .calendar-grid-reschedule .calendar-day {
+                font-size: 11px;
+                padding: 4px 2px;
+            }
+
+            .calendar-grid-reschedule .calendar-day-header {
+                font-size: 9px;
+                padding: 5px 2px;
             }
 
             /* Amenity badge adjustments */
@@ -793,16 +811,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 height: 16px !important;
                 top: -6px !important;
                 right: -6px !important;
-            }
-
-            /* Reschedule Calendar */
-            .calendar-grid-reschedule .calendar-day {
-                font-size: 10px;
-            }
-
-            .calendar-grid-reschedule .calendar-day-header {
-                font-size: 9px;
-                padding: 4px;
             }
 
             /* Rate options in reschedule modal */
@@ -844,15 +852,25 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 display: none;
             }
 
-            /* Reschedule Calendar */
+            /* Reschedule Calendar - Further reduce for small screens */
+            .calendar-grid-reschedule {
+                gap: 1px;
+            }
+
             .calendar-grid-reschedule .calendar-day {
-                font-size: 9px;
-                padding: 4px;
+                font-size: 10px;
+                padding: 3px 1px;
             }
 
             .calendar-grid-reschedule .calendar-day-header {
                 font-size: 8px;
-                padding: 3px;
+                padding: 4px 1px;
+            }
+
+            .calendar-grid-reschedule .partial-indicator {
+                font-size: 8px;
+                top: 1px;
+                right: 1px;
             }
 
             /* Legend adjustments */
@@ -1605,6 +1623,22 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
             });
         });
 
+        // Add this function in your script section
+        function getInitials(fullName) {
+            const isMobile = window.innerWidth <= 768;
+
+            if (isMobile) {
+                const names = fullName.trim().split(' ');
+                if (names.length >= 2) {
+                    // First name initial + Last name initial
+                    return names[0].charAt(0) + names[names.length - 1].charAt(0);
+                }
+                return names[0].charAt(0);
+            }
+
+            return fullName;
+        }
+
         const bookings = <?php echo json_encode($bookings); ?>;
         let currentDate = new Date(); // Current date
         let currentView = 'month';
@@ -1677,7 +1711,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     bookingElement.style.fontSize = '0.75rem';
                     bookingElement.style.padding = '0.25rem 0.5rem';
                     bookingElement.style.cursor = 'pointer';
-                    bookingElement.textContent = booking.fullName;
+                    bookingElement.textContent = getInitials(booking.fullName);
 
                     // Create notification badge with initials
                     const amenityBadge = document.createElement('span');
