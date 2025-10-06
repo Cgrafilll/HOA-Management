@@ -999,7 +999,7 @@ if (isset($_GET['action'])) {
 
                                 <!-- Summary Display -->
                                 <div class="bg-light rounded p-3 mb-3">
-                                    <p class="mb-1"><strong>Reference No.:</strong> <span id="refNo"></span></p>
+                                    <p class="mb-1"><strong>Billing No:</strong> <span id="refNo"></span></p>
                                     <p class="mb-1"><strong>Name:</strong> <span id="residentName"></span></p>
                                     <p class="mb-1"><strong>Issue Date:</strong> <span id="issueDate"></span></p>
                                     <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank
