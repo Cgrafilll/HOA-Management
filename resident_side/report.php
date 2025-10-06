@@ -251,6 +251,7 @@ if (!empty($resident['profile_picture'])) {
 
             .form-label,
             .form-control,
+            .form-select,
             .form-select option,
             .form-check-label,
             .file-drop-area .mb-2,
@@ -303,6 +304,7 @@ if (!empty($resident['profile_picture'])) {
 
             .form-label,
             .form-control,
+            .form-select,
             .form-select option,
             .form-check-label,
             .file-drop-area .mb-2,
