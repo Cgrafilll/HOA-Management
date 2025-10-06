@@ -240,10 +240,22 @@ if (!empty($resident['profile_picture'])) {
                 font-size: 1rem !important;
             }
 
+            .file-drop-area,
+            textarea {
+                height: 200px;
+            }
+
+            .cloud-icon {
+                font-size: 40px;
+            }
+
             .form-label,
             .form-control,
+            .form-select,
             .form-check-label,
-            .main~span {
+            .file-drop-area .mb-2,
+            .file-drop-area .small,
+            main span {
                 font-size: 0.85rem;
             }
 
@@ -280,10 +292,22 @@ if (!empty($resident['profile_picture'])) {
                 top: 0;
             }
 
+            .file-drop-area,
+            textarea {
+                height: 150px;
+            }
+
+            .cloud-icon {
+                font-size: 32px;
+            }
+
             .form-label,
             .form-control,
+            .form-select,
             .form-check-label,
-            .main~span {
+            .file-drop-area .mb-2,
+            .file-drop-area .small,
+            main span {
                 font-size: 0.75rem;
             }
         }
