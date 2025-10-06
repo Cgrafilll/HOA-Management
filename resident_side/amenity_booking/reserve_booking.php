@@ -114,11 +114,13 @@ $amenityRates = [
     "Swimming Pool" => [
         "homeowner" => [
             "day" => "₱100.00 / per person",
-            "night" => "₱200.00 / per person"
+            "night" => "₱200.00 / per person",
+            "whole" => "₱300.00 / per person"
         ],
         "visitor" => [
             "day" => "₱200.00 / per person",
-            "night" => "₱300.00 / per person"
+            "night" => "₱300.00 / per person",
+            "whole" => "₱500.00 / per person"
         ]
     ],
     "Clubhouse" => [
@@ -134,21 +136,25 @@ $amenityRates = [
     "Basketball Court" => [
         "homeowner" => [
             "day" => "₱200.00 / per person",
-            "night" => "₱300.00 / per person"
+            "night" => "₱300.00 / per person",
+            "whole" => "₱500.00 / per person"
         ],
         "visitor" => [
             "day" => "₱300.00 / per person",
-            "night" => "₱400.00 / per person"
+            "night" => "₱400.00 / per person",
+            "whole" => "₱700.00 / per person"
         ]
     ],
     "Gazebo" => [
         "homeowner" => [
             "day" => "₱1,000.00",
-            "night" => "₱2,000.00"
+            "night" => "₱1,500.00",
+            "whole" => "₱2,500.00"
         ],
         "visitor" => [
             "day" => "₱2,000.00",
-            "night" => "₱3,000.00"
+            "night" => "₱3,000.00",
+            "whole" => "₱5,000.00"
         ]
     ]
 ];
@@ -171,31 +177,48 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
         * {
             font-family: "Montserrat", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow-x: hidden;
         }
 
         header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 1030;
+            height: 76px;
+            background-color: white;
         }
 
         .sidebar {
             width: 250px;
-            height: 100vh;
+            height: calc(100vh - 76px);
             position: fixed;
-            top: 20;
+            top: 76px;
             left: 0;
             background-color: #1F2937;
             overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1020;
+            transition: transform 0.3s ease;
         }
 
         main {
             margin-left: 250px;
+            margin-top: 76px;
+            min-height: calc(100vh - 76px);
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
         }
 
         .sidebar a,
@@ -219,6 +242,32 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar .logout {
+            flex-shrink: 0;
+            border-top: 1px solid #374151;
+            padding-top: 12px;
         }
 
         .sidebar .btn-toggle {
@@ -250,6 +299,25 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             transform: rotate(180deg);
         }
 
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
         .file-drop-area {
             border: 2px dashed #d1d5db;
             border-radius: 8px;
@@ -267,6 +335,15 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         .file-drop-area.dragover {
             border-color: #3b82f6;
             background-color: #eff6ff;
+        }
+
+        .file-drop-area.required-highlight {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .file-drop-area.required-highlight .cloud-icon {
+            color: #dc3545;
         }
 
         .cloud-icon {
@@ -293,7 +370,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         }
 
         .custom-radio-option {
-            padding: 16px 20px;
+            padding: 12px 20px;
             border: none;
             background: none;
             width: 100%;
@@ -301,6 +378,9 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             position: relative;
             cursor: pointer;
             transition: all 0.2s ease;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
         }
 
         .custom-radio-option:not(:last-child) {
@@ -345,12 +425,40 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             transform: translate(-50%, -50%);
         }
 
+        .loading {
+            color: #6c757d;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .form-select:disabled {
+            background-color: #f8f9fa;
+            opacity: 0.8;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .calendar-view {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 15px;
+            overflow: hidden;
         }
 
         .calendar-header {
@@ -378,6 +486,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 5px;
+            width: 100%;
         }
 
         .calendar-day-header {
@@ -398,6 +507,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             cursor: pointer;
             border: 1px solid #dee2e6;
             background: white;
+            min-height: 0;
+            /* Allow shrinking */
+            padding: 2px;
+            /* Add small padding */
         }
 
         .calendar-day:hover:not(.disabled):not(.booked) {
@@ -458,14 +571,338 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
         .partial-indicator {
             position: absolute;
-            top: 2px;
-            right: 2px;
-            font-size: 10px;
+            top: 1px;
+            right: 1px;
+            font-size: 8px;
             color: #856404;
+        }
+
+        .calendar-legend {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .calendar-legend small {
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .calendar-legend .badge {
+            flex-shrink: 0;
         }
 
         #dateMessage {
             margin-top: 10px;
+        }
+
+        .search-select-input {
+            width: 100%;
+            padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+            background-color: #fff;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .search-select-input:focus {
+            border-color: #198754;
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+        }
+
+        .search-select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 250px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ced4da;
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+        }
+
+        .search-select-dropdown.show {
+            display: block;
+        }
+
+        .search-select-option {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        .search-select-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .search-select-option.selected {
+            background-color: #e7f5ea;
+            color: #198754;
+            font-weight: 500;
+        }
+
+        .search-select-option.no-results {
+            padding: 1rem;
+            text-align: center;
+            color: #6c757d;
+            cursor: default;
+        }
+
+        .search-select-option.no-results:hover {
+            background-color: transparent;
+        }
+
+        .search-select-clear {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6c757d;
+            display: none;
+        }
+
+        .search-select-clear.show {
+            display: block;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                top: 76px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            header .logo-container {
+                width: auto !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            /* Form adjustments */
+            .row .col-6,
+            .row .col-4 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            .bg-white.shadow.rounded.p-3 {
+                padding: 1rem !important;
+            }
+
+            .calendar-view {
+                padding: 10px;
+            }
+
+            .calendar-grid {
+                gap: 3px;
+            }
+
+            .calendar-day {
+                font-size: 11px;
+                padding: 1px;
+            }
+
+            .calendar-day-header {
+                padding: 4px 1px;
+                font-size: 9px;
+            }
+
+            .partial-indicator {
+                font-size: 7px;
+                top: 0px;
+                right: 0px;
+            }
+
+            .calendar-legend {
+                gap: 8px;
+                font-size: 0.75rem;
+            }
+
+            .custom-radio-container {
+                font-size: 0.85rem;
+            }
+
+            .custom-radio-option {
+                padding: 10px 15px;
+                min-height: 50px;
+            }
+
+            .custom-radio-option strong {
+                font-size: 0.9rem;
+            }
+
+            .custom-radio-option small {
+                font-size: 0.75rem;
+            }
+
+            /* Alert messages */
+            .alert {
+                font-size: 0.85rem;
+                padding: 0.5rem;
+            }
+
+            .alert small {
+                font-size: 0.75rem;
+            }
+
+            #dateMessage .alert {
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            main {
+                margin-top: 76px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .bg-success.text-white.rounded-top.p-3 h5 {
+                font-size: 1rem;
+            }
+
+            .d-flex.justify-content-center span {
+                font-size: 1.5rem !important;
+                letter-spacing: 2px !important;
+            }
+
+            /* Form fields */
+            .form-floating {
+                margin-bottom: 0.75rem !important;
+            }
+
+            .form-floating label {
+                font-size: 0.9rem;
+            }
+
+            .calendar-view {
+                padding: 8px;
+            }
+
+            .calendar-grid {
+                gap: 2px;
+            }
+
+            .calendar-day {
+                font-size: 10px;
+                padding: 1px;
+                border-width: 1px;
+            }
+
+            .calendar-day-header {
+                font-size: 8px;
+                padding: 3px 0;
+            }
+
+            .partial-indicator {
+                font-size: 6px;
+            }
+
+            /* Buttons */
+            .btn {
+                font-size: 0.9rem;
+                padding: 0.5rem 1rem;
+            }
+
+            .d-grid .btn-lg {
+                padding: 0.75rem;
+            }
+
+            .calendar-legend {
+                gap: 6px;
+                font-size: 0.7rem;
+            }
+
+            .calendar-legend small {
+                font-size: 0.65rem;
+            }
+
+            .calendar-legend .badge {
+                font-size: 0.6rem;
+                padding: 0.15em 0.35em;
+            }
+
+            /* Rate options more compact */
+            .custom-radio-container {
+                font-size: 0.8rem;
+            }
+
+            .custom-radio-option {
+                padding: 8px 12px;
+                min-height: 45px;
+            }
+
+            .custom-radio-option strong {
+                font-size: 0.85rem;
+                display: block;
+                margin-bottom: 2px;
+            }
+
+            .custom-radio-option small {
+                font-size: 0.7rem;
+            }
+
+            /* Alert messages smaller */
+            .alert {
+                font-size: 0.8rem;
+                padding: 0.4rem;
+            }
+
+            .alert small {
+                font-size: 0.7rem;
+            }
+
+            #dateMessage .alert {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.5rem;
+            }
+
+            #dateMessage .alert strong {
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -473,7 +910,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 <body class="bg-light">
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
-        <div class="me-4" style="width: 250px;">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="me-4 logo-container" style="width: 250px;">
             <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
@@ -481,7 +921,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <span class="d-none d-md-inline">Hello, <?php echo htmlspecialchars($username); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -505,10 +945,12 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             </div>
         </div>
     </header>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar p-3">
-            <nav class="nav d-flex flex-column gap-1">
+        <aside class="sidebar">
+            <nav class="nav d-flex flex-column gap-1 sidebar-nav p-3">
                 <a href="../dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -538,14 +980,13 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     </div>
                 </div>
                 <a href="../logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
-                    style="position: fixed; bottom: 0; width: 220px;">
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-left me-2"></i> Logout
                 </a>
             </nav>
         </aside>
         <!-- Main Content -->
-        <main class="flex-fill p-4">
+        <main class="flex-grow-1 p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold w-100">Amenity Booking Management</h5>
@@ -664,55 +1105,44 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 </div>
                                 <?php if ($amenity !== "Gazebo" && $amenity !== "Clubhouse"): ?>
                                     <!-- Guests -->
-                                    <div class="form-floating mb-3">
-                                        <input type="number" class="form-control" id="guests" name="guests" min="0">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="guests" name="guests" min="10"
+                                            max="25" value="10">
                                         <label for="guests">Guests<small class="fw-bold text-danger">*</small></label>
                                     </div>
-                                <?php endif; ?>
-                                <!-- Rates -->
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Rates<small
-                                            class="fw-bold text-danger">*</small></label>
-                                    <div id="ratesContainer" class="custom-radio-container">
-                                        <?php if ($currentRates): ?>
-                                            <div class="custom-radio-option selected" data-value="day"
-                                                onclick="selectRate(this, 'day')">
-                                                <span id="dayRate">Day • <?= $currentRates['day'] ?></span>
-                                                <div class="custom-radio-circle selected"></div>
-                                            </div>
-                                            <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'disabled d-none' : '' ?>"
-                                                data-value="night" onclick="selectRate(this, 'night')">
-                                                <span id="nightRate">Night • <?= $currentRates['night'] ?></span>
-                                                <div class="custom-radio-circle"></div>
-                                            </div>
-                                        <?php else: ?>
-                                            <p class="text-danger">Rates not available for this amenity.</p>
-                                        <?php endif; ?>
+                                    <div class="form-text text-muted mb-3">
+                                        <small><i class="bi bi-info-circle me-1"></i>Minimum: 10 guests, Maximum: 25
+                                            guests</small>
                                     </div>
-                                    <input type="hidden" name="rate" id="selectedRate" value="day" required>
-                                </div>
-                                <!-- Exclusive Booking -->
-                                <div class="form-floating mb-3">
-                                    <select class="form-select" id="exclusiveBooking" name="exclusiveBooking" required>
-                                        <option value="no" selected>No</option>
-                                        <option value="yes">Yes</option>
-                                    </select>
-                                    <label for="exclusiveBooking">Is this an exclusive booking?<small
-                                            class="fw-bold text-danger">*</small></label>
-                                </div>
+                                <?php endif; ?>
+                                <?php if ($amenity === "Swimming Pool"): ?>
+                                    <!-- Exclusive Booking -->
+                                    <div class="form-floating">
+                                        <select class="form-select" id="exclusiveBooking" name="exclusiveBooking" required>
+                                            <option value="no" selected>No</option>
+                                            <option value="yes">Yes</option>
+                                        </select>
+                                        <label for="exclusiveBooking">Is this an exclusive booking?<small
+                                                class="fw-bold text-danger">*</small></label>
+                                    </div>
+                                    <div class="form-text text-muted mb-3">
+                                        <small><i class="bi bi-info-circle me-1"></i>Exclusive booking adds ₱100.00 per
+                                            head</small>
+                                    </div>
+                                <?php endif; ?>
                                 <!-- Add-Ons -->
                                 <div class="row">
                                     <div class="col-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="chairs" name="chairs" min="0"
-                                                value="0">
+                                                value="0" max="40">
                                             <label for="chairs">Chairs <small>(₱12.00/pc)</small></label>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="tables" name="tables" min="0"
-                                                value="0">
+                                                value="0" max="15">
                                             <label for="tables">Tables <small>(₱20.00/pc)</small></label>
                                         </div>
                                     </div>
@@ -723,7 +1153,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <div class="col-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="cars" name="cars" min="0"
-                                                value="0">
+                                                value="0" max="3">
                                             <label for="cars">No. of Vehicle/s</label>
                                         </div>
                                     </div>
@@ -742,6 +1172,45 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             </div>
                             <!-- Right Column -->
                             <div class="col-lg-6">
+                                <!-- Rates -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Rates<small
+                                            class="fw-bold text-danger">*</small></label>
+                                    <div id="ratesContainer" class="custom-radio-container">
+                                        <?php if ($currentRates): ?>
+                                            <div class="custom-radio-option selected" data-value="day"
+                                                onclick="selectRate(this, 'day')">
+                                                <div>
+                                                    <div><strong id="dayRate">Day • <?= $currentRates['day'] ?></strong>
+                                                    </div>
+                                                    <small class="text-muted">9:00 AM - 5:00 PM</small>
+                                                </div>
+                                                <div class="custom-radio-circle selected"></div>
+                                            </div>
+                                            <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
+                                                data-value="night" onclick="selectRate(this, 'night')">
+                                                <div>
+                                                    <div><strong id="nightRate">Night •
+                                                            <?= $currentRates['night'] ?></strong></div>
+                                                    <small class="text-muted">5:00 PM - 10:00 PM</small>
+                                                </div>
+                                                <div class="custom-radio-circle"></div>
+                                            </div>
+                                            <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
+                                                data-value="whole" onclick="selectRate(this, 'whole')">
+                                                <div>
+                                                    <div><strong id="wholeRate">Whole Day •
+                                                            <?= $currentRates['whole'] ?></strong></div>
+                                                    <small class="text-muted">9:00 AM - 10:00 PM</small>
+                                                </div>
+                                                <div class="custom-radio-circle"></div>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-danger">Rates not available for this amenity.</p>
+                                        <?php endif; ?>
+                                    </div>
+                                    <input type="hidden" name="rate" id="selectedRate" value="day" required>
+                                </div>
                                 <!-- Payment -->
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Payment<small
@@ -822,11 +1291,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             <strong>Drag & drop files or <a href="#" id="browseLink">Browse</a></strong>
                                         </div>
                                         <div class="small text-muted">
-                                            Supported formats: JPEG, PNG, GIF, PDF, TXT, XLS, AI, Word, PPT
+                                            Supported formats: JPEG, PNG, GIF, PDF
                                         </div>
                                         <input type="file" id="fileInput" name="proofOfPayment" class="d-none"
-                                            accept=".jpeg,.jpg,.png,.gif,.pdf,.txt,.xls,.xlsx,.ai,.doc,.docx,.ppt,.pptx"
-                                            required>
+                                            accept=".jpeg,.jpg,.png,.gif,.pdf" required>
                                     </div>
                                     <div id="filePreview" class="mt-2"></div>
                                 </div>
@@ -1129,9 +1597,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <i class="bi bi-x-circle text-danger" style="font-size: 64px;"></i>
-                            <p class="mb-2"><b>Oops! Something went wrong</b></p>
-                            <p class="mb-3">There was an error processing your reservation. Please try again.</p>
                             <div class="alert alert-danger text-start">
                                 <small id="errorMessage">
                                     <i class="bi bi-exclamation-triangle me-2"></i>
@@ -1147,15 +1612,17 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../admin_side/javascripts/mobileSidebar.js"></script>
     <script>
         // ============================================
         // CALENDAR & BOOKING DATES FUNCTIONALITY
         // ============================================
-        let bookedDates = {};
+        let bookedDates = {}; // Changed to object: { "2025-08-30": { day: true, night: false }, ... }
         let currentDate = new Date();
         let selectedDate = null;
         const amenity = "<?php echo htmlspecialchars($amenity); ?>";
 
+        // Helper function to format date without timezone issues
         function formatDate(date) {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -1174,13 +1641,16 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'reserve_booking.php';
                 const url = `${currentPage}?action=get_booked_dates&amenity=${encodeURIComponent(amenity)}`;
+                console.log('Fetch URL:', url);
 
                 const response = await fetch(url);
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
+                console.log('Fetched data:', data);
 
                 if (data.success) {
                     bookedDates = {};
@@ -1194,6 +1664,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         bookedDates[dateKey][rate] = true;
                     });
 
+                    console.log('Processed booked dates:', bookedDates);
                     renderCalendar();
                 } else {
                     console.error('API returned error:', data.error);
@@ -1209,7 +1680,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const grid = document.getElementById('calendarGrid');
             const monthDisplay = document.getElementById('currentMonth');
 
-            if (!grid || !monthDisplay) return;
+            if (!grid || !monthDisplay) {
+                console.error('Calendar elements not found');
+                return;
+            }
 
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
@@ -1302,12 +1776,28 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
         }
 
+        // Add this code inside the selectDate function, after the existing booking check
         function selectDate(dateString, element) {
             const selectedRateType = document.getElementById('selectedRate')?.value || 'day';
             const booking = bookedDates[dateString];
 
+            // Existing check for selected rate
             if (booking && booking[selectedRateType]) {
                 showErrorModal(`This date is already booked for <strong>${selectedRateType}</strong>. Please select the other rate or choose a different date.`);
+                return;
+            }
+
+            // NEW: Check if whole day is selected but day or night is booked
+            if (selectedRateType === 'whole' && booking && (booking.day || booking.night)) {
+                const bookedPeriod = booking.day ? 'day' : 'night';
+                showErrorModal(`Cannot select <strong>whole day</strong> rate because <strong>${bookedPeriod}</strong> is already booked for <strong>${dateString}</strong>. Please select the available rate first.`);
+
+                // Auto-select the available rate
+                const availableRate = booking.day ? 'night' : 'day';
+                const rateOption = document.querySelector(`[data-value="${availableRate}"]`);
+                if (rateOption) {
+                    selectRate(rateOption, availableRate);
+                }
                 return;
             }
 
@@ -1315,6 +1805,11 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             const dateInput = document.getElementById('reservationDate');
             if (dateInput) {
                 dateInput.value = dateString;
+                dateInput.classList.remove('border-danger', 'is-invalid');
+                const existingError = dateInput.parentNode.querySelector('.invalid-feedback');
+                if (existingError) {
+                    existingError.remove();
+                }
             }
 
             document.querySelectorAll('.calendar-day.selected').forEach(el => {
@@ -1332,7 +1827,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         function showRateAvailabilityMessage(date, availableRate) {
             const messageDiv = document.getElementById('dateMessage');
             if (messageDiv) {
-                messageDiv.innerHTML = `<div class="alert alert-info mt-2"><i class="bi bi-info-circle me-2"></i>Note: For ${date}, only <strong>${availableRate}</strong> rate is available.</div>`;
+                messageDiv.innerHTML = `<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Note: For ${date}, only <strong>${availableRate}</strong> rate is available.</div>`;
 
                 const rateOption = document.querySelector(`[data-value="${availableRate}"]`);
                 if (rateOption) {
@@ -1345,18 +1840,25 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
         }
 
-        document.getElementById('prevMonth')?.addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            renderCalendar();
-        });
+        const prevMonthBtn = document.getElementById('prevMonth');
+        const nextMonthBtn = document.getElementById('nextMonth');
 
-        document.getElementById('nextMonth')?.addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            renderCalendar();
-        });
+        if (prevMonthBtn) {
+            prevMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
+        }
+
+        if (nextMonthBtn) {
+            nextMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
+        }
 
         // ============================================
-        // FILE UPLOAD FUNCTIONALITY (keep existing)
+        // FILE UPLOAD FUNCTIONALITY
         // ============================================
         const fileDropArea = document.getElementById('fileDropArea');
         const fileInput = document.getElementById('fileInput');
@@ -1378,10 +1880,12 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             });
 
             fileDropArea.addEventListener('drop', handleDrop, false);
+
             browseLink.addEventListener('click', (e) => {
                 e.preventDefault();
                 fileInput.click();
             });
+
             fileInput.addEventListener('change', (e) => {
                 handleFiles(e.target.files);
             });
@@ -1420,12 +1924,18 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
                 </div>
             `;
+
+                const fileDropArea = document.getElementById('fileDropArea');
+                if (fileDropArea) {
+                    fileDropArea.classList.remove('required-highlight');
+                }
             }
         }
 
         function clearFile() {
             if (fileInput) fileInput.value = '';
             if (filePreview) filePreview.innerHTML = '';
+            validateFileUpload();
         }
 
         // ============================================
