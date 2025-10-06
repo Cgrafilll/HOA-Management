@@ -1567,9 +1567,17 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         const rate = booking.rate;
 
                         if (!bookedDates[dateKey]) {
-                            bookedDates[dateKey] = { day: false, night: false };
+                            bookedDates[dateKey] = { day: false, night: false, whole: false };
                         }
+
+                        // ✅ FIXED: Use bookedDates instead of rescheduleBookedDates
                         bookedDates[dateKey][rate] = true;
+
+                        // If whole is booked, mark both day and night as booked too
+                        if (rate === 'whole') {
+                            bookedDates[dateKey].day = true;
+                            bookedDates[dateKey].night = true;
+                        }
                     });
 
                     console.log('Processed booked dates:', bookedDates);
