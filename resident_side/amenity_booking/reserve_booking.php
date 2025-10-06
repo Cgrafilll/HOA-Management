@@ -1666,7 +1666,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             bookedDates[dateKey] = { day: false, night: false, whole: false };
                         }
 
-                        rescheduleBookedDates[dateKey][rate] = true;
+                        // ✅ FIXED: Use bookedDates instead of rescheduleBookedDates
+                        bookedDates[dateKey][rate] = true;
 
                         // If whole is booked, mark both day and night as booked too
                         if (rate === 'whole') {
