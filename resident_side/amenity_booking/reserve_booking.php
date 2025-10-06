@@ -2334,6 +2334,171 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         }
 
         // ============================================
+        // VEHICLE & PLATE NUMBER FUNCTIONALITY
+        // ============================================
+        function initializeVehicleField() {
+            const carsField = document.getElementById('cars');
+            const platesField = document.getElementById('plates');
+
+            if (carsField && platesField) {
+                function togglePlateField() {
+                    const numberOfCars = parseInt(carsField.value) || 0;
+
+                    if (numberOfCars === 0) {
+                        platesField.disabled = true;
+                        platesField.value = '';
+                        platesField.style.backgroundColor = '#f8f9fa';
+                        platesField.style.opacity = '0.6';
+                        platesField.removeAttribute('required');
+
+                        const instructionDiv = platesField.parentNode.nextElementSibling;
+                        if (instructionDiv && instructionDiv.classList.contains('form-text')) {
+                            instructionDiv.innerHTML = '<small class="text-muted"><i class="bi bi-info-circle me-1"></i>Enter number of vehicles first to enable plate number field</small>';
+                        }
+                    } else {
+                        platesField.disabled = false;
+                        platesField.style.backgroundColor = '';
+                        platesField.style.opacity = '';
+                        platesField.setAttribute('required', 'required');
+
+                        const instructionDiv = platesField.parentNode.nextElementSibling;
+                        if (instructionDiv && instructionDiv.classList.contains('form-text')) {
+                            if (numberOfCars === 1) {
+                                instructionDiv.innerHTML = '<small><i class="bi bi-info-circle me-1"></i>Enter the vehicle plate number</small>';
+                            } else {
+                                instructionDiv.innerHTML = '<small><i class="bi bi-info-circle me-1"></i>If more than 1 vehicle, separate plate numbers by comma (e.g., ABC-1234, XYZ-5678)</small>';
+                            }
+                        }
+                    }
+                }
+
+                togglePlateField();
+                carsField.addEventListener('input', togglePlateField);
+                carsField.addEventListener('change', togglePlateField);
+            }
+        }
+
+        // ============================================
+        // INPUT MAX VALUE CONSTRAINTS
+        // ============================================
+        function initializeMaxValueConstraints() {
+            const constraints = [
+                { id: 'guests', min: 10, max: 25, name: 'Guests' },
+                { id: 'chairs', min: 0, max: 40, name: 'Chairs' },
+                { id: 'tables', min: 0, max: 15, name: 'Tables' },
+                { id: 'cars', min: 0, max: 3, name: 'Vehicles' }
+            ];
+
+            constraints.forEach(constraint => {
+                const field = document.getElementById(constraint.id);
+                if (field) {
+                    // Set min and max attributes
+                    if (constraint.min !== undefined) {
+                        field.setAttribute('min', constraint.min);
+                    }
+                    field.setAttribute('max', constraint.max);
+
+                    // Add input event listener
+                    field.addEventListener('input', function () {
+                        const value = parseInt(this.value);
+
+                        // If value exceeds max, set it to max
+                        if (value > constraint.max) {
+                            this.value = constraint.max;
+                            showMaxValueNotification(constraint.name, constraint.max, 'maximum');
+                        }
+
+                        // If value is below min (and field has a min), set it to min
+                        if (constraint.min !== undefined && value < constraint.min && this.value !== '') {
+                            this.value = constraint.min;
+                            showMinValueNotification(constraint.name, constraint.min);
+                        }
+
+                        // If value is negative for fields without explicit min, set to their min or 0
+                        if (value < 0) {
+                            this.value = constraint.min !== undefined ? constraint.min : 0;
+                        }
+                    });
+
+                    // Add change event listener as backup
+                    field.addEventListener('change', function () {
+                        const value = parseInt(this.value);
+
+                        if (value > constraint.max) {
+                            this.value = constraint.max;
+                        }
+
+                        if (constraint.min !== undefined && (value < constraint.min || isNaN(value))) {
+                            this.value = constraint.min;
+                        }
+
+                        if (!constraint.min && (value < 0 || isNaN(value))) {
+                            this.value = 0;
+                        }
+                    });
+                }
+            });
+        }
+
+        function showMaxValueNotification(itemName, maxValue, type = 'maximum') {
+            const existingNotification = document.querySelector('.max-value-notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-warning alert-dismissible fade show max-value-notification';
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '9999';
+            notification.style.minWidth = '300px';
+            notification.innerHTML = `
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Maximum Limit:</strong> ${itemName} cannot exceed ${maxValue}.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification && notification.parentNode) {
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 150);
+                }
+            }, 3000);
+        }
+
+        function showMinValueNotification(itemName, minValue) {
+            const existingNotification = document.querySelector('.max-value-notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-warning alert-dismissible fade show max-value-notification';
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '9999';
+            notification.style.minWidth = '300px';
+            notification.innerHTML = `
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Minimum Requirement:</strong> ${itemName} must be at least ${minValue}.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification && notification.parentNode) {
+                    notification.classList.remove('show');
+                    setTimeout(() => notification.remove(), 150);
+                }
+            }, 3000);
+        }
+
+        // ============================================
         // INITIALIZATION
         // ============================================
         document.addEventListener("DOMContentLoaded", function () {
@@ -2363,6 +2528,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
 
             initializeFormSubmission();
+            initializeVehicleField();
+            initializeMaxValueConstraints();
             initializeModals();
 
             calculateTotal();
