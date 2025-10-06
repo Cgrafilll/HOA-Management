@@ -833,7 +833,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     characters)</label>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold invisible">Confirm Password</label>
+                                <label class="form-label mt-2 fw-bold">Confirm Password</label>
                                 <div class="input-group">
                                     <input type="password" id="confirmPassword" name="confirmPassword"
                                         class="form-control" minlength="6" />
@@ -842,7 +842,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <i class="bi bi-eye" id="toggleIcon2"></i>
                                     </button>
                                 </div>
-                                <label class="form-label mt-2">Confirm password</label>
                                 <div id="passwordError" class="invalid-feedback"></div>
                             </div>
                         </div>
