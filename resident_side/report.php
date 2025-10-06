@@ -452,24 +452,24 @@ if (!empty($resident['profile_picture'])) {
                         <!-- Incident Details -->
                         <div class="row">
                             <span class="fw-bold mb-3">Incident Details</span>
-                            <div class="col-4 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <input type="date" name="date_incident" class="form-control" id="dateIncident"
                                     max="<?php echo date('Y-m-d'); ?>" required />
                                 <label class="form-label mt-2">Date of Incident<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-4 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <input type="time" name="time_incident" class="form-control" id="timeIncident"
                                     max="<?php echo date('H:i'); ?>" required />
                                 <label class="form-label mt-2">Time of Incident<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-4 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <input type="text" name="location" class="form-control" required />
                                 <label class="form-label mt-2">Street<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-4 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <select name="violation_type" class="form-select" required>
                                     <option value="" selected disabled>Select Violation Type</option>
                                     <option>Excessive Noise</option>
