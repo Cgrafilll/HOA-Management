@@ -775,7 +775,7 @@ if (isset($_GET['action'])) {
                         class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start actuve"
                         data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
-                            <i class="bi bi-cash-coin me-2"></i> Accounting
+                            <i class="bi bi-cash-coin me-2 active"></i> Accounting
                         </span>
                     </button>
                     <div class="collapse show" id="acctCollapse">
