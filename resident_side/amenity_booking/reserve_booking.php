@@ -2074,26 +2074,47 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         }
 
         function calculateTotal() {
-            const userType = document.getElementById("userType")?.value || 'homeowner';
-            const rateType = document.getElementById("selectedRate")?.value || 'day';
+            const userType = document.getElementById("userType")?.value;
+            const rateType = document.getElementById("selectedRate")?.value;
+            const exclusiveBooking = document.getElementById("exclusiveBooking")?.value;
 
-            let guests = parseInt(document.getElementById("guests")?.value || 0);
+            // Get and validate guests (min 10, max 25)
+            let guests = parseInt(document.getElementById("guests")?.value || 10);
+            if (guests < 10) guests = 10;
+            if (guests > 25) guests = 25;
+
+            // Get and validate chairs (min 0, max 40)
             let chairs = parseInt(document.getElementById("chairs")?.value || 0);
+            if (chairs < 0) chairs = 0;
+            if (chairs > 40) chairs = 40;
+
+            // Get and validate tables (min 0, max 15)
             let tables = parseInt(document.getElementById("tables")?.value || 0);
+            if (tables < 0) tables = 0;
+            if (tables > 15) tables = 15;
 
             let rateStr = amenityRates[currentAmenity]?.[userType]?.[rateType] || "₱0";
             let rateValue = extractPrice(rateStr);
 
-            let total = 0;
+            let rateTotal = 0;
 
+            // Calculate base rate amount
             if (rateStr.includes("per person")) {
-                total += rateValue * guests;
+                // Apply exclusive booking surcharge (₱100 per guest) ONLY for Swimming Pool
+                if (exclusiveBooking === "yes" && currentAmenity === "Swimming Pool") {
+                    rateTotal = (rateValue + 100) * guests; // Add ₱100 per guest
+                } else {
+                    rateTotal = rateValue * guests;
+                }
             } else {
-                total += rateValue;
+                rateTotal = rateValue;
             }
 
-            total += chairs * chairPrice;
-            total += tables * tablePrice;
+            // Calculate add-ons (NOT subject to exclusive booking fee)
+            let addOnsTotal = (chairs * chairPrice) + (tables * tablePrice);
+
+            // Final total = rate (with exclusive fee if applicable) + add-ons (no exclusive fee)
+            let total = rateTotal + addOnsTotal;
 
             const formattedTotal = total.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
@@ -2104,15 +2125,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (totalElement) {
                 totalElement.value = formattedTotal;
             }
-        }
 
-        ["guests", "chairs", "tables"].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener("input", calculateTotal);
-                el.addEventListener("change", calculateTotal);
-            }
-        });
+            // Recalculate change if payment method is cash
+            calculateChange();
+        }
 
         function validateAmountPaid() {
             const totalField = document.getElementById("total");
@@ -2258,15 +2274,46 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             console.log('Page loaded, initializing...');
 
             fetchBookedDates();
+            initSearchableDropdown();
 
             const amountPaidField = document.getElementById("amountPaid");
             if (amountPaidField) {
-                amountPaidField.addEventListener('input', validateAmountPaid);
+                amountPaidField.addEventListener('input', function () {
+                    calculateChange();
+                    validateAmountPaid();
+                });
+                amountPaidField.addEventListener('change', function () {
+                    calculateChange();
+                    validateAmountPaid();
+                });
                 amountPaidField.addEventListener('blur', validateAmountPaid);
             }
 
+            // Add event listeners for calculation fields
+            ["guests", "chairs", "tables"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener("input", calculateTotal);
+                    el.addEventListener("change", calculateTotal);
+                }
+            });
+
+            // ADD THIS: Add event listener for exclusive booking
+            const exclusiveBookingEl = document.getElementById("exclusiveBooking");
+            if (exclusiveBookingEl) {
+                exclusiveBookingEl.addEventListener("change", calculateTotal);
+            }
+
             initializeFormSubmission();
+            initializeVehicleField();
+            initializeMaxValueConstraints();
             initializeModals();
+
+            const today = new Date().toISOString().split("T")[0];
+            const dateInput = document.getElementById("reservationDate");
+            if (dateInput) {
+                dateInput.min = today;
+            }
 
             calculateTotal();
 
