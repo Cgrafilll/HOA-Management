@@ -1621,7 +1621,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         // ============================================
         // CALENDAR & BOOKING DATES FUNCTIONALITY
         // ============================================
-        let bookedDates = {}; // Changed to object: { "2025-08-30": { day: true, night: false }, ... }
+        let bookedDates = {};
         let currentDate = new Date();
         let selectedDate = null;
         const amenity = "<?php echo htmlspecialchars($amenity); ?>";
@@ -1663,9 +1663,16 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         const rate = booking.rate;
 
                         if (!bookedDates[dateKey]) {
-                            bookedDates[dateKey] = { day: false, night: false };
+                            bookedDates[dateKey] = { day: false, night: false, whole: false };
                         }
-                        bookedDates[dateKey][rate] = true;
+
+                        rescheduleBookedDates[dateKey][rate] = true;
+
+                        // If whole is booked, mark both day and night as booked too
+                        if (rate === 'whole') {
+                            bookedDates[dateKey].day = true;
+                            bookedDates[dateKey].night = true;
+                        }
                     });
 
                     console.log('Processed booked dates:', bookedDates);
@@ -1739,7 +1746,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
                         if (dayBooked && nightBooked) {
                             dayElement.classList.add('booked');
-                            dayElement.title = 'Fully booked (Day & Night)';
+                            dayElement.title = 'Fully booked';
                         } else if (dayBooked || nightBooked) {
                             dayElement.classList.add('partial-booked');
                             const available = dayBooked ? 'Night' : 'Day';
@@ -1780,18 +1787,17 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             }
         }
 
-        // Add this code inside the selectDate function, after the existing booking check
         function selectDate(dateString, element) {
             const selectedRateType = document.getElementById('selectedRate')?.value || 'day';
             const booking = bookedDates[dateString];
 
-            // Existing check for selected rate
+            // Check for selected rate
             if (booking && booking[selectedRateType]) {
                 showErrorModal(`This date is already booked for <strong>${selectedRateType}</strong>. Please select the other rate or choose a different date.`);
                 return;
             }
 
-            // NEW: Check if whole day is selected but day or night is booked
+            // Check if whole day is selected but day or night is booked
             if (selectedRateType === 'whole' && booking && (booking.day || booking.night)) {
                 const bookedPeriod = booking.day ? 'day' : 'night';
                 showErrorModal(`Cannot select <strong>whole day</strong> rate because <strong>${bookedPeriod}</strong> is already booked for <strong>${dateString}</strong>. Please select the available rate first.`);
@@ -1919,15 +1925,15 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (files.length > 0) {
                 const file = files[0];
                 filePreview.innerHTML = `
-                <div class="alert alert-success d-flex align-items-center">
-                    <i class="bi bi-file-earmark-check me-2"></i>
-                    <div>
-                        <strong>${file.name}</strong><br>
-                        <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
-                    </div>
-                    <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
+            <div class="alert alert-success d-flex align-items-center">
+                <i class="bi bi-file-earmark-check me-2"></i>
+                <div>
+                    <strong>${file.name}</strong><br>
+                    <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
                 </div>
-            `;
+                <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
+            </div>
+        `;
 
                 const fileDropArea = document.getElementById('fileDropArea');
                 if (fileDropArea) {
@@ -1943,7 +1949,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         }
 
         // ============================================
-        // RATES FUNCTIONALITY (keep existing)
+        // RATES FUNCTIONALITY
         // ============================================
         const amenityRates = <?php echo json_encode($amenityRates); ?>;
         const currentAmenity = "<?php echo $amenity; ?>";
@@ -1951,6 +1957,17 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         const tablePrice = 20;
 
         function selectRate(option, value) {
+            // Check if trying to select whole day when day or night is booked
+            if (value === 'whole' && selectedDate && bookedDates[selectedDate]) {
+                const booking = bookedDates[selectedDate];
+                if (booking.day || booking.night) {
+                    const bookedPeriod = booking.day ? 'day' : 'night';
+                    showErrorModal(`Cannot select <strong>whole day</strong> rate because <strong>${bookedPeriod}</strong> is already booked for <strong>${selectedDate}</strong>. Please select the available rate or choose a different date.`);
+                    return;
+                }
+            }
+
+            // Existing check for day/night rates
             if (selectedDate && bookedDates[selectedDate] && bookedDates[selectedDate][value]) {
                 showErrorModal(`The <strong>${value}</strong> rate is already booked for <strong>${selectedDate}</strong>. Please select the other rate or choose a different date.`);
                 return;
@@ -2066,6 +2083,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     reserveButton.textContent = 'Reserve';
                 }
             }
+
+            validateFileUpload();
         }
 
         function extractPrice(priceStr) {
@@ -2074,7 +2093,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
         }
 
         function calculateTotal() {
-            const userType = document.getElementById("userType")?.value;
+            const userType = document.getElementById("userType")?.value || 'homeowner';
             const rateType = document.getElementById("selectedRate")?.value;
             const exclusiveBooking = document.getElementById("exclusiveBooking")?.value;
 
@@ -2125,9 +2144,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (totalElement) {
                 totalElement.value = formattedTotal;
             }
-
-            // Recalculate change if payment method is cash
-            calculateChange();
         }
 
         function validateAmountPaid() {
@@ -2160,6 +2176,27 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             return true;
         }
 
+        function validateFileUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const fileDropArea = document.getElementById('fileDropArea');
+            const paymentMethod = document.getElementById('selectedPayment')?.value;
+
+            if (!fileInput || !fileDropArea) return true;
+
+            if (paymentMethod === 'bank') {
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    fileDropArea.classList.add('required-highlight');
+                    return false;
+                } else {
+                    fileDropArea.classList.remove('required-highlight');
+                    return true;
+                }
+            } else {
+                fileDropArea.classList.remove('required-highlight');
+                return true;
+            }
+        }
+
         function initializeFormSubmission() {
             const form = document.getElementById('reservationForm');
             const submitButton = form?.querySelector('button[type="submit"]');
@@ -2167,6 +2204,26 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (submitButton) {
                 submitButton.addEventListener('click', function (e) {
                     e.preventDefault();
+
+                    // Validate date
+                    const dateInput = document.getElementById('reservationDate');
+                    if (!dateInput || !dateInput.value) {
+                        dateInput.classList.add('border-danger', 'is-invalid');
+
+                        const existingError = dateInput.parentNode.querySelector('.invalid-feedback');
+                        if (existingError) {
+                            existingError.remove();
+                        }
+
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'invalid-feedback';
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Please select a reservation date from the calendar.';
+                        dateInput.parentNode.appendChild(errorDiv);
+
+                        dateInput.closest('.mb-3').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return;
+                    }
 
                     if (!form.checkValidity()) {
                         form.classList.add('was-validated');
@@ -2176,6 +2233,14 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                     if (!validateAmountPaid()) {
                         const amountPaidField = document.getElementById("amountPaid");
                         if (amountPaidField) amountPaidField.focus();
+                        return;
+                    }
+
+                    if (!validateFileUpload()) {
+                        const fileDropArea = document.getElementById('fileDropArea');
+                        if (fileDropArea) {
+                            fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
                         return;
                     }
 
@@ -2274,18 +2339,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             console.log('Page loaded, initializing...');
 
             fetchBookedDates();
-            initSearchableDropdown();
 
             const amountPaidField = document.getElementById("amountPaid");
             if (amountPaidField) {
-                amountPaidField.addEventListener('input', function () {
-                    calculateChange();
-                    validateAmountPaid();
-                });
-                amountPaidField.addEventListener('change', function () {
-                    calculateChange();
-                    validateAmountPaid();
-                });
+                amountPaidField.addEventListener('input', validateAmountPaid);
                 amountPaidField.addEventListener('blur', validateAmountPaid);
             }
 
@@ -2298,29 +2355,20 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 }
             });
 
-            // ADD THIS: Add event listener for exclusive booking
+            // Add event listener for exclusive booking
             const exclusiveBookingEl = document.getElementById("exclusiveBooking");
             if (exclusiveBookingEl) {
                 exclusiveBookingEl.addEventListener("change", calculateTotal);
             }
 
             initializeFormSubmission();
-            initializeVehicleField();
-            initializeMaxValueConstraints();
             initializeModals();
-
-            const today = new Date().toISOString().split("T")[0];
-            const dateInput = document.getElementById("reservationDate");
-            if (dateInput) {
-                dateInput.min = today;
-            }
 
             calculateTotal();
 
             console.log('Initialization complete');
         });
     </script>
-
 </body>
 
 </html>
