@@ -240,7 +240,9 @@ if (!empty($resident['profile_picture'])) {
                 font-size: 1rem !important;
             }
 
-            .table-responsive {
+            .form-label,
+            .form-check-label,
+            .main span {
                 font-size: 0.85rem;
             }
 
@@ -277,12 +279,10 @@ if (!empty($resident['profile_picture'])) {
                 top: 0;
             }
 
-            .table-responsive {
+            .form-label,
+            .form-check-label,
+            .main span {
                 font-size: 0.75rem;
-            }
-
-            .pagination {
-                font-size: 0.8rem;
             }
         }
 
@@ -623,7 +623,8 @@ if (!empty($resident['profile_picture'])) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../admin_side/javascripts/mobileSidebar.js"></script><script>
+    <script src="../admin_side/javascripts/mobileSidebar.js"></script>
+    <script>
         document.addEventListener("DOMContentLoaded", function () {
             let confirmBtn = document.getElementById("confirmSaveBtn");
             let violationForm = document.getElementById("violationForm");
