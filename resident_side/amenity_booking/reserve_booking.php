@@ -1926,19 +1926,25 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (files.length > 0) {
                 const file = files[0];
                 filePreview.innerHTML = `
-            <div class="alert alert-success d-flex align-items-center">
-                <i class="bi bi-file-earmark-check me-2"></i>
-                <div>
-                    <strong>${file.name}</strong><br>
-                    <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
-                </div>
-                <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
-            </div>
-        `;
+                    <div class="alert alert-success d-flex align-items-center">
+                        <i class="bi bi-file-earmark-check me-2"></i>
+                        <div>
+                            <strong>${file.name}</strong><br>
+                            <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                        </div>
+                        <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
+                    </div>
+                `;
 
                 const fileDropArea = document.getElementById('fileDropArea');
                 if (fileDropArea) {
                     fileDropArea.classList.remove('required-highlight');
+
+                    // Remove error message
+                    const existingError = fileDropArea.parentElement.querySelector('.file-upload-error');
+                    if (existingError) {
+                        existingError.remove();
+                    }
                 }
             }
         }
@@ -2200,15 +2206,43 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             if (!fileInput || !fileDropArea) return true;
 
+            // Remove highlight first
+            fileDropArea.classList.remove('required-highlight');
+
             if (paymentMethod === 'bank') {
                 if (!fileInput.files || fileInput.files.length === 0) {
                     fileDropArea.classList.add('required-highlight');
+
+                    // Scroll to the file drop area
+                    fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    // Optional: Show a more visible error message
+                    const existingError = fileDropArea.parentElement.querySelector('.file-upload-error');
+                    if (existingError) {
+                        existingError.remove();
+                    }
+
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'text-danger small mt-2 file-upload-error';
+                    errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Please upload proof of payment';
+                    fileDropArea.parentElement.appendChild(errorDiv);
+
                     return false;
                 } else {
+                    // Remove error message if file is uploaded
+                    const existingError = fileDropArea.parentElement.querySelector('.file-upload-error');
+                    if (existingError) {
+                        existingError.remove();
+                    }
                     fileDropArea.classList.remove('required-highlight');
                     return true;
                 }
             } else {
+                // Remove error message for cash payment
+                const existingError = fileDropArea.parentElement.querySelector('.file-upload-error');
+                if (existingError) {
+                    existingError.remove();
+                }
                 fileDropArea.classList.remove('required-highlight');
                 return true;
             }
@@ -2222,7 +2256,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 submitButton.addEventListener('click', function (e) {
                     e.preventDefault();
 
-                    // Validate date
+                    // Validate date FIRST
                     const dateInput = document.getElementById('reservationDate');
                     if (!dateInput || !dateInput.value) {
                         dateInput.classList.add('border-danger', 'is-invalid');
@@ -2242,7 +2276,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         return;
                     }
 
-                    // Validate plate numbers (if function exists)
+                    // Validate plate numbers
                     if (typeof window.validatePlateNumbers === 'function') {
                         if (!window.validatePlateNumbers()) {
                             const platesField = document.getElementById('plates');
@@ -2253,11 +2287,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         }
                     }
 
-                    if (!form.checkValidity()) {
-                        form.classList.add('was-validated');
-                        return;
-                    }
-
+                    // Validate amount paid
                     if (!validateAmountPaid()) {
                         const amountPaidField = document.getElementById("amountPaid");
                         if (amountPaidField) {
@@ -2267,11 +2297,14 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         return;
                     }
 
+                    // Validate file upload BEFORE form.checkValidity()
                     if (!validateFileUpload()) {
-                        const fileDropArea = document.getElementById('fileDropArea');
-                        if (fileDropArea) {
-                            fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
+                        return; // validateFileUpload now handles scrolling
+                    }
+
+                    // Check other form validations
+                    if (!form.checkValidity()) {
+                        form.classList.add('was-validated');
                         return;
                     }
 
