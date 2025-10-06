@@ -2242,6 +2242,17 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         return;
                     }
 
+                    // Validate plate numbers (if function exists)
+                    if (typeof window.validatePlateNumbers === 'function') {
+                        if (!window.validatePlateNumbers()) {
+                            const platesField = document.getElementById('plates');
+                            if (platesField) {
+                                platesField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                            return;
+                        }
+                    }
+
                     if (!form.checkValidity()) {
                         form.classList.add('was-validated');
                         return;
@@ -2249,7 +2260,10 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
                     if (!validateAmountPaid()) {
                         const amountPaidField = document.getElementById("amountPaid");
-                        if (amountPaidField) amountPaidField.focus();
+                        if (amountPaidField) {
+                            amountPaidField.focus();
+                            amountPaidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
                         return;
                     }
 
@@ -2367,6 +2381,13 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                         platesField.style.opacity = '0.6';
                         platesField.removeAttribute('required');
 
+                        // Clear any validation errors
+                        platesField.classList.remove('border-danger', 'is-invalid');
+                        const existingError = platesField.parentNode.querySelector('.invalid-feedback');
+                        if (existingError) {
+                            existingError.remove();
+                        }
+
                         const instructionDiv = platesField.parentNode.nextElementSibling;
                         if (instructionDiv && instructionDiv.classList.contains('form-text')) {
                             instructionDiv.innerHTML = '<small class="text-muted"><i class="bi bi-info-circle me-1"></i>Enter number of vehicles first to enable plate number field</small>';
@@ -2382,15 +2403,86 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             if (numberOfCars === 1) {
                                 instructionDiv.innerHTML = '<small><i class="bi bi-info-circle me-1"></i>Enter the vehicle plate number</small>';
                             } else {
-                                instructionDiv.innerHTML = '<small><i class="bi bi-info-circle me-1"></i>If more than 1 vehicle, separate plate numbers by comma (e.g., ABC-1234, XYZ-5678)</small>';
+                                instructionDiv.innerHTML = `<small><i class="bi bi-info-circle me-1"></i>Enter exactly ${numberOfCars} plate numbers separated by comma (e.g., ABC-1234, XYZ-5678)</small>`;
                             }
                         }
                     }
                 }
 
+                function validatePlateNumbers() {
+                    const numberOfCars = parseInt(carsField.value) || 0;
+                    const platesValue = platesField.value.trim();
+
+                    // Clear previous errors
+                    platesField.classList.remove('border-danger', 'is-invalid');
+                    platesField.setCustomValidity('');
+                    const existingError = platesField.parentNode.querySelector('.invalid-feedback');
+                    if (existingError) {
+                        existingError.remove();
+                    }
+
+                    // If no cars, no validation needed
+                    if (numberOfCars === 0) {
+                        return true;
+                    }
+
+                    // If cars > 0 but no plates entered
+                    if (numberOfCars > 0 && platesValue === '') {
+                        platesField.classList.add('border-danger', 'is-invalid');
+                        platesField.setCustomValidity('Please enter plate numbers');
+
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'invalid-feedback';
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>Please enter ${numberOfCars} plate number${numberOfCars > 1 ? 's' : ''}`;
+                        platesField.parentNode.appendChild(errorDiv);
+                        return false;
+                    }
+
+                    // Count the number of plate numbers entered
+                    const plateNumbers = platesValue.split(',').map(plate => plate.trim()).filter(plate => plate !== '');
+                    const plateCount = plateNumbers.length;
+
+                    if (plateCount !== numberOfCars) {
+                        platesField.classList.add('border-danger', 'is-invalid');
+                        platesField.setCustomValidity('Plate numbers must match vehicle count');
+
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'invalid-feedback';
+                        errorDiv.style.display = 'block';
+
+                        if (plateCount < numberOfCars) {
+                            errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>You entered ${plateCount} plate number${plateCount !== 1 ? 's' : ''} but have ${numberOfCars} vehicle${numberOfCars !== 1 ? 's' : ''}. Please add ${numberOfCars - plateCount} more.`;
+                        } else {
+                            errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>You entered ${plateCount} plate numbers but only have ${numberOfCars} vehicle${numberOfCars !== 1 ? 's' : ''}. Please remove ${plateCount - numberOfCars}.`;
+                        }
+
+                        platesField.parentNode.appendChild(errorDiv);
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                // Initial setup
                 togglePlateField();
-                carsField.addEventListener('input', togglePlateField);
-                carsField.addEventListener('change', togglePlateField);
+
+                // Event listeners
+                carsField.addEventListener('input', function () {
+                    togglePlateField();
+                    validatePlateNumbers();
+                });
+
+                carsField.addEventListener('change', function () {
+                    togglePlateField();
+                    validatePlateNumbers();
+                });
+
+                platesField.addEventListener('input', validatePlateNumbers);
+                platesField.addEventListener('blur', validatePlateNumbers);
+
+                // Make validation function available globally for form submission
+                window.validatePlateNumbers = validatePlateNumbers;
             }
         }
 
