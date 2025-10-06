@@ -242,7 +242,7 @@ if (!empty($resident['profile_picture'])) {
 
             .file-drop-area,
             textarea {
-                height: 200px;
+                height: 150px;
             }
 
             .cloud-icon {
@@ -295,7 +295,7 @@ if (!empty($resident['profile_picture'])) {
 
             .file-drop-area,
             textarea {
-                height: 150px;
+                height: 100px;
             }
 
             .cloud-icon {
