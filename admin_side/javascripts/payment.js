@@ -1,4 +1,4 @@
-// Payment Management System JavaScript
+// Payment Management System JavaScript - Updated for All Categories
 
 class PaymentManager {
     constructor() {
@@ -41,8 +41,10 @@ class PaymentManager {
         this.browseLink = document.getElementById('browseLink');
         this.filePreview = document.getElementById('filePreview');
         
-        // Get Monthly Dues option reference
-        this.monthlyOption = [...this.categorySelect.options].find(opt => opt.value === "Monthly Dues");
+        // Get category options
+        this.monthlyDuesOption = [...this.categorySelect.options].find(opt => opt.value === "Monthly Dues");
+        this.penaltyFeesOption = [...this.categorySelect.options].find(opt => opt.value === "Penalty Fees");
+        this.otherFeesOption = [...this.categorySelect.options].find(opt => opt.value === "Other Fees");
         
         // Store current invoice data
         this.currentInvoiceData = null;
@@ -57,11 +59,9 @@ class PaymentManager {
     }
 
     initializeModals() {
-        // Initialize Bootstrap modals
         this.confirmModal = new bootstrap.Modal(document.getElementById('confirmPaymentModal'));
         this.successModal = new bootstrap.Modal(document.getElementById('successPaymentModal'));
         
-        // Check if error modal exists before initializing
         const errorModalElement = document.getElementById('errorPaymentModal');
         const errorMessageElement = document.getElementById('errorMessage');
         
@@ -69,58 +69,54 @@ class PaymentManager {
             this.errorModal = new bootstrap.Modal(errorModalElement);
             this.errorMessage = errorMessageElement;
         } else {
-            console.warn('Error modal elements not found. Error modal functionality will be disabled.');
+            console.warn('Error modal elements not found.');
             this.errorModal = null;
             this.errorMessage = null;
         }
     }
 
     attachEventListeners() {
-        // Payment method selection
         this.bankTransfer.addEventListener('click', () => this.selectPaymentMethod('bank'));
         this.inOffice.addEventListener('click', () => this.selectPaymentMethod('office'));
         
-        // Form field changes
         this.userTypeSelect.addEventListener('change', () => this.handleUserTypeChange());
         this.userIdSelect.addEventListener('change', () => this.handleIdSelection());
         this.categorySelect.addEventListener('change', () => this.handleCategoryChange());
         this.invoiceInput.addEventListener('blur', () => this.fetchInvoiceDetails());
         this.invoiceInput.addEventListener('input', () => this.resetInvoiceValidation());
         
-        // File upload
         this.browseLink.addEventListener('click', (e) => {
             e.preventDefault();
             this.fileInput.click();
         });
         this.fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
         
-        // Drag and drop
         this.setupDragAndDrop();
         
-        // Form submission
         document.getElementById('paymentForm').addEventListener('submit', (e) => this.handleSubmit(e));
         
-        // Modal confirmation button
         this.confirmPaymentBtn.addEventListener('click', () => this.processPayment());
     }
     
     handleCategoryChange() {
         const selectedCategory = this.categorySelect.value;
         
-        // Clear table if not Amenity Fee or Monthly Dues
-        if (selectedCategory !== 'Amenity Fee' && selectedCategory !== 'Monthly Dues') {
+        // Categories that need invoice details from backend
+        const fetchCategories = ['Amenity Fee', 'Monthly Dues', 'Penalty Fees', 'Other Fees'];
+        
+        if (!fetchCategories.includes(selectedCategory)) {
             this.clearInvoiceTable();
             this.refNo.textContent = "";
             this.residentName.textContent = "";
             this.issueDate.textContent = "";
         } else if (this.invoiceInput.value) {
-            // If switching to Amenity Fee or Monthly Dues and invoice exists, fetch details
             this.fetchInvoiceDetails();
         }
         
-        // Show validation message if Monthly Dues is selected but user type is Visitor
-        if (selectedCategory === 'Monthly Dues' && this.userTypeSelect.value === 'Visitor') {
-            this.refNo.textContent = "Monthly dues only apply to homeowners/residents";
+        // Validate user type restrictions
+        if ((selectedCategory === 'Monthly Dues' || selectedCategory === 'Penalty Fees' || selectedCategory === 'Other Fees') 
+            && this.userTypeSelect.value === 'Visitor') {
+            this.refNo.textContent = selectedCategory + " only apply to homeowners/residents";
             this.clearInvoiceTable();
         }
     }
@@ -131,11 +127,14 @@ class PaymentManager {
             this.inOffice.classList.remove('active');
             this.selectedMethod.textContent = "Bank Transfer";
             this.referenceNumberGroup.style.display = 'block';
+            this.referenceNumber.setAttribute('required', 'required');
         } else {
             this.inOffice.classList.add('active');
             this.bankTransfer.classList.remove('active');
             this.selectedMethod.textContent = "In-Office Payment";
             this.referenceNumberGroup.style.display = 'none';
+            this.referenceNumber.removeAttribute('required');
+            this.referenceNumber.value = ''; // Clear the value
         }
         this.clearFormFields();
     }
@@ -143,17 +142,21 @@ class PaymentManager {
     async handleUserTypeChange() {
         const selectedType = this.userTypeSelect.value;
         
-        // Handle Monthly Dues visibility
+        // Show/hide categories based on user type
         if (selectedType === 'Visitor') {
-            this.monthlyOption.style.display = "none";
-            if (this.categorySelect.value === "Monthly Dues") {
+            this.monthlyDuesOption.style.display = "none";
+            this.penaltyFeesOption.style.display = "none";
+            this.otherFeesOption.style.display = "none";
+            
+            if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(this.categorySelect.value)) {
                 this.categorySelect.value = "";
             }
         } else if (selectedType === 'Homeowner/Resident') {
-            this.monthlyOption.style.display = "block";
+            this.monthlyDuesOption.style.display = "block";
+            this.penaltyFeesOption.style.display = "block";
+            this.otherFeesOption.style.display = "block";
         }
         
-        // Reset and load IDs
         this.userIdSelect.innerHTML = '<option value="">Loading...</option>';
         this.userIdSelect.disabled = true;
         this.loadingIndicator.classList.remove('d-none');
@@ -207,101 +210,127 @@ class PaymentManager {
     }
 
     async fetchInvoiceDetails() {
-        const invoiceNumber = this.invoiceInput.value.trim();
-        const selectedCategory = this.categorySelect.value;
-        const userId = this.userIdSelect.value;
-        const userType = this.userTypeSelect.value;
+    const invoiceNumber = this.invoiceInput.value.trim();
+    const selectedCategory = this.categorySelect.value;
+    const userId = this.userIdSelect.value;
+    const userType = this.userTypeSelect.value;
+    
+    console.log('Fetching invoice details:', {
+        invoiceNumber,
+        selectedCategory,
+        userId,
+        userType
+    });
+    
+    this.refNo.textContent = "";
+    this.residentName.textContent = "";
+    this.issueDate.textContent = "";
+    this.clearInvoiceTable();
+    
+    const lookupCategories = ["Amenity Fee", "Monthly Dues", "Penalty Fees", "Other Fees"];
+    
+    if (lookupCategories.includes(selectedCategory) && invoiceNumber && userId && userType) {
         
-        // Reset display fields
-        this.refNo.textContent = "";
-        this.residentName.textContent = "";
-        this.issueDate.textContent = "";
-        this.clearInvoiceTable();
+        if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory) && userType !== "Homeowner/Resident") {
+            this.refNo.textContent = selectedCategory + " only apply to homeowners/residents";
+            this.invoiceInput.style.borderColor = '#dc3545';
+            this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+            this.clearInvoiceTable();
+            return;
+        }
         
-        // Only fetch for Amenity Fee or Monthly Dues categories
-        if ((selectedCategory === "Amenity Fee" || selectedCategory === "Monthly Dues") && invoiceNumber && userId && userType) {
+        try {
+            let action;
+            if (selectedCategory === "Amenity Fee") {
+                action = 'get_amenity_booking_by_invoice';
+            } else {
+                action = 'get_billing_by_invoice';
+            }
+                
+            const params = new URLSearchParams({
+                action: action,
+                invoice_number: invoiceNumber,
+                user_id: userId,
+                user_type: userType,
+                category: selectedCategory
+            });
             
-            // Validate Monthly Dues is only for homeowners/residents
-            if (selectedCategory === "Monthly Dues" && userType !== "Homeowner/Resident") {
-                this.refNo.textContent = "Monthly dues only apply to homeowners/residents";
-                this.invoiceInput.style.borderColor = '#dc3545';
-                this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
-                this.clearInvoiceTable();
-                return;
+            const url = `?${params.toString()}`;
+            console.log('Fetch URL:', url);
+            
+            const response = await fetch(url);
+            const text = await response.text();
+            console.log('Raw response:', text);
+            
+            // Try to parse as JSON
+            let result;
+            try {
+                result = JSON.parse(text);
+                console.log('Parsed result:', result);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                console.error('Response was not valid JSON');
+                throw new Error('Invalid response from server');
             }
             
-            try {
-                // Determine which endpoint to use
-                const action = selectedCategory === "Amenity Fee" 
-                    ? 'get_amenity_booking_by_invoice' 
-                    : 'get_monthly_dues_by_invoice';
-                    
-                const params = new URLSearchParams({
-                    action: action,
-                    invoice_number: invoiceNumber,
-                    user_id: userId,
-                    user_type: userType
-                });
+            if (result.success) {
+                const data = result.data;
+                this.currentInvoiceData = data;
                 
-                const response = await fetch(`?${params}`);
-                const result = await response.json();
+                this.refNo.textContent = data.reference_number;
+                this.residentName.textContent = `${data.first_name} ${data.middle_name} ${data.last_name}`;
+                this.issueDate.textContent = new Date(data.created_at).toLocaleDateString();
                 
-                if (result.success) {
-                    const data = result.data;
-                    this.currentInvoiceData = data;
-                    
-                    // Populate basic info
-                    this.refNo.textContent = data.reference_number;
-                    this.residentName.textContent = `${data.first_name} ${data.middle_name} ${data.last_name}`;
-                    this.issueDate.textContent = new Date(data.created_at).toLocaleDateString();
-                    
-                    // For Monthly Dues, also show billing month if available
-                    if (selectedCategory === "Monthly Dues" && data.billing_month) {
+                if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory)) {
+                    if (data.billing_month) {
                         const billingMonth = new Date(data.billing_month).toLocaleDateString('en-US', { 
                             year: 'numeric', 
                             month: 'long' 
                         });
                         this.issueDate.textContent += ` (${billingMonth})`;
                     }
-                    
-                    // Populate table
-                    this.populateInvoiceTable(data.items);
-                    
-                    // Populate summary
-                    this.subtotal.textContent = `₱${data.subtotal}`;
-                    this.previouslyPaid.textContent = `₱${data.amount_paid}`;
-                    this.balanceDue.textContent = `₱${data.balance_due}`;
-                    
-                    // Add status indicator
-                    if (data.status === 'Partial') {
-                        this.balanceDue.parentElement.classList.add('text-warning');
-                        this.balanceDue.parentElement.classList.remove('text-success');
-                    } else if (data.status === 'Paid' || data.status === 'Completed') {
-                        this.balanceDue.parentElement.classList.add('text-success');
-                        this.balanceDue.parentElement.classList.remove('text-warning');
-                    } else {
-                        this.balanceDue.parentElement.classList.remove('text-success', 'text-warning');
+                    if (data.description) {
+                        this.refNo.textContent += ` - ${data.description}`;
                     }
-                    
-                    this.invoiceInput.style.borderColor = '#198754';
-                    this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
-                } else {
-                    this.refNo.textContent = result.error || "Invoice not found";
-                    this.invoiceInput.style.borderColor = '#dc3545';
-                    this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
-                    this.clearInvoiceTable();
                 }
-            } catch (error) {
-                console.error('Error fetching invoice details:', error);
-                this.refNo.textContent = "Error loading";
+                
+                this.populateInvoiceTable(data.items);
+                
+                this.subtotal.textContent = `₱${data.subtotal}`;
+                this.previouslyPaid.textContent = `₱${data.amount_paid}`;
+                this.balanceDue.textContent = `₱${data.balance_due}`;
+                
+                if (data.status === 'Partial') {
+                    this.balanceDue.parentElement.classList.add('text-warning');
+                    this.balanceDue.parentElement.classList.remove('text-success');
+                } else if (data.status === 'Paid' || data.status === 'Completed') {
+                    this.balanceDue.parentElement.classList.add('text-success');
+                    this.balanceDue.parentElement.classList.remove('text-warning');
+                } else {
+                    this.balanceDue.parentElement.classList.remove('text-success', 'text-warning');
+                }
+                
+                this.invoiceInput.style.borderColor = '#198754';
+                this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+            } else {
+                console.error('Server returned error:', result.error);
+                this.refNo.textContent = result.error || "Invoice not found";
                 this.invoiceInput.style.borderColor = '#dc3545';
                 this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
                 this.clearInvoiceTable();
             }
-        } else {
+        } catch (error) {
+            console.error('Error fetching invoice details:', error);
+            this.refNo.textContent = "Error loading: " + error.message;
+            this.invoiceInput.style.borderColor = '#dc3545';
+            this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
             this.clearInvoiceTable();
         }
+    } else {
+        console.log('Missing required fields for fetch');
+        this.clearInvoiceTable();
     }
+}
     
     populateInvoiceTable(items) {
         if (!items || items.length === 0) {
@@ -309,10 +338,8 @@ class PaymentManager {
             return;
         }
         
-        // Clear existing rows
         this.invoiceTableBody.innerHTML = '';
         
-        // Add items to table
         items.forEach(item => {
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -325,7 +352,6 @@ class PaymentManager {
             this.invoiceTableBody.appendChild(row);
         });
         
-        // Add empty rows if needed to maintain minimum height
         const currentRows = items.length;
         const minRows = 3;
         if (currentRows < minRows) {
@@ -376,26 +402,22 @@ class PaymentManager {
         
         const file = files[0];
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
-        const maxSize = 10 * 1024 * 1024; // 10MB
+        const maxSize = 10 * 1024 * 1024;
         
-        // Validate file type
         if (!allowedTypes.includes(file.type)) {
             alert('Please select a valid file type for proof of payment (JPEG, PNG, GIF, PDF)');
             return;
         }
         
-        // Validate file size
         if (file.size > maxSize) {
             alert('File size must be less than 10MB');
             return;
         }
         
-        // Update file input
         const dt = new DataTransfer();
         dt.items.add(file);
         this.fileInput.files = dt.files;
         
-        // Display preview
         this.displayFilePreview(file);
     }
 
@@ -441,7 +463,6 @@ class PaymentManager {
     }
 
     clearFormFields() {
-        // Reset form fields
         this.userTypeSelect.value = "";
         this.userIdSelect.innerHTML = '<option value="">First select user type</option>';
         this.userIdSelect.disabled = true;
@@ -450,15 +471,12 @@ class PaymentManager {
         this.amountPaid.value = "";
         this.referenceNumber.value = "";
         
-        // Reset display fields
         this.refNo.textContent = "";
         this.residentName.textContent = "";
         this.issueDate.textContent = "";
         
-        // Reset table and summary
         this.clearInvoiceTable();
         
-        // Reset all validation styles
         const fieldsToReset = [
             this.userTypeSelect,
             this.userIdSelect,
@@ -473,34 +491,44 @@ class PaymentManager {
             field.style.boxShadow = 'none';
         });
         
-        // Reset file drop area styling
         this.fileDropArea.style.borderColor = '#d1d5db';
         this.fileDropArea.style.backgroundColor = '#f9fafb';
         
-        // Reset file upload
         this.fileInput.value = '';
         this.filePreview.innerHTML = '';
     }
 
     handleSubmit(e) {
         e.preventDefault();
+        e.stopPropagation();
         
-        // Validate required fields
+        // Base required fields
         const requiredFields = [
-            this.userTypeSelect,
-            this.userIdSelect,
-            this.categorySelect,
-            this.invoiceInput,
-            this.amountPaid
+            { field: this.userTypeSelect, name: 'User Type' },
+            { field: this.userIdSelect, name: 'User ID' },
+            { field: this.categorySelect, name: 'Category' },
+            { field: this.invoiceInput, name: 'Invoice Number' },
+            { field: this.amountPaid, name: 'Amount Paid' }
         ];
         
+        // Add reference number validation for bank transfer only
+        if (this.selectedMethod.textContent === "Bank Transfer") {
+            requiredFields.push({ field: this.referenceNumber, name: 'Reference Number' });
+        }
+        
         let isValid = true;
-        requiredFields.forEach(field => {
-            if (!field.value) {
+        let firstInvalidField = null;
+        
+        requiredFields.forEach(item => {
+            const field = item.field;
+            if (!field.value || field.value.trim() === '') {
                 field.classList.add('is-invalid');
                 field.style.borderColor = '#dc3545';
                 field.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
                 isValid = false;
+                if (!firstInvalidField) {
+                    firstInvalidField = field;
+                }
             } else {
                 field.classList.remove('is-invalid');
                 field.style.borderColor = '#dee2e6';
@@ -508,42 +536,53 @@ class PaymentManager {
             }
         });
         
-        // Validate amount paid field specifically
+        // Validate amount is positive
         if (!this.amountPaid.value || parseFloat(this.amountPaid.value) <= 0) {
             this.amountPaid.classList.add('is-invalid');
             this.amountPaid.style.borderColor = '#dc3545';
             this.amountPaid.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
             isValid = false;
+            if (!firstInvalidField) {
+                firstInvalidField = this.amountPaid;
+            }
         }
         
-        // Check if proof of payment is uploaded for bank transfer and highlight if missing
-        if (this.selectedMethod.textContent === "Bank Transfer" && !this.fileInput.files.length) {
+        // Validate proof of payment for BOTH payment methods
+        if (!this.fileInput.files.length) {
             this.fileDropArea.style.borderColor = '#dc3545';
             this.fileDropArea.style.backgroundColor = '#f8d7da';
             isValid = false;
+            if (!firstInvalidField) {
+                // Scroll to file upload area
+                this.fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            // Different message based on payment method
+            const paymentType = this.selectedMethod.textContent === "Bank Transfer" 
+                ? "bank transfer" 
+                : "in-office payment";
+            this.showErrorModal(`Please upload proof of payment for ${paymentType}.`);
         } else {
-            // Reset file drop area styling if valid
             this.fileDropArea.style.borderColor = '#d1d5db';
             this.fileDropArea.style.backgroundColor = '#f9fafb';
         }
         
         if (!isValid) {
+            // Focus on first invalid field
+            if (firstInvalidField) {
+                firstInvalidField.focus();
+            }
             return;
         }
         
-                
-        if (!isValid) {
-            return;
-        }
-        
-        // Additional validation for Amenity Fee and Monthly Dues payments
-        if (this.categorySelect.value === 'Amenity Fee' || this.categorySelect.value === 'Monthly Dues') {
+        // Additional validation for invoice-based payments
+        const invoiceCategories = ['Amenity Fee', 'Monthly Dues', 'Penalty Fees', 'Other Fees'];
+        if (invoiceCategories.includes(this.categorySelect.value)) {
             if (!this.currentInvoiceData) {
                 this.showErrorModal(`Please enter a valid invoice number for ${this.categorySelect.value} payments.`);
                 return;
             }
             
-            // Check if payment amount exceeds balance due - USE ERROR MODAL FOR THIS
             const amountPaid = parseFloat(this.amountPaid.value);
             const balanceDue = parseFloat(this.currentInvoiceData.balance_due.replace(/,/g, ''));
             
@@ -553,22 +592,18 @@ class PaymentManager {
             }
         }
         
-        // Show confirmation modal if all validations pass
         this.showConfirmationModal();
     }
-
     showErrorModal(message) {
         if (this.errorModal && this.errorMessage) {
             this.errorMessage.textContent = message;
             this.errorModal.show();
         } else {
-            // Fallback to alert if error modal is not available
             alert(message);
         }
     }
 
     showConfirmationModal() {
-        // Populate confirmation modal with payment details
         const selectedUserOption = this.userIdSelect.options[this.userIdSelect.selectedIndex];
         const userName = selectedUserOption.textContent.split(' - ')[1] || 'Unknown';
         
@@ -578,19 +613,15 @@ class PaymentManager {
         this.confirmAmount.textContent = `₱${parseFloat(this.amountPaid.value).toFixed(2)}`;
         this.confirmMethod.textContent = this.selectedMethod.textContent;
         
-        // Show the modal
         this.confirmModal.show();
     }
-
     async processPayment() {
         try {
-            // Disable the confirm button to prevent double submission
             this.confirmPaymentBtn.disabled = true;
             this.confirmPaymentBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Processing...';
             
-            // Create FormData for file upload
             const formData = new FormData();
-            formData.append('action', 'process_payment');
+            formData.append('action', 'process_payment');  // Add this line
             formData.append('category', this.categorySelect.value);
             formData.append('user_type', this.userTypeSelect.value);
             formData.append('user_id', this.userIdSelect.value);
@@ -599,11 +630,11 @@ class PaymentManager {
             formData.append('payment_method', this.selectedMethod.textContent);
             formData.append('reference_number', this.referenceNumber.value || '');
             
-            // Add file if exists
             if (this.fileInput.files.length > 0) {
                 formData.append('proof_of_payment', this.fileInput.files[0]);
             }
             
+            // CHANGE THIS: Point to the new payment processing file
             const response = await fetch('payment/process_payment.php', {
                 method: 'POST',
                 body: formData
@@ -612,16 +643,19 @@ class PaymentManager {
             const result = await response.json();
             
             if (result.success) {
-                // Hide confirmation modal
                 this.confirmModal.hide();
-                
-                // Show success modal
                 this.successModal.show();
                 
-                // Clear form after a short delay
+                // Show email status if available
+                if (result.email_sent) {
+                    console.log('✅ Payment receipt sent to user email');
+                } else {
+                    console.log('⚠️ Payment processed but email not sent');
+                }
+                
                 setTimeout(() => {
                     this.clearFormFields();
-                    this.selectPaymentMethod('bank'); // Reset to default
+                    this.selectPaymentMethod('bank');
                 }, 1000);
                 
             } else {
@@ -632,7 +666,6 @@ class PaymentManager {
             console.error('Payment processing error:', error);
             this.showErrorModal('Error processing payment: ' + error.message);
         } finally {
-            // Re-enable the confirm button
             this.confirmPaymentBtn.disabled = false;
             this.confirmPaymentBtn.innerHTML = 'Process Payment';
         }
