@@ -2155,6 +2155,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             const totalValue = parseFloat(totalField.value.replace(/,/g, '')) || 0;
             const amountPaidValue = parseFloat(amountPaidField.value) || 0;
+            const minimumPayment = totalValue * 0.5;
 
             amountPaidField.classList.remove('border-danger', 'is-invalid');
             const existingFeedback = amountPaidField.parentNode.parentNode.querySelector('.invalid-feedback');
@@ -2162,8 +2163,22 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 existingFeedback.remove();
             }
 
+            if (totalValue > 0 && amountPaidValue < minimumPayment) {
+                amountPaidField.classList.add('border-danger', 'is-invalid');
+                amountPaidField.setCustomValidity('Amount must be at least 50% of total');
+
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'invalid-feedback';
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>Amount paid must be at least 50% of total (₱${minimumPayment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+
+                amountPaidField.parentNode.parentNode.insertAdjacentElement('beforeend', errorDiv);
+                return false;
+            }
+
             if (amountPaidValue > totalValue && totalValue > 0) {
                 amountPaidField.classList.add('border-danger', 'is-invalid');
+                amountPaidField.setCustomValidity('Amount cannot exceed total');
 
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'invalid-feedback';
@@ -2174,6 +2189,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 return false;
             }
 
+            amountPaidField.setCustomValidity('');
             return true;
         }
 
