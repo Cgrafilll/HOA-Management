@@ -2,6 +2,12 @@
 session_start();
 require '../../rfid-api/db.php';
 
+// Add error logging
+error_log("🔍 DEBUG: Request received at process_payment.php");
+error_log("🔍 Request Method: " . $_SERVER["REQUEST_METHOD"]);
+error_log("🔍 POST data: " . print_r($_POST, true));
+error_log("🔍 FILES data: " . print_r($_FILES, true));
+
 // Include PHPMailer
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
@@ -611,8 +617,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
         // Send payment receipt email
         $recipientName = trim($userDetails['first_name'] . ' ' . $userDetails['last_name']);
         $recipientEmail = $userDetails['email_address'];
-        
+
+        error_log("🔍 DEBUG: Preparing to send email");
+        error_log("🔍 Recipient Name: " . $recipientName);
+        error_log("🔍 Recipient Email: " . $recipientEmail);
+        error_log("🔍 Payment Details exist: " . (isset($paymentDetails) ? 'YES' : 'NO'));
+
         if (!empty($recipientEmail) && $paymentDetails) {
+            error_log("🔍 DEBUG: Calling sendPaymentReceipt function");
             $emailSent = sendPaymentReceipt($recipientEmail, $recipientName, $paymentDetails);
             
             if ($emailSent) {
@@ -620,8 +632,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
             } else {
                 error_log("❌ Failed to send payment receipt email to: " . $recipientEmail . " [Invoice: " . $invoice_number . "]");
             }
+        } else {
+            if (empty($recipientEmail)) {
+                error_log("⚠️ DEBUG: Recipient email is empty");
+            }
+            if (!$paymentDetails) {
+                error_log("⚠️ DEBUG: Payment details are null/empty");
+            }
         }
-        
+                
         // Return success response
         header('Content-Type: application/json');
         echo json_encode([
