@@ -241,8 +241,9 @@ if (!empty($resident['profile_picture'])) {
             }
 
             .form-label,
+            .form-control,
             .form-check-label,
-            .main span {
+            .main~span {
                 font-size: 0.85rem;
             }
 
@@ -280,8 +281,9 @@ if (!empty($resident['profile_picture'])) {
             }
 
             .form-label,
+            .form-control,
             .form-check-label,
-            .main span {
+            .main~span {
                 font-size: 0.75rem;
             }
         }
