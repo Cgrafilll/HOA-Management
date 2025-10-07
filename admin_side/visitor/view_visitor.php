@@ -274,7 +274,8 @@ if ($view_visitor) {
                 font-size: 1rem !important;
             }
 
-            .table-responsive {
+            .label,
+            .value {
                 font-size: 0.85rem;
             }
 
@@ -311,12 +312,9 @@ if ($view_visitor) {
                 top: 0;
             }
 
-            .table-responsive {
+            .label,
+            .value {
                 font-size: 0.75rem;
-            }
-
-            .pagination {
-                font-size: 0.8rem;
             }
         }
 
@@ -475,7 +473,7 @@ if ($view_visitor) {
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <div class="mt-2 fw-semibold">Visitor</div>
+                        <div class="mt-2 fw-semibold label">Visitor</div>
                     </div>
                     <!-- Centered Grid for Labels + Values -->
                     <div class="d-flex justify-content-center">
@@ -492,8 +490,8 @@ if ($view_visitor) {
                             ];
                             foreach ($details as $label => $value): ?>
                                 <div class="row mb-2">
-                                    <div class="col-4 text-start fw-bold"><?php echo $label ?>:</div>
-                                    <div class="col-8 text-start"><?php echo $value ?></div>
+                                    <div class="col-4 text-start fw-bold label"><?php echo $label ?>:</div>
+                                    <div class="col-8 text-start value"><?php echo $value ?></div>
                                 </div>
                             <?php endforeach; ?>
                         </div>
