@@ -391,7 +391,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 font-size: 1rem !important;
             }
 
-            .table-responsive {
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .toggle,
+            .invalid-feedback,
+            main span {
                 font-size: 0.85rem;
             }
 
@@ -428,12 +434,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 top: 0;
             }
 
-            .table-responsive {
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .toggle,
+            .invalid-feedback,
+            main span {
                 font-size: 0.75rem;
-            }
-
-            .pagination {
-                font-size: 0.8rem;
             }
         }
 
@@ -580,7 +588,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <form action="add_household.php" method="POST" id="householdForm" enctype="multipart/form-data">
                         <div class="row mb-3">
                             <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
-                            <div class="row">
+                            <div class="row mb-3">
                                 <div class="col-4 mb-3">
                                     <div id="preview"
                                         class="d-flex align-items-center justify-content-center overflow-hidden rounded"
@@ -597,105 +605,111 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Personal Info -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Personal Information</span>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="first_name" class="form-control" required />
-                                <label class="form-label mt-2">First Name</label>
+                        <div class="row mb-3">
+                            <div class="row mb-3">
+                                <span class="fw-bold mb-2">Personal Information</span>
+                                <div class="col-md-4">
+                                    <input type="text" name="first_name" class="form-control" required />
+                                    <label class="form-label mt-2">First Name</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" name="middle_name" class="form-control" required />
+                                    <label class="form-label mt-2">Middle Name</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" name="last_name" class="form-control" required />
+                                    <label class="form-label mt-2">Last Name</label>
+                                </div>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="middle_name" class="form-control" required />
-                                <label class="form-label mt-2">Middle Name</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="text" name="last_name" class="form-control" required />
-                                <label class="form-label mt-2">Last Name</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="date" name="dob" class="form-control" required
-                                    max="<?php echo date('Y-m-d'); ?>" />
-                                <label class="form-label mt-2">Date of Birth</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <input type="number" name="age" class="form-control" readonly />
-                                <label class="form-label mt-2">Age</label>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <select name="sex" class="form-select" required>
-                                    <option value="">Select</option>
-                                    <option>Male</option>
-                                    <option>Female</option>
-                                </select>
-                                <label class="form-label mt-2">Sex</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <input type="date" name="dob" class="form-control" required
+                                        max="<?php echo date('Y-m-d'); ?>" />
+                                    <label class="form-label mt-2">Date of Birth</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" name="age" class="form-control" readonly />
+                                    <label class="form-label mt-2">Age</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <select name="sex" class="form-select" required>
+                                        <option value="">Select</option>
+                                        <option>Male</option>
+                                        <option>Female</option>
+                                    </select>
+                                    <label class="form-label mt-2">Sex</label>
+                                </div>
                             </div>
                         </div>
                         <!-- Contact -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Contact Information</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Contact Information</span>
+                            <div class="col-md-4">
                                 <input type="text" name="cellphone" class="form-control" />
                                 <label class="form-label mt-2">Cellphone Number</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="landline" class="form-control" />
                                 <label class="form-label mt-2">Landline</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="email" name="email" class="form-control" placeholder="example@example.com"
                                     required />
                                 <label class="form-label mt-2">Email Address</label>
                             </div>
                         </div>
                         <!-- Address -->
-                        <span class="fw-bold mb-3">Address</span>
-                        <div class="my-3">
-                            <input type="text" name="street" class="form-control" required />
-                            <label class="form-label mt-2">Street Address</label>
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Address</span>
+                            <div class="col-md-12">
+                                <input type="text" name="street" class="form-control" required />
+                                <label class="form-label mt-2">Street Address</label>
+                            </div>
+                            <div class="col-md-12">
+                                <input type="text" name="street2" class="form-control" />
+                                <label class="form-label mt-2">Street Address Line 2</label>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <input type="text" name="street2" class="form-control" />
-                            <label class="form-label mt-2">Street Address Line 2</label>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="city" class="form-control" required />
                                 <label class="form-label mt-2">City</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="state" class="form-control" required />
                                 <label class="form-label mt-2">State/Province</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="barangay" class="form-control" required />
                                 <label class="form-label mt-2">Barangay</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="postal" class="form-control" required />
                                 <label class="form-label mt-2">Postal/Zip Code</label>
                             </div>
                         </div>
-                        <div class="row">
+                        <div class="row mb-3">
                             <!-- Household Members -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <label class="form-label mt-2 fw-bold">Household Members</label>
                                 <input type="number" name="members" class="form-control" min="1" required />
                                 <label class="form-label mt-2">How many members in the household</label>
                             </div>
                             <!-- Resident RFID -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <label class="form-label mt-2 fw-bold">Resident RFID</label>
                                 <input type="text" name="rfid" class="form-control" id="rfidInput" required />
                                 <label class="form-label mt-2">Tap your RFID card</label>
                             </div>
                         </div>
                         <!-- Account Password -->
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold">Password</label>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label mb-2 fw-bold">Password</label>
                                 <div class="input-group">
                                     <input type="password" id="password" name="password" required class="form-control"
                                         minlength="6" />
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
+                                    <button type="button" class="btn btn-outline-secondary toggle" id="togglePassword1"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon1"></i>
                                     </button>
@@ -703,17 +717,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Set a password for this account (min. 6
                                     characters)</label>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold invisible">Confirm Password</label>
+                            <div class="col-md-4">
+                                <label class="form-label mb-2 fw-bold">Confirm Password</label>
                                 <div class="input-group">
                                     <input type="password" id="confirmPassword" name="confirmPassword" required
                                         class="form-control" minlength="6" />
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword2"
+                                    <button type="button" class="btn btn-outline-secondary toggle" id="togglePassword2"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon2"></i>
                                     </button>
                                 </div>
-                                <label class="form-label mt-2">Confirm password</label>
                             </div>
                         </div>
                         <!-- Submit Buttons -->
