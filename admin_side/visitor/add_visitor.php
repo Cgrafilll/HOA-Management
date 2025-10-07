@@ -663,54 +663,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <!-- Reason for Visit -->
                         <span class="fw-bold mb-3">Reason for Visit</span><br>
-                        <span>Are you employed by the subdivision?</span>
-                        <!-- Radio Buttons -->
                         <div class="row mb-3">
                             <div class="col-md-4">
-                                <div class="form-check">
-                                    <label class="form-check-label me-2" for="noRadio1">No</label>
-                                    <input class="form-check-input" type="radio" name="employment_status" id="noRadio1"
-                                        value="No" required>
-                                </div>
-                            </div>
-                            <!-- Dropdowns for Reason -->
-                            <div class="col-md-4">
-                                <select id="reasonNo" class="form-select" disabled>
-                                    <option selected disabled value="">Select a reason</option>
-                                    <option>Personal Visit / Family Gathering</option>
-                                    <option>Delivery or Pickup</option>
-                                    <option>Health or Emergency Services</option>
-                                    <option>Religious or Community Outreach</option>
-                                    <option>Transport Services</option>
-                                    <option>Guest Use of Amenities</option>
-                                    <option>Home Maintenance and Repairs</option>
-                                    <option>Construction or Renovation</option>
-                                    <option>Landscaping and Gardening</option>
-                                    <option>Household Help</option>
-                                    <option>Pest Control / Cleaning Services</option>
-                                    <option>Internet / Cable / Utility Installation</option>
-                                    <option>Furniture or Appliance Delivery</option>
-                                    <option>Server Contractors</option>
+                                <select name="employment_status" id="employmentStatus" class="form-select" required>
+                                    <option selected disabled value="">Are you employed by the subdivision?</option>
+                                    <option value="No">No</option>
+                                    <option value="Yes">Yes</option>
                                 </select>
+                                <label class="form-label mt-2">Employment Status</label>
                             </div>
-                        </div>
-                        <div class="row mb-3">
                             <div class="col-md-4">
-                                <div class="form-check">
-                                    <label class="form-check-label me-2" for="yesRadio2">Yes</label>
-                                    <input class="form-check-input" type="radio" name="employment_status" id="yesRadio2"
-                                        value="Yes">
-                                </div>
-                            </div>
-                            <!-- Dropdowns for Reason -->
-                            <div class="col-md-4">
-                                <select id="reasonYes" class="form-select" disabled>
+                                <select id="reasonSelect" name="reason" class="form-select" required disabled>
                                     <option selected disabled value="">Select a reason</option>
-                                    <option>Administrative Work</option>
-                                    <option>Facilities Management</option>
-                                    <option>IT and System Maintenance</option>
-                                    <option>Security Oversight</option>
                                 </select>
+                                <label class="form-label mt-2">Reason for Visit</label>
                             </div>
                         </div>
                         <!-- Hidden input to store the selected reason -->
@@ -1067,68 +1033,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             }
 
-            // ====== RADIO + DROPDOWN SYNC - FIXED VERSION ======
-            const reasonNo = document.getElementById('reasonNo');
-            const reasonYes = document.getElementById('reasonYes');
-            const radioNo = document.getElementById('noRadio1');
-            const radioYes = document.getElementById('yesRadio2');
-            const reasonInput = document.getElementById('reasonInput');
+            // ====== EMPLOYMENT STATUS + REASON DROPDOWN - NEW VERSION ======
+            const employmentStatus = document.getElementById('employmentStatus');
+            const reasonSelect = document.getElementById('reasonSelect');
 
-            function updateReasonInput() {
-                if (radioNo.checked && reasonNo.value && reasonNo.value !== '') {
-                    reasonInput.value = reasonNo.value;
-                } else if (radioYes.checked && reasonYes.value && reasonYes.value !== '') {
-                    reasonInput.value = reasonYes.value;
-                } else {
-                    reasonInput.value = '';
-                }
-                console.log('Reason input updated to:', reasonInput.value); // Debug log
+            // Define reasons based on employment status
+            const reasonsNo = [
+                'Personal Visit / Family Gathering',
+                'Delivery or Pickup',
+                'Health or Emergency Services',
+                'Religious or Community Outreach',
+                'Transport Services',
+                'Guest Use of Amenities',
+                'Home Maintenance and Repairs',
+                'Construction or Renovation',
+                'Landscaping and Gardening',
+                'Household Help',
+                'Pest Control / Cleaning Services',
+                'Internet / Cable / Utility Installation',
+                'Furniture or Appliance Delivery',
+                'Server Contractors'
+            ];
+
+            const reasonsYes = [
+                'Administrative Work',
+                'Facilities Management',
+                'IT and System Maintenance',
+                'Security Oversight'
+            ];
+
+            if (employmentStatus && reasonSelect) {
+                employmentStatus.addEventListener('change', function () {
+                    const selectedValue = this.value;
+
+                    // Clear previous options
+                    reasonSelect.innerHTML = '<option selected disabled value="">Select a reason</option>';
+
+                    if (selectedValue === 'No') {
+                        // Enable dropdown and populate with "No" reasons
+                        reasonSelect.disabled = false;
+                        reasonsNo.forEach(reason => {
+                            const option = document.createElement('option');
+                            option.value = reason;
+                            option.textContent = reason;
+                            reasonSelect.appendChild(option);
+                        });
+                        console.log('Loaded "No" reasons');
+                    } else if (selectedValue === 'Yes') {
+                        // Enable dropdown and populate with "Yes" reasons
+                        reasonSelect.disabled = false;
+                        reasonsYes.forEach(reason => {
+                            const option = document.createElement('option');
+                            option.value = reason;
+                            option.textContent = reason;
+                            reasonSelect.appendChild(option);
+                        });
+                        console.log('Loaded "Yes" reasons');
+                    } else {
+                        // Disable dropdown if nothing selected
+                        reasonSelect.disabled = true;
+                    }
+
+                    // Reset reason selection when employment status changes
+                    reasonSelect.selectedIndex = 0;
+                });
+
+                // Optional: Add visual feedback when reason is selected
+                reasonSelect.addEventListener('change', function () {
+                    if (this.value) {
+                        this.classList.add('is-valid');
+                        this.classList.remove('is-invalid');
+                        console.log('Reason selected:', this.value);
+                    }
+                });
             }
-
-            if (reasonNo && reasonYes && radioNo && radioYes && reasonInput) {
-                // Handle radio button changes
-                radioNo.addEventListener('change', function () {
-                    if (this.checked) {
-                        console.log('No radio selected');
-                        reasonNo.disabled = false;
-                        reasonYes.disabled = true;
-                        reasonYes.selectedIndex = 0; // Reset the other dropdown
-                        updateReasonInput();
-                    }
-                });
-
-                radioYes.addEventListener('change', function () {
-                    if (this.checked) {
-                        console.log('Yes radio selected');
-                        reasonYes.disabled = false;
-                        reasonNo.disabled = true;
-                        reasonNo.selectedIndex = 0; // Reset the other dropdown
-                        updateReasonInput();
-                    }
-                });
-
-                // Handle dropdown changes
-                reasonNo.addEventListener('change', function () {
-                    if (this.value && this.value !== '') {
-                        console.log('No dropdown changed to:', this.value);
-                        radioNo.checked = true;
-                        reasonYes.disabled = true;
-                        reasonYes.selectedIndex = 0;
-                        updateReasonInput();
-                    }
-                });
-
-                reasonYes.addEventListener('change', function () {
-                    if (this.value && this.value !== '') {
-                        console.log('Yes dropdown changed to:', this.value);
-                        radioYes.checked = true;
-                        reasonNo.disabled = true;
-                        reasonNo.selectedIndex = 0;
-                        updateReasonInput();
-                    }
-                });
-            }
-
+            
             // Function to show error modal
             function showErrorModal(message) {
                 const errorMessage = document.getElementById('errorMessage');
