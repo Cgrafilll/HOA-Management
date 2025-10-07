@@ -1078,6 +1078,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             option.textContent = reason;
                             reasonSelect.appendChild(option);
                         });
+                        // Set custom validity message
+                        reasonSelect.setCustomValidity('Please select a reason for visit');
+                        reasonSelect.classList.remove('is-valid');
                         console.log('Loaded "No" reasons');
                     } else if (selectedValue === 'Yes') {
                         // Enable dropdown and populate with "Yes" reasons
@@ -1088,26 +1091,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             option.textContent = reason;
                             reasonSelect.appendChild(option);
                         });
+                        // Set custom validity message
+                        reasonSelect.setCustomValidity('Please select a reason for visit');
+                        reasonSelect.classList.remove('is-valid');
                         console.log('Loaded "Yes" reasons');
                     } else {
                         // Disable dropdown if nothing selected
                         reasonSelect.disabled = true;
+                        reasonSelect.setCustomValidity('');
                     }
 
                     // Reset reason selection when employment status changes
                     reasonSelect.selectedIndex = 0;
                 });
 
-                // Optional: Add visual feedback when reason is selected
+                // Clear custom validity when a valid reason is selected
                 reasonSelect.addEventListener('change', function () {
-                    if (this.value) {
+                    if (this.value && this.value !== '') {
+                        this.setCustomValidity(''); // Clear the custom validity
                         this.classList.add('is-valid');
                         this.classList.remove('is-invalid');
                         console.log('Reason selected:', this.value);
+                    } else {
+                        this.setCustomValidity('Please select a reason for visit');
+                        this.classList.remove('is-valid');
+                    }
+                });
+
+                // Add validation on blur (when user leaves the field)
+                reasonSelect.addEventListener('blur', function () {
+                    if (employmentStatus.value && (!this.value || this.value === '')) {
+                        this.classList.add('is-invalid');
                     }
                 });
             }
-            
+
             // Function to show error modal
             function showErrorModal(message) {
                 const errorMessage = document.getElementById('errorMessage');
