@@ -684,7 +684,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Personal Info -->
-                        <div class="row mb-3 w-100">
+                        <div class="row mb-3 w-100 border">
                             <div class="row mb-3">
                                 <span class="fw-bold mb-2">Personal Information</span>
                                 <div class="col-md-4">
