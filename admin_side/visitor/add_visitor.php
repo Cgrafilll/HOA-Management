@@ -679,8 +679,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Reason for Visit</label>
                             </div>
                         </div>
-                        <!-- Hidden input to store the selected reason -->
-                        <input type="hidden" name="reason" id="reasonInput" />
                         <!-- Visitor RFID -->
                         <div class="row mb-3">
                             <div class="col-md-4">
