@@ -491,7 +491,7 @@ if ($view_admin_id) {
                     <div class="p-4 text-center">
                         <!-- Profile Picture + Role -->
                         <div class="mb-4">
-                            <div class="mx-auto rounded overflow-hidden prof" style="width: 200px; height: 200px;">
+                            <div class="mx-auto rounded overflow-hidden prof border" style="width: 200px; height: 200px;">
                                 <?php if (!empty($prof)): ?>
                                     <img src="<?php echo htmlspecialchars($prof) ?>" class="img-fluid rounded prof"
                                         style="object-fit: cover;">
