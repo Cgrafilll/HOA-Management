@@ -487,7 +487,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 font-size: 1rem !important;
             }
 
-            .table-responsive {
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .form-check-label,
+            .form-check-input,
+            .toggle,
+            .invalid-feedback,
+            main span {
                 font-size: 0.85rem;
             }
 
@@ -524,12 +532,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 top: 0;
             }
 
-            .table-responsive {
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .form-check-label,
+            .form-check-input,
+            .toggle,
+            .invalid-feedback,
+            main span {
                 font-size: 0.75rem;
-            }
-
-            .pagination {
-                font-size: 0.8rem;
             }
         }
 
@@ -674,59 +686,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <hr class="my-0">
                 <div class="p-3">
                     <form action="edit_visitor.php?id=<?= $edit_visitor ?>" method="POST" enctype="multipart/form-data">
+                        <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
                         <div class="row mb-3">
-                            <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
-                            <div class="row">
-                                <div class="col-4 mb-3">
-                                    <div id="preview"
-                                        class="d-flex align-items-center justify-content-center overflow-hidden rounded"
-                                        style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
-                                        <?php if (!empty($prof)): ?>
-                                            <img src="<?php echo htmlspecialchars($prof) ?>"
-                                                style="width: 100px; height: 100px; object-fit: cover;">
-                                        <?php else: ?>
-                                            <i class="bi bi-person-fill" style="font-size: 48px;"></i>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-4">
-                                    <input type="file" class="form-control" name="profile_pic" id="profile_pic"
-                                        accept="image/*" />
+                            <div class="col-md-4">
+                                <div id="preview"
+                                    class="d-flex align-items-center justify-content-center overflow-hidden rounded"
+                                    style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
+                                    <?php if (!empty($prof)): ?>
+                                        <img src="<?php echo htmlspecialchars($prof) ?>"
+                                            style="width: 100px; height: 100px; object-fit: cover;">
+                                    <?php else: ?>
+                                        <i class="bi bi-person-fill" style="font-size: 48px;"></i>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <input type="file" class="form-control" name="profile_pic" id="profile_pic"
+                                    accept="image/*" />
+                            </div>
+                        </div>
                         <!-- Personal Info -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Personal Information</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-1">
+                            <span class="fw-bold mb-2">Personal Information</span>
+                            <div class="col-md-4">
                                 <input type="text" name="first_name" class="form-control"
                                     value="<?php echo htmlspecialchars($first_name) ?>" required />
                                 <label class="form-label mt-2">First Name</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="middle_name" class="form-control"
                                     value="<?php echo htmlspecialchars($middle_name) ?>" required />
                                 <label class="form-label mt-2">Middle Name</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="last_name" class="form-control"
                                     value="<?php echo htmlspecialchars($last_name) ?>" required />
                                 <label class="form-label mt-2">Last Name</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
                                 <input type="date" name="dob" class="form-control" id="dobInput"
                                     value="<?php echo htmlspecialchars($dob) ?>" required
                                     max="<?php echo date('Y-m-d'); ?>" />
                                 <label class="form-label mt-2">Date of Birth</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="number" name="age" class="form-control"
                                     value="<?php echo htmlspecialchars($age) ?>" readonly />
                                 <label class="form-label mt-2">Age</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <select name="sex" class="form-select" required>
                                     <option value="">Select</option>
                                     <option value="Male" <?= ($sex == 'Male') ? 'selected' : '' ?>>Male</option>
@@ -736,81 +748,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Contact -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Contact Information</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Contact Information</span>
+                            <div class="col-md-4">
                                 <input type="text" name="cellphone" class="form-control"
                                     value="<?php echo htmlspecialchars($cellphone) ?>" />
                                 <label class="form-label mt-2">Cellphone Number</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="email" name="email" class="form-control"
                                     value="<?php echo htmlspecialchars($email) ?>" required />
                                 <label class="form-label mt-2">Email Address</label>
                             </div>
                         </div>
                         <!-- Reason for Visit -->
-                        <span class="fw-bold mb-3">Reason for Visit</span>
-                        <div class="my-3">
-                            <span>Are you employed by the subdivision?</span>
-                        </div>
-                        <!-- Radio Buttons -->
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <div class="form-check">
-                                    <label class="form-check-label me-2" for="noRadio1">No</label>
-                                    <input class="form-check-input" type="radio" name="employment_status" id="noRadio1"
-                                        value="No" <?= ($employement == 'No') ? 'checked' : '' ?> required>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="form-check">
-                                    <label class="form-check-label me-2" for="yesRadio2">Yes</label>
-                                    <input class="form-check-input" type="radio" name="employment_status" id="yesRadio2"
-                                        value="Yes" <?= ($employement == 'Yes') ? 'checked' : '' ?>>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Dropdowns for Reason -->
-                        <div class="row">
-                            <!-- No Dropdown -->
-                            <div class="col-md-4 mb-3" id="dropdownNo">
-                                <select id="reasonNo" name="reason" class="form-select">
-                                    <option disabled <?= ($employement == 'No' && $reason == '') ? 'selected' : '' ?>
-                                        value="">Select a reason</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Personal Visit / Family Gathering') ? 'selected' : '' ?>>Personal Visit / Family Gathering</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Delivery or Pickup') ? 'selected' : '' ?>>Delivery or Pickup</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Health or Emergency Services') ? 'selected' : '' ?>>Health or Emergency Services</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Religious or Community Outreach') ? 'selected' : '' ?>>Religious or Community Outreach</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Transport Services') ? 'selected' : '' ?>>Transport Services</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Guest Use of Amenities') ? 'selected' : '' ?>>Guest Use of Amenities</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Home Maintenance and Repairs') ? 'selected' : '' ?>>Home Maintenance and Repairs</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Construction or Renovation') ? 'selected' : '' ?>>Construction or Renovation</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Landscaping and Gardening') ? 'selected' : '' ?>>Landscaping and Gardening</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Household Help') ? 'selected' : '' ?>>
-                                        Household Help</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Pest Control / Cleaning Services') ? 'selected' : '' ?>>Pest Control / Cleaning Services</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Internet / Cable / Utility Installation') ? 'selected' : '' ?>>Internet / Cable / Utility Installation
-                                    </option>
-                                    <option <?= ($employement == 'No' && $reason == 'Furniture or Appliance Delivery') ? 'selected' : '' ?>>Furniture or Appliance Delivery</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Server Contractors') ? 'selected' : '' ?>>Server Contractors</option>
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Reason for Visit</span>
+                            <div class="col-md-4">
+                                <select name="employment_status" id="employmentStatus" class="form-select" required>
+                                    <option selected disabled value="">Are you employed by the subdivision?</option>
+                                    <option value="No" <?= ($employement == 'No') ? 'selected' : '' ?>>No</option>
+                                    <option value="Yes" <?= ($employement == 'Yes') ? 'selected' : '' ?>>Yes</option>
                                 </select>
+                                <label class="form-label mt-2">Employment Status</label>
                             </div>
-                            <!-- Yes Dropdown -->
-                            <div class="col-md-4 mb-3" id="dropdownYes">
-                                <select id="reasonYes" name="reason" class="form-select">
-                                    <option disabled <?= ($employement == 'Yes' && $reason == '') ? 'selected' : '' ?>
-                                        value="">Select a reason</option>
-                                    <option <?= ($employement == 'Yes' && $reason == 'Administrative Work') ? 'selected' : '' ?>>Administrative Work</option>
-                                    <option <?= ($employement == 'Yes' && $reason == 'Facilities Management') ? 'selected' : '' ?>>Facilities Management</option>
-                                    <option <?= ($employement == 'Yes' && $reason == 'IT and System Maintenance') ? 'selected' : '' ?>>IT and System Maintenance</option>
-                                    <option <?= ($employement == 'Yes' && $reason == 'Security Oversight') ? 'selected' : '' ?>>Security Oversight</option>
+                            <div class="col-md-4">
+                                <select id="reasonSelect" name="reason" class="form-select" required>
+                                    <option selected disabled value="">Select a reason</option>
                                 </select>
+                                <label class="form-label mt-2">Reason for Visit</label>
                             </div>
                         </div>
                         <!-- Visitor RFID -->
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
                                 <label class="form-label mt-2 fw-bold">Visitor RFID</label>
                                 <input type="text" name="rfid" id="rfidInput" class="form-control"
                                     value="<?php echo htmlspecialchars($rfid) ?>" required />
@@ -818,13 +789,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Account Password -->
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold">New Password</label>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label mb-2 fw-bold">New Password</label>
                                 <div class="input-group">
                                     <input type="password" id="password" name="password" class="form-control"
                                         minlength="6" />
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
+                                    <button type="button" class="btn btn-outline-secondary toggle" id="togglePassword1"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon1"></i>
                                     </button>
@@ -832,12 +803,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Set a password for this account (min. 6
                                     characters)</label>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold">Confirm Password</label>
+                            <div class="col-md-4">
+                                <label class="form-label mb-2 fw-bold">Confirm Password</label>
                                 <div class="input-group">
                                     <input type="password" id="confirmPassword" name="confirmPassword"
                                         class="form-control" minlength="6" />
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword2"
+                                    <button type="button" class="btn btn-outline-secondary toggle" id="togglePassword2"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon2"></i>
                                     </button>
@@ -1001,37 +972,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // ====== RFID INPUT HANDLING ======
             const rfidInput = document.getElementById('rfidInput');
             if (rfidInput) {
-                // Prevent RFID input from submitting the form
                 rfidInput.addEventListener('keydown', function (event) {
                     if (event.key === 'Enter' || event.keyCode === 13) {
                         event.preventDefault();
                         event.stopPropagation();
                         event.stopImmediatePropagation();
-
-                        // Blur the input to remove focus after RFID scan
                         this.blur();
-
-                        // Confirmation log
                         console.log('RFID captured:', this.value);
-
                         return false;
                     }
                 });
 
-                // Additional prevention using keypress
                 rfidInput.addEventListener('keypress', function (event) {
                     if (event.key === 'Enter' || event.keyCode === 13) {
                         event.preventDefault();
                         event.stopPropagation();
                         event.stopImmediatePropagation();
                         return false;
-                    }
-                });
-
-                // Prevent any form submission triggered by the RFID input
-                rfidInput.addEventListener('input', function () {
-                    if (this.value.length > 0) {
-                        clearTimeout(window.rfidSubmitTimeout);
                     }
                 });
             }
@@ -1046,7 +1003,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         const dob = new Date(this.value);
                         const today = new Date();
 
-                        // Check if date is valid and not in the future
                         if (dob > today) {
                             showErrorModal('Date of birth cannot be in the future.');
                             this.value = '';
@@ -1061,7 +1017,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             age--;
                         }
 
-                        // Ensure age is reasonable (0-120)
                         if (age < 0 || age > 120) {
                             showErrorModal('Please enter a valid date of birth.');
                             this.value = '';
@@ -1084,19 +1039,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 profilePicInput.addEventListener('change', function (event) {
                     const file = event.target.files[0];
                     if (file) {
-                        // Validate file size (5MB limit)
                         if (file.size > 5000000) {
                             showErrorModal('File size too large. Please select an image smaller than 5MB.');
-                            this.value = ''; // Clear the input
+                            this.value = '';
                             preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
                             return;
                         }
 
-                        // Validate file type
                         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
                         if (!allowedTypes.includes(file.type)) {
                             showErrorModal('Invalid file type. Please select a JPEG, PNG, or GIF image.');
-                            this.value = ''; // Clear the input
+                            this.value = '';
                             preview.innerHTML = '<i class="bi bi-person-fill" style="font-size: 48px;"></i>';
                             return;
                         }
@@ -1112,62 +1065,106 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             }
 
-            // ====== RADIO + DROPDOWN SYNC ======
-            const reasonNo = document.getElementById('reasonNo');
-            const reasonYes = document.getElementById('reasonYes');
-            const radioNo = document.getElementById('noRadio1');
-            const radioYes = document.getElementById('yesRadio2');
+            // ====== EMPLOYMENT STATUS + REASON DROPDOWN ======
+            const employmentStatus = document.getElementById('employmentStatus');
+            const reasonSelect = document.getElementById('reasonSelect');
 
-            // INITIALIZE DROPDOWNS ON PAGE LOAD BASED ON SELECTED RADIO BUTTON
-            function initializeDropdowns() {
-                if (radioNo && radioYes && reasonNo && reasonYes) {
-                    if (radioNo.checked) {
-                        // If "No" is selected, clear the "Yes" dropdown
-                        reasonYes.selectedIndex = 0;
-                        console.log('Initialized: No radio selected, cleared Yes dropdown');
-                    } else if (radioYes.checked) {
-                        // If "Yes" is selected, clear the "No" dropdown
-                        reasonNo.selectedIndex = 0;
-                        console.log('Initialized: Yes radio selected, cleared No dropdown');
+            // Get current values from PHP
+            const currentEmployment = "<?php echo htmlspecialchars($employement); ?>";
+            const currentReason = "<?php echo htmlspecialchars($reason); ?>";
+
+            // Define reasons based on employment status
+            const reasonsNo = [
+                'Personal Visit / Family Gathering',
+                'Delivery or Pickup',
+                'Health or Emergency Services',
+                'Religious or Community Outreach',
+                'Transport Services',
+                'Guest Use of Amenities',
+                'Home Maintenance and Repairs',
+                'Construction or Renovation',
+                'Landscaping and Gardening',
+                'Household Help',
+                'Pest Control / Cleaning Services',
+                'Internet / Cable / Utility Installation',
+                'Furniture or Appliance Delivery',
+                'Server Contractors'
+            ];
+
+            const reasonsYes = [
+                'Administrative Work',
+                'Facilities Management',
+                'IT and System Maintenance',
+                'Security Oversight'
+            ];
+
+            // Function to populate reason dropdown
+            function populateReasonDropdown(employment, selectedReason = '') {
+                reasonSelect.innerHTML = '<option selected disabled value="">Select a reason</option>';
+
+                const reasons = employment === 'No' ? reasonsNo : reasonsYes;
+
+                reasons.forEach(reason => {
+                    const option = document.createElement('option');
+                    option.value = reason;
+                    option.textContent = reason;
+
+                    // Select the current reason if it matches
+                    if (reason === selectedReason) {
+                        option.selected = true;
                     }
+
+                    reasonSelect.appendChild(option);
+                });
+
+                reasonSelect.disabled = false;
+
+                // Clear custom validity if a valid reason is selected
+                if (selectedReason) {
+                    reasonSelect.setCustomValidity('');
+                    reasonSelect.classList.add('is-valid');
                 }
             }
 
-            // Call initialization function on page load
-            initializeDropdowns();
+            // Initialize on page load with existing data
+            if (currentEmployment && (currentEmployment === 'Yes' || currentEmployment === 'No')) {
+                populateReasonDropdown(currentEmployment, currentReason);
+                console.log('Initialized with:', currentEmployment, currentReason);
+            }
 
-            if (reasonNo && reasonYes && radioNo && radioYes) {
-                // When user selects from "No" dropdown, check "No" radio and clear "Yes" dropdown
-                reasonNo.addEventListener('change', () => {
-                    if (reasonNo.value !== '') {
-                        radioNo.checked = true;
-                        reasonYes.selectedIndex = 0;
-                        console.log('No dropdown changed, cleared Yes dropdown');
+            if (employmentStatus && reasonSelect) {
+                employmentStatus.addEventListener('change', function () {
+                    const selectedValue = this.value;
+
+                    if (selectedValue === 'No' || selectedValue === 'Yes') {
+                        populateReasonDropdown(selectedValue);
+                        reasonSelect.setCustomValidity('Please select a reason for visit');
+                        reasonSelect.classList.remove('is-valid');
+                        console.log('Employment changed to:', selectedValue);
+                    } else {
+                        reasonSelect.disabled = true;
+                        reasonSelect.innerHTML = '<option selected disabled value="">Select a reason</option>';
+                        reasonSelect.setCustomValidity('');
                     }
                 });
 
-                // When user selects from "Yes" dropdown, check "Yes" radio and clear "No" dropdown
-                reasonYes.addEventListener('change', () => {
-                    if (reasonYes.value !== '') {
-                        radioYes.checked = true;
-                        reasonNo.selectedIndex = 0;
-                        console.log('Yes dropdown changed, cleared No dropdown');
+                // Clear custom validity when a valid reason is selected
+                reasonSelect.addEventListener('change', function () {
+                    if (this.value && this.value !== '') {
+                        this.setCustomValidity('');
+                        this.classList.add('is-valid');
+                        this.classList.remove('is-invalid');
+                        console.log('Reason selected:', this.value);
+                    } else {
+                        this.setCustomValidity('Please select a reason for visit');
+                        this.classList.remove('is-valid');
                     }
                 });
 
-                // When user clicks "No" radio, clear "Yes" dropdown
-                radioNo.addEventListener('change', () => {
-                    if (radioNo.checked) {
-                        reasonYes.selectedIndex = 0;
-                        console.log('No radio selected, cleared Yes dropdown');
-                    }
-                });
-
-                // When user clicks "Yes" radio, clear "No" dropdown
-                radioYes.addEventListener('change', () => {
-                    if (radioYes.checked) {
-                        reasonNo.selectedIndex = 0;
-                        console.log('Yes radio selected, cleared No dropdown');
+                // Add validation on blur
+                reasonSelect.addEventListener('blur', function () {
+                    if (employmentStatus.value && (!this.value || this.value === '')) {
+                        this.classList.add('is-invalid');
                     }
                 });
             }
@@ -1184,10 +1181,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         return false;
                     }
 
-                    // Check if date is not in the future
                     const selectedDate = new Date(dobInput.value);
                     const today = new Date();
-                    today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+                    today.setHours(0, 0, 0, 0);
 
                     if (selectedDate > today) {
                         e.preventDefault();
@@ -1196,27 +1192,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         return false;
                     }
 
-                    const isNo = radioNo && radioNo.checked;
-                    const isYes = radioYes && radioYes.checked;
-                    const reasonNoSelected = reasonNo && reasonNo.value !== '';
-                    const reasonYesSelected = reasonYes && reasonYes.value !== '';
-
-                    let valid = true;
-
-                    if (!isNo && !isYes) {
-                        showErrorModal("Please select if you're employed by the subdivision.");
+                    // Check if employment status is selected
+                    if (!employmentStatus.value || employmentStatus.value === '') {
                         e.preventDefault();
-                        valid = false;
+                        showErrorModal('Please select employment status.');
+                        employmentStatus.focus();
                         return false;
-                    } else if (isNo && !reasonNoSelected) {
-                        showErrorModal("Please select a reason under 'No'.");
+                    }
+
+                    // Check if a reason is selected when employment status is chosen
+                    if (employmentStatus.value && (!reasonSelect.value || reasonSelect.value === '')) {
                         e.preventDefault();
-                        valid = false;
-                        return false;
-                    } else if (isYes && !reasonYesSelected) {
-                        showErrorModal("Please select a reason under 'Yes'.");
-                        e.preventDefault();
-                        valid = false;
+                        showErrorModal('Please select a reason for visit.');
+                        reasonSelect.classList.add('is-invalid');
+                        reasonSelect.focus();
                         return false;
                     }
 
@@ -1247,9 +1236,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
 
-                    if (valid) {
-                        console.log('Form is being submitted via Save button');
-                    }
+                    console.log('Form is being submitted');
+                    console.log('Employment Status:', employmentStatus.value);
+                    console.log('Reason:', reasonSelect.value);
                 });
             }
         });
