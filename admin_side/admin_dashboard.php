@@ -1036,26 +1036,35 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             pdf.setFontSize(10);
             pdf.setDrawColor(200, 200, 200);
 
+            // Define column widths and positions
+            const col1X = 20;
+            const col2X = 100;
+            const col3X = 140;
+            const rowHeight = 8;
+            const tableWidth = pageWidth - 30;
+
             // Table headers
             pdf.setFillColor(25, 135, 84);
             pdf.setTextColor(255, 255, 255);
-            pdf.rect(15, yPosition, pageWidth - 30, 8, 'F');
+            pdf.rect(15, yPosition, tableWidth, rowHeight, 'F');
 
             if (chart.config.type === 'line' || chart.config.type === 'bar') {
-                pdf.text('Label', 20, yPosition + 5);
+                pdf.text('Label', col1X, yPosition + 5.5);
                 chart.data.datasets.forEach((dataset, index) => {
-                    pdf.text(dataset.label, 80 + (index * 40), yPosition + 5);
+                    pdf.text(dataset.label, col2X + (index * 40), yPosition + 5.5);
                 });
             } else if (chart.config.type === 'doughnut' || chart.config.type === 'pie') {
-                pdf.text('Category', 20, yPosition + 5);
-                pdf.text('Value', 120, yPosition + 5);
-                pdf.text('Percentage', 160, yPosition + 5);
+                pdf.text('Category', col1X, yPosition + 5.5);
+                pdf.text('Value', col2X, yPosition + 5.5);
+                pdf.text('Percentage', col3X, yPosition + 5.5);
             }
 
-            yPosition += 10;
+            yPosition += rowHeight;
 
             // Table data
             pdf.setTextColor(0, 0, 0);
+            pdf.setFont(undefined, 'normal');
+            let rowColor = true;
 
             if (chart.config.type === 'line' || chart.config.type === 'bar') {
                 chart.data.labels.forEach((label, index) => {
@@ -1064,9 +1073,16 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                         yPosition = 20;
                     }
 
-                    pdf.text(label, 20, yPosition);
+                    // Alternating row colors
+                    if (rowColor) {
+                        pdf.setFillColor(245, 245, 245);
+                        pdf.rect(15, yPosition - 6, tableWidth, 7, 'F');
+                    }
+                    rowColor = !rowColor;
+
+                    pdf.text(label, col1X, yPosition);
                     chart.data.datasets.forEach((dataset, datasetIndex) => {
-                        pdf.text(String(dataset.data[index] || 0), 80 + (datasetIndex * 40), yPosition);
+                        pdf.text(String(dataset.data[index] || 0), col2X + (datasetIndex * 40), yPosition);
                     });
                     yPosition += 7;
                 });
@@ -1078,22 +1094,37 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                         yPosition = 20;
                     }
 
+                    // Alternating row colors
+                    if (rowColor) {
+                        pdf.setFillColor(245, 245, 245);
+                        pdf.rect(15, yPosition - 6, tableWidth, 7, 'F');
+                    }
+                    rowColor = !rowColor;
+
                     const value = chart.data.datasets[0].data[index];
                     const percentage = ((value / total) * 100).toFixed(1);
 
-                    pdf.text(label, 20, yPosition);
-                    pdf.text(String(value), 120, yPosition);
-                    pdf.text(percentage + '%', 160, yPosition);
+                    pdf.text(label, col1X, yPosition);
+                    pdf.text(String(value), col2X, yPosition);
+                    pdf.text(percentage + '%', col3X, yPosition);
                     yPosition += 7;
                 });
 
-                // Add total
-                yPosition += 3;
-                pdf.setFontSize(11);
+                // Add separator line
+                yPosition += 2;
+                pdf.setDrawColor(25, 135, 84);
+                pdf.setLineWidth(0.5);
+                pdf.line(15, yPosition, pageWidth - 15, yPosition);
+                yPosition += 5;
+
+                // Add total row
+                pdf.setFillColor(25, 135, 84);
+                pdf.rect(15, yPosition - 6, tableWidth, 8, 'F');
+                pdf.setTextColor(255, 255, 255);
                 pdf.setFont(undefined, 'bold');
-                pdf.text('Total:', 20, yPosition);
-                pdf.text(String(total), 120, yPosition);
-                pdf.text('100%', 160, yPosition);
+                pdf.text('Total:', col1X, yPosition);
+                pdf.text(String(total), col2X, yPosition);
+                pdf.text('100%', col3X, yPosition);
             }
 
             // Save PDF
