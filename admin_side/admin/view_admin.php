@@ -493,7 +493,7 @@ if ($view_admin_id) {
                         <div class="mb-4">
                             <div class="mx-auto rounded overflow-hidden prof border" style="width: 200px; height: 200px;">
                                 <?php if (!empty($prof)): ?>
-                                    <img src="<?php echo htmlspecialchars($prof) ?>" class="img-fluid rounded prof"
+                                    <img src="<?php echo htmlspecialchars($prof) ?>" class="img-fluid rounded prof w-100 h-100"
                                         style="object-fit: cover;">
                                 <?php else: ?>
                                     <div class="d-flex justify-content-center align-items-center border border-2 rounded prof"
