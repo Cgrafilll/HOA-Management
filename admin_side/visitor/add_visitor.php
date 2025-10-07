@@ -859,7 +859,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             }
 
-            // Form submission validation
+            // Update form submission validation to check reason select
             if (form) {
                 form.addEventListener('submit', function (event) {
                     // Validate date of birth
@@ -874,7 +874,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Check if date is not in the future
                     const selectedDate = new Date(dobInput.value);
                     const today = new Date();
-                    today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+                    today.setHours(0, 0, 0, 0);
 
                     if (selectedDate > today) {
                         event.preventDefault();
@@ -904,16 +904,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         return false;
                     }
 
-                    // Check if a reason is selected
-                    const reasonInput = document.getElementById('reasonInput');
-                    if (!reasonInput.value) {
+                    // Check if employment status is selected
+                    if (!employmentStatus.value || employmentStatus.value === '') {
+                        event.preventDefault();
+                        showErrorModal('Please select employment status.');
+                        employmentStatus.focus();
+                        return false;
+                    }
+
+                    // Check if a reason is selected when employment status is chosen
+                    if (employmentStatus.value && (!reasonSelect.value || reasonSelect.value === '')) {
                         event.preventDefault();
                         showErrorModal('Please select a reason for visit.');
+                        reasonSelect.classList.add('is-invalid');
+                        reasonSelect.focus();
                         return false;
                     }
 
                     console.log('Form is being submitted via Save button');
                     console.log('RFID Value:', rfidInput.value);
+                    console.log('Employment Status:', employmentStatus.value);
+                    console.log('Reason:', reasonSelect.value);
                 });
             }
 
