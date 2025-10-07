@@ -1030,8 +1030,9 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             let yPosition = 155;
             pdf.setFontSize(12);
             pdf.setTextColor(0, 0, 0);
+            pdf.setFont(undefined, 'bold');
             pdf.text('Chart Data:', 15, yPosition);
-            yPosition += 8;
+            yPosition += 10;
 
             pdf.setFontSize(10);
             pdf.setDrawColor(200, 200, 200);
@@ -1043,10 +1044,13 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             const rowHeight = 8;
             const tableWidth = pageWidth - 30;
 
-            // Table headers
+            // Table headers background
             pdf.setFillColor(25, 135, 84);
-            pdf.setTextColor(255, 255, 255);
             pdf.rect(15, yPosition, tableWidth, rowHeight, 'F');
+
+            // Table headers text
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFont(undefined, 'bold');
 
             if (chart.config.type === 'line' || chart.config.type === 'bar') {
                 pdf.text('Label', col1X, yPosition + 5.5);
@@ -1059,7 +1063,7 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                 pdf.text('Percentage', col3X, yPosition + 5.5);
             }
 
-            yPosition += rowHeight;
+            yPosition += rowHeight + 2; // Add spacing after header
 
             // Table data
             pdf.setTextColor(0, 0, 0);
@@ -1076,13 +1080,13 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                     // Alternating row colors
                     if (rowColor) {
                         pdf.setFillColor(245, 245, 245);
-                        pdf.rect(15, yPosition - 6, tableWidth, 7, 'F');
+                        pdf.rect(15, yPosition - 1, tableWidth, 7, 'F');
                     }
                     rowColor = !rowColor;
 
-                    pdf.text(label, col1X, yPosition);
+                    pdf.text(label, col1X, yPosition + 4);
                     chart.data.datasets.forEach((dataset, datasetIndex) => {
-                        pdf.text(String(dataset.data[index] || 0), col2X + (datasetIndex * 40), yPosition);
+                        pdf.text(String(dataset.data[index] || 0), col2X + (datasetIndex * 40), yPosition + 4);
                     });
                     yPosition += 7;
                 });
@@ -1097,34 +1101,32 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                     // Alternating row colors
                     if (rowColor) {
                         pdf.setFillColor(245, 245, 245);
-                        pdf.rect(15, yPosition - 6, tableWidth, 7, 'F');
+                        pdf.rect(15, yPosition - 1, tableWidth, 7, 'F');
                     }
                     rowColor = !rowColor;
 
                     const value = chart.data.datasets[0].data[index];
                     const percentage = ((value / total) * 100).toFixed(1);
 
-                    pdf.text(label, col1X, yPosition);
-                    pdf.text(String(value), col2X, yPosition);
-                    pdf.text(percentage + '%', col3X, yPosition);
+                    pdf.text(label, col1X, yPosition + 4);
+                    pdf.text(String(value), col2X, yPosition + 4);
+                    pdf.text(percentage + '%', col3X, yPosition + 4);
                     yPosition += 7;
                 });
 
-                // Add separator line
-                yPosition += 2;
-                pdf.setDrawColor(25, 135, 84);
-                pdf.setLineWidth(0.5);
-                pdf.line(15, yPosition, pageWidth - 15, yPosition);
-                yPosition += 5;
+                // Add separator space
+                yPosition += 3;
 
-                // Add total row
+                // Add total row background
                 pdf.setFillColor(25, 135, 84);
-                pdf.rect(15, yPosition - 6, tableWidth, 8, 'F');
+                pdf.rect(15, yPosition - 1, tableWidth, rowHeight, 'F');
+
+                // Add total row text
                 pdf.setTextColor(255, 255, 255);
                 pdf.setFont(undefined, 'bold');
-                pdf.text('Total:', col1X, yPosition);
-                pdf.text(String(total), col2X, yPosition);
-                pdf.text('100%', col3X, yPosition);
+                pdf.text('Total:', col1X, yPosition + 4.5);
+                pdf.text(String(total), col2X, yPosition + 4.5);
+                pdf.text('100%', col3X, yPosition + 4.5);
             }
 
             // Save PDF
