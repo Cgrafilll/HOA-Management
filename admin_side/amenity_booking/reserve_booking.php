@@ -814,13 +814,21 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 font-size: 0.8rem;
             }
 
+            .form-floating,
             .form-control,
             .form-label,
             .form-select,
             .form-select option,
+            .input-group-text,
             .invalid-feedback,
+            .rating,
+            .payment-info,
             main span {
                 font-size: 0.85rem;
+            }
+
+            .form-text {
+                font-size: 0.75rem;
             }
         }
 
@@ -951,13 +959,21 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 font-size: 0.8rem;
             }
 
+            .form-floating,
             .form-control,
             .form-label,
             .form-select,
             .form-select option,
+            .input-group-text,
             .invalid-feedback,
+            .rating,
+            .payment-info,
             main span {
                 font-size: 0.75rem;
+            }
+
+            .form-text {
+                font-size: 0.65rem;
             }
         }
     </style>
@@ -1110,7 +1126,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             <!-- Left Column -->
                             <div class="col-lg-6">
                                 <div class="row">
-                                    <div class="col-6">
+                                    <div class="col-md-4">
                                         <!-- User Type -->
                                         <div class="form-floating mb-3">
                                             <select class="form-select" id="userType" name="userType" required>
@@ -1118,16 +1134,16 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                 <option value="homeowner">Homeowner/Resident</option>
                                                 <option value="visitor">Visitor</option>
                                             </select>
-                                            <label for="userType">User Type<small
+                                            <label class="form-label">User Type<small
                                                     class="fw-bold text-danger">*</small></label>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-md-4">
                                         <!-- User ID -->
                                         <div class="form-floating mb-3">
                                             <input type="text" class="form-control search-select-input"
                                                 id="userIdSearch" name="search" disabled autocomplete="off">
-                                            <label for="search">Search User</label>
+                                            <label class="form-label">Search User</label>
                                             <i class="bi bi-x-circle search-select-clear" id="searchClear"></i>
                                             <div class="search-select-dropdown" id="userIdDropdown"></div>
                                             <input type="hidden" id="userId" name="userId" required>
@@ -1138,29 +1154,29 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-4">
+                                    <div class="col-md-4">
                                         <!-- First Name -->
                                         <div class="form-floating mb-3">
                                             <input type="text" class="form-control" id="firstName" name="firstName"
                                                 placeholder="First Name" required disabled>
-                                            <label for="firstName">First Name<small
+                                            <label class="form-label">First Name<small
                                                     class="fw-bold text-danger">*</small></label>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-md-4">
                                         <!-- Middle Name -->
                                         <div class="form-floating mb-3">
                                             <input type="text" class="form-control" id="middleName" name="middleName"
                                                 placeholder="Middle Name" disabled>
-                                            <label for="middleName">Middle Name</label>
+                                            <label class="form-label">Middle Name</label>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-md-4">
                                         <!-- Last Name -->
                                         <div class="form-floating mb-3">
                                             <input type="text" class="form-control" id="lastName" name="lastName"
                                                 placeholder="Last Name" required disabled>
-                                            <label for="lastName">Last Name<small
+                                            <label class="form-label">Last Name<small
                                                     class="fw-bold text-danger">*</small></label>
                                         </div>
                                     </div>
@@ -1177,7 +1193,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <div class="form-floating mb-3">
                                     <input type="email" class="form-control" id="emailAddress" name="emailAddress"
                                         placeholder="name@example.com" required disabled>
-                                    <label for="emailAddress">Email Address<small
+                                    <label class="form-label">Email Address<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
                                 <!-- Date -->
@@ -1219,7 +1235,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <div class="form-floating">
                                         <input type="date" class="form-control" id="reservationDate"
                                             name="reservationDate" readonly required>
-                                        <label for="reservationDate">Selected Date<small class="fw-bold
+                                        <label class="form-label">Selected Date<small class="fw-bold
                                                 text-danger">*</small></label>
                                     </div>
                                 </div>
@@ -1228,7 +1244,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <div class="form-floating">
                                         <input type="number" class="form-control" id="guests" name="guests" min="10"
                                             max="25" value="10">
-                                        <label for="guests">Guests<small class="fw-bold text-danger">*</small></label>
+                                        <label class="form-label">Guests<small class="fw-bold text-danger">*</small></label>
                                     </div>
                                     <div class="form-text text-muted mb-3">
                                         <small><i class="bi bi-info-circle me-1"></i>Minimum: 10 guests, Maximum: 25
@@ -1242,7 +1258,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             <option value="no" selected>No</option>
                                             <option value="yes">Yes</option>
                                         </select>
-                                        <label for="exclusiveBooking">Is this an exclusive booking?<small
+                                        <label class="form-label">Is this an exclusive booking?<small
                                                 class="fw-bold text-danger">*</small></label>
                                     </div>
                                     <div class="form-text text-muted mb-3">
@@ -1252,35 +1268,35 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <?php endif; ?>
                                 <!-- Add-Ons -->
                                 <div class="row">
-                                    <div class="col-6">
+                                    <div class="col-md-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="chairs" name="chairs" min="0"
                                                 value="0" max="40">
-                                            <label for="chairs">Chairs <small>(₱12.00/pc)</small></label>
+                                            <label class="form-label">Chairs <small>(₱12.00/pc)</small></label>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-md-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="tables" name="tables" min="0"
                                                 value="0" max="15">
-                                            <label for="tables">Tables <small>(₱20.00/pc)</small></label>
+                                            <label class="form-label">Tables <small>(₱20.00/pc)</small></label>
                                         </div>
                                     </div>
                                 </div>
                                 <!-- Vehicle -->
                                 <div class="row">
                                     <label class="form-label fw-bold">Vehicle</label>
-                                    <div class="col-6">
+                                    <div class="col-md-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="cars" name="cars" min="0"
                                                 value="0" max="3">
-                                            <label for="cars">No. of Vehicle/s</label>
+                                            <label class="form-label">No. of Vehicle/s</label>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-md-6">
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="plates" name="plates">
-                                            <label for="plates">Vehicle Plate Number/s</label>
+                                            <label class="form-label">Vehicle Plate Number/s</label>
                                         </div>
                                         <div class="form-text text-muted">
                                             <small><i class="bi bi-info-circle me-1"></i>If more than 1 vehicle,
@@ -1301,7 +1317,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             <div class="custom-radio-option selected" data-value="day"
                                                 onclick="selectRate(this, 'day')">
                                                 <div>
-                                                    <div><strong id="dayRate">Day • <?= $currentRates['day'] ?></strong>
+                                                    <div class="rating"><strong id="dayRate">Day • <?= $currentRates['day'] ?></strong>
                                                     </div>
                                                     <small class="text-muted">9:00 AM - 5:00 PM</small>
                                                 </div>
@@ -1310,7 +1326,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
                                                 data-value="night" onclick="selectRate(this, 'night')">
                                                 <div>
-                                                    <div><strong id="nightRate">Night •
+                                                    <div class="rating"><strong id="nightRate">Night •
                                                             <?= $currentRates['night'] ?></strong></div>
                                                     <small class="text-muted">5:00 PM - 10:00 PM</small>
                                                 </div>
@@ -1319,7 +1335,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
                                                 data-value="whole" onclick="selectRate(this, 'whole')">
                                                 <div>
-                                                    <div><strong id="wholeRate">Whole Day •
+                                                    <div class="rating"><strong id="wholeRate">Whole Day •
                                                             <?= $currentRates['whole'] ?></strong></div>
                                                     <small class="text-muted">9:00 AM - 10:00 PM</small>
                                                 </div>
@@ -1380,7 +1396,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <div class="form-floating mb-3">
                                     <input type="text" class="form-control" id="referenceNumber" name="referenceNumber"
                                         placeholder="Reference Number" required>
-                                    <label for="referenceNumber">Reference Number<small
+                                    <label class="form-label">Reference Number<small
                                             class="fw-bold text-danger">*</small></label>
                                 </div>
                                 <!-- Total Amount -->
@@ -1454,20 +1470,20 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             <p class="mb-3">Please confirm your amenity reservation details before proceeding.</p>
                             <div class="alert alert-info text-start mb-3">
                                 <div class="row">
-                                    <div class="col-4"><strong>Amenity:</strong></div>
-                                    <div class="col-8" id="confirmAmenity">-</div>
+                                    <div class="col-md-4"><strong>Amenity:</strong></div>
+                                    <div class="col-md-8" id="confirmAmenity">-</div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-4"><strong>Date:</strong></div>
-                                    <div class="col-8" id="confirmDate">-</div>
+                                    <div class="col-md-4"><strong>Date:</strong></div>
+                                    <div class="col-md-8" id="confirmDate">-</div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-4"><strong>Name:</strong></div>
-                                    <div class="col-8" id="confirmName">-</div>
+                                    <div class="col-md-4"><strong>Name:</strong></div>
+                                    <div class="col-md-8" id="confirmName">-</div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-4"><strong>Total:</strong></div>
-                                    <div class="col-8" id="confirmTotal">-</div>
+                                    <div class="col-md-4"><strong>Total:</strong></div>
+                                    <div class="col-md-8" id="confirmTotal">-</div>
                                 </div>
                             </div>
                             <div class="d-flex justify-content-center gap-2">
