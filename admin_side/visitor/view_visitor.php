@@ -490,8 +490,8 @@ if ($view_visitor) {
                             ];
                             foreach ($details as $label => $value): ?>
                                 <div class="row mb-2">
-                                    <div class="col-4 text-start fw-bold label"><?php echo $label ?>:</div>
-                                    <div class="col-8 text-start value"><?php echo $value ?></div>
+                                    <div class="col-md-4 text-start fw-bold label"><?php echo $label ?>:</div>
+                                    <div class="col-md-8 text-start value"><?php echo $value ?></div>
                                 </div>
                             <?php endforeach; ?>
                         </div>
