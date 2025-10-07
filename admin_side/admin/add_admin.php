@@ -624,14 +624,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Address -->
-                        <span class="fw-bold mb-3">Address</span>
-                        <div class="mb-3">
-                            <input type="text" name="street" class="form-control" required />
-                            <label class="form-label mt-2">Street Address</label>
-                        </div>
-                        <div class="mb-3">
-                            <input type="text" name="street2" class="form-control" />
-                            <label class="form-label mt-2">Street Address Line 2</label>
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Address</span>
+                            <div class="col-md-12">
+                                <input type="text" name="street" class="form-control" required />
+                                <label class="form-label mt-2">Street Address</label>
+                            </div>
+                            <div class="col-md-12">
+                                <input type="text" name="street2" class="form-control" />
+                                <label class="form-label mt-2">Street Address Line 2</label>
+                            </div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-4">
