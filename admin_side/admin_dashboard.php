@@ -992,7 +992,8 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
         });
-
+    </script>
+    <script>
         async function exportChartToPDF(chartId, filename) {
             const { jsPDF } = window.jspdf;
             const canvas = document.getElementById(chartId);
@@ -1094,7 +1095,6 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             pdf.save(filename + '_' + new Date().toISOString().split('T')[0] + '.pdf');
         }
     </script>
-
 </body>
 
 </html>
