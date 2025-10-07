@@ -750,13 +750,6 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                 font-size: 1rem !important;
             }
 
-            /* Form adjustments */
-            .row .col-6,
-            .row .col-4 {
-                flex: 0 0 100%;
-                max-width: 100%;
-            }
-
             .bg-white.shadow.rounded.p-3 {
                 padding: 1rem !important;
             }
@@ -819,6 +812,15 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             #dateMessage .alert {
                 font-size: 0.8rem;
+            }
+
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .invalid-feedback,
+            main span {
+                font-size: 0.85rem;
             }
         }
 
@@ -947,6 +949,15 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             #dateMessage .alert strong {
                 font-size: 0.8rem;
+            }
+
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .invalid-feedback,
+            main span {
+                font-size: 0.75rem;
             }
         }
     </style>
