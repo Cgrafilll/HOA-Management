@@ -491,7 +491,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .form-label,
             .form-select,
             .form-select option,
-            .input-group,
+            .toggle,
             .invalid-feedback,
             main span {
                 font-size: 0.85rem;
@@ -534,7 +534,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .form-label,
             .form-select,
             .form-select option,
-            .input-group,
+            .toggle,
             .invalid-feedback,
             main span {
                 font-size: 0.75rem;
@@ -706,40 +706,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <!-- Personal Info -->
                         <div class="row mb-3">
-                            <span class="fw-bold mb-2">Personal Information</span>
-                            <div class="col-md-4">
-                                <input type="text" name="first_name" class="form-control"
-                                    value="<?php echo htmlspecialchars($first_name) ?>" required />
-                                <label class="form-label mt-2">First Name</label>
+                            <div class="row mb-3">
+                                <span class="fw-bold mb-2">Personal Information</span>
+                                <div class="col-md-4">
+                                    <input type="text" name="first_name" class="form-control"
+                                        value="<?php echo htmlspecialchars($first_name) ?>" required />
+                                    <label class="form-label mt-2">First Name</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" name="middle_name" class="form-control"
+                                        value="<?php echo htmlspecialchars($middle_name) ?>" required />
+                                    <label class="form-label mt-2">Middle Name</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" name="last_name" class="form-control"
+                                        value="<?php echo htmlspecialchars($last_name) ?>" required />
+                                    <label class="form-label mt-2">Last Name</label>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <input type="text" name="middle_name" class="form-control"
-                                    value="<?php echo htmlspecialchars($middle_name) ?>" required />
-                                <label class="form-label mt-2">Middle Name</label>
-                            </div>
-                            <div class="col-md-4">
-                                <input type="text" name="last_name" class="form-control"
-                                    value="<?php echo htmlspecialchars($last_name) ?>" required />
-                                <label class="form-label mt-2">Last Name</label>
-                            </div>
-                            <div class="col-md-4">
-                                <input type="date" name="dob" class="form-control"
-                                    value="<?php echo htmlspecialchars($dob) ?>" required
-                                    max="<?php echo date('Y-m-d'); ?>" />
-                                <label class="form-label mt-2">Date of Birth</label>
-                            </div>
-                            <div class="col-md-4">
-                                <input type="text" name="age" class="form-control"
-                                    value="<?php echo htmlspecialchars($age) ?>" readonly />
-                                <label class="form-label mt-2">Age</label>
-                            </div>
-                            <div class="col-md-4">
-                                <select name="sex" class="form-select" required>
-                                    <option value="">Select</option>
-                                    <option value="Male" <?= ($sex == 'Male') ? 'selected' : '' ?>>Male</option>
-                                    <option value="Female" <?= ($sex == 'Female') ? 'selected' : '' ?>>Female</option>
-                                </select>
-                                <label class="form-label mt-2">Sex</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <input type="date" name="dob" class="form-control"
+                                        value="<?php echo htmlspecialchars($dob) ?>" required
+                                        max="<?php echo date('Y-m-d'); ?>" />
+                                    <label class="form-label mt-2">Date of Birth</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" name="age" class="form-control"
+                                        value="<?php echo htmlspecialchars($age) ?>" readonly />
+                                    <label class="form-label mt-2">Age</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <select name="sex" class="form-select" required>
+                                        <option value="">Select</option>
+                                        <option value="Male" <?= ($sex == 'Male') ? 'selected' : '' ?>>Male</option>
+                                        <option value="Female" <?= ($sex == 'Female') ? 'selected' : '' ?>>Female</option>
+                                    </select>
+                                    <label class="form-label mt-2">Sex</label>
+                                </div>
                             </div>
                         </div>
                         <!-- Contact -->
@@ -764,16 +768,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Address -->
-                        <span class="fw-bold mb-2">Address</span>
-                        <div class="mb-3">
-                            <input type="text" name="street" class="form-control"
-                                value="<?php echo htmlspecialchars($street) ?>" required />
-                            <label class="form-label mt-2">Street Address</label>
-                        </div>
-                        <div class="mb-3">
-                            <input type="text" name="street2" class="form-control"
-                                value="<?php echo htmlspecialchars($street2) ?>" />
-                            <label class="form-label mt-2">Street Address Line 2</label>
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Address</span>
+                            <div class="col-md-12">
+                                <input type="text" name="street" class="form-control"
+                                    value="<?php echo htmlspecialchars($street) ?>" required />
+                                <label class="form-label mt-2">Street Address</label>
+                            </div>
+                            <div class="col-md-12">
+                                <input type="text" name="street2" class="form-control"
+                                    value="<?php echo htmlspecialchars($street2) ?>" />
+                                <label class="form-label mt-2">Street Address Line 2</label>
+                            </div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-4">
@@ -804,7 +810,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="input-group">
                                     <input type="password" id="passWord" name="passWord" class="form-control"
                                         minlength="6" />
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
+                                    <button type="button" class="btn btn-outline-secondary toggle" id="togglePassword1"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon1"></i>
                                     </button>
@@ -816,7 +822,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="input-group">
                                     <input type="password" id="confirmPassword" name="confirmPassword"
                                         class="form-control" minlength="6" />
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword2"
+                                    <button type="button" class="btn btn-outline-secondary toggle" id="togglePassword2"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon2"></i>
                                     </button>

@@ -358,7 +358,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .form-label,
             .form-select,
             .form-select option,
-            .input-group,
+            .toggle,
             main span {
                 font-size: 0.85rem;
             }
@@ -400,7 +400,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .form-label,
             .form-select,
             .form-select option,
-            .input-group,
+            .toggle,
             main span {
                 font-size: 0.75rem;
             }
@@ -660,7 +660,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="input-group">
                                     <input type="password" id="password" name="password" required class="form-control"
                                         minlength="6" />
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
+                                    <button type="button" class="btn btn-outline-secondary toggle" id="togglePassword1"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon1"></i>
                                     </button>
@@ -673,7 +673,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="input-group">
                                     <input type="password" id="confirmPassword" name="confirmPassword" required
                                         class="form-control" minlength="6" />
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword2"
+                                    <button type="button" class="btn btn-outline-secondary toggle" id="togglePassword2"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon2"></i>
                                     </button>
