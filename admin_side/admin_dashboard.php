@@ -232,6 +232,8 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
@@ -699,6 +701,10 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                     <div class="card shadow-sm">
                         <div class="card-header bg-success text-white fw-semibold">
                             <i class="bi bi-graph-up me-2"></i>Entry Traffic (Last 7 Days)
+                            <button class="btn btn-sm btn-light"
+                                onclick="exportChartToPDF('entryTrendChart', 'Entry_Traffic_Report')">
+                                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                            </button>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
@@ -714,6 +720,10 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                     <div class="card shadow-sm">
                         <div class="card-header bg-success text-white fw-semibold">
                             <i class="bi bi-trophy me-2"></i>Top 5 Amenities Booked
+                            <button class="btn btn-sm btn-light"
+                                onclick="exportChartToPDF('topAmenitiesChart', 'Top_Amenities_Report')">
+                                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                            </button>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
@@ -726,6 +736,10 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                     <div class="card shadow-sm">
                         <div class="card-header bg-success text-white fw-semibold">
                             <i class="bi bi-tags me-2"></i>Revenue by Category
+                            <button class="btn btn-sm btn-light"
+                                onclick="exportChartToPDF('revenueCategoryChart', 'Revenue_Category_Report')">
+                                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                            </button>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
@@ -741,6 +755,10 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                     <div class="card shadow-sm">
                         <div class="card-header bg-success text-white fw-semibold">
                             <i class="bi bi-calendar-check me-2"></i>Amenity Booking Status
+                            <button class="btn btn-sm btn-light"
+                                onclick="exportChartToPDF('amenityStatusChart', 'Amenity_Status_Report')">
+                                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                            </button>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
@@ -753,6 +771,10 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                     <div class="card shadow-sm">
                         <div class="card-header bg-success text-white fw-semibold">
                             <i class="bi bi-cash-coin me-2"></i>Monthly Dues Status
+                            <button class="btn btn-sm btn-light"
+                                onclick="exportChartToPDF('duesStatusChart', 'Monthly_Dues_Report')">
+                                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                            </button>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
@@ -970,6 +992,107 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
         });
+
+        async function exportChartToPDF(chartId, filename) {
+            const { jsPDF } = window.jspdf;
+            const canvas = document.getElementById(chartId);
+            const chart = Chart.getChart(chartId);
+
+            // Create PDF
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            // Add header
+            pdf.setFontSize(18);
+            pdf.setTextColor(25, 135, 84);
+            pdf.text('NSSHAI HOA Management', pageWidth / 2, 20, { align: 'center' });
+
+            pdf.setFontSize(14);
+            pdf.setTextColor(0, 0, 0);
+            pdf.text(filename.replace(/_/g, ' '), pageWidth / 2, 30, { align: 'center' });
+
+            pdf.setFontSize(10);
+            pdf.setTextColor(128, 128, 128);
+            pdf.text('Generated on: ' + new Date().toLocaleString(), pageWidth / 2, 38, { align: 'center' });
+
+            // Add chart image
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 15, 45, pageWidth - 30, 100);
+
+            // Add data table
+            let yPosition = 155;
+            pdf.setFontSize(12);
+            pdf.setTextColor(0, 0, 0);
+            pdf.text('Chart Data:', 15, yPosition);
+            yPosition += 8;
+
+            pdf.setFontSize(10);
+            pdf.setDrawColor(200, 200, 200);
+
+            // Table headers
+            pdf.setFillColor(25, 135, 84);
+            pdf.setTextColor(255, 255, 255);
+            pdf.rect(15, yPosition, pageWidth - 30, 8, 'F');
+
+            if (chart.config.type === 'line' || chart.config.type === 'bar') {
+                pdf.text('Label', 20, yPosition + 5);
+                chart.data.datasets.forEach((dataset, index) => {
+                    pdf.text(dataset.label, 80 + (index * 40), yPosition + 5);
+                });
+            } else if (chart.config.type === 'doughnut' || chart.config.type === 'pie') {
+                pdf.text('Category', 20, yPosition + 5);
+                pdf.text('Value', 120, yPosition + 5);
+                pdf.text('Percentage', 160, yPosition + 5);
+            }
+
+            yPosition += 10;
+
+            // Table data
+            pdf.setTextColor(0, 0, 0);
+
+            if (chart.config.type === 'line' || chart.config.type === 'bar') {
+                chart.data.labels.forEach((label, index) => {
+                    if (yPosition > pageHeight - 20) {
+                        pdf.addPage();
+                        yPosition = 20;
+                    }
+
+                    pdf.text(label, 20, yPosition);
+                    chart.data.datasets.forEach((dataset, datasetIndex) => {
+                        pdf.text(String(dataset.data[index] || 0), 80 + (datasetIndex * 40), yPosition);
+                    });
+                    yPosition += 7;
+                });
+            } else if (chart.config.type === 'doughnut' || chart.config.type === 'pie') {
+                const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                chart.data.labels.forEach((label, index) => {
+                    if (yPosition > pageHeight - 20) {
+                        pdf.addPage();
+                        yPosition = 20;
+                    }
+
+                    const value = chart.data.datasets[0].data[index];
+                    const percentage = ((value / total) * 100).toFixed(1);
+
+                    pdf.text(label, 20, yPosition);
+                    pdf.text(String(value), 120, yPosition);
+                    pdf.text(percentage + '%', 160, yPosition);
+                    yPosition += 7;
+                });
+
+                // Add total
+                yPosition += 3;
+                pdf.setFontSize(11);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Total:', 20, yPosition);
+                pdf.text(String(total), 120, yPosition);
+                pdf.text('100%', 160, yPosition);
+            }
+
+            // Save PDF
+            pdf.save(filename + '_' + new Date().toISOString().split('T')[0] + '.pdf');
+        }
     </script>
 
 </body>
