@@ -662,8 +662,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Reason for Visit -->
-                        <span class="fw-bold mb-3">Reason for Visit</span><br>
                         <div class="row mb-3">
+                            <span class="fw-bold mb-2">Reason for Visit</span>
                             <div class="col-md-4">
                                 <select name="employment_status" id="employmentStatus" class="form-select" required>
                                     <option selected disabled value="">Are you employed by the subdivision?</option>
