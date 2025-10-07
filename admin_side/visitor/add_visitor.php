@@ -395,7 +395,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 font-size: 1rem !important;
             }
 
-            .table-responsive {
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .toggle,
+            .invalid-feedback,
+            main span {
                 font-size: 0.85rem;
             }
 
@@ -432,7 +438,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 top: 0;
             }
 
-            .table-responsive {
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .toggle,
+            .invalid-feedback,
+            main span {
                 font-size: 0.75rem;
             }
 
@@ -582,49 +594,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <hr class="my-0">
                 <div class="p-3">
                     <form action="add_visitor.php" method="POST" enctype="multipart/form-data" id="visitorForm">
+                        <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
                         <div class="row mb-3">
-                            <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
-                            <div class="row">
-                                <div class="col-4 mb-3">
-                                    <div id="preview"
-                                        class="d-flex align-items-center justify-content-center overflow-hidden rounded"
-                                        style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
-                                        <i class="bi bi-person-fill" style="font-size: 48px;"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-4">
-                                    <input type="file" class="form-control" name="profile_pic" id="profile_pic"
-                                        accept="image/*" />
+                            <div class="col-md-4">
+                                <div id="preview"
+                                    class="d-flex align-items-center justify-content-center overflow-hidden rounded"
+                                    style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
+                                    <i class="bi bi-person-fill" style="font-size: 48px;"></i>
                                 </div>
                             </div>
                         </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <input type="file" class="form-control" name="profile_pic" id="profile_pic"
+                                    accept="image/*" />
+                            </div>
+                        </div>
                         <!-- Personal Info -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Personal Information</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-1">
+                            <span class="fw-bold mb-2">Personal Information</span>
+                            <div class="col-md-4">
                                 <input type="text" name="first_name" class="form-control" required />
                                 <label class="form-label mt-2">First Name</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="middle_name" class="form-control" required />
                                 <label class="form-label mt-2">Middle Name</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="last_name" class="form-control" required />
                                 <label class="form-label mt-2">Last Name</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
                                 <input type="date" name="dob" class="form-control" id="dobInput" required
                                     max="<?php echo date('Y-m-d'); ?>" />
                                 <label class="form-label mt-2">Date of Birth</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="number" name="age" class="form-control" id="ageInput" readonly />
                                 <label class="form-label mt-2">Age</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <select name="sex" class="form-select" required>
                                     <option disabled>Select</option>
                                     <option>Male</option>
@@ -634,44 +646,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Contact -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Contact Information</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Contact Information</span>
+                            <div class="col-md-4">
                                 <input type="text" name="cellphone" class="form-control" />
                                 <label class="form-label mt-2">Cellphone Number</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="email" name="email" class="form-control" required />
                                 <label class="form-label mt-2">Email Address</label>
                             </div>
                         </div>
                         <!-- Reason for Visit -->
                         <span class="fw-bold mb-3">Reason for Visit</span>
-                        <div class="my-3">
-                            <span>Are you employed by the subdivision?</span>
-                        </div>
+                        <span>Are you employed by the subdivision?</span>
                         <!-- Radio Buttons -->
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
                                 <div class="form-check">
                                     <label class="form-check-label me-2" for="noRadio1">No</label>
                                     <input class="form-check-input" type="radio" name="employment_status" id="noRadio1"
                                         value="No" required>
                                 </div>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="form-check">
-                                    <label class="form-check-label me-2" for="yesRadio2">Yes</label>
-                                    <input class="form-check-input" type="radio" name="employment_status" id="yesRadio2"
-                                        value="Yes">
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Hidden input to store the selected reason -->
-                        <input type="hidden" name="reason" id="reasonInput" />
-                        <!-- Dropdowns for Reason -->
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
+                            <!-- Dropdowns for Reason -->
+                            <div class="col-md-4">
                                 <select id="reasonNo" class="form-select" disabled>
                                     <option selected disabled value="">Select a reason</option>
                                     <option>Personal Visit / Family Gathering</option>
@@ -690,7 +689,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <option>Server Contractors</option>
                                 </select>
                             </div>
-                            <div class="col-md-4 mb-3">
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <label class="form-check-label me-2" for="yesRadio2">Yes</label>
+                                    <input class="form-check-input" type="radio" name="employment_status" id="yesRadio2"
+                                        value="Yes">
+                                </div>
+                            </div>
+                            <!-- Dropdowns for Reason -->
+                            <div class="col-md-4">
                                 <select id="reasonYes" class="form-select" disabled>
                                     <option selected disabled value="">Select a reason</option>
                                     <option>Administrative Work</option>
@@ -700,22 +709,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </select>
                             </div>
                         </div>
+                        <!-- Hidden input to store the selected reason -->
+                        <input type="hidden" name="reason" id="reasonInput" />
                         <!-- Visitor RFID -->
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold">Visitor RFID</label>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label mb-2 fw-bold">Visitor RFID</label>
                                 <input type="text" name="rfid" class="form-control" id="rfidInput" required />
                                 <label class="form-label mt-2">Tap your RFID card</label>
                             </div>
                         </div>
                         <!-- Account Password -->
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
                                 <label class="form-label mt-2 fw-bold">Password</label>
                                 <div class="input-group">
                                     <input type="password" id="password" name="password" required class="form-control"
                                         minlength="6" />
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
+                                    <button type="button" class="btn btn-outline-secondary toggle" id="togglePassword1"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon1"></i>
                                     </button>
@@ -723,12 +734,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Set a password for this account (min. 6
                                     characters)</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <label class="form-label mt-2 fw-bold invisible">Confirm Password</label>
                                 <div class="input-group">
                                     <input type="password" id="confirmPassword" name="confirmPassword" required
                                         class="form-control" minlength="6" />
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword2"
+                                    <button type="button" class="btn btn-outline-secondary toggle" id="togglePassword2"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon2"></i>
                                     </button>

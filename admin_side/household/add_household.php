@@ -586,59 +586,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <hr class="my-0">
                 <div class="p-3">
                     <form action="add_household.php" method="POST" id="householdForm" enctype="multipart/form-data">
+                        <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
                         <div class="row mb-3">
-                            <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <div id="preview"
-                                        class="d-flex align-items-center justify-content-center overflow-hidden rounded"
-                                        style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
-                                        <i class="bi bi-person-fill" style="font-size: 48px;"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <input type="file" class="form-control" name="profile_pic" id="profile_pic"
-                                        accept="image/*" />
+                            <div class="col-md-4">
+                                <div id="preview"
+                                    class="d-flex align-items-center justify-content-center overflow-hidden rounded"
+                                    style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
+                                    <i class="bi bi-person-fill" style="font-size: 48px;"></i>
                                 </div>
                             </div>
                         </div>
-                        <!-- Personal Info -->
                         <div class="row mb-3">
-                            <div class="row mb-3">
-                                <span class="fw-bold mb-2">Personal Information</span>
-                                <div class="col-md-4">
-                                    <input type="text" name="first_name" class="form-control" required />
-                                    <label class="form-label mt-2">First Name</label>
-                                </div>
-                                <div class="col-md-4">
-                                    <input type="text" name="middle_name" class="form-control" required />
-                                    <label class="form-label mt-2">Middle Name</label>
-                                </div>
-                                <div class="col-md-4">
-                                    <input type="text" name="last_name" class="form-control" required />
-                                    <label class="form-label mt-2">Last Name</label>
-                                </div>
+                            <div class="col-md-4">
+                                <input type="file" class="form-control" name="profile_pic" id="profile_pic"
+                                    accept="image/*" />
                             </div>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <input type="date" name="dob" class="form-control" required
-                                        max="<?php echo date('Y-m-d'); ?>" />
-                                    <label class="form-label mt-2">Date of Birth</label>
-                                </div>
-                                <div class="col-md-4">
-                                    <input type="number" name="age" class="form-control" readonly />
-                                    <label class="form-label mt-2">Age</label>
-                                </div>
-                                <div class="col-md-4">
-                                    <select name="sex" class="form-select" required>
-                                        <option value="">Select</option>
-                                        <option>Male</option>
-                                        <option>Female</option>
-                                    </select>
-                                    <label class="form-label mt-2">Sex</label>
-                                </div>
+                        </div>
+                        <!-- Personal Info -->
+                        <div class="row mb-1">
+                            <span class="fw-bold mb-2">Personal Information</span>
+                            <div class="col-md-4">
+                                <input type="text" name="first_name" class="form-control" required />
+                                <label class="form-label mt-2">First Name</label>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" name="middle_name" class="form-control" required />
+                                <label class="form-label mt-2">Middle Name</label>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" name="last_name" class="form-control" required />
+                                <label class="form-label mt-2">Last Name</label>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <input type="date" name="dob" class="form-control" required
+                                    max="<?php echo date('Y-m-d'); ?>" />
+                                <label class="form-label mt-2">Date of Birth</label>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" name="age" class="form-control" readonly />
+                                <label class="form-label mt-2">Age</label>
+                            </div>
+                            <div class="col-md-4">
+                                <select name="sex" class="form-select" required>
+                                    <option value="">Select</option>
+                                    <option>Male</option>
+                                    <option>Female</option>
+                                </select>
+                                <label class="form-label mt-2">Sex</label>
                             </div>
                         </div>
                         <!-- Contact -->
@@ -659,7 +655,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Address -->
-                        <div class="row mb-3">
+                        <div class="row mb-1">
                             <span class="fw-bold mb-2">Address</span>
                             <div class="col-md-12">
                                 <input type="text" name="street" class="form-control" required />
