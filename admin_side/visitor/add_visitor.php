@@ -399,6 +399,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .form-label,
             .form-select,
             .form-select option,
+            .form-check-label,
+            .form-check-input,
             .toggle,
             .invalid-feedback,
             main span {
@@ -442,6 +444,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .form-label,
             .form-select,
             .form-select option,
+            .form-check-label,
+            .form-check-input,
             .toggle,
             .invalid-feedback,
             main span {
@@ -658,7 +662,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Reason for Visit -->
-                        <span class="fw-bold mb-3">Reason for Visit</span>
+                        <span class="fw-bold mb-3">Reason for Visit</span><br>
                         <span>Are you employed by the subdivision?</span>
                         <!-- Radio Buttons -->
                         <div class="row mb-3">
@@ -722,7 +726,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <!-- Account Password -->
                         <div class="row mb-3">
                             <div class="col-md-4">
-                                <label class="form-label mt-2 fw-bold">Password</label>
+                                <label class="form-label mb-2 fw-bold">Password</label>
                                 <div class="input-group">
                                     <input type="password" id="password" name="password" required class="form-control"
                                         minlength="6" />
@@ -735,7 +739,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     characters)</label>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label mt-2 fw-bold invisible">Confirm Password</label>
+                                <label class="form-label mb-2 fw-bold">Confirm Password</label>
                                 <div class="input-group">
                                     <input type="password" id="confirmPassword" name="confirmPassword" required
                                         class="form-control" minlength="6" />
@@ -744,7 +748,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <i class="bi bi-eye" id="toggleIcon2"></i>
                                     </button>
                                 </div>
-                                <label class="form-label mt-2">Confirm password</label>
                             </div>
                         </div>
                         <!-- Submit Buttons -->
