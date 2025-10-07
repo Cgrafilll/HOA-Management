@@ -682,7 +682,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Personal Info -->
-                        <div class="row mb-3">
+                        <div class="row mb-1">
                             <span class="fw-bold mb-2">Personal Information</span>
                             <div class="col-md-4">
                                 <input type="text" name="first_name" class="form-control"
@@ -740,7 +740,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Address -->
-                        <div class="row mb-3">
+                        <div class="row mb-1">
                             <span class="fw-bold mb-2">Address</span>
                             <div class="col-md-12">
                                 <input type="text" name="street" class="form-control"
