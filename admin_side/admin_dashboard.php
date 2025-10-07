@@ -699,9 +699,10 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             <div class="row g-4 mb-4">
                 <div class="col-md-12">
                     <div class="card shadow-sm">
-                        <div class="card-header bg-success text-white fw-semibold">
+                        <div
+                            class="card-header bg-success text-white fw-semibold d-flex justify-content-between align-items-center">
                             <i class="bi bi-graph-up me-2"></i>Entry Traffic (Last 7 Days)
-                            <button class="btn btn-sm btn-light"
+                            <button class="btn btn-sm btn-danger"
                                 onclick="exportChartToPDF('entryTrendChart', 'Entry_Traffic_Report')">
                                 <i class="bi bi-file-earmark-pdf"></i> Export PDF
                             </button>
@@ -718,9 +719,10 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             <div class="row g-4 mb-4">
                 <div class="col-md-6">
                     <div class="card shadow-sm">
-                        <div class="card-header bg-success text-white fw-semibold">
+                        <div
+                            class="card-header bg-success text-white fw-semibold d-flex justify-content-between align-items-center">
                             <i class="bi bi-trophy me-2"></i>Top 5 Amenities Booked
-                            <button class="btn btn-sm btn-light"
+                            <button class="btn btn-sm btn-danger"
                                 onclick="exportChartToPDF('topAmenitiesChart', 'Top_Amenities_Report')">
                                 <i class="bi bi-file-earmark-pdf"></i> Export PDF
                             </button>
@@ -734,9 +736,10 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                 </div>
                 <div class="col-md-6">
                     <div class="card shadow-sm">
-                        <div class="card-header bg-success text-white fw-semibold">
+                        <div
+                            class="card-header bg-success text-white fw-semibold d-flex justify-content-between align-items-center">
                             <i class="bi bi-tags me-2"></i>Revenue by Category
-                            <button class="btn btn-sm btn-light"
+                            <button class="btn btn-sm btn-danger"
                                 onclick="exportChartToPDF('revenueCategoryChart', 'Revenue_Category_Report')">
                                 <i class="bi bi-file-earmark-pdf"></i> Export PDF
                             </button>
@@ -753,9 +756,10 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
             <div class="row g-4 mb-4">
                 <div class="col-md-6">
                     <div class="card shadow-sm">
-                        <div class="card-header bg-success text-white fw-semibold">
+                        <div
+                            class="card-header bg-success text-white fw-semibold d-flex justify-content-between align-items-center">
                             <i class="bi bi-calendar-check me-2"></i>Amenity Booking Status
-                            <button class="btn btn-sm btn-light"
+                            <button class="btn btn-sm btn-danger"
                                 onclick="exportChartToPDF('amenityStatusChart', 'Amenity_Status_Report')">
                                 <i class="bi bi-file-earmark-pdf"></i> Export PDF
                             </button>
@@ -769,9 +773,10 @@ $total_outstanding = floatval($conn->query($total_outstanding_query)->fetch_asso
                 </div>
                 <div class="col-md-6">
                     <div class="card shadow-sm">
-                        <div class="card-header bg-success text-white fw-semibold">
+                        <div
+                            class="card-header bg-success text-white fw-semibold d-flex justify-content-between align-items-center">
                             <i class="bi bi-cash-coin me-2"></i>Monthly Dues Status
-                            <button class="btn btn-sm btn-light"
+                            <button class="btn btn-sm btn-danger"
                                 onclick="exportChartToPDF('duesStatusChart', 'Monthly_Dues_Report')">
                                 <i class="bi bi-file-earmark-pdf"></i> Export PDF
                             </button>
