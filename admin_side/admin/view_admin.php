@@ -289,11 +289,6 @@ if ($view_admin_id) {
                 font-size: 0.85rem;
             }
 
-            .prof {
-                height: 150px;
-                width: 150px;
-            }
-
             .btn-sm {
                 padding: 0.25rem 0.5rem;
                 font-size: 0.8rem;
@@ -330,11 +325,6 @@ if ($view_admin_id) {
             .label,
             .value {
                 font-size: 0.75rem;
-            }
-
-            .prof {
-                height: 100px;
-                width: 100px;
             }
         }
 
@@ -491,12 +481,12 @@ if ($view_admin_id) {
                     <div class="p-4 text-center">
                         <!-- Profile Picture + Role -->
                         <div class="mb-4">
-                            <div class="mx-auto rounded overflow-hidden prof border" style="width: 200px; height: 200px;">
+                            <div class="mx-auto rounded overflow-hidden border border-2" style="width: 200px; height: 200px;">
                                 <?php if (!empty($prof)): ?>
-                                    <img src="<?php echo htmlspecialchars($prof) ?>" class="img-fluid rounded prof w-100 h-100"
+                                    <img src="<?php echo htmlspecialchars($prof) ?>" class="img-fluid rounded w-100 h-100"
                                         style="object-fit: cover;">
                                 <?php else: ?>
-                                    <div class="d-flex justify-content-center align-items-center border border-2 rounded prof"
+                                    <div class="d-flex justify-content-center align-items-center border border-2 rounded"
                                         style="width: 200px; height: 200px;">
                                         <i class="bi bi-person-fill" style="font-size: 64px; color: #ccc;"></i>
                                     </div>

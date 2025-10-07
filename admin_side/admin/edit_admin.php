@@ -487,7 +487,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 font-size: 1rem !important;
             }
 
-            .table-responsive {
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .input-group,
+            main span {
                 font-size: 0.85rem;
             }
 
@@ -524,12 +529,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 top: 0;
             }
 
-            .table-responsive {
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .input-group,
+            main span {
                 font-size: 0.75rem;
-            }
-
-            .pagination {
-                font-size: 0.8rem;
             }
         }
 
@@ -676,7 +682,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="row mb-3">
                             <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
                             <div class="row">
-                                <div class="col-4 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <div id="preview"
                                         class="d-flex align-items-center justify-content-center overflow-hidden rounded"
                                         style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
@@ -690,7 +696,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-4">
+                                <div class="col-md-4">
                                     <input type="file" class="form-control" name="profile_pic" id="profile_pic"
                                         accept="image/*" />
                                 </div>
