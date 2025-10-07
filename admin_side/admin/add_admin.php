@@ -570,35 +570,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <!-- Personal Info -->
                         <div class="row mb-3">
-                            <span class="fw-bold mb-2">Personal Information</span>
-                            <div class="col-md-4">
-                                <input type="text" name="first_name" class="form-control" required />
-                                <label class="form-label mt-2">First Name</label>
+                            <div class="row mb-3">
+                                <span class="fw-bold mb-2">Personal Information</span>
+                                <div class="col-md-4">
+                                    <input type="text" name="first_name" class="form-control" required />
+                                    <label class="form-label mt-2">First Name</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" name="middle_name" class="form-control" required />
+                                    <label class="form-label mt-2">Middle Name</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" name="last_name" class="form-control" required />
+                                    <label class="form-label mt-2">Last Name</label>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <input type="text" name="middle_name" class="form-control" required />
-                                <label class="form-label mt-2">Middle Name</label>
-                            </div>
-                            <div class="col-md-4">
-                                <input type="text" name="last_name" class="form-control" required />
-                                <label class="form-label mt-2">Last Name</label>
-                            </div>
-                            <div class="col-md-4">
-                                <input type="date" name="dob" class="form-control" required
-                                    max="<?php echo date('Y-m-d'); ?>" />
-                                <label class="form-label mt-2">Date of Birth</label>
-                            </div>
-                            <div class="col-md-4">
-                                <input type="number" name="age" class="form-control" readonly />
-                                <label class="form-label mt-2">Age</label>
-                            </div>
-                            <div class="col-md-4">
-                                <select name="sex" class="form-select" required>
-                                    <option value="">Select</option>
-                                    <option>Male</option>
-                                    <option>Female</option>
-                                </select>
-                                <label class="form-label mt-2">Sex</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <input type="date" name="dob" class="form-control" required
+                                        max="<?php echo date('Y-m-d'); ?>" />
+                                    <label class="form-label mt-2">Date of Birth</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="number" name="age" class="form-control" readonly />
+                                    <label class="form-label mt-2">Age</label>
+                                </div>
+                                <div class="col-md-4">
+                                    <select name="sex" class="form-select" required>
+                                        <option value="">Select</option>
+                                        <option>Male</option>
+                                        <option>Female</option>
+                                    </select>
+                                    <label class="form-label mt-2">Sex</label>
+                                </div>
                             </div>
                         </div>
                         <!-- Contact -->
@@ -620,7 +624,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Address -->
-                        <span class="fw-bold mb-2">Address</span>
+                        <span class="fw-bold mb-3">Address</span>
                         <div class="mb-3">
                             <input type="text" name="street" class="form-control" required />
                             <label class="form-label mt-2">Street Address</label>
