@@ -401,8 +401,8 @@ if ($household_id) {
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../#" class="nav-link px-2">Payments</a></li>
-                            <li><a href="../#" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="../payment.php" class="nav-link px-2">Payments</a></li>
+                            <li><a href="../invoices.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
