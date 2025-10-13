@@ -251,8 +251,19 @@ if (isset($_GET['action'])) {
                 $booking = $stmt->get_result()->fetch_assoc();
 
                 if ($booking && $user_data) {
+                    // CHECK IF ALREADY PAID
+                    if (strtolower($booking['status']) === 'paid') {
+                        echo json_encode(['success' => false, 'error' => 'This invoice has already been paid in full']);
+                        exit;
+                    }
                     // Calculate balance
                     $balance_due = $booking['total_amount'] - $booking['amount_paid'];
+                    
+                    // Additional check: if balance is 0 or negative
+                    if ($balance_due <= 0) {
+                        echo json_encode(['success' => false, 'error' => 'This invoice has no remaining balance']);
+                        exit;
+                    }
 
                     // Build items array for table population
                     $items = [];
@@ -424,6 +435,131 @@ if (isset($_GET['action'])) {
                 }
                 break;
 
+            case 'get_billing_by_invoice':
+                $invoice_number = $_GET['invoice_number'] ?? '';
+                $user_id = $_GET['user_id'] ?? '';
+                $user_type = $_GET['user_type'] ?? '';
+                $category = $_GET['category'] ?? '';
+
+                if (empty($invoice_number) || empty($user_id) || empty($user_type) || empty($category)) {
+                    echo json_encode(['success' => false, 'error' => 'Missing required parameters']);
+                    exit;
+                }
+
+                // Only homeowners/residents can have these types of fees
+                if ($user_type !== 'Homeowner/Resident') {
+                    echo json_encode(['success' => false, 'error' => $category . ' only apply to homeowners/residents']);
+                    exit;
+                }
+
+                // Get user details
+                $stmt = $conn->prepare("SELECT first_name, middle_name, last_name FROM household_accounts WHERE household_id = ?");
+                $stmt->bind_param("s", $user_id);
+                $stmt->execute();
+                $user_data = $stmt->get_result()->fetch_assoc();
+
+                // Map category to database value
+                $db_category = '';
+                if ($category === 'Monthly Dues') {
+                    $db_category = 'monthly_dues';
+                } elseif ($category === 'Penalty Fees') {
+                    $db_category = 'penalty_fees';
+                } elseif ($category === 'Other Fees') {
+                    $db_category = 'other_fees';
+                } else {
+                    echo json_encode(['success' => false, 'error' => 'Invalid category']);
+                    exit;
+                }
+
+                // Get billing details from monthly_dues table
+                $stmt = $conn->prepare("
+                    SELECT 
+                        id,
+                        invoice_number,
+                        category,
+                        billing_month,
+                        description,
+                        amount_paid,
+                        balance_remaining,
+                        due_date,
+                        status,
+                        created_at
+                    FROM monthly_dues 
+                    WHERE household_id = ? AND invoice_number = ? AND category = ?
+                    LIMIT 1
+                ");
+                $stmt->bind_param("sss", $user_id, $invoice_number, $db_category);
+                $stmt->execute();
+                $billing = $stmt->get_result()->fetch_assoc();
+
+                if ($billing && $user_data) {
+                    // CHECK IF ALREADY PAID
+                    $status_lower = strtolower(trim($billing['status']));
+                    if ($status_lower === 'paid' || $status_lower === 'completed') {
+                        echo json_encode(['success' => false, 'error' => 'This invoice has already been paid in full']);
+                        exit;
+                    }
+                    
+                    // Additional check: if balance remaining is 0 or negative
+                    if ($billing['balance_remaining'] <= 0) {
+                        echo json_encode(['success' => false, 'error' => 'This invoice has no remaining balance']);
+                        exit;
+                    }
+
+                    // Calculate total amount
+                    $total_amount = $billing['amount_paid'] + $billing['balance_remaining'];
+
+                    // Build items array for table population
+                    $items = [];
+
+                    // Create display name based on category
+                    $itemName = '';
+                    if ($db_category === 'monthly_dues') {
+                        $billing_month = date('F Y', strtotime($billing['billing_month']));
+                        $itemName = "Association Dues - {$billing_month}";
+                    } elseif ($db_category === 'penalty_fees') {
+                        $itemName = "Penalty Fee";
+                    } elseif ($db_category === 'other_fees') {
+                        $itemName = "Other Fee";
+                    }
+
+                    // Add description if exists
+                    if (!empty($billing['description'])) {
+                        $itemName .= " - " . $billing['description'];
+                    }
+
+                    // Main billing item
+                    $items[] = [
+                        'category' => $category,
+                        'item' => $itemName,
+                        'rate' => number_format($total_amount, 2),
+                        'qty' => 1,
+                        'amount' => number_format($total_amount, 2)
+                    ];
+
+                    echo json_encode([
+                        'success' => true,
+                        'data' => [
+                            'billing_id' => $billing['id'],
+                            'reference_number' => $invoice_number,
+                            'first_name' => $user_data['first_name'],
+                            'middle_name' => $user_data['middle_name'],
+                            'last_name' => $user_data['last_name'],
+                            'created_at' => $billing['created_at'] ?? $billing['due_date'],
+                            'billing_month' => $billing['billing_month'] ?? null,
+                            'description' => $billing['description'] ?? null,
+                            'items' => $items,
+                            'subtotal' => number_format($total_amount, 2),
+                            'amount_paid' => number_format($billing['amount_paid'], 2),
+                            'balance_due' => number_format($billing['balance_remaining'], 2),
+                            'status' => $billing['status']
+                        ]
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'error' => 'No billing record found']);
+                }
+                break;
+
             case 'process_payment':
                 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                     echo json_encode(['success' => false, 'error' => 'Invalid request method']);
@@ -492,24 +628,33 @@ if (isset($_GET['action'])) {
                         $stmt->bind_param("dsi", $new_amount_paid, $new_status, $reference_id);
                         $stmt->execute();
 
-                    } elseif ($category === 'Monthly Dues') {
-                        if ($user_type !== 'Homeowner/Resident') {
-                            throw new Exception('Monthly dues only apply to homeowners/residents');
+                   } elseif (in_array($category, ['Monthly Dues', 'Penalty Fees', 'Other Fees'])) {
+                    if ($user_type !== 'Homeowner/Resident') {
+                        throw new Exception($category . ' only apply to homeowners/residents');
+                    }
+                        // Map category to database value
+                        $db_billing_category = '';
+                        if ($category === 'Monthly Dues') {
+                            $db_billing_category = 'monthly_dues';
+                        } elseif ($category === 'Penalty Fees') {
+                            $db_billing_category = 'penalty_fees';
+                        } elseif ($category === 'Other Fees') {
+                            $db_billing_category = 'other_fees';
                         }
 
-                        // Get monthly dues details
-                        $stmt = $conn->prepare("SELECT id, amount_paid, balance_remaining FROM monthly_dues WHERE household_id = ? AND invoice_number = ?");
-                        $stmt->bind_param("ss", $user_id, $invoice_number);
+                        // Get billing details
+                        $stmt = $conn->prepare("SELECT id, amount_paid, balance_remaining FROM monthly_dues WHERE household_id = ? AND invoice_number = ? AND category = ?");
+                        $stmt->bind_param("sss", $user_id, $invoice_number, $db_billing_category);
                         $stmt->execute();
-                        $dues = $stmt->get_result()->fetch_assoc();
+                        $billing = $stmt->get_result()->fetch_assoc();
 
-                        if (!$dues) {
-                            throw new Exception('Monthly dues record not found');
+                        if (!$billing) {
+                            throw new Exception($category . ' record not found');
                         }
 
-                        $reference_id = $dues['id'];
-                        $new_amount_paid = $dues['amount_paid'] + $amount;
-                        $new_balance = $dues['balance_remaining'] - $amount;
+                        $reference_id = $billing['id'];
+                        $new_amount_paid = round($billing['amount_paid'] + $amount, 2);
+                        $new_balance = round($billing['balance_remaining'] - $amount, 2);
 
                         // Ensure balance doesn't go negative
                         if ($new_balance < 0) {
@@ -517,28 +662,31 @@ if (isset($_GET['action'])) {
                         }
 
                         // Determine new status
-                        if ($new_balance <= 0) {
-                            $new_status = 'Completed';
+                        if ($new_balance <= 0.01) {
+                            $new_status = 'Paid';
                         } elseif ($new_amount_paid > 0) {
                             $new_status = 'Partial';
                         } else {
                             $new_status = 'Pending';
                         }
 
-                        // Update monthly dues
+                        // Update billing record
                         $stmt = $conn->prepare("UPDATE monthly_dues SET amount_paid = ?, balance_remaining = ?, status = ? WHERE id = ?");
                         $stmt->bind_param("ddsi", $new_amount_paid, $new_balance, $new_status, $reference_id);
                         $stmt->execute();
                     }
 
                     // Insert payment record
-                    $db_category = ($category === 'Amenity Fee') ? 'amenity' : 'monthly_dues';
-                    $stmt = $conn->prepare("
-                        INSERT INTO payments (category, reference_id, invoice_number, user_type, household_id, visitor_id, amount, payment_method, reference_number, proof_of_payment) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ");
-                    $stmt->bind_param("sisssdssss", $db_category, $reference_id, $invoice_number, $db_user_type, $household_id, $visitor_id, $amount, $payment_method, $reference_number, $proof_filename);
-                    $stmt->execute();
+                    $db_category = '';
+                    if ($category === 'Amenity Fee') {
+                        $db_category = 'amenity';
+                    } elseif ($category === 'Monthly Dues') {
+                        $db_category = 'monthly_dues';
+                    } elseif ($category === 'Penalty Fees') {
+                        $db_category = 'penalty_fees';
+                    } elseif ($category === 'Other Fees') {
+                        $db_category = 'other_fees';
+                    }
 
                     $payment_id = $conn->insert_id;
 
@@ -858,8 +1006,9 @@ if (isset($_GET['action'])) {
                                         <select class="form-select" id="categorySelect" required>
                                             <option value="">Select Category</option>
                                             <option value="Monthly Dues">Monthly Dues</option>
+                                            <option value="Penalty Fees">Penalty Fees</option>
+                                            <option value="Other Fees">Other Fees</option>
                                             <option value="Amenity Fee">Amenity Fee</option>
-                                            <option value="Other">Other</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6">
