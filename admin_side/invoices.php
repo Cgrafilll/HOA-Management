@@ -48,8 +48,7 @@ try {
         $error_message = "Failed to fetch user details.";
     }
     
-    // Get filter parameters (same as billing page)
-    $statusFilter = $_GET['status'] ?? 'paid';
+    // Get filter parameters - REMOVED STATUS FILTER
     $categoryFilter = $_GET['category'] ?? 'all';
     $searchQuery = $_GET['search'] ?? '';
     $invoices = [];
@@ -60,14 +59,8 @@ try {
         $params = [];
         $paramTypes = '';
         
-        // Status filter
-        if ($statusFilter === 'all') {
-            $whereConditions[] = "LOWER(md.status) IN ('paid', 'completed')";
-        } else {
-            $whereConditions[] = "LOWER(md.status) = ?";
-            $params[] = $statusFilter;
-            $paramTypes .= 's';
-        }
+        // Always show only paid/completed invoices (no status filter dropdown)
+        $whereConditions[] = "LOWER(md.status) IN ('paid', 'completed')";
         
         // Category filter
         if ($categoryFilter !== 'all') {
@@ -115,14 +108,8 @@ try {
             $amenityParams = [];
             $amenityParamTypes = '';
             
-            // Status filter for amenity
-            if ($statusFilter === 'all') {
-                $amenityWhereConditions[] = "LOWER(ab.status) IN ('paid', 'completed')";
-            } else {
-                $amenityWhereConditions[] = "LOWER(ab.status) = ?";
-                $amenityParams[] = $statusFilter;
-                $amenityParamTypes .= 's';
-            }
+            // Always show only paid amenity bookings
+            $amenityWhereConditions[] = "LOWER(ab.status) IN ('paid', 'completed')";
             
             // Search filter for amenity
             if (!empty($searchQuery)) {
@@ -354,20 +341,20 @@ function getCategoryIcon($category) {
                 </a>
             </nav>
         </aside>
-         <main class="flex-fill p-4">
+        <main class="flex-fill p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Invoices</h5>
                 </div>
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="fw-semibold">List of Invoices</div>
+                        <div class="fw-semibold">List of Paid Invoices</div>
                     </div>
                     
-                    <!-- FILTERS FROM BILLING PAGE -->
+                    <!-- FILTERS: SEARCH BAR + CATEGORY ONLY -->
                     <form method="get" class="mb-3">
                         <div class="row g-2">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                                     <input type="text" name="search" class="form-control" 
@@ -375,15 +362,7 @@ function getCategoryIcon($category) {
                                            value="<?= htmlspecialchars($searchQuery) ?>">
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <select name="status" id="status" class="form-select form-select-sm"
-                                    onchange="this.form.submit()">
-                                    <option value="paid" <?= $statusFilter == 'paid' ? 'selected' : '' ?>>Paid</option>
-                                    <option value="completed" <?= $statusFilter == 'completed' ? 'selected' : '' ?>>Completed</option>
-                                    <option value="all" <?= $statusFilter == 'all' ? 'selected' : '' ?>>All Paid/Completed</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <select name="category" id="category" class="form-select form-select-sm"
                                     onchange="this.form.submit()">
                                     <option value="all" <?= $categoryFilter == 'all' ? 'selected' : '' ?>>All Categories</option>
@@ -409,7 +388,6 @@ function getCategoryIcon($category) {
                                         <?php foreach ($invoices as $inv): ?>
                                             <?php
                                             $queryParams = [
-                                                'status' => $statusFilter,
                                                 'category' => $categoryFilter,
                                                 'search' => $searchQuery,
                                                 'invoice' => $inv['invoice_number']
@@ -446,12 +424,13 @@ function getCategoryIcon($category) {
                                             </a>
                                         <?php endforeach; ?>
                                     <?php else: ?>
-                                        <div class="p-5 text-muted medium">No invoices found.</div>
+                                        <div class="p-5 text-muted medium">No paid invoices found.</div>
                                     <?php endif; ?>
-                                </div>
+                                                </div>
                             </div>
                         </div>
                         <div class="col-md-8">
+                            <!-- Invoice details section remains the same as previous response -->
                             <div class="border rounded-3">
                                 <?php if ($selectedInvoice): ?>
                                     <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
@@ -468,6 +447,7 @@ function getCategoryIcon($category) {
                                         
                                         // MONTHLY DUES
                                         if ($category === 'monthly_dues'): ?>
+                                            <!-- Monthly Dues Template (same as before) -->
                                             <div class="row mb-3">
                                                 <div class="col-8">
                                                     <div class="fw-bold mb-1">NEOPOLITAN SITIO SEVILLE HOMEOWNERS INC.</div>
@@ -529,8 +509,7 @@ function getCategoryIcon($category) {
                                                     <div class="d-flex justify-content-between mb-1">
                                                         <span class="fw-semibold">Amount Paid</span>
                                                         <span>₱ <?= number_format($selectedInvoice['amount_paid'], 2); ?></span>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between fw-bold border-top pt-1">
+                                                    </div><div class="d-flex justify-content-between fw-bold border-top pt-1">
                                                         <span>Balance Due</span>
                                                         <span>₱ <?= number_format($selectedInvoice['balance_remaining'], 2); ?></span>
                                                     </div>
@@ -712,7 +691,7 @@ function getCategoryIcon($category) {
                                         <?php endif; ?>
                                     </div>
                                 <?php else: ?>
-                                    <div class="p-5 text-center text-muted">No invoices available to display.</div>
+                                    <div class="p-5 text-center text-muted">No paid invoices available to display.</div>
                                 <?php endif; ?>
                             </div>
                         </div>
