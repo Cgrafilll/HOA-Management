@@ -480,12 +480,20 @@ function getCategoryIcon($category) {
                         <div class="col-md-8">
                             <div class="border rounded-3">
                                 <?php if ($selectedInvoice): ?>
+                                    <!-- Status and Export header -->
                                     <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
                                         <div class="fw-bold text-uppercase small">
                                             STATUS: 
-                                            <span class="<?= strtolower($selectedInvoice['status']) === 'paid' || strtolower($selectedInvoice['status']) === 'completed' ? 'text-success' : (strtolower($selectedInvoice['status']) === 'partial' ? 'text-warning' : 'text-danger') ?>">
-                                                <?= strtoupper($selectedInvoice['status']); ?>
-                                            </span>
+                                            <span class="<?php
+                                            $status = strtolower($selectedInvoice['status']);
+                                            if ($status === 'paid' || $status === 'completed') {
+                                                echo 'text-success';
+                                            } elseif ($status === 'partial') {
+                                                echo 'text-warning';
+                                            } else {
+                                                echo 'text-danger';
+                                            }
+                                            ?>"><?= strtoupper($selectedInvoice['status']); ?></span>
                                         </div>
                                         <button class="btn btn-primary btn-sm" onclick="window.print()">
                                             <i class="bi bi-download me-1"></i>Export
@@ -493,11 +501,10 @@ function getCategoryIcon($category) {
                                     </div>
                                     <div class="p-3">
                                         <?php
-                                        $isMonthlyDues = isset($selectedInvoice['source_table']) ? 
-                                            ($selectedInvoice['source_table'] === 'monthly_dues') : 
-                                            (isset($selectedInvoice['billing_month']) && isset($selectedInvoice['household_id']));
-                                        if ($isMonthlyDues): ?>
-                                            <!-- Monthly Dues Invoice Template -->
+                                        $category = $selectedInvoice['category'];
+                                        
+                                        // MONTHLY DUES
+                                        if ($category === 'monthly_dues'): ?>
                                             <div class="row mb-3">
                                                 <div class="col-8">
                                                     <div class="fw-bold mb-1">NEOPOLITAN SITIO SEVILLE HOMEOWNERS INC.</div>
@@ -522,7 +529,7 @@ function getCategoryIcon($category) {
                                                     <div class="text-end small">
                                                         <div class="fw-bold mb-2 fs-6">Invoice No. <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
                                                         <div class="mb-1"><span class="fw-semibold">Due Date:</span> <?= date('M d, Y', strtotime($selectedInvoice['due_date'])); ?></div>
-                                                        <div><span class="fw-semibold">Invoice Type:</span> <?= getCategoryDisplayName($selectedInvoice['category'] ?? 'monthly_dues'); ?></div>
+                                                        <div><span class="fw-semibold">Invoice Type:</span> Monthly Dues</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -537,7 +544,7 @@ function getCategoryIcon($category) {
                                                     </thead>
                                                     <tbody class="small">
                                                         <tr>
-                                                            <td><?= getCategoryDisplayName($selectedInvoice['category'] ?? 'monthly_dues'); ?></td>
+                                                            <td>HOA Monthly Dues</td>
                                                             <td>
                                                                 <?php if (!empty($selectedInvoice['billing_month'])): ?>
                                                                     <?= date('F Y', strtotime($selectedInvoice['billing_month'])); ?>
@@ -566,8 +573,77 @@ function getCategoryIcon($category) {
                                                     </div>
                                                 </div>
                                             </div>
-                                        <?php else: ?>
-                                            <!-- Amenity Booking Invoice Template -->
+
+                                        <?php 
+                                        // PENALTY FEES OR OTHER FEES
+                                        elseif ($category === 'penalty_fees' || $category === 'other_fees'): ?>
+                                            <div class="row mb-3">
+                                                <div class="col-8">
+                                                    <div class="fw-bold mb-1">NEOPOLITAN SITIO SEVILLE HOMEOWNERS INC.</div>
+                                                    <div class="small text-muted mb-3">
+                                                        NON VAT REG. TIN: 404-587-404-0000<br>
+                                                        NSSHAI Clubhouse Narra St. Neopolitan Sitio Seville<br>
+                                                        North Fairview III-B Quezon City NCR, Second District Philippines
+                                                    </div>
+                                                    <div class="small">
+                                                        <div class="mb-1"><span class="fw-semibold">Name:</span> <?= htmlspecialchars($selectedInvoice['full_name']); ?></div>
+                                                        <div class="mb-1"><span class="fw-semibold">Household ID:</span> <?= htmlspecialchars($selectedInvoice['household_id']); ?></div>
+                                                        <div><span class="fw-semibold">Invoice Date:</span> <?= date('M d, Y', strtotime($selectedInvoice['created_at'])); ?></div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="text-end small">
+                                                        <div class="fw-bold mb-2 fs-6">Invoice No. <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
+                                                        <div class="mb-1"><span class="fw-semibold">Due Date:</span> <?= date('M d, Y', strtotime($selectedInvoice['due_date'])); ?></div>
+                                                        <div><span class="fw-semibold">Category:</span> <?= getCategoryDisplayName($category); ?></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Description Section -->
+                                            <div class="alert alert-info mb-3">
+                                                <h6 class="alert-heading mb-2">
+                                                    <i class="bi bi-info-circle me-2"></i>Fee Description
+                                                </h6>
+                                                <p class="mb-0 small"><?= nl2br(htmlspecialchars($selectedInvoice['description'] ?? 'No description available')); ?></p>
+                                            </div>
+
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered mb-3">
+                                                    <thead class="table-success">
+                                                        <tr class="small">
+                                                            <th>Description</th>
+                                                            <th class="text-end">Amount</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="small">
+                                                        <tr>
+                                                            <td><?= getCategoryDisplayName($category); ?></td>
+                                                            <td class="text-end">₱ <?= number_format($selectedInvoice['total_amount'], 2); ?></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="d-flex justify-content-end">
+                                                <div class="text-end small" style="min-width: 200px;">
+                                                    <div class="d-flex justify-content-between mb-1">
+                                                        <span class="fw-semibold">Total Amount</span>
+                                                        <span>₱ <?= number_format($selectedInvoice['total_amount'], 2); ?></span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mb-1">
+                                                        <span class="fw-semibold">Amount Paid</span>
+                                                        <span>₱ <?= number_format($selectedInvoice['amount_paid'], 2); ?></span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between fw-bold border-top pt-1">
+                                                        <span>Balance Due</span>
+                                                        <span>₱ <?= number_format($selectedInvoice['balance_remaining'], 2); ?></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        <?php 
+                                        // AMENITY BOOKING
+                                        elseif ($category === 'amenity'): ?>
                                             <div class="row mb-3">
                                                 <div class="col-8">
                                                     <div class="fw-bold mb-1">NEOPOLITAN SITIO SEVILLE HOMEOWNERS INC.</div>

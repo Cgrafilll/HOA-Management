@@ -804,7 +804,7 @@ function getCategoryIcon($category) {
                                                             <?= htmlspecialchars($selectedInvoice['full_name']); ?></div>
                                                         <div class="mb-1"><span class="fw-semibold">Household ID:</span>
                                                             <?= htmlspecialchars($selectedInvoice['household_id']); ?></div>
-                                                        <div><span class="fw-semibold">Invoice Date:</span>
+                                                        <div><span class="fw-semibold">Billing Date:</span>
                                                             <?= date('M d, Y', strtotime($selectedInvoice['created_at'])); ?>
                                                         </div>
                                                     </div>
