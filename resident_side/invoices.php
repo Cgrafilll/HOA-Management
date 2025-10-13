@@ -50,8 +50,7 @@ $photo = !empty($resident['profile_picture'])
     : '';
 
 try {
-    // Get filter parameters (same as admin billing page)
-    $statusFilter = $_GET['status'] ?? 'all';
+    // Get filter parameters - REMOVED STATUS FILTER
     $categoryFilter = $_GET['category'] ?? 'all';
     $searchQuery = $_GET['search'] ?? '';
 
@@ -63,15 +62,8 @@ try {
         $params = [$household_id];
         $paramTypes = 's';
         
-        // Status filter
-        if ($statusFilter === 'all') {
-            // Show all statuses for invoices page
-            $whereConditions[] = "LOWER(md.status) IN ('paid', 'completed', 'pending', 'partial')";
-        } else {
-            $whereConditions[] = "LOWER(md.status) = ?";
-            $params[] = $statusFilter;
-            $paramTypes .= 's';
-        }
+        // Show all statuses (no status filter)
+        $whereConditions[] = "LOWER(md.status) IN ('paid', 'completed', 'pending', 'partial')";
         
         // Category filter
         if ($categoryFilter !== 'all') {
@@ -127,14 +119,8 @@ try {
             $amenityParams = [$household_id];
             $amenityParamTypes = 's';
             
-            // Status filter for amenity
-            if ($statusFilter === 'all') {
-                $amenityWhereConditions[] = "LOWER(ab.status) IN ('paid', 'pending', 'partial')";
-            } else {
-                $amenityWhereConditions[] = "LOWER(ab.status) = ?";
-                $amenityParams[] = $statusFilter;
-                $amenityParamTypes .= 's';
-            }
+            // Show all amenity statuses
+            $amenityWhereConditions[] = "LOWER(ab.status) IN ('paid', 'pending', 'partial', 'completed')";
             
             // Search filter for amenity
             if (!empty($searchQuery)) {
@@ -358,8 +344,9 @@ function getCategoryIcon($category) {
                     </button>
                     <div class="collapse show" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="payment.php" class="nav-link px-2">Payments</a></li>
-                            <li><a href="invoices.php" class="nav-link px-2 actived">Invoices</a></li>
+                            <li><a href="payment.php" class="nav-link px-2">Payment</a></li>
+                            <li><a href="billing.php" class="nav-link px-2">List of Billings</a></li>
+                            <li><a href="invoices.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
@@ -381,10 +368,10 @@ function getCategoryIcon($category) {
                         <div class="fw-semibold">Invoice History</div>
                     </div>
                     
-                    <!-- COPIED FILTERS FROM ADMIN BILLING PAGE -->
+                    <!-- FILTERS: SEARCH BAR + CATEGORY ONLY -->
                     <form method="get" class="mb-3">
                         <div class="row g-2">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                                     <input type="text" name="search" class="form-control" 
@@ -392,16 +379,7 @@ function getCategoryIcon($category) {
                                            value="<?= htmlspecialchars($searchQuery) ?>">
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <select name="status" id="status" class="form-select form-select-sm"
-                                    onchange="this.form.submit()">
-                                    <option value="all" <?= $statusFilter == 'all' ? 'selected' : '' ?>>All Status</option>
-                                    <option value="paid" <?= $statusFilter == 'paid' ? 'selected' : '' ?>>Paid</option>
-                                    <option value="pending" <?= $statusFilter == 'pending' ? 'selected' : '' ?>>Pending</option>
-                                    <option value="partial" <?= $statusFilter == 'partial' ? 'selected' : '' ?>>Partial</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <select name="category" id="category" class="form-select form-select-sm"
                                     onchange="this.form.submit()">
                                     <option value="all" <?= $categoryFilter == 'all' ? 'selected' : '' ?>>All Categories</option>
@@ -427,7 +405,6 @@ function getCategoryIcon($category) {
                                         <?php foreach ($invoices as $inv): ?>
                                             <?php
                                             $queryParams = [
-                                                'status' => $statusFilter,
                                                 'category' => $categoryFilter,
                                                 'search' => $searchQuery,
                                                 'invoice' => $inv['invoice_number']
@@ -474,26 +451,16 @@ function getCategoryIcon($category) {
                                     <?php else: ?>
                                         <div class="p-5 text-muted text-center">No invoices found.</div>
                                     <?php endif; ?>
-                                </div>
+                                                </div>
                             </div>
                         </div>
                         <div class="col-md-8">
+                            <!-- Invoice details section remains the same as previous response -->
                             <div class="border rounded-3">
                                 <?php if ($selectedInvoice): ?>
-                                    <!-- Status and Export header -->
                                     <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
                                         <div class="fw-bold text-uppercase small">
-                                            STATUS: 
-                                            <span class="<?php
-                                            $status = strtolower($selectedInvoice['status']);
-                                            if ($status === 'paid' || $status === 'completed') {
-                                                echo 'text-success';
-                                            } elseif ($status === 'partial') {
-                                                echo 'text-warning';
-                                            } else {
-                                                echo 'text-danger';
-                                            }
-                                            ?>"><?= strtoupper($selectedInvoice['status']); ?></span>
+                                            STATUS: <span class="text-success"><?= strtoupper($selectedInvoice['status']); ?></span>
                                         </div>
                                         <button class="btn btn-primary btn-sm" onclick="window.print()">
                                             <i class="bi bi-download me-1"></i>Export
@@ -505,6 +472,7 @@ function getCategoryIcon($category) {
                                         
                                         // MONTHLY DUES
                                         if ($category === 'monthly_dues'): ?>
+                                            <!-- Monthly Dues Template (same as before) -->
                                             <div class="row mb-3">
                                                 <div class="col-8">
                                                     <div class="fw-bold mb-1">NEOPOLITAN SITIO SEVILLE HOMEOWNERS INC.</div>
@@ -566,8 +534,7 @@ function getCategoryIcon($category) {
                                                     <div class="d-flex justify-content-between mb-1">
                                                         <span class="fw-semibold">Amount Paid</span>
                                                         <span>₱ <?= number_format($selectedInvoice['amount_paid'], 2); ?></span>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between fw-bold border-top pt-1">
+                                                    </div><div class="d-flex justify-content-between fw-bold border-top pt-1">
                                                         <span>Balance Due</span>
                                                         <span>₱ <?= number_format($selectedInvoice['balance_remaining'], 2); ?></span>
                                                     </div>
@@ -749,7 +716,7 @@ function getCategoryIcon($category) {
                                         <?php endif; ?>
                                     </div>
                                 <?php else: ?>
-                                    <div class="p-5 text-center text-muted">No invoices available to display.</div>
+                                    <div class="p-5 text-center text-muted">No paid invoices available to display.</div>
                                 <?php endif; ?>
                             </div>
                         </div>
