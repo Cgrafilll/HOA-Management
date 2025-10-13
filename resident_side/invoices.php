@@ -31,7 +31,7 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
 
 $_SESSION['last_activity'] = time();
 
-// Get resident data - MODIFIED FOR RESIDENT SIDE
+// Get resident data
 $household_id = $_SESSION['household_id'];
 $stmt = $conn->prepare("SELECT * FROM household_accounts WHERE household_id = ?");
 $stmt->bind_param("s", $household_id);
@@ -50,55 +50,153 @@ $photo = !empty($resident['profile_picture'])
     : '';
 
 try {
-    $filter = $_GET['filter'] ?? 'paid';
-    $invoices = [];
+    // Get filter parameters (same as admin billing page)
+    $statusFilter = $_GET['status'] ?? 'all';
+    $categoryFilter = $_GET['category'] ?? 'all';
+    $searchQuery = $_GET['search'] ?? '';
 
     try {
-        // Get monthly dues invoices for THIS resident only
-        $stmt = $conn->prepare("
-            SELECT md.id, md.invoice_number, md.household_id, md.billing_month, md.amount_paid,
-                   md.balance_remaining, md.due_date, md.status, md.category,
-                   CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) AS full_name,
-                   (md.amount_paid + md.balance_remaining) AS total_amount,
-                   'monthly_dues' AS source_table, md.due_date AS sort_date
+        $invoices = [];
+        
+        // Build the WHERE clause based on filters
+        $whereConditions = ['md.household_id = ?']; // Only this resident's invoices
+        $params = [$household_id];
+        $paramTypes = 's';
+        
+        // Status filter
+        if ($statusFilter === 'all') {
+            // Show all statuses for invoices page
+            $whereConditions[] = "LOWER(md.status) IN ('paid', 'completed', 'pending', 'partial')";
+        } else {
+            $whereConditions[] = "LOWER(md.status) = ?";
+            $params[] = $statusFilter;
+            $paramTypes .= 's';
+        }
+        
+        // Category filter
+        if ($categoryFilter !== 'all') {
+            $whereConditions[] = "md.category = ?";
+            $params[] = $categoryFilter;
+            $paramTypes .= 's';
+        }
+        
+        // Search filter
+        if (!empty($searchQuery)) {
+            $whereConditions[] = "(md.invoice_number LIKE ? OR CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) LIKE ?)";
+            $searchParam = '%' . $searchQuery . '%';
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+            $paramTypes .= 'ss';
+        }
+        
+        $whereClause = implode(' AND ', $whereConditions);
+        
+        // Fetch from monthly_dues table with all categories
+        $sql = "
+            SELECT 
+                md.id,
+                md.invoice_number,
+                md.household_id,
+                md.category,
+                md.billing_month,
+                md.description,
+                md.amount_paid,
+                md.balance_remaining,
+                md.due_date,
+                md.status,
+                md.created_at,
+                CONCAT(ha.first_name, ' ', COALESCE(ha.middle_name, ''), ' ', ha.last_name) AS full_name,
+                (md.amount_paid + md.balance_remaining) AS total_amount
             FROM monthly_dues md
             LEFT JOIN household_accounts ha ON md.household_id = ha.household_id
-            WHERE md.household_id = ? AND LOWER(md.status) = ?
-        ");
-        $filterStatus = strtolower($filter);
-        $stmt->bind_param("ss", $household_id, $filterStatus);
+            WHERE $whereClause
+            ORDER BY md.created_at DESC
+        ";
+        
+        $stmt = $conn->prepare($sql);
+        if (!empty($params)) {
+            $stmt->bind_param($paramTypes, ...$params);
+        }
         $stmt->execute();
         $result = $stmt->get_result();
-        $monthlyDuesInvoices = $result->fetch_all(MYSQLI_ASSOC);
+        $invoices = $result->fetch_all(MYSQLI_ASSOC);
+        
+        // Fetch amenity bookings if category filter allows
+        if ($categoryFilter === 'all' || $categoryFilter === 'amenity') {
+            $amenityWhereConditions = ['ab.homeowner_id = ?']; // Only this resident
+            $amenityParams = [$household_id];
+            $amenityParamTypes = 's';
+            
+            // Status filter for amenity
+            if ($statusFilter === 'all') {
+                $amenityWhereConditions[] = "LOWER(ab.status) IN ('paid', 'pending', 'partial')";
+            } else {
+                $amenityWhereConditions[] = "LOWER(ab.status) = ?";
+                $amenityParams[] = $statusFilter;
+                $amenityParamTypes .= 's';
+            }
+            
+            // Search filter for amenity
+            if (!empty($searchQuery)) {
+                $amenityWhereConditions[] = "(ab.invoice_number LIKE ? OR ab.reservation_code LIKE ? OR CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) LIKE ?)";
+                $searchParam = '%' . $searchQuery . '%';
+                $amenityParams[] = $searchParam;
+                $amenityParams[] = $searchParam;
+                $amenityParams[] = $searchParam;
+                $amenityParamTypes .= 'sss';
+            }
+            
+            $amenityWhereClause = implode(' AND ', $amenityWhereConditions);
+            
+            $amenitySql = "
+                SELECT 
+                    ab.invoice_number,
+                    ab.reservation_code,
+                    ab.reservation_date,
+                    ab.created_at,
+                    ab.total_amount,
+                    ab.amount_paid,
+                    (ab.total_amount - ab.amount_paid) AS balance_remaining,
+                    ab.payment_method,
+                    ab.reference_number,
+                    ab.status,
+                    ab.amenity,
+                    ab.chairs,
+                    ab.tables,
+                    ab.rate,
+                    ab.user_type,
+                    ab.guests,
+                    CONCAT(ha.first_name, ' ', COALESCE(ha.middle_name, ''), ' ', ha.last_name) AS full_name,
+                    'amenity' AS category
+                FROM amenity_bookings ab
+                LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
+                WHERE $amenityWhereClause
+                ORDER BY ab.created_at DESC
+            ";
+            
+            $stmt = $conn->prepare($amenitySql);
+            if (!empty($amenityParams)) {
+                $stmt->bind_param($amenityParamTypes, ...$amenityParams);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $amenityInvoices = $result->fetch_all(MYSQLI_ASSOC);
+            $invoices = array_merge($invoices, $amenityInvoices);
+        }
 
-        // Get amenity bookings for THIS resident only
-        $stmt = $conn->prepare("
-            SELECT ab.invoice_number, ab.reservation_code, ab.reservation_date, ab.created_at,
-                   ab.total_amount, ab.amount_paid, (ab.total_amount - ab.amount_paid) AS balance_remaining,
-                   ab.payment_method, ab.reference_number, ab.status, ab.amenity, ab.chairs, ab.tables,
-                   ab.rate, ab.user_type, ab.guests,
-                   CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) AS full_name,
-                   'amenity_bookings' AS source_table, ab.created_at AS sort_date
-            FROM amenity_bookings ab
-            LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id
-            WHERE ab.homeowner_id = ? AND LOWER(ab.status) = ?
-        ");
-        $stmt->bind_param("ss", $household_id, $filterStatus);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $amenityInvoices = $result->fetch_all(MYSQLI_ASSOC);
-
-        // Merge and sort invoices
-        $invoices = array_merge($monthlyDuesInvoices, $amenityInvoices);
+        // Sort by creation date (most recent first)
         usort($invoices, function ($a, $b) {
-            return strtotime($b['sort_date']) - strtotime($a['sort_date']);
+            $dateA = $a['created_at'] ?? $a['due_date'] ?? '1970-01-01';
+            $dateB = $b['created_at'] ?? $b['due_date'] ?? '1970-01-01';
+            return strtotime($dateB) - strtotime($dateA);
         });
-
+        
     } catch (Exception $e) {
         $invoices = [];
         $error_message = "Error fetching invoices: " . $e->getMessage();
     }
 
+    // Auto-select first invoice if none is specifically requested
     $selectedInvoice = null;
     $activeInvoiceNumber = null;
 
@@ -134,14 +232,24 @@ function getNumericAmount($amountStr) {
     return floatval(preg_replace('/[^\d.]/', '', $amountStr));
 }
 
-// Helper function to get category display name
-function getCategoryDisplayName($dbCategory) {
-    $categoryMap = [
+function getCategoryDisplayName($category) {
+    $names = [
         'monthly_dues' => 'Monthly Dues',
         'penalty_fees' => 'Penalty Fees',
-        'other_fees' => 'Other Fees'
+        'other_fees' => 'Other Fees',
+        'amenity' => 'Amenity Fees'
     ];
-    return $categoryMap[$dbCategory] ?? 'Monthly Dues';
+    return $names[$category] ?? ucwords(str_replace('_', ' ', $category));
+}
+
+function getCategoryIcon($category) {
+    $icons = [
+        'monthly_dues' => '🏠',
+        'penalty_fees' => '⚠️',
+        'other_fees' => '📝',
+        'amenity' => '🎯'
+    ];
+    return $icons[$category] ?? '📄';
 }
 ?>
 <!DOCTYPE html>
@@ -172,6 +280,11 @@ function getCategoryDisplayName($dbCategory) {
         .invoice.active h6 { color: #0f5132 !important; font-weight: 700 !important; }
         .invoice.active small { font-weight: 600 !important; }
         .invoice { transition: all 0.3s ease-in-out; }
+        .category-badge { font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-weight: 600; }
+        .badge-monthly-dues { background-color: #d1e7dd; color: #0f5132; }
+        .badge-penalty-fees { background-color: #f8d7da; color: #721c24; }
+        .badge-other-fees { background-color: #cff4fc; color: #055160; }
+        .badge-amenity { background-color: #fff3cd; color: #856404; }
     </style>
 </head>
 <body class="bg-light">
@@ -210,14 +323,13 @@ function getCategoryDisplayName($dbCategory) {
         </div>
     </header>
     <div class="d-flex">
-        <!-- Sidebar (Use your existing resident sidebar) -->
+        <!-- Sidebar -->
         <aside class="sidebar p-3">
             <nav class="nav d-flex flex-column gap-1">
                 <a href="dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                <!-- Record Keeping -->
                 <div>
                     <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
                         data-bs-target="#recordCollapse">
@@ -236,7 +348,6 @@ function getCategoryDisplayName($dbCategory) {
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
-                <!-- Accounting (Active) -->
                 <div>
                     <button
                         class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start active"
@@ -269,43 +380,95 @@ function getCategoryDisplayName($dbCategory) {
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="fw-semibold">Invoice History</div>
                     </div>
+                    
+                    <!-- COPIED FILTERS FROM ADMIN BILLING PAGE -->
                     <form method="get" class="mb-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <label for="filter" class="fw-semibold">Filter by Status:</label>
-                            <select name="filter" id="filter" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                                <option value="paid" <?= $filter === 'paid' ? 'selected' : '' ?>>Paid</option>
-                                <option value="pending" <?= $filter === 'pending' ? 'selected' : '' ?>>Pending</option>
-                                <option value="partial" <?= $filter === 'partial' ? 'selected' : '' ?>>Partial</option>
-                            </select>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" name="search" class="form-control" 
+                                           placeholder="Search by invoice# or name..." 
+                                           value="<?= htmlspecialchars($searchQuery) ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <select name="status" id="status" class="form-select form-select-sm"
+                                    onchange="this.form.submit()">
+                                    <option value="all" <?= $statusFilter == 'all' ? 'selected' : '' ?>>All Status</option>
+                                    <option value="paid" <?= $statusFilter == 'paid' ? 'selected' : '' ?>>Paid</option>
+                                    <option value="pending" <?= $statusFilter == 'pending' ? 'selected' : '' ?>>Pending</option>
+                                    <option value="partial" <?= $statusFilter == 'partial' ? 'selected' : '' ?>>Partial</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select name="category" id="category" class="form-select form-select-sm"
+                                    onchange="this.form.submit()">
+                                    <option value="all" <?= $categoryFilter == 'all' ? 'selected' : '' ?>>All Categories</option>
+                                    <option value="monthly_dues" <?= $categoryFilter == 'monthly_dues' ? 'selected' : '' ?>>Monthly Dues</option>
+                                    <option value="penalty_fees" <?= $categoryFilter == 'penalty_fees' ? 'selected' : '' ?>>Penalty Fees</option>
+                                    <option value="other_fees" <?= $categoryFilter == 'other_fees' ? 'selected' : '' ?>>Other Fees</option>
+                                    <option value="amenity" <?= $categoryFilter == 'amenity' ? 'selected' : '' ?>>Amenity Fees</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-sm btn-success w-100">
+                                    <i class="bi bi-funnel me-1"></i>Filter
+                                </button>
+                            </div>
                         </div>
                     </form>
+                    
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <div class="border rounded-3">
+                            <div class="border rounded-3" style="max-height: 600px; overflow-y: auto;">
                                 <div class="list-group list-group-flush">
                                     <?php if (!empty($invoices)): ?>
                                         <?php foreach ($invoices as $inv): ?>
-                                            <a href="?filter=<?= htmlspecialchars($filter) ?>&invoice=<?= htmlspecialchars($inv['invoice_number']); ?>" class="list-group-item list-group-item-action invoice <?= ($inv['invoice_number'] === $activeInvoiceNumber) ? 'active' : '' ?>">
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <h6 class="mb-1">Invoice #<?= htmlspecialchars($inv['invoice_number']); ?></h6>
-                                                    <?php if (isset($inv['source_table'])): ?>
-                                                        <?php if ($inv['source_table'] === 'monthly_dues' && !empty($inv['due_date'])): ?>
-                                                            <small><?= date('M d, Y', strtotime($inv['due_date'])); ?></small>
-                                                        <?php elseif ($inv['source_table'] === 'amenity_bookings' && !empty($inv['created_at'])): ?>
-                                                            <small><?= date('M d, Y', strtotime($inv['created_at'])); ?></small>
-                                                        <?php endif; ?>
-                                                    <?php endif; ?>
+                                            <?php
+                                            $queryParams = [
+                                                'status' => $statusFilter,
+                                                'category' => $categoryFilter,
+                                                'search' => $searchQuery,
+                                                'invoice' => $inv['invoice_number']
+                                            ];
+                                            $queryString = http_build_query($queryParams);
+                                            ?>
+                                            <a href="?<?= $queryString ?>" class="list-group-item list-group-item-action invoice <?= ($inv['invoice_number'] === $activeInvoiceNumber) ? 'active' : '' ?>">
+                                                <div class="d-flex w-100 justify-content-between align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="mb-1">
+                                                            <?= getCategoryIcon($inv['category']) ?> 
+                                                            #<?= htmlspecialchars($inv['invoice_number']); ?>
+                                                        </h6>
+                                                        <div class="d-flex gap-2 align-items-center mb-1">
+                                                            <span class="category-badge badge-<?= $inv['category'] ?>">
+                                                                <?= getCategoryDisplayName($inv['category']) ?>
+                                                            </span>
+                                                            <small class="fw-bold <?php
+                                                            $status = strtolower($inv['status']);
+                                                            if ($status === 'paid' || $status === 'completed') {
+                                                                echo 'text-success';
+                                                            } elseif ($status === 'partial') {
+                                                                echo 'text-warning';
+                                                            } else {
+                                                                echo 'text-danger';
+                                                            }
+                                                            ?>">
+                                                                <?= ucfirst($inv['status']); ?>
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        <?php
+                                                        if (!empty($inv['due_date'])) {
+                                                            echo date('M d, Y', strtotime($inv['due_date']));
+                                                        } elseif (!empty($inv['created_at'])) {
+                                                            echo date('M d, Y', strtotime($inv['created_at']));
+                                                        }
+                                                        ?>
+                                                    </small>
                                                 </div>
-                                                <p class="mb-1 small">
-                                                    <?php if ($inv['source_table'] === 'monthly_dues'): ?>
-                                                        <?= getCategoryDisplayName($inv['category'] ?? 'monthly_dues'); ?>
-                                                    <?php else: ?>
-                                                        Amenity Booking
-                                                    <?php endif; ?>
-                                                </p>
-                                                <small class="fw-bold <?= strtolower($inv['status']) === 'paid' || strtolower($inv['status']) === 'completed' ? 'text-success' : (strtolower($inv['status']) === 'partial' ? 'text-warning' : 'text-danger') ?>">
-                                                    <?= ucfirst($inv['status']); ?>
-                                                </small>
                                             </a>
                                         <?php endforeach; ?>
                                     <?php else: ?>
