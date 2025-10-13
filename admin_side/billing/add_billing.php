@@ -281,8 +281,8 @@ if (!empty($admin['profile_picture'])) {
                     </button>
                     <div class="collapse show" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../payment.php" class="nav-link px-2">Payments</a></li>
-                            <li><a href="../billing.php" class="nav-link px-2 actived">Billing</a></li>
+                            <li><a href="../payment.php" class="nav-link px-2">Payment</a></li>
+                            <li><a href="../billing.php" class="nav-link px-2">List of Billings</a></li>
                             <li><a href="../invoices.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
