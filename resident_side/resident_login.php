@@ -55,6 +55,6 @@ $_SESSION['login_time'] = time(); // Store login timestamp
 $_SESSION['last_activity'] = time(); // Store last activity timestamp
 
 // Redirect to dashboard
-header("Location: test_dashboard.php");
+header("Location: dashboard.php");
 exit;
 ?>
