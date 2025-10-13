@@ -226,7 +226,7 @@ if (isset($_GET['action'])) {
                 $stmt->execute();
                 $user_data = $stmt->get_result()->fetch_assoc();
 
-                // Get complete booking details including amenity info
+                // Get complete booking details
                 $stmt = $conn->prepare("
                     SELECT 
                         id,
@@ -256,6 +256,7 @@ if (isset($_GET['action'])) {
                         echo json_encode(['success' => false, 'error' => 'This invoice has already been paid in full']);
                         exit;
                     }
+                    
                     // Calculate balance
                     $balance_due = $booking['total_amount'] - $booking['amount_paid'];
                     
@@ -471,7 +472,7 @@ if (isset($_GET['action'])) {
                     exit;
                 }
 
-                // Get billing details from monthly_dues table
+                // Get billing details
                 $stmt = $conn->prepare("
                     SELECT 
                         id,
