@@ -336,6 +336,15 @@ try {
             background-color: #eff6ff;
         }
 
+        .file-drop-area.required-highlight {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .file-drop-area.required-highlight .cloud-icon {
+            color: #dc3545;
+        }
+
         .cloud-icon {
             font-size: 48px;
             color: #9ca3af;
@@ -789,50 +798,67 @@ try {
             const browseLink = document.getElementById('browseLink');
             const filePreview = document.getElementById('filePreview');
 
-            // Handle browse link click
-            browseLink.addEventListener('click', function (e) {
-                e.preventDefault();
-                fileInput.click();
-            });
+            if (fileDropArea && fileInput && browseLink && filePreview) {
+                // Prevent defaults for all drag events
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    fileDropArea.addEventListener(eventName, preventDefaults, false);
+                    document.body.addEventListener(eventName, preventDefaults, false);
+                });
 
-            // Handle file input change
-            fileInput.addEventListener('change', function (e) {
-                handleFiles(e.target.files);
-            });
+                // Highlight drop area when dragging over it
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    fileDropArea.addEventListener(eventName, highlight, false);
+                });
 
-            // Drag and drop functionality
-            fileDropArea.addEventListener('dragover', function (e) {
+                // Remove highlight when dragging away or dropping
+                ['dragleave', 'drop'].forEach(eventName => {
+                    fileDropArea.addEventListener(eventName, unhighlight, false);
+                });
+
+                // Handle file drop
+                fileDropArea.addEventListener('drop', handleDrop, false);
+
+                // Handle browse link click
+                browseLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    fileInput.click();
+                });
+
+                // Handle file input change
+                fileInput.addEventListener('change', (e) => {
+                    handleFiles(e.target.files);
+                });
+            }
+
+            function preventDefaults(e) {
                 e.preventDefault();
                 e.stopPropagation();
+            }
+
+            function highlight(e) {
                 fileDropArea.classList.add('dragover');
-            });
+            }
 
-            fileDropArea.addEventListener('dragleave', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
+            function unhighlight(e) {
                 fileDropArea.classList.remove('dragover');
-            });
+            }
 
-            fileDropArea.addEventListener('drop', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                fileDropArea.classList.remove('dragover');
-
-                const files = e.dataTransfer.files;
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
                 handleFiles(files);
-            });
+            }
 
-            // Handle file processing
             function handleFiles(files) {
                 if (files.length === 0) return;
 
                 const file = files[0]; // Take only the first file
 
-                // Validate file type (only proof of payment formats)
+                // Validate file type
                 const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
 
                 if (!allowedTypes.includes(file.type)) {
-                    alert('Please select a valid file type for proof of payment (JPEG, PNG, GIF)');
+                    alert('Please select a valid file type for evidence (JPEG, PNG, GIF)');
                     return;
                 }
 
@@ -849,56 +875,28 @@ try {
                 fileInput.files = dt.files;
 
                 // Display file preview
-                displayFilePreview(file);
+                filePreview.innerHTML = `
+        <div class="alert alert-success d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-file-earmark-image me-2"></i>
+                <div>
+                    <strong>${file.name}</strong><br>
+                    <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                </div>
+            </div>
+            <button type="button" class="btn-close" onclick="clearFile()"></button>
+        </div>
+    `;
+
+                // Remove required highlight if present
+                fileDropArea.classList.remove('required-highlight');
             }
 
-            // Display file preview
-            function displayFilePreview(file) {
-                filePreview.innerHTML = '';
-
-                const previewContainer = document.createElement('div');
-                previewContainer.className = 'alert alert-success d-flex align-items-center justify-content-between';
-
-                const fileInfo = document.createElement('div');
-                fileInfo.className = 'd-flex align-items-center';
-
-                const fileIcon = document.createElement('i');
-                if (file.type.startsWith('image/')) {
-                    fileIcon.className = 'bi bi-file-earmark-image me-2';
-                } else if (file.type === 'application/pdf') {
-                    fileIcon.className = 'bi bi-file-earmark-pdf me-2';
-                } else {
-                    fileIcon.className = 'bi bi-file-earmark me-2';
-                }
-
-                const fileName = document.createElement('span');
-                fileName.textContent = `${file.name} (${formatFileSize(file.size)})`;
-
-                fileInfo.appendChild(fileIcon);
-                fileInfo.appendChild(fileName);
-
-                const removeButton = document.createElement('button');
-                removeButton.type = 'button';
-                removeButton.className = 'btn-close';
-                removeButton.onclick = function () {
-                    fileInput.value = '';
-                    filePreview.innerHTML = '';
-                };
-
-                previewContainer.appendChild(fileInfo);
-                previewContainer.appendChild(removeButton);
-                filePreview.appendChild(previewContainer);
+            function clearFile() {
+                if (fileInput) fileInput.value = '';
+                if (filePreview) filePreview.innerHTML = '';
             }
-
-            // Format file size for display
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-
+            
             // With this code that handles both date and time validation properly:
             const dateIncident = document.getElementById('dateIncident');
             const timeIncident = document.getElementById('timeIncident');

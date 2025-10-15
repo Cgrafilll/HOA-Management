@@ -1135,7 +1135,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             <!-- Left Column -->
                             <div class="col-lg-6">
                                 <div class="row">
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <!-- User Type -->
                                         <div class="form-floating mb-3">
                                             <select class="form-select" id="userType" name="userType" required>
@@ -1147,7 +1147,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                     class="fw-bold text-danger">*</small></label>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <!-- User ID -->
                                         <div class="form-floating mb-3">
                                             <input type="text" class="form-control search-select-input"
