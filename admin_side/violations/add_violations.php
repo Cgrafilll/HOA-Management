@@ -253,7 +253,12 @@ try {
                 font-size: 1rem !important;
             }
 
-            .table-responsive {
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .form-check,
+            main span {
                 font-size: 0.85rem;
             }
 
@@ -290,12 +295,13 @@ try {
                 top: 0;
             }
 
-            .table-responsive {
-                font-size: 0.75rem;
-            }
-
-            .pagination {
-                font-size: 0.8rem;
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .form-check,
+            main span {
+                font-size: 0.85rem;
             }
         }
 
@@ -473,9 +479,9 @@ try {
                     <!-- Violation Report Form -->
                     <form action="save_violation.php" id="violationForm" method="POST" enctype="multipart/form-data">
                         <!-- Household Selection -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Select Household Account</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Select Household Account</span>
+                            <div class="col-md-4">
                                 <select id="householdSelect" class="form-select" required>
                                     <option value="" selected disabled>Select a Household</option>
                                     <?php foreach ($households as $household): ?>
@@ -493,28 +499,28 @@ try {
                             </div>
                         </div>
                         <!-- Personal Info -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Reporter Information</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Reporter Information</span>
+                            <div class="col-md-4">
                                 <input type="text" id="first_name" name="first_name" class="form-control" readonly />
                                 <label class="form-label mt-2">First Name<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" id="middle_name" name="middle_name" class="form-control" readonly />
                                 <label class="form-label mt-2">Middle Name<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" id="last_name" name="last_name" class="form-control" readonly />
                                 <label class="form-label mt-2">Last Name<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
                         </div>
                         <!-- Contact -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Contact Information</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Contact Information</span>
+                            <div class="col-md-4">
                                 <input type="tel" id="cellphone_number" name="cellphone_number" class="form-control"
                                     readonly />
                                 <label class="form-label mt-2">Cellphone Number</label>
@@ -523,26 +529,26 @@ try {
                         <!-- Hidden field to store household_id -->
                         <input type="hidden" id="household_id" name="household_id" />
                         <!-- Incident Details -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Incident Details</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Incident Details</span>
+                            <div class="col-md-4">
                                 <input type="date" name="date_incident" class="form-control" id="dateIncident"
                                     max="<?php echo date('Y-m-d'); ?>" required />
                                 <label class="form-label mt-2">Date of Incident<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="time" name="time_incident" class="form-control" id="timeIncident"
                                     max="<?php echo date('H:i'); ?>" required />
                                 <label class="form-label mt-2">Time of Incident<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="location" class="form-control" required />
                                 <label class="form-label mt-2">Location<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <select name="violation_type" class="form-select" required>
                                     <option value="" selected disabled>Select Violation Type</option>
                                     <option>Excessive Noise</option>
@@ -555,25 +561,25 @@ try {
                             </div>
                         </div>
                         <!-- Parties Involved Info -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Parties Involved</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Parties Involved</span>
+                            <div class="col-md-4">
                                 <input type="text" name="homeowner_involved" class="form-control" />
                                 <label class=" form-label mt-2">Name of Resident/Household Involved <i>(if
                                         known)</i></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="address_lot_number" class="form-control" />
                                 <label class=" form-label mt-2">Address/Lot Number <i>(if applicable)</i></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="other_parties" class="form-control" />
                                 <label class=" form-label mt-2">Other Parties/Witnesses <i>(optional)</i></label>
                             </div>
                         </div>
                         <!-- Evidence -->
                         <div class="row mb-3">
-                            <span class="fw-bold mb-3">Evidence</span>
+                            <span class="fw-bold mb-2">Evidence</span>
                             <div class="col-md-4">
                                 <!-- File Upload -->
                                 <div class="file-drop-area" id="fileDropArea" style="height: 250px;">
@@ -602,17 +608,25 @@ try {
                             </div>
                         </div>
                         <hr class="mt-0">
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="anonymous" name="anonymous" value="1">
-                            <label class="form-check-label" for="anonymous">
-                                I want to remain anonymous to the reported party
-                            </label>
-                        </div>
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="accurate" name="accurate" required>
-                            <label class="form-check-label" for="accurate">
-                                I confirm that the information provided is accurate to the best of my knowledge
-                            </label>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="anonymous" name="anonymous"
+                                        value="1">
+                                    <label class="form-check-label" for="anonymous">
+                                        I want to remain anonymous to the reported party
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="accurate" name="accurate"
+                                        required>
+                                    <label class="form-check-label" for="accurate">
+                                        I confirm that the information provided is accurate to the best of my knowledge
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                         <!-- Submit Buttons -->
                         <div class="d-flex justify-content-end gap-2">

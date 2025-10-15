@@ -404,10 +404,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             main span {
                 font-size: 0.75rem;
             }
-
-            .pagination {
-                font-size: 0.8rem;
-            }
         }
 
         #preview img {
