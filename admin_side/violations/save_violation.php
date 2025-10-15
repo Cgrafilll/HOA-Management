@@ -20,7 +20,7 @@ require '../../rfid-api/db.php'; // Adjust path as needed
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_id'])) {
-    header("Location: ../login/login.php?error=" . urlencode("Please log in to access this page."));
+    echo "error: Please log in to access this page.";
     exit;
 }
 
@@ -29,7 +29,7 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
     // Session expired
     session_unset();
     session_destroy();
-    header("Location: ../login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    echo "error: Your session has expired. Please log in again.";
     exit;
 }
 
@@ -43,21 +43,30 @@ try {
 
         // Get household_id from POST data (hidden input field)
         if (!isset($_POST['household_id']) || empty($_POST['household_id'])) {
-            echo "error: household_id not provided";
+            echo "error: Household not selected";
             exit;
         }
 
         $household_id = $_POST['household_id'];
 
         // Collect form values
-        $date_incident = $_POST['date_incident'];
-        $time_incident = $_POST['time_incident'];
-        $location = $_POST['location'];
-        $violation_type = $_POST['violation_type'];
-        $description_of_incident = $_POST['description_of_incident'];
+        $date_incident = $_POST['date_incident'] ?? '';
+        $time_incident = $_POST['time_incident'] ?? '';
+        $location = $_POST['location'] ?? '';
+        $violation_type = $_POST['violation_type'] ?? '';
+        $description_of_incident = $_POST['description_of_incident'] ?? '';
         $homeowner_involved = $_POST['homeowner_involved'] ?? null;
         $address_lot_number = $_POST['address_lot_number'] ?? null;
         $other_parties = $_POST['other_parties'] ?? null;
+
+        // Validate required fields first
+        if (
+            empty($household_id) || empty($date_incident) || empty($time_incident) ||
+            empty($location) || empty($violation_type) || empty($description_of_incident)
+        ) {
+            echo "error: Please fill in all required fields";
+            exit;
+        }
 
         // Convert time to 12-hour format (if provided)
         if (!empty($time_incident)) {
@@ -69,7 +78,6 @@ try {
 
         // Handle evidence upload - store directly in database
         $evidence_data = null;
-        $has_evidence = false;
 
         if (isset($_FILES['evidence']) && $_FILES['evidence']['error'] === UPLOAD_ERR_OK) {
             // Validate file type
@@ -96,7 +104,6 @@ try {
                 exit;
             }
 
-            $has_evidence = true;
             error_log("Evidence file uploaded successfully. Size: " . strlen($evidence_data) . " bytes");
         } else {
             // Log the upload error for debugging
@@ -125,18 +132,9 @@ try {
             }
         }
 
-        // Validate required fields
-        if (
-            empty($household_id) || empty($date_incident) || empty($time_incident) ||
-            empty($location) || empty($violation_type) || empty($description_of_incident)
-        ) {
-            echo "error: Please fill in all required fields";
-            exit;
-        }
-
         // Debug: Log the household_id being inserted
         error_log("Inserting violation for household_id: " . $household_id);
-        error_log("Has evidence: " . ($has_evidence ? 'Yes' : 'No'));
+        error_log("Has evidence: " . ($evidence_data ? 'Yes' : 'No'));
 
         // Prepare the INSERT statement
         $stmt = $conn->prepare("INSERT INTO violations 
@@ -148,9 +146,9 @@ try {
             exit;
         }
 
-        // Bind parameters - 'b' for BLOB data
+        // Bind parameters - use 's' for string BLOB data (base64 encoded or binary string)
         $stmt->bind_param(
-            "sssssssssbs",
+            "sssssssssss",
             $household_id,
             $date_incident,
             $time_incident,
@@ -163,13 +161,6 @@ try {
             $evidence_data,
             $anonymous
         );
-
-        // Send BLOB data if we have evidence
-        if ($has_evidence && $evidence_data !== null) {
-            // Parameter index 9 (0-based) is the evidence BLOB field
-            $stmt->send_long_data(9, $evidence_data);
-            error_log("BLOB data sent successfully. Size: " . strlen($evidence_data));
-        }
 
         // Execute the statement
         if ($stmt->execute()) {
@@ -187,6 +178,6 @@ try {
     }
 } catch (Exception $e) {
     error_log("Exception caught: " . $e->getMessage());
-    echo "error: Exception caught - " . $e->getMessage();
+    echo "error: " . $e->getMessage();
 }
 ?>

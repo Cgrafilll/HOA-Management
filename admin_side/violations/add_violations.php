@@ -547,7 +547,7 @@ try {
                                         class="fw-bold text-danger">*</small></label>
                             </div>
                             <div class="col-md-4">
-                                <input type="time" name="time_incident" class="form-control" id="timeIncident"
+                                <input type="time" name="time_incident" class="form-control" id="timeIncident" step="60"
                                     required />
                                 <label class="form-label mt-2">Time of Incident<small
                                         class="fw-bold text-danger">*</small></label>
@@ -751,6 +751,17 @@ try {
             violationForm.addEventListener("submit", function (event) {
                 event.preventDefault(); // Prevent default submission
 
+                // Check if file is uploaded
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    fileDropArea.classList.add('required-highlight');
+                    fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    document.getElementById("errorMessage").innerText = "Please upload evidence file before submitting.";
+                    new bootstrap.Modal(document.getElementById("errorModal")).show();
+                    return;
+                } else {
+                    fileDropArea.classList.remove('required-highlight');
+                }
+
                 // Add Bootstrap validation class
                 violationForm.classList.add("was-validated");
 
@@ -760,7 +771,6 @@ try {
                     let confirmModal = new bootstrap.Modal(document.getElementById("confirmModal"));
                     confirmModal.show();
                 }
-                // If form is invalid, the was-validated class will show the validation errors
             });
 
             confirmBtn.addEventListener("click", function () {
@@ -858,14 +868,16 @@ try {
                 const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
 
                 if (!allowedTypes.includes(file.type)) {
-                    alert('Please select a valid file type for evidence (JPEG, PNG, GIF)');
+                    document.getElementById("errorMessage").innerText = "Please select a valid file type for evidence (JPEG, PNG, GIF)";
+                    new bootstrap.Modal(document.getElementById("errorModal")).show();
                     return;
                 }
 
                 // Validate file size (max 10MB)
                 const maxSize = 10 * 1024 * 1024; // 10MB in bytes
                 if (file.size > maxSize) {
-                    alert('File size must be less than 10MB');
+                    document.getElementById("errorMessage").innerText = "File size must be less than 10MB";
+                    new bootstrap.Modal(document.getElementById("errorModal")).show();
                     return;
                 }
 
@@ -876,17 +888,17 @@ try {
 
                 // Display file preview
                 filePreview.innerHTML = `
-        <div class="alert alert-success d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-file-earmark-image me-2"></i>
-                <div>
-                    <strong>${file.name}</strong><br>
-                    <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
-                </div>
-            </div>
-            <button type="button" class="btn-close" onclick="clearFile()"></button>
-        </div>
-    `;
+                    <div class="alert alert-success d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-file-earmark-image me-2"></i>
+                            <div>
+                                <strong>${file.name}</strong><br>
+                                <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" onclick="clearFile()"></button>
+                    </div>
+                `;
 
                 // Remove required highlight if present
                 fileDropArea.classList.remove('required-highlight');
@@ -895,8 +907,9 @@ try {
             function clearFile() {
                 if (fileInput) fileInput.value = '';
                 if (filePreview) filePreview.innerHTML = '';
+                fileDropArea.classList.add('required-highlight');
             }
-            
+
             // With this code that handles both date and time validation properly:
             const dateIncident = document.getElementById('dateIncident');
             const timeIncident = document.getElementById('timeIncident');
