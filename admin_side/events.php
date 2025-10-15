@@ -122,7 +122,7 @@ try {
     $stmt->execute();
     $events_result = $stmt->get_result();
 } catch (Exception $e) {
-    $error_message = "Error fetching announcements: " . $e->getMessage();
+    $error_message = "Error fetching events: " . $e->getMessage();
 }
 
 ?>
@@ -306,9 +306,9 @@ try {
                 font-size: 1rem !important;
             }
 
-            .announcement-title,
-            .announcement-body,
-            .announcment-meta,
+            .event-title,
+            .event-body,
+            .event-meta,
             .form-control,
             .form-label,
             .invalid-feedback,
@@ -349,9 +349,9 @@ try {
                 top: 0;
             }
 
-            .announcement-title,
-            .announcement-body,
-            .announcment-meta,
+            .event-title,
+            .event-body,
+            .event-meta,
             .form-control,
             .form-label,
             .invalid-feedback,
@@ -537,8 +537,8 @@ try {
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <span class="fw-medium form-label mb-2">Event Title</span>
-                                <input type="text" id="title" name="title" class="form-control rounded mb-1"
-                                    maxlength="150" placeholder="Enter event title" required>
+                                <input type="text" id="title" name="title" class="form-control rounded" maxlength="150"
+                                    placeholder="Enter event title" required>
                                 <div class="invalid-feedback d-none" id="titleFeedback">
                                     <i class="bi bi-exclamation-circle me-1"></i>Please enter a title for the
                                     event.
@@ -546,7 +546,7 @@ try {
                             </div>
                             <div class="col-md-6">
                                 <span class="fw-medium form-label mb-2">Event Date</span>
-                                <input type="date" id="event_date" name="event_date" class="form-control mb-3" required>
+                                <input type="date" id="event_date" name="event_date" class="form-control" required>
                                 <div class="invalid-feedback d-none" id="dateFeedback">
                                     <i class="bi bi-exclamation-circle me-1"></i>Please enter a date for the
                                     event.
@@ -582,12 +582,24 @@ try {
                         <hr>
                         <?php if ($events_result && $events_result->num_rows > 0): ?>
                             <?php while ($row = $events_result->fetch_assoc()): ?>
+                                <?php
+                                // Calculate days since creation
+                                $createdDate = new DateTime($row['created_at']);
+                                $now = new DateTime();
+                                $daysSince = $now->diff($createdDate)->days;
+                                $daysRemaining = 30 - $daysSince;
+                                ?>
                                 <div class="card mb-3 shadow-sm event-card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div class="event-title"
                                                 style="font-weight: 600; font-size: 1rem; margin-bottom: 6px;">
                                                 <?= htmlspecialchars($row['title']); ?>
+                                                <?php if ($daysRemaining <= 7 && $daysRemaining > 0): ?>
+                                                    <span class="badge bg-warning text-dark ms-2" style="font-size: 0.7rem;">
+                                                        <i class="bi bi-clock"></i> <?= $daysRemaining ?> days left
+                                                    </span>
+                                                <?php endif; ?>
                                             </div>
                                             <div class="event-actions gap-1">
                                                 <button type="button" class="btn btn-sm btn-outline-primary"
@@ -652,7 +664,7 @@ try {
                                 </div>
                             <?php endwhile; ?>
                         <?php else: ?>
-                            <p class="text-muted">No published events yet.</p>
+                            <span class="text-muted">No published events yet.</span>
                         <?php endif; ?>
                         <!-- Edit Confirmation Modal -->
                         <div class="modal fade" id="confirmEditModal" tabindex="-1">
