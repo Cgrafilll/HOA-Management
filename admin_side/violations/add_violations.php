@@ -896,25 +896,23 @@ try {
                                 <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
                             </div>
                         </div>
-                        <button type="button" class="btn-close" id="clearFileBtn"></button>
+                        <button type="button" class="btn-close" onclick="clearFile()"></button>
                     </div>
                 `;
-
-                // Add event listener to the clear button
-                document.getElementById('clearFileBtn').addEventListener('click', function () {
-                    fileInput.value = '';
-                    filePreview.innerHTML = '';
-                    fileDropArea.classList.add('required-highlight');
-                });
 
                 // Remove required highlight if present
                 fileDropArea.classList.remove('required-highlight');
             }
 
-            function clearFile() {
+            // Make clearFile global so it can be accessed from inline onclick
+            window.clearFile = function () {
+                const fileInput = document.getElementById('fileInput');
+                const filePreview = document.getElementById('filePreview');
+                const fileDropArea = document.getElementById('fileDropArea');
+
                 if (fileInput) fileInput.value = '';
                 if (filePreview) filePreview.innerHTML = '';
-                fileDropArea.classList.add('required-highlight');
+                if (fileDropArea) fileDropArea.classList.add('required-highlight');
             }
 
             // With this code that handles both date and time validation properly:
