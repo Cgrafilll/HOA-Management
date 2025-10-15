@@ -723,12 +723,6 @@ try {
             const cellphoneInput = document.getElementById('cellphone_number');
             const householdIdInput = document.getElementById('household_id');
 
-            // File Upload Functionality
-            const fileDropArea = document.getElementById('fileDropArea');
-            const fileInput = document.getElementById('fileInput');
-            const browseLink = document.getElementById('browseLink');
-            const filePreview = document.getElementById('filePreview');
-
             // Handle household selection change
             householdSelect.addEventListener('change', function () {
                 const selectedOption = this.options[this.selectedIndex];
@@ -752,6 +746,12 @@ try {
 
             let confirmBtn = document.getElementById("confirmSaveBtn");
             let violationForm = document.getElementById("violationForm");
+
+            // File Upload Functionality
+            const fileDropArea = document.getElementById('fileDropArea');
+            const fileInput = document.getElementById('fileInput');
+            const browseLink = document.getElementById('browseLink');
+            const filePreview = document.getElementById('filePreview');
 
             // Add form submission handler to add validation classes
             violationForm.addEventListener("submit", function (event) {
@@ -793,9 +793,8 @@ try {
                             violationForm.reset();
                             // Remove validation class after successful reset
                             violationForm.classList.remove("was-validated");
-                            // Clear file preview and re-highlight the drop area
+                            // Clear file preview (don't highlight here)
                             if (filePreview) filePreview.innerHTML = '';
-                            if (fileDropArea) fileDropArea.classList.add('required-highlight');
                         } else {
                             document.getElementById("errorMessage").innerText = data;
                             new bootstrap.Modal(document.getElementById("errorModal")).show();
@@ -915,6 +914,7 @@ try {
 
                 if (fileInput) fileInput.value = '';
                 if (filePreview) filePreview.innerHTML = '';
+                // Don't add highlight when clearing - only when submitting without file
                 if (fileDropArea) fileDropArea.classList.remove('required-highlight');
             }
 
