@@ -723,6 +723,17 @@ try {
             const cellphoneInput = document.getElementById('cellphone_number');
             const householdIdInput = document.getElementById('household_id');
 
+            // File Upload Functionality
+            const fileDropArea = document.getElementById('fileDropArea');
+            const fileInput = document.getElementById('fileInput');
+            const browseLink = document.getElementById('browseLink');
+            const filePreview = document.getElementById('filePreview');
+
+            // Initialize file drop area as highlighted since it's required
+            if (fileDropArea) {
+                fileDropArea.classList.add('required-highlight');
+            }
+
             // Handle household selection change
             householdSelect.addEventListener('change', function () {
                 const selectedOption = this.options[this.selectedIndex];
@@ -787,6 +798,9 @@ try {
                             violationForm.reset();
                             // Remove validation class after successful reset
                             violationForm.classList.remove("was-validated");
+                            // Clear file preview and re-highlight the drop area
+                            if (filePreview) filePreview.innerHTML = '';
+                            if (fileDropArea) fileDropArea.classList.add('required-highlight');
                         } else {
                             document.getElementById("errorMessage").innerText = data;
                             new bootstrap.Modal(document.getElementById("errorModal")).show();
@@ -801,12 +815,6 @@ try {
                 let confirmModal = bootstrap.Modal.getInstance(document.getElementById("confirmModal"));
                 confirmModal.hide();
             });
-
-            // File Upload Functionality
-            const fileDropArea = document.getElementById('fileDropArea');
-            const fileInput = document.getElementById('fileInput');
-            const browseLink = document.getElementById('browseLink');
-            const filePreview = document.getElementById('filePreview');
 
             if (fileDropArea && fileInput && browseLink && filePreview) {
                 // Prevent defaults for all drag events
