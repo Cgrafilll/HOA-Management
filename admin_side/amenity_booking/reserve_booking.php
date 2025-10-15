@@ -1334,8 +1334,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             </div>
                                             <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
                                                 data-value="whole" onclick="selectRate(this, 'whole')">
-                                                <div>
-                                                    <div class="rating"><strong id="wholeRate" class="text-wrap">Whole Day •
+                                                <div class="text-wrap">
+                                                    <div class="rating"><strong id="wholeRate">Whole Day •
                                                             <?= $currentRates['whole'] ?></strong></div>
                                                     <small class="text-muted">9:00 AM - 10:00 PM</small>
                                                 </div>
