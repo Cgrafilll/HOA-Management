@@ -757,26 +757,33 @@ try {
             violationForm.addEventListener("submit", function (event) {
                 event.preventDefault(); // Prevent default submission
 
-                // Check if file is uploaded
+                // Add Bootstrap validation class to show validation errors
+                violationForm.classList.add("was-validated");
+
+                // ALWAYS check and highlight file drop area when submit is attempted
                 if (!fileInput.files || fileInput.files.length === 0) {
                     fileDropArea.classList.add('required-highlight');
-                    fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    document.getElementById("errorMessage").innerText = "Please upload evidence file before submitting.";
-                    new bootstrap.Modal(document.getElementById("errorModal")).show();
-                    return;
                 } else {
                     fileDropArea.classList.remove('required-highlight');
                 }
 
-                // Add Bootstrap validation class
-                violationForm.classList.add("was-validated");
-
                 // Check if form is valid
-                if (violationForm.checkValidity()) {
-                    // Show confirmation modal if form is valid
-                    let confirmModal = new bootstrap.Modal(document.getElementById("confirmModal"));
-                    confirmModal.show();
+                if (!violationForm.checkValidity()) {
+                    // Form has validation errors, don't proceed
+                    return;
                 }
+
+                // Check if file is uploaded
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    document.getElementById("errorMessage").innerText = "Please upload evidence file before submitting.";
+                    new bootstrap.Modal(document.getElementById("errorModal")).show();
+                    return;
+                }
+
+                // All validations passed, show confirmation modal
+                let confirmModal = new bootstrap.Modal(document.getElementById("confirmModal"));
+                confirmModal.show();
             });
 
             confirmBtn.addEventListener("click", function () {
@@ -914,8 +921,7 @@ try {
 
                 if (fileInput) fileInput.value = '';
                 if (filePreview) filePreview.innerHTML = '';
-                // Don't add highlight when clearing - only when submitting without file
-                if (fileDropArea) fileDropArea.classList.remove('required-highlight');
+                if (fileDropArea) fileDropArea.classList.add('required-highlight');
             }
 
             // With this code that handles both date and time validation properly:
