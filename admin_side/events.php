@@ -104,7 +104,7 @@ try {
         UPDATE events 
         SET status = 'archived' 
         WHERE status = 'published' 
-        AND event_date < ?
+        AND DATE(event_date) < ?
     ");
     $archiveStmt->bind_param("s", $today);
     $archiveStmt->execute();
@@ -115,15 +115,17 @@ try {
         error_log("Auto-archived $archivedCount event(s) that have passed");
     }
 
-    // Now fetch published events
+    // Now fetch published events (including today and future)
     $stmt = $conn->prepare("
         SELECT e.id, e.title, e.body, e.event_date, e.created_at, 
                a.first_name, a.last_name
         FROM events e
         JOIN admin_accounts a ON e.admin_id = a.admin_id
         WHERE e.status = 'published'
-        ORDER BY e.event_date ASC  // ✅ Also changed to sort by event date
+        AND DATE(event_date) >= ?
+        ORDER BY e.event_date ASC
     ");
+    $stmt->bind_param("s", $today);
     $stmt->execute();
     $events_result = $stmt->get_result();
 } catch (Exception $e) {
