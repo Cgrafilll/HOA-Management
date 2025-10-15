@@ -308,6 +308,7 @@ try {
             .announcement-body,
             .announcment-meta,
             .form-control,
+            .form-label,
             main span {
                 font-size: 0.85rem;
             }
@@ -343,6 +344,15 @@ try {
 
             .sidebar-overlay {
                 top: 0;
+            }
+
+            .announcement-title,
+            .announcement-body,
+            .announcment-meta,
+            .form-control,
+            .form-label,
+            main span {
+                font-size: 0.75rem;
             }
         }
 
@@ -537,16 +547,16 @@ try {
                         <div class="row mb-3">
                             <div class="col-md-12">
                                 <!-- Title -->
-                                <span class="fw-medium mb-3">Title</span>
+                                <label class="fw-medium form-label mb-3">Title</label>
                                 <input type="text" id="title" name="title" class="form-control rounded" maxlength="150"
                                     placeholder="Enter announcement title">
                             </div>
                         </div>
-                        <div class="row mb-3">
+                        <div class="row mb-2">
                             <div class="col-md-12">
                                 <!-- Body -->
-                                <span class="fw-medium mb-3">Body</span>
-                                <textarea id="body" name="body" class="form-control rounded mb-1"
+                                <label class="fw-medium form-label mb-3">Body</label>
+                                <textarea id="body" name="body" class="form-control rounded"
                                     style="min-height:100px; max-height:300px; resize:none;"
                                     placeholder="Enter a description"></textarea>
                             </div>
@@ -692,7 +702,7 @@ try {
                                 </div>
                             <?php endwhile; ?>
                         <?php else: ?>
-                            <p class="text-muted">No published announcements yet.</p>
+                            <span class="text-muted">No published announcements yet.</span>
                         <?php endif; ?>
                     </div>
                     <!--Reusable Confirmation modal for Archive button on publish announcements-->
