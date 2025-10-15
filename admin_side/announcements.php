@@ -812,27 +812,29 @@ try {
             // ✅ Validation function with independent feedback
             function validateForm() {
                 let title = document.getElementById("title");
+                let titleFeedback = document.getElementById("titleFeedback");
                 let body = document.getElementById("body");
+                let bodyFeedback = document.getElementById("bodyFeedback");
                 let isValid = true;
 
                 // Validate Title
                 if (title.value.trim() === "") {
                     title.classList.add("is-invalid");
-                    title.classList.remove("d-none");
+                    titleFeedback.classList.remove("d-none");
                     isValid = false;
                 } else {
                     title.classList.remove("is-invalid");
-                    title.classList.add("d-none");
+                    titleFeedback.classList.add("d-none");
                 }
 
                 // Validate Body
                 if (body.value.trim() === "") {
                     body.classList.add("is-invalid");
-                    body.classList.remove("d-none");
+                    bodyFeedback.classList.remove("d-none");
                     isValid = false;
                 } else {
                     body.classList.remove("is-invalid");
-                    body.classList.add("d-none");
+                    bodyFeedback.classList.add("d-none");
                 }
 
                 return isValid;
@@ -842,14 +844,12 @@ try {
             document.getElementById("title").addEventListener("input", function () {
                 if (this.value.trim() !== "") {
                     this.classList.remove("is-invalid");
-                    this.classList.add("d-none");
                 }
             });
 
             document.getElementById("body").addEventListener("input", function () {
                 if (this.value.trim() !== "") {
                     this.classList.remove("is-invalid");
-                    this.classList.add("d-none");
                 }
             });
 
