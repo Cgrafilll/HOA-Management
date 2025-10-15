@@ -747,103 +747,35 @@ try {
             let confirmBtn = document.getElementById("confirmSaveBtn");
             let violationForm = document.getElementById("violationForm");
 
-            // File Upload Functionality
+            // ============================================
+            // FILE UPLOAD FUNCTIONALITY
+            // ============================================
             const fileDropArea = document.getElementById('fileDropArea');
             const fileInput = document.getElementById('fileInput');
             const browseLink = document.getElementById('browseLink');
             const filePreview = document.getElementById('filePreview');
 
-            // Add form submission handler to add validation classes
-            violationForm.addEventListener("submit", function (event) {
-                event.preventDefault(); // Prevent default submission
-
-                // Add Bootstrap validation class to show validation errors
-                violationForm.classList.add("was-validated");
-
-                // ALWAYS check and highlight file drop area when submit is attempted
-                if (!fileInput.files || fileInput.files.length === 0) {
-                    fileDropArea.classList.add('required-highlight');
-                } else {
-                    fileDropArea.classList.remove('required-highlight');
-                }
-
-                // Check if form is valid
-                if (!violationForm.checkValidity()) {
-                    // Form has validation errors, don't proceed
-                    return;
-                }
-
-                // Check if file is uploaded
-                if (!fileInput.files || fileInput.files.length === 0) {
-                    fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    document.getElementById("errorMessage").innerText = "Please upload evidence file before submitting.";
-                    new bootstrap.Modal(document.getElementById("errorModal")).show();
-                    return;
-                }
-
-                // All validations passed, show confirmation modal
-                let confirmModal = new bootstrap.Modal(document.getElementById("confirmModal"));
-                confirmModal.show();
-            });
-
-            confirmBtn.addEventListener("click", function () {
-                let formData = new FormData(violationForm);
-
-                fetch("save_violation.php", {
-                    method: "POST",
-                    body: formData
-                })
-                    .then(res => res.text())
-                    .then(data => {
-                        if (data.trim() === "success") {
-                            new bootstrap.Modal(document.getElementById("successModal")).show();
-                            violationForm.reset();
-                            // Remove validation class after successful reset
-                            violationForm.classList.remove("was-validated");
-                            // Clear file preview (don't highlight here)
-                            if (filePreview) filePreview.innerHTML = '';
-                        } else {
-                            document.getElementById("errorMessage").innerText = data;
-                            new bootstrap.Modal(document.getElementById("errorModal")).show();
-                        }
-                    })
-                    .catch(err => {
-                        document.getElementById("errorMessage").innerText = "Network error: " + err;
-                        new bootstrap.Modal(document.getElementById("errorModal")).show();
-                    });
-
-                // Close confirm modal after saving
-                let confirmModal = bootstrap.Modal.getInstance(document.getElementById("confirmModal"));
-                confirmModal.hide();
-            });
-
             if (fileDropArea && fileInput && browseLink && filePreview) {
-                // Prevent defaults for all drag events
                 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                     fileDropArea.addEventListener(eventName, preventDefaults, false);
                     document.body.addEventListener(eventName, preventDefaults, false);
                 });
 
-                // Highlight drop area when dragging over it
                 ['dragenter', 'dragover'].forEach(eventName => {
                     fileDropArea.addEventListener(eventName, highlight, false);
                 });
 
-                // Remove highlight when dragging away or dropping
                 ['dragleave', 'drop'].forEach(eventName => {
                     fileDropArea.addEventListener(eventName, unhighlight, false);
                 });
 
-                // Handle file drop
                 fileDropArea.addEventListener('drop', handleDrop, false);
 
-                // Handle browse link click
                 browseLink.addEventListener('click', (e) => {
                     e.preventDefault();
                     fileInput.click();
                 });
 
-                // Handle file input change
                 fileInput.addEventListener('change', (e) => {
                     handleFiles(e.target.files);
                 });
@@ -865,6 +797,7 @@ try {
             function handleDrop(e) {
                 const dt = e.dataTransfer;
                 const files = dt.files;
+                fileInput.files = files;
                 handleFiles(files);
             }
 
@@ -897,7 +830,7 @@ try {
 
                 // Display file preview
                 filePreview.innerHTML = `
-                    <div class="alert alert-success d-flex align-items-center">
+                    <div class="alert alert-success d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center">
                             <i class="bi bi-file-earmark-image me-2"></i>
                             <div>
@@ -905,26 +838,105 @@ try {
                                 <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
                             </div>
                         </div>
-                        <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
+                        <button type="button" class="btn-close" onclick="clearFile()"></button>
                     </div>
                 `;
 
                 // Remove required highlight if present
-                fileDropArea.classList.remove('required-highlight');
+                if (fileDropArea) {
+                    fileDropArea.classList.remove('required-highlight');
+                }
             }
 
             // Make clearFile global so it can be accessed from inline onclick
             window.clearFile = function () {
-                const fileInput = document.getElementById('fileInput');
-                const filePreview = document.getElementById('filePreview');
-                const fileDropArea = document.getElementById('fileDropArea');
-
                 if (fileInput) fileInput.value = '';
                 if (filePreview) filePreview.innerHTML = '';
-                if (fileDropArea) fileDropArea.classList.add('required-highlight');
+                // Don't add highlight when clearing - only when submitting without file
+                if (fileDropArea) fileDropArea.classList.remove('required-highlight');
             }
 
-            // With this code that handles both date and time validation properly:
+            function validateFileUpload() {
+                if (!fileInput || !fileDropArea) return true;
+
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    fileDropArea.classList.add('required-highlight');
+                    return false;
+                } else {
+                    fileDropArea.classList.remove('required-highlight');
+                    return true;
+                }
+            }
+
+            // ============================================
+            // FORM SUBMISSION
+            // ============================================
+            violationForm.addEventListener("submit", function (event) {
+                event.preventDefault(); // Prevent default submission
+
+                // Add Bootstrap validation class to show validation errors
+                violationForm.classList.add("was-validated");
+
+                // Validate file upload first
+                const fileValid = validateFileUpload();
+
+                // Check if form is valid (HTML5 validation)
+                if (!violationForm.checkValidity()) {
+                    // Form has validation errors, don't proceed
+                    return;
+                }
+
+                // Check if file is uploaded
+                if (!fileValid) {
+                    fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    document.getElementById("errorMessage").innerText = "Please upload evidence file before submitting.";
+                    new bootstrap.Modal(document.getElementById("errorModal")).show();
+                    return;
+                }
+
+                // All validations passed, show confirmation modal
+                showConfirmationModal();
+            });
+
+            function showConfirmationModal() {
+                let confirmModal = new bootstrap.Modal(document.getElementById("confirmModal"));
+                confirmModal.show();
+            }
+
+            confirmBtn.addEventListener("click", function () {
+                let formData = new FormData(violationForm);
+
+                fetch("save_violation.php", {
+                    method: "POST",
+                    body: formData
+                })
+                    .then(res => res.text())
+                    .then(data => {
+                        if (data.trim() === "success") {
+                            new bootstrap.Modal(document.getElementById("successModal")).show();
+                            violationForm.reset();
+                            // Remove validation class after successful reset
+                            violationForm.classList.remove("was-validated");
+                            // Clear file preview
+                            if (filePreview) filePreview.innerHTML = '';
+                        } else {
+                            document.getElementById("errorMessage").innerText = data;
+                            new bootstrap.Modal(document.getElementById("errorModal")).show();
+                        }
+                    })
+                    .catch(err => {
+                        document.getElementById("errorMessage").innerText = "Network error: " + err;
+                        new bootstrap.Modal(document.getElementById("errorModal")).show();
+                    });
+
+                // Close confirm modal after saving
+                let confirmModal = bootstrap.Modal.getInstance(document.getElementById("confirmModal"));
+                confirmModal.hide();
+            });
+
+            // ============================================
+            // DATE AND TIME VALIDATION
+            // ============================================
             const dateIncident = document.getElementById('dateIncident');
             const timeIncident = document.getElementById('timeIncident');
 
