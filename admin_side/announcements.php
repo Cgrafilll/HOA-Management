@@ -534,23 +534,32 @@ try {
                         <!-- ✅ Add hidden form token -->
                         <input type="hidden" name="form_token"
                             value="<?php echo htmlspecialchars($_SESSION['form_token']); ?>">
-                        <!-- Title -->
-                        <span class="fw h5 mb-2">Title</span>
-                        <input type="text" id="title" name="title" class="form-control rounded mb-1" maxlength="150"
-                            placeholder="Enter announcement title">
-                        <!-- Body -->
-                        <span class="fw h5 mb-2 mt-3">Body</span>
-                        <textarea id="body" name="body" class="form-control rounded mb-1"
-                            style="min-height:100px; resize:none;" placeholder="Enter a description"></textarea>
-                        <!-- Error message -->
-                        <p id="formError" class="text-danger small mt-2" style="display:none;">
-                            Please fill in both Title and Body before publishing.
-                        </p>
-                        <!-- Publish button -->
-                        <div class="text-end">
-                            <button type="button" class="btn btn-primary mt-3" id="publishBtn">
-                                Publish
-                            </button>
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <!-- Title -->
+                                <span class="fw-medium mb-2">Title</span>
+                                <input type="text" id="title" name="title" class="form-control rounded" maxlength="150"
+                                    placeholder="Enter announcement title">
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <!-- Body -->
+                                <span class="mb-2">Body</span>
+                                <textarea id="body" name="body" class="form-control rounded mb-1"
+                                    style="min-height:100px; max-height:300px; resize:none;"
+                                    placeholder="Enter a description"></textarea>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <!-- Publish button -->
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-primary mt-3" id="publishBtn">
+                                        Publish
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </form>
                     <!-- Confirmation Modal -->
