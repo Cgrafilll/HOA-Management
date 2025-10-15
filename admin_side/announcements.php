@@ -570,7 +570,7 @@ try {
                             <div class="col-md-12">
                                 <!-- Publish button -->
                                 <div class="text-end">
-                                    <button type="button" class="btn btn-sm btn-primary mt-3" id="publishBtn">
+                                    <button type="button" class="btn btn-sm btn-primary" id="publishBtn">
                                         Publish
                                     </button>
                                 </div>
@@ -626,7 +626,7 @@ try {
                         </div>
                     </div>
                     <div class="mt-4">
-                        <span class="fw-bold h5">Published Announcements</span>
+                        <span class="fw-bold">Published Announcements</span>
                         <hr>
                         <?php if ($result && $result->num_rows > 0): ?>
                             <?php while ($row = $result->fetch_assoc()): ?>

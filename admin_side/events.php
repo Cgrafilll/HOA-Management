@@ -96,24 +96,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-// Fetch all published events
+
+// ✅ Fetch published events (after insert/redirect logic)
 try {
+    // Auto-archive old events first
+    $archiveDate = date('Y-m-d H:i:s', strtotime('-7 days'));
+    $archiveStmt = $conn->prepare("
+        UPDATE events 
+        SET status = 'archived' 
+        WHERE status = 'published' 
+        AND created_at < ?
+    ");
+    $archiveStmt->bind_param("s", $archiveDate);
+    $archiveStmt->execute();
+
+    // Now fetch published events
     $stmt = $conn->prepare("
         SELECT e.id, e.title, e.body, e.event_date, e.created_at, 
                a.first_name, a.last_name
         FROM events e
         JOIN admin_accounts a ON e.admin_id = a.admin_id
         WHERE e.status = 'published'
-        ORDER BY e.created_at DESC
+        ORDER BY a.created_at DESC
     ");
     $stmt->execute();
     $events_result = $stmt->get_result();
-    $stmt->close();
 } catch (Exception $e) {
-    $events_result = null; // prevent undefined variable
-    $error_message = "Failed to fetch events: " . $e->getMessage();
+    $error_message = "Error fetching announcements: " . $e->getMessage();
 }
-
 
 ?>
 
@@ -296,6 +306,16 @@ try {
                 font-size: 1rem !important;
             }
 
+            .announcement-title,
+            .announcement-body,
+            .announcment-meta,
+            .form-control,
+            .form-label,
+            .invalid-feedback,
+            main span {
+                font-size: 0.85rem;
+            }
+
             .btn-sm {
                 padding: 0.25rem 0.5rem;
                 font-size: 0.8rem;
@@ -327,6 +347,16 @@ try {
 
             .sidebar-overlay {
                 top: 0;
+            }
+
+            .announcement-title,
+            .announcement-body,
+            .announcment-meta,
+            .form-control,
+            .form-label,
+            .invalid-feedback,
+            main span {
+                font-size: 0.75rem;
             }
         }
 
@@ -364,12 +394,6 @@ try {
         .form-control.border-danger {
             border: 2px solid #dc3545 !important;
             /* force red */
-        }
-
-        textarea {
-            min-height: 100px;
-            resize: none;
-            /* optional: prevent manual drag */
         }
     </style>
 </head>
@@ -507,35 +531,54 @@ try {
                     </div>
                     <hr class="mb-3 mt-0">
                     <!-- Event Form -->
-                    <form method="POST" id="eventForm">
+                    <form method="POST" id="eventForm" novalidate>
                         <input type="hidden" name="form_token"
                             value="<?php echo htmlspecialchars($_SESSION['form_token']); ?>">
-                        <div class="row">
-                            <div class="col-6">
-                                <h5 class="fw mb-2">Event Title</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <span class="fw-medium form-label mb-2">Event Title</span>
                                 <input type="text" id="title" name="title" class="form-control rounded mb-1"
                                     maxlength="150" placeholder="Enter event title" required>
+                                <div class="invalid-feedback d-none" id="titleFeedback">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Please enter a title for the
+                                    event.
+                                </div>
                             </div>
-                            <div class="col-6">
-                                <h5 class="fw mb-2">Event Date</h5>
+                            <div class="col-md-6">
+                                <span class="fw-medium form-label mb-2">Event Date</span>
                                 <input type="date" id="event_date" name="event_date" class="form-control mb-3" required>
+                                <div class="invalid-feedback d-none" id="dateFeedback">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Please enter a date for the
+                                    event.
+                                </div>
                             </div>
                         </div>
-                        <h5 class="fw mb-2 mt-3">Description</h5>
-                        <textarea id="body" name="body" class="form-control rounded mb-1"
-                            style="min-height:100px; resize:none;" placeholder="Enter event description"
-                            required></textarea>
-                        <p id="formError" class="text-danger small mt-2" style="display:none;">
-                            Please fill in both Title, Description and Date before publishing.
-                        </p>
-                        <!-- Publish button -->
-                        <div class="text-end">
-                            <button type="button" class="btn btn-primary mt-3" id="publishBtn">Publish</button>
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <span class="fw-medium form-label mb-2">Description</span>
+                                <textarea id="body" name="body" class="form-control rounded mb-1"
+                                    style="min-height:100px; max-height:300px; resize:none;"
+                                    placeholder="Enter event description" required></textarea>
+                                <div class="invalid-feedback d-none" id="descFeedback">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Please enter a description for the
+                                    event.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <!-- Publish button -->
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-sm btn-primary" id="publishBtn">
+                                        Publish
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </form>
                     <!-- Published Events -->
                     <div class="mt-4">
-                        <h5 class="fw-bold">Published Events</h5>
+                        <span class="fw-bold">Published Events</span>
                         <hr>
                         <?php if ($events_result && $events_result->num_rows > 0): ?>
                             <?php while ($row = $events_result->fetch_assoc()): ?>
@@ -546,7 +589,7 @@ try {
                                                 style="font-weight: 600; font-size: 1rem; margin-bottom: 6px;">
                                                 <?= htmlspecialchars($row['title']); ?>
                                             </div>
-                                            <div class="event-actions gap-2">
+                                            <div class="event-actions gap-1">
                                                 <button type="button" class="btn btn-sm btn-outline-primary"
                                                     data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id']; ?>"
                                                     title="Edit">
@@ -735,6 +778,8 @@ try {
             </div>
         </main>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="javascripts/mobileSidebar.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const urlParams = new URLSearchParams(window.location.search);
@@ -744,7 +789,7 @@ try {
                     let successModal = new bootstrap.Modal(successModalEl);
                     successModal.show();
 
-                    // Remove the query parameter so it doesn’t show on refresh
+                    // Remove the query parameter so it doesn't show on refresh
                     successModalEl.addEventListener('hidden.bs.modal', function () {
                         const url = new URL(window.location);
                         url.searchParams.delete('success');
@@ -752,30 +797,71 @@ try {
                     });
                 }
             }
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
+
+            // ✅ Validation function with independent feedback
             function validateForm() {
                 let title = document.getElementById("title");
+                let titleFeedback = document.getElementById("titleFeedback");
                 let body = document.getElementById("body");
+                let bodyFeedback = document.getElementById("descFeedback");
                 let date = document.getElementById("event_date");
-                let errorMsg = document.getElementById("formError");
+                let dateFeedback = document.getElementById("dateFeedback");
                 let isValid = true;
 
-                // Reset styles
-                title.classList.remove("border-danger");
-                body.classList.remove("border-danger");
-                date.classList.remove("border-danger");
-                errorMsg.style.display = "none";
+                // Validate Title
+                if (title.value.trim() === "") {
+                    title.classList.add("is-invalid");
+                    titleFeedback.classList.remove("d-none");
+                    isValid = false;
+                } else {
+                    title.classList.remove("is-invalid");
+                    titleFeedback.classList.add("d-none");
+                }
 
-                if (title.value.trim() === "") { title.classList.add("border-danger"); isValid = false; }
-                if (body.value.trim() === "") { body.classList.add("border-danger"); isValid = false; }
-                if (date.value === "") { date.classList.add("border-danger"); isValid = false; }
+                // Validate Body
+                if (body.value.trim() === "") {
+                    body.classList.add("is-invalid");
+                    bodyFeedback.classList.remove("d-none");
+                    isValid = false;
+                } else {
+                    body.classList.remove("is-invalid");
+                    bodyFeedback.classList.add("d-none");
+                }
 
-                if (!isValid) { errorMsg.style.display = "block"; }
+                // Validate Date
+                if (date.value === "") {
+                    date.classList.add("is-invalid");
+                    dateFeedback.classList.remove("d-none");
+                    isValid = false;
+                } else {
+                    date.classList.remove("is-invalid");
+                    dateFeedback.classList.add("d-none");
+                }
+
                 return isValid;
             }
+
+            // Remove invalid state when user starts typing
+            document.getElementById("title").addEventListener("input", function () {
+                if (this.value.trim() !== "") {
+                    this.classList.remove("is-invalid");
+                    document.getElementById("titleFeedback").classList.add("d-none");
+                }
+            });
+
+            document.getElementById("body").addEventListener("input", function () {
+                if (this.value.trim() !== "") {
+                    this.classList.remove("is-invalid");
+                    document.getElementById("descFeedback").classList.add("d-none");
+                }
+            });
+
+            document.getElementById("event_date").addEventListener("change", function () {
+                if (this.value !== "") {
+                    this.classList.remove("is-invalid");
+                    document.getElementById("dateFeedback").classList.add("d-none");
+                }
+            });
 
             const publishBtn = document.getElementById("publishBtn");
             const confirmBtn = document.getElementById("confirmPublish");
@@ -796,6 +882,15 @@ try {
                 eventForm.submit();
             });
 
+            // Prevent form submission on Enter key unless validation passes
+            eventForm.addEventListener("submit", function (e) {
+                e.preventDefault();
+                if (validateForm()) {
+                    let modal = new bootstrap.Modal(document.getElementById("confirmModal"));
+                    modal.show();
+                }
+            });
+
             // Auto-expand textarea
             document.querySelectorAll("textarea").forEach(function (el) {
                 el.addEventListener("input", function () {
@@ -803,12 +898,16 @@ try {
                     this.style.height = this.scrollHeight + "px";
                 });
             });
-        });
-        document.addEventListener('DOMContentLoaded', function () {
+
+            // Set minimum date to today
+            const today = new Date().toISOString().split("T")[0];
+            const dateInput = document.getElementById("event_date");
+            dateInput.min = today;
+
+            // ✅ EDIT MODAL FUNCTIONALITY
             let currentEditForm = null;
             let currentEventId = null;
 
-            // When clicking "Save Changes" -> open confirmation modal
             document.querySelectorAll('.confirmEditBtn').forEach(btn => {
                 btn.addEventListener('click', function () {
                     currentEventId = this.dataset.id;
@@ -819,23 +918,18 @@ try {
 
                     if (editModalInstance) {
                         editModalEl.addEventListener('hidden.bs.modal', function handler() {
-                            // Show confirm modal after edit modal is fully hidden
                             const confirmModal = new bootstrap.Modal(document.getElementById('confirmEditModal'));
                             confirmModal.show();
-
                             editModalEl.removeEventListener('hidden.bs.modal', handler);
                         });
-
                         editModalInstance.hide();
                     } else {
-                        // fallback if instance not found
                         const confirmModal = new bootstrap.Modal(document.getElementById('confirmEditModal'));
                         confirmModal.show();
                     }
                 });
             });
 
-            // When confirming in the modal, send the update
             document.getElementById('confirmEditBtn').addEventListener('click', function () {
                 if (!currentEditForm) return;
 
@@ -853,11 +947,9 @@ try {
 
                         if (data.success) {
                             confirmModal.hide();
-
                             const successModalEl = document.getElementById('editSuccessModal');
                             const successModal = new bootstrap.Modal(successModalEl);
                             successModal.show();
-
                             successModalEl.addEventListener('hidden.bs.modal', () => location.reload());
                         } else {
                             alert('Failed to update event: ' + data.message);
@@ -865,11 +957,8 @@ try {
                     })
                     .catch(err => alert('Error updating event: ' + err.message));
             });
-        });
 
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
+            // ✅ ARCHIVE FUNCTIONALITY
             let archiveEventId = null;
 
             document.querySelectorAll('.archiveBtn').forEach(btn => {
@@ -897,32 +986,18 @@ try {
 
                         if (data.success) {
                             archiveModal.hide();
-
                             const archiveSuccessModalEl = document.getElementById('archiveSuccessModal');
                             const archiveSuccessModal = new bootstrap.Modal(archiveSuccessModalEl);
                             archiveSuccessModal.show();
-
                             archiveSuccessModalEl.addEventListener('hidden.bs.modal', () => location.reload());
                         } else {
                             alert('Failed to archive event: ' + data.message);
                         }
                     })
-                    .catch(err => {
-                        alert('Error archiving event: ' + err.message);
-                    });
+                    .catch(err => alert('Error archiving event: ' + err.message));
             });
         });
-
-        // Set minimum date to today
-        document.addEventListener("DOMContentLoaded", function () {
-            const today = new Date().toISOString().split("T")[0];
-            const dateInput = document.getElementById("event_date");
-            dateInput.min = today; // disables all past options
-        });
-
     </script>
-    <script src="javascripts/mobileSidebar.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
