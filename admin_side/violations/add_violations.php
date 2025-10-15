@@ -602,7 +602,7 @@ try {
                                         Supported formats: JPEG, PNG, GIF
                                     </div>
                                     <input type="file" id="fileInput" name="evidence" class="d-none"
-                                        accept="image/jpeg,image/png,image/gif" required>
+                                        accept="image/jpeg,image/png,image/gif">
                                 </div>
                                 <label class="form-label mt-2">Upload your Evidence<small
                                         class="fw-bold text-danger">*</small></label>
@@ -874,23 +874,23 @@ try {
             violationForm.addEventListener("submit", function (event) {
                 event.preventDefault(); // Prevent default submission
 
+                // Validate file upload FIRST (before other validations)
+                const fileValid = validateFileUpload();
+
                 // Add Bootstrap validation class to show validation errors
                 violationForm.classList.add("was-validated");
 
-                // Validate file upload first
-                const fileValid = validateFileUpload();
-
-                // Check if form is valid (HTML5 validation)
-                if (!violationForm.checkValidity()) {
-                    // Form has validation errors, don't proceed
-                    return;
-                }
-
-                // Check if file is uploaded
+                // If file is not valid, stop here
                 if (!fileValid) {
                     fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     document.getElementById("errorMessage").innerText = "Please upload evidence file before submitting.";
                     new bootstrap.Modal(document.getElementById("errorModal")).show();
+                    return;
+                }
+
+                // Check if form is valid (HTML5 validation for other fields)
+                if (!violationForm.checkValidity()) {
+                    // Form has validation errors, don't proceed
                     return;
                 }
 
