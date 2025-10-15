@@ -97,18 +97,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ✅ Fetch published events (after insert/redirect logic)
+// ✅ Auto-archive events whose event date has passed
 try {
-    // Auto-archive old events first
-    $archiveDate = date('Y-m-d H:i:s', strtotime('-7 days'));
+    $today = date('Y-m-d');
     $archiveStmt = $conn->prepare("
         UPDATE events 
         SET status = 'archived' 
         WHERE status = 'published' 
-        AND created_at < ?
+        AND event_date < ?
     ");
-    $archiveStmt->bind_param("s", $archiveDate);
+    $archiveStmt->bind_param("s", $today);
     $archiveStmt->execute();
+
+    // Optional: Log how many were archived
+    $archivedCount = $archiveStmt->affected_rows;
+    if ($archivedCount > 0) {
+        error_log("Auto-archived $archivedCount event(s) that have passed");
+    }
 
     // Now fetch published events
     $stmt = $conn->prepare("
@@ -117,7 +122,7 @@ try {
         FROM events e
         JOIN admin_accounts a ON e.admin_id = a.admin_id
         WHERE e.status = 'published'
-        ORDER BY a.created_at DESC
+        ORDER BY e.event_date ASC  // ✅ Also changed to sort by event date
     ");
     $stmt->execute();
     $events_result = $stmt->get_result();
