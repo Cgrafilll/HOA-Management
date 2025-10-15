@@ -821,7 +821,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             .form-select option,
             .input-group-text,
             .invalid-feedback,
-            .rating,
+            .rating strong,
             .payment-info,
             main span {
                 font-size: 0.85rem;
@@ -966,7 +966,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             .form-select option,
             .input-group-text,
             .invalid-feedback,
-            .rating,
+            .rating strong,
             .payment-info,
             main span {
                 font-size: 0.75rem;
