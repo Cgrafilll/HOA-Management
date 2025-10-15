@@ -69,15 +69,20 @@ $sql = "SELECT a.id, a.title, a.body, a.status, a.created_at,
 
 $result = $conn->query($sql);
 
-// Fetch events from database
+// Fetch only upcoming events from database (event_date >= today)
+$today = date('Y-m-d');
 $events_sql = "SELECT e.id, e.title, e.body, e.status, e.event_date, e.created_at, 
                       ad.first_name, ad.last_name 
                FROM events e 
                LEFT JOIN admin_accounts ad ON e.admin_id = ad.admin_id 
                WHERE e.status = 'published' 
+               AND e.event_date >= ? 
                ORDER BY e.event_date ASC, e.created_at DESC";
 
-$events_result = $conn->query($events_sql);
+$stmt = $conn->prepare($events_sql);
+$stmt->bind_param("s", $today);
+$stmt->execute();
+$events_result = $stmt->get_result();
 
 // Fetch household count
 $household_count = 0;
