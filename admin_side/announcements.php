@@ -534,18 +534,18 @@ try {
                         <!-- ✅ Add hidden form token -->
                         <input type="hidden" name="form_token"
                             value="<?php echo htmlspecialchars($_SESSION['form_token']); ?>">
-                        <div class="row mb-2">
+                        <div class="row mb-3">
                             <div class="col-md-12">
                                 <!-- Title -->
-                                <span class="fw-medium mb-2">Title</span>
+                                <span class="fw-medium mb-3">Title</span>
                                 <input type="text" id="title" name="title" class="form-control rounded" maxlength="150"
                                     placeholder="Enter announcement title">
                             </div>
                         </div>
-                        <div class="row mb-2">
+                        <div class="row mb-3">
                             <div class="col-md-12">
                                 <!-- Body -->
-                                <span class="mb-2">Body</span>
+                                <span class="fw-medium mb-3">Body</span>
                                 <textarea id="body" name="body" class="form-control rounded mb-1"
                                     style="min-height:100px; max-height:300px; resize:none;"
                                     placeholder="Enter a description"></textarea>
@@ -555,7 +555,7 @@ try {
                             <div class="col-md-12">
                                 <!-- Publish button -->
                                 <div class="text-end">
-                                    <button type="button" class="btn btn-primary mt-3" id="publishBtn">
+                                    <button type="button" class="btn btn-sm btn-primary mt-3" id="publishBtn">
                                         Publish
                                     </button>
                                 </div>
