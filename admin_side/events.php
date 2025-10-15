@@ -583,11 +583,21 @@ try {
                         <?php if ($events_result && $events_result->num_rows > 0): ?>
                             <?php while ($row = $events_result->fetch_assoc()): ?>
                                 <?php
-                                // Calculate days since creation
-                                $createdDate = new DateTime($row['created_at']);
+                                // Calculate days until event date
+                                $eventDate = new DateTime($row['event_date']);
                                 $now = new DateTime();
-                                $daysSince = $now->diff($createdDate)->days;
-                                $daysRemaining = 30 - $daysSince;
+                                $now->setTime(0, 0, 0); // Reset time to midnight for accurate day calculation
+                                $eventDate->setTime(0, 0, 0);
+
+                                $daysUntilEvent = $now->diff($eventDate)->days;
+                                $isPastEvent = $eventDate < $now;
+
+                                // For display purposes
+                                if (!$isPastEvent) {
+                                    $daysRemaining = $daysUntilEvent;
+                                } else {
+                                    $daysRemaining = -1; // Event has passed
+                                }
                                 ?>
                                 <div class="card mb-3 shadow-sm event-card">
                                     <div class="card-body">
@@ -595,9 +605,20 @@ try {
                                             <div class="event-title"
                                                 style="font-weight: 600; font-size: 1rem; margin-bottom: 6px;">
                                                 <?= htmlspecialchars($row['title']); ?>
-                                                <?php if ($daysRemaining <= 7 && $daysRemaining > 0): ?>
+                                                <?php if (!$isPastEvent && $daysRemaining <= 7): ?>
                                                     <span class="badge bg-warning text-dark ms-2" style="font-size: 0.7rem;">
-                                                        <i class="bi bi-clock"></i> <?= $daysRemaining ?> days left
+                                                        <i class="bi bi-clock"></i>
+                                                        <?php if ($daysRemaining == 0): ?>
+                                                            Today!
+                                                        <?php elseif ($daysRemaining == 1): ?>
+                                                            Tomorrow
+                                                        <?php else: ?>
+                                                            <?= $daysRemaining ?> days away
+                                                        <?php endif; ?>
+                                                    </span>
+                                                <?php elseif ($isPastEvent): ?>
+                                                    <span class="badge bg-secondary text-white ms-2" style="font-size: 0.7rem;">
+                                                        <i class="bi bi-calendar-x"></i> Event passed
                                                     </span>
                                                 <?php endif; ?>
                                             </div>
