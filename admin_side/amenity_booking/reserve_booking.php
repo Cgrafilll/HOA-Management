@@ -1317,7 +1317,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             <div class="custom-radio-option selected" data-value="day"
                                                 onclick="selectRate(this, 'day')">
                                                 <div>
-                                                    <div class="rating text-wrap"><strong id="dayRate">Day • <?= $currentRates['day'] ?></strong>
+                                                    <div class="rating"><strong id="dayRate">Day • <?= $currentRates['day'] ?></strong>
                                                     </div>
                                                     <small class="text-muted">9:00 AM - 5:00 PM</small>
                                                 </div>
@@ -1326,7 +1326,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
                                                 data-value="night" onclick="selectRate(this, 'night')">
                                                 <div>
-                                                    <div class="rating text-wrap"><strong id="nightRate">Night •
+                                                    <div class="rating"><strong id="nightRate">Night •
                                                             <?= $currentRates['night'] ?></strong></div>
                                                     <small class="text-muted">5:00 PM - 10:00 PM</small>
                                                 </div>
@@ -1335,7 +1335,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             <div class="custom-radio-option <?= $amenity === 'Clubhouse' ? 'd-none' : '' ?>"
                                                 data-value="whole" onclick="selectRate(this, 'whole')">
                                                 <div>
-                                                    <div class="rating text-wrap"><strong id="wholeRate">Whole Day •
+                                                    <div class="rating"><strong id="wholeRate" class="text-wrap">Whole Day •
                                                             <?= $currentRates['whole'] ?></strong></div>
                                                     <small class="text-muted">9:00 AM - 10:00 PM</small>
                                                 </div>
