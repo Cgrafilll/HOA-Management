@@ -299,7 +299,10 @@ try {
 <body class="bg-light">
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
-        <div class="me-4" style="width: 250px;">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="me-4 logo-container" style="width: 250px;">
             <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
@@ -307,7 +310,7 @@ try {
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <span class="d-none d-md-inline">Hello, <?php echo htmlspecialchars($username); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -330,10 +333,12 @@ try {
             </div>
         </div>
     </header>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1">
+        <aside class="sidebar">
+            <nav class="nav flex-column gap-1 sidebar-nav p-3">
                 <a href="../admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -403,14 +408,13 @@ try {
                     </div>
                 </div>
                 <a href="../login/logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
-                    style="position: fixed; bottom: 0; width: 220px;">
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
         <!-- Main Content -->
-        <main class="flex-fill p-4">
+        <main class="flex-grow-1 p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Announcements</h5>
@@ -519,7 +523,7 @@ try {
     </div>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script src="../javascripts/mobileSidebar.js"></script><script>
         document.addEventListener('DOMContentLoaded', function () {
             let currentId = null;
 
