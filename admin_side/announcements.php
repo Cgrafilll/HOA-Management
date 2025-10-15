@@ -309,6 +309,7 @@ try {
             .announcment-meta,
             .form-control,
             .form-label,
+            .invalid-feedback,
             main span {
                 font-size: 0.85rem;
             }
@@ -351,6 +352,7 @@ try {
             .announcment-meta,
             .form-control,
             .form-label,
+            .invalid-feedback,
             main span {
                 font-size: 0.75rem;
             }
@@ -389,12 +391,6 @@ try {
         .form-control.border-danger {
             border: 2px solid #dc3545 !important;
             /* force red */
-        }
-
-        textarea {
-            min-height: 100px;
-            resize: none;
-            /* optional: prevent manual drag */
         }
     </style>
 </head>
@@ -540,25 +536,34 @@ try {
                         </div>
                     <?php endif; ?>
                     <!-- Announcement Form -->
-                    <form method="POST" id="announcementForm">
+                    <form method="POST" id="announcementForm" novalidate>
                         <!-- ✅ Add hidden form token -->
                         <input type="hidden" name="form_token"
                             value="<?php echo htmlspecialchars($_SESSION['form_token']); ?>">
                         <div class="row mb-3">
                             <div class="col-md-12">
                                 <!-- Title -->
-                                <label class="fw-medium form-label mb-3">Title</label>
+                                <label class="fw-medium form-label mb-2">Title<small
+                                        class="text-danger">*</small></label>
                                 <input type="text" id="title" name="title" class="form-control rounded" maxlength="150"
-                                    placeholder="Enter announcement title">
+                                    placeholder="Enter announcement title" required>
+                                <div class="invalid-feedback d-none" id="titleFeedback">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Please enter a title for the
+                                    announcement.
+                                </div>
                             </div>
                         </div>
                         <div class="row mb-2">
                             <div class="col-md-12">
                                 <!-- Body -->
-                                <label class="fw-medium form-label mb-3">Body</label>
+                                <label class="fw-medium form-label mb-2">Body<small
+                                        class="text-danger">*</small></label>
                                 <textarea id="body" name="body" class="form-control rounded"
                                     style="min-height:100px; max-height:300px; resize:none;"
-                                    placeholder="Enter a description"></textarea>
+                                    placeholder="Enter a description" required></textarea>
+                                <div class="invalid-feedback d-none" id="bodyFeedback">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Please enter the announcement body.
+                                </div>
                             </div>
                         </div>
                         <div class="row mb-2">
@@ -804,38 +809,49 @@ try {
     <script src="javascripts/mobileSidebar.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // ✅ Validation function
+            // ✅ Validation function with independent feedback
             function validateForm() {
                 let title = document.getElementById("title");
                 let body = document.getElementById("body");
-                let errorMsg = document.getElementById("formError");
                 let isValid = true;
-
-                // Reset styles
-                title.classList.remove("border-danger");
-                body.classList.remove("border-danger");
-                errorMsg.style.display = "none";
 
                 // Validate Title
                 if (title.value.trim() === "") {
-                    title.classList.add("border-danger");
+                    title.classList.add("is-invalid");
+                    title.classList.remove("d-none");
                     isValid = false;
+                } else {
+                    title.classList.remove("is-invalid");
+                    title.classList.add("d-none");
                 }
 
                 // Validate Body
                 if (body.value.trim() === "") {
-                    body.classList.add("border-danger");
+                    body.classList.add("is-invalid");
+                    body.classList.remove("d-none");
                     isValid = false;
+                } else {
+                    body.classList.remove("is-invalid");
+                    body.classList.add("d-none");
                 }
 
-                // If invalid, show error
-                if (!isValid) {
-                    errorMsg.style.display = "block";
-                    return false;
-                }
-
-                return true;
+                return isValid;
             }
+
+            // Remove invalid state when user starts typing
+            document.getElementById("title").addEventListener("input", function () {
+                if (this.value.trim() !== "") {
+                    this.classList.remove("is-invalid");
+                    this.classList.add("d-none");
+                }
+            });
+
+            document.getElementById("body").addEventListener("input", function () {
+                if (this.value.trim() !== "") {
+                    this.classList.remove("is-invalid");
+                    this.classList.add("d-none");
+                }
+            });
 
             // ✅ Publish button click
             document.getElementById("publishBtn").addEventListener("click", function () {
