@@ -416,6 +416,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
         .custom-radio-option {
             padding: 12px 20px;
+            padding-right: 50px;
             border: none;
             background: none;
             width: 100%;
@@ -789,11 +790,12 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             .custom-radio-option {
                 padding: 10px 15px;
+                padding-right: 45px;
                 min-height: 50px;
             }
 
-            .custom-radio-option strong {
-                font-size: 0.9rem;
+            .custom-radio-option>div {
+                max-width: calc(100% - 30px);
             }
 
             .custom-radio-option small {
@@ -927,13 +929,20 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
 
             .custom-radio-option {
                 padding: 8px 12px;
+                padding-right: 45px;
                 min-height: 45px;
+            }
+
+            .custom-radio-option>div {
+                max-width: calc(100% - 30px);
+                word-wrap: break-word;
             }
 
             .custom-radio-option strong {
                 font-size: 0.85rem;
                 display: block;
                 margin-bottom: 2px;
+                word-break: break-word;
             }
 
             .custom-radio-option small {
@@ -1317,7 +1326,8 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             <div class="custom-radio-option selected" data-value="day"
                                                 onclick="selectRate(this, 'day')">
                                                 <div>
-                                                    <div class="rating"><strong id="dayRate">Day • <?= $currentRates['day'] ?></strong>
+                                                    <div class="rating"><strong id="dayRate">Day •
+                                                            <?= $currentRates['day'] ?></strong>
                                                     </div>
                                                     <small class="text-muted">9:00 AM - 5:00 PM</small>
                                                 </div>
