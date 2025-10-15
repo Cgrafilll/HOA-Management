@@ -539,7 +539,7 @@ try {
                             </div>
                             <div class="col-md-4">
                                 <input type="time" name="time_incident" class="form-control" id="timeIncident"
-                                    max="<?php echo date('H:i'); ?>" required />
+                                    required />
                                 <label class="form-label mt-2">Time of Incident<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
@@ -899,7 +899,30 @@ try {
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
 
-            document.getElementById('dateIncident').max = new Date().toISOString().split('T')[0];
+            // With this code that handles both date and time validation properly:
+            const dateIncident = document.getElementById('dateIncident');
+            const timeIncident = document.getElementById('timeIncident');
+
+            dateIncident.max = new Date().toISOString().split('T')[0];
+
+            // Update time max attribute based on selected date
+            dateIncident.addEventListener('change', function () {
+                const selectedDate = new Date(this.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                selectedDate.setHours(0, 0, 0, 0);
+
+                if (selectedDate.getTime() === today.getTime()) {
+                    // If today, set max time to current time
+                    const now = new Date();
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    timeIncident.max = `${hours}:${minutes}`;
+                } else {
+                    // If past date, remove time restriction
+                    timeIncident.removeAttribute('max');
+                }
+            });
         });
     </script>
 </body>
