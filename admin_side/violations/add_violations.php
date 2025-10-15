@@ -729,11 +729,6 @@ try {
             const browseLink = document.getElementById('browseLink');
             const filePreview = document.getElementById('filePreview');
 
-            // Initialize file drop area as highlighted since it's required
-            if (fileDropArea) {
-                fileDropArea.classList.add('required-highlight');
-            }
-
             // Handle household selection change
             householdSelect.addEventListener('change', function () {
                 const selectedOption = this.options[this.selectedIndex];
@@ -896,7 +891,7 @@ try {
 
                 // Display file preview
                 filePreview.innerHTML = `
-                    <div class="alert alert-success d-flex align-items-center justify-content-between">
+                    <div class="alert alert-success d-flex align-items-center">
                         <div class="d-flex align-items-center">
                             <i class="bi bi-file-earmark-image me-2"></i>
                             <div>
@@ -904,7 +899,7 @@ try {
                                 <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
                             </div>
                         </div>
-                        <button type="button" class="btn-close" onclick="clearFile()"></button>
+                        <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
                     </div>
                 `;
 
@@ -920,7 +915,7 @@ try {
 
                 if (fileInput) fileInput.value = '';
                 if (filePreview) filePreview.innerHTML = '';
-                if (fileDropArea) fileDropArea.classList.add('required-highlight');
+                if (fileDropArea) fileDropArea.classList.remove('required-highlight');
             }
 
             // With this code that handles both date and time validation properly:

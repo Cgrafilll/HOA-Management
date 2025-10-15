@@ -1868,15 +1868,15 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
             if (files.length > 0) {
                 const file = files[0];
                 filePreview.innerHTML = `
-                <div class="alert alert-success d-flex align-items-center">
-                    <i class="bi bi-file-earmark-check me-2"></i>
-                    <div>
-                        <strong>${file.name}</strong><br>
-                        <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                    <div class="alert alert-success d-flex align-items-center">
+                        <i class="bi bi-file-earmark-check me-2"></i>
+                        <div>
+                            <strong>${file.name}</strong><br>
+                            <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                        </div>
+                        <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
                     </div>
-                    <button type="button" class="btn-close ms-auto" onclick="clearFile()"></button>
-                </div>
-            `;
+                `;
 
                 const fileDropArea = document.getElementById('fileDropArea');
                 if (fileDropArea) {
