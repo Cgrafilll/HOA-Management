@@ -98,6 +98,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ✅ Fetch published announcements (after insert/redirect logic)
 try {
+    // Auto-archive old announcements first
+    $archiveDate = date('Y-m-d H:i:s', strtotime('-7 days'));
+    $archiveStmt = $conn->prepare("
+        UPDATE announcements 
+        SET status = 'archived' 
+        WHERE status = 'published' 
+        AND created_at < ?
+    ");
+    $archiveStmt->bind_param("s", $archiveDate);
+    $archiveStmt->execute();
+
+    // Now fetch published announcements
     $stmt = $conn->prepare("
         SELECT a.id, a.title, a.body, a.created_at, ad.first_name, ad.last_name 
         FROM announcements a
@@ -110,6 +122,7 @@ try {
 } catch (Exception $e) {
     $error_message = "Error fetching announcements: " . $e->getMessage();
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -289,6 +302,14 @@ try {
 
             header h1 {
                 font-size: 1rem !important;
+            }
+
+            .announcement-title,
+            .announcement-body,
+            .announcment-meta,
+            .form-control,
+            main span {
+                font-size: 0.85rem;
             }
 
             .btn-sm {
@@ -514,11 +535,11 @@ try {
                         <input type="hidden" name="form_token"
                             value="<?php echo htmlspecialchars($_SESSION['form_token']); ?>">
                         <!-- Title -->
-                        <h5 class="fw mb-2">Title</h5>
+                        <span class="fw h5 mb-2">Title</span>
                         <input type="text" id="title" name="title" class="form-control rounded mb-1" maxlength="150"
                             placeholder="Enter announcement title">
                         <!-- Body -->
-                        <h5 class="fw mb-2 mt-3">Body</h5>
+                        <span class="fw h5 mb-2 mt-3">Body</span>
                         <textarea id="body" name="body" class="form-control rounded mb-1"
                             style="min-height:100px; resize:none;" placeholder="Enter a description"></textarea>
                         <!-- Error message -->
@@ -581,18 +602,30 @@ try {
                         </div>
                     </div>
                     <div class="mt-4">
-                        <h5 class="fw-bold">Published Announcements</h5>
+                        <span class="fw-bold h5">Published Announcements</span>
                         <hr>
                         <?php if ($result && $result->num_rows > 0): ?>
                             <?php while ($row = $result->fetch_assoc()): ?>
+                                <?php
+                                // Calculate days since creation
+                                $createdDate = new DateTime($row['created_at']);
+                                $now = new DateTime();
+                                $daysSince = $now->diff($createdDate)->days;
+                                $daysRemaining = 30 - $daysSince;
+                                ?>
                                 <div class="card mb-3 shadow-sm announcement-card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div class="announcement-title"
                                                 style="font-weight: 600;font-size: 1rem;margin-bottom: 6px;">
                                                 <?= htmlspecialchars($row['title']); ?>
+                                                <?php if ($daysRemaining <= 7 && $daysRemaining > 0): ?>
+                                                    <span class="badge bg-warning text-dark ms-2" style="font-size: 0.7rem;">
+                                                        <i class="bi bi-clock"></i> <?= $daysRemaining ?> days left
+                                                    </span>
+                                                <?php endif; ?>
                                             </div>
-                                            <div class="announcement-actions gap-2">
+                                            <div class="announcement-actions gap-1">
                                                 <!-- Edit button triggers modal -->
                                                 <button type="button" class="btn btn-sm btn-outline-primary"
                                                     data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id']; ?>"
