@@ -896,9 +896,16 @@ try {
                                 <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
                             </div>
                         </div>
-                        <button type="button" class="btn-close" onclick="clearFile()"></button>
+                        <button type="button" class="btn-close" id="clearFileBtn"></button>
                     </div>
                 `;
+
+                // Add event listener to the clear button
+                document.getElementById('clearFileBtn').addEventListener('click', function () {
+                    fileInput.value = '';
+                    filePreview.innerHTML = '';
+                    fileDropArea.classList.add('required-highlight');
+                });
 
                 // Remove required highlight if present
                 fileDropArea.classList.remove('required-highlight');
