@@ -1055,7 +1055,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                     <label for="userType">User Type<small class="fw-bold text-danger">*</small></label>
                                 </div>
                                 <div class="row">
-                                    <div class="col-4">
+                                    <div class="col-md-4">
                                         <!-- First Name -->
                                         <div class="form-floating mb-3">
                                             <input type="text" class="form-control" id="firstName" name="firstName"
@@ -1065,7 +1065,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                                     class="fw-bold text-danger">*</small></label>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-md-4">
                                         <!-- Middle Name -->
                                         <div class="form-floating mb-3">
                                             <input type="text" class="form-control" id="middleName" name="middleName"
@@ -1074,7 +1074,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                             <label for="middleName">Middle Name</label>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-md-4">
                                         <!-- Last Name -->
                                         <div class="form-floating mb-3">
                                             <input type="text" class="form-control" id="lastName" name="lastName"
@@ -1173,14 +1173,14 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <?php endif; ?>
                                 <!-- Add-Ons -->
                                 <div class="row">
-                                    <div class="col-6">
+                                    <div class="col-md-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="chairs" name="chairs" min="0"
                                                 value="0" max="40">
                                             <label for="chairs">Chairs <small>(₱12.00/pc)</small></label>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-md-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="tables" name="tables" min="0"
                                                 value="0" max="15">
@@ -1191,14 +1191,14 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <!-- Vehicle -->
                                 <div class="row">
                                     <label class="form-label fw-bold">Vehicle</label>
-                                    <div class="col-6">
+                                    <div class="col-md-6">
                                         <div class="form-floating mb-3">
                                             <input type="number" class="form-control" id="cars" name="cars" min="0"
                                                 value="0" max="3">
                                             <label for="cars">No. of Vehicle/s</label>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-md-6">
                                         <div class="form-floating">
                                             <input type="text" class="form-control" id="plates" name="plates">
                                             <label for="plates">Vehicle Plate Number/s</label>
@@ -1575,19 +1575,19 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                             <p class="mb-3">Please confirm your amenity reservation details before proceeding.</p>
                             <div class="alert alert-info text-start mb-3">
                                 <div class="row">
-                                    <div class="col-4"><strong>Amenity:</strong></div>
+                                    <div class="col-md-4"><strong>Amenity:</strong></div>
                                     <div class="col-8" id="confirmAmenity">-</div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-4"><strong>Date:</strong></div>
+                                    <div class="col-md-4"><strong>Date:</strong></div>
                                     <div class="col-8" id="confirmDate">-</div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-4"><strong>Name:</strong></div>
+                                    <div class="col-md-4"><strong>Name:</strong></div>
                                     <div class="col-8" id="confirmName">-</div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-4"><strong>Total:</strong></div>
+                                    <div class="col-md-4"><strong>Total:</strong></div>
                                     <div class="col-8" id="confirmTotal">-</div>
                                 </div>
                             </div>
