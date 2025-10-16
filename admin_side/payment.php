@@ -477,82 +477,6 @@ if (isset($_GET['action'])) {
                 }
                 break;
 
-            // ✅ ADD THESE TWO NEW CASES HERE ✅
-            case 'get_amenity_invoices':
-                $user_id = $_GET['user_id'] ?? '';
-                $user_type = $_GET['user_type'] ?? '';
-
-                if (empty($user_id) || empty($user_type)) {
-                    echo json_encode(['success' => false, 'error' => 'Missing parameters']);
-                    exit;
-                }
-
-                $id_field = ($user_type === 'Homeowner/Resident') ? 'homeowner_id' : 'visitor_id';
-
-                $stmt = $conn->prepare("
-                    SELECT DISTINCT invoice_number 
-                    FROM amenity_bookings 
-                    WHERE $id_field = ? 
-                    AND status IN ('pending', 'partial')
-                    ORDER BY invoice_number DESC
-                ");
-                $stmt->bind_param("s", $user_id);
-                $stmt->execute();
-                $result = $stmt->get_result();
-
-                $data = [];
-                while ($row = $result->fetch_assoc()) {
-                    $data[] = ['invoice_number' => $row['invoice_number']];
-                }
-
-                echo json_encode(['success' => true, 'data' => $data]);
-                break;
-
-            case 'get_billing_invoices':
-                $user_id = $_GET['user_id'] ?? '';
-                $user_type = $_GET['user_type'] ?? '';
-                $category = $_GET['category'] ?? '';
-
-                if (empty($user_id) || empty($user_type) || empty($category)) {
-                    echo json_encode(['success' => false, 'error' => 'Missing parameters']);
-                    exit;
-                }
-
-                if ($user_type !== 'Homeowner/Resident') {
-                    echo json_encode(['success' => false, 'error' => 'Only homeowners can have billing records']);
-                    exit;
-                }
-
-                $db_category = '';
-                if ($category === 'Monthly Dues') {
-                    $db_category = 'monthly_dues';
-                } elseif ($category === 'Penalty Fees') {
-                    $db_category = 'penalty_fees';
-                } elseif ($category === 'Other Fees') {
-                    $db_category = 'other_fees';
-                }
-
-                $stmt = $conn->prepare("
-                    SELECT DISTINCT invoice_number 
-                    FROM monthly_dues 
-                    WHERE household_id = ? 
-                    AND category = ? 
-                    AND status IN ('Pending', 'Partial')
-                    ORDER BY invoice_number DESC
-                ");
-                $stmt->bind_param("ss", $user_id, $db_category);
-                $stmt->execute();
-                $result = $stmt->get_result();
-
-                $data = [];
-                while ($row = $result->fetch_assoc()) {
-                    $data[] = ['invoice_number' => $row['invoice_number']];
-                }
-
-                echo json_encode(['success' => true, 'data' => $data]);
-                break;
-            // ✅ END OF NEW CASES ✅
-
             case 'process_payment':
                 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                     echo json_encode(['success' => false, 'error' => 'Invalid request method']);
@@ -928,105 +852,6 @@ if (isset($_GET['action'])) {
             display: block;
         }
 
-        /* Searchable Dropdown Styles */
-        .search-select-wrapper {
-            position: relative;
-        }
-
-        .search-select-wrapper input[type="text"] {
-            padding-right: 35px;
-        }
-
-        .search-clear {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #6c757d;
-            font-size: 16px;
-            cursor: pointer;
-            padding: 0;
-            display: none;
-            z-index: 3;
-        }
-
-        .search-clear.show {
-            display: block;
-        }
-
-        .search-clear:hover {
-            color: #dc3545;
-        }
-
-        .search-select-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #ced4da;
-            border-top: none;
-            border-radius: 0 0 0.375rem 0.375rem;
-            max-height: 250px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .search-select-dropdown.show {
-            display: block;
-        }
-
-        .search-select-option {
-            padding: 10px 15px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .search-select-option:last-child {
-            border-bottom: none;
-        }
-
-        .search-select-option:hover {
-            background-color: #f8f9fa;
-        }
-
-        .search-select-option.selected {
-            background-color: #e9f2ff;
-            font-weight: 500;
-        }
-
-        .search-select-option.no-results {
-            color: #6c757d;
-            text-align: center;
-            cursor: default;
-        }
-
-        .search-select-option.no-results:hover {
-            background-color: white;
-        }
-
-        .search-select-dropdown::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .search-select-dropdown::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        .search-select-dropdown::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-
-        .search-select-dropdown::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-
         /* Mobile Styles */
         @media (max-width: 768px) {
             .sidebar {
@@ -1107,20 +932,6 @@ if (isset($_GET['action'])) {
             .col-md-8,
             .col-md-4 {
                 margin-bottom: 1rem;
-            }
-
-            .search-select-dropdown {
-                max-height: 200px;
-                font-size: 0.85rem;
-            }
-
-            .search-select-option {
-                padding: 8px 12px;
-            }
-
-            .search-clear {
-                font-size: 14px;
-                right: 8px;
             }
         }
 
@@ -1247,14 +1058,40 @@ if (isset($_GET['action'])) {
             .col-md-4 .card {
                 margin-bottom: 0.75rem;
             }
+        }
 
-            .search-select-dropdown {
-                max-height: 180px;
-                font-size: 0.8rem;
+        /* Extra small devices */
+        @media (max-width: 375px) {
+            header h1 {
+                font-size: 0.85rem !important;
             }
 
-            .search-select-option {
-                padding: 7px 10px;
+            .file-drop-area {
+                padding: 15px 8px;
+                min-height: 120px;
+            }
+
+            .cloud-icon {
+                font-size: 28px;
+            }
+
+            .method-card i {
+                font-size: 1.1rem !important;
+            }
+
+            .method-card h6 {
+                font-size: 0.75rem;
+            }
+
+            .table-responsive {
+                font-size: 0.7rem;
+            }
+
+            .form-label,
+            .form-control,
+            .form-select,
+            .btn {
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -1408,9 +1245,9 @@ if (isset($_GET['action'])) {
                             </div>
                             <!-- Payment Form -->
                             <form id="paymentForm">
-                                <div class="row mb-3">
+                                <div class="row mb-2">
                                     <div class="col-md-6">
-                                        <label class="form-label">User Type<small
+                                        <label class="form-label mb-2">User Type<small
                                                 class="fw-bold text-danger">*</small></label>
                                         <select class="form-select" id="userTypeSelect" required>
                                             <option value="">Select User Type</option>
@@ -1421,23 +1258,17 @@ if (isset($_GET['action'])) {
                                     <div class="col-md-6">
                                         <label class="form-label" id="idLabel">Select ID<small
                                                 class="fw-bold text-danger">*</small></label>
-                                        <div class="search-select-wrapper">
-                                            <input type="text" class="form-control" id="userIdSearch"
-                                                placeholder="Search ID or Name..." disabled>
-                                            <input type="hidden" id="userId" required>
-                                            <button type="button" class="search-clear" id="userSearchClear">
-                                                <i class="bi bi-x-circle-fill"></i>
-                                            </button>
-                                            <div class="search-select-dropdown" id="userIdDropdown"></div>
-                                        </div>
+                                        <select class="form-select" id="userIdSelect" disabled required>
+                                            <option value="">First select user type</option>
+                                        </select>
                                         <div class="loading d-none" id="loadingIndicator">
                                             <i class="bi bi-arrow-clockwise"></i> Loading available IDs...
                                         </div>
                                     </div>
                                 </div>
-                                <div class="row mb-3">
+                                <div class="row mb-2">
                                     <div class="col-md-6">
-                                        <label class="form-label">Category<small
+                                        <label class="form-label mb-2">Category<small
                                                 class="fw-bold text-danger">*</small></label>
                                         <select class="form-select" id="categorySelect" required>
                                             <option value="">Select Category</option>
@@ -1448,40 +1279,26 @@ if (isset($_GET['action'])) {
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Billing Number<small
+                                        <label class="form-label mb-2">Billing Number<small
                                                 class="fw-bold text-danger">*</small></label>
-                                        <div class="search-select-wrapper">
-                                            <input type="text" class="form-control" id="invoiceSearch"
-                                                placeholder="First select category and user ID" disabled>
-                                            <input type="hidden" id="invoiceInput" required>
-                                            <button type="button" class="search-clear" id="invoiceSearchClear">
-                                                <i class="bi bi-x-circle-fill"></i>
-                                            </button>
-                                            <div class="search-select-dropdown" id="invoiceDropdown"></div>
-                                        </div>
-                                        <div class="loading d-none" id="invoiceLoadingIndicator">
-                                            <i class="bi bi-arrow-clockwise"></i> Loading billing numbers...
-                                        </div>
+                                        <input type="text" class="form-control" id="invoiceInput"
+                                            placeholder="Enter Billing Number" required>
                                     </div>
                                 </div>
                                 <div class="row mb-2">
-                                    <div class="col-md-12">
-                                        <label class="form-label mb-2">Amount Paid<small
-                                                class="fw-bold text-danger">*</small></label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">₱</span>
-                                            <input type="number" class="form-control" id="amountPaid" placeholder="0.00"
-                                                min="0" step="0.01" required>
-                                        </div>
+                                    <label class="form-label mb-2">Amount Paid<small
+                                            class="fw-bold text-danger">*</small></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₱</span>
+                                        <input type="number" class="form-control" id="amountPaid" placeholder="0.00"
+                                            min="0" step="0.01" required>
                                     </div>
                                 </div>
-                                <div class="row mb-1">
-                                    <div class="col-md-12">
-                                        <div id="referenceNumberGroup" style="display: none;">
-                                            <label class="form-label mb-2">Reference Number</label>
-                                            <input type="text" class="form-control" id="referenceNumber"
-                                                placeholder="Bank transfer reference number">
-                                        </div>
+                                <div class="row mb-2">
+                                    <div id="referenceNumberGroup" style="display: none;">
+                                        <label class="form-label mb-2">Reference Number</label>
+                                        <input type="text" class="form-control" id="referenceNumber"
+                                            placeholder="Bank transfer reference number">
                                     </div>
                                 </div>
                                 <!-- Summary Display -->
