@@ -237,6 +237,105 @@ if (!empty($admin['profile_picture'])) {
             line-height: 38px;
         }
 
+        /* Searchable Dropdown Styles */
+        .search-select-wrapper {
+            position: relative;
+        }
+
+        .search-select-wrapper input[type="text"] {
+            padding-right: 35px;
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6c757d;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            display: none;
+            z-index: 3;
+        }
+
+        .search-clear.show {
+            display: block;
+        }
+
+        .search-clear:hover {
+            color: #dc3545;
+        }
+
+        .search-select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ced4da;
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-select-dropdown.show {
+            display: block;
+        }
+
+        .search-select-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .search-select-option:last-child {
+            border-bottom: none;
+        }
+
+        .search-select-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .search-select-option.selected {
+            background-color: #e9f2ff;
+            font-weight: 500;
+        }
+
+        .search-select-option.no-results {
+            color: #6c757d;
+            text-align: center;
+            cursor: default;
+        }
+
+        .search-select-option.no-results:hover {
+            background-color: white;
+        }
+
+        .search-select-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .search-select-dropdown::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .search-select-dropdown::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .search-select-dropdown::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
         /* Mobile Styles */
         @media (max-width: 768px) {
             .sidebar {
@@ -272,6 +371,20 @@ if (!empty($admin['profile_picture'])) {
             .sidebar-overlay {
                 top: 0;
             }
+
+            .search-select-dropdown {
+                max-height: 200px;
+                font-size: 0.85rem;
+            }
+
+            .search-select-option {
+                padding: 8px 12px;
+            }
+
+            .search-clear {
+                font-size: 14px;
+                right: 8px;
+            }
         }
 
         @media (max-width: 576px) {
@@ -295,6 +408,15 @@ if (!empty($admin['profile_picture'])) {
 
             .sidebar-overlay {
                 top: 0;
+            }
+
+            .search-select-dropdown {
+                max-height: 180px;
+                font-size: 0.8rem;
+            }
+
+            .search-select-option {
+                padding: 7px 10px;
             }
         }
     </style>
@@ -464,16 +586,16 @@ if (!empty($admin['profile_picture'])) {
                         <div class="col-md-6" id="householdContainer">
                             <label for="household_id" class="form-label mb-2 fw-semibold">Household <span
                                     class="text-danger">*</span></label>
-                            <select class="form-select" id="household_id" name="household_id">
-                                <option value="" selected disabled>Select Household</option>
-                                <?php
-                                // Populate dropdown with household_accounts
-                                $households = $conn->query("SELECT household_id, CONCAT(first_name, ' ', last_name) AS name FROM household_accounts ORDER BY household_id");
-                                while ($row = $households->fetch_assoc()) {
-                                    echo "<option value='{$row['household_id']}'>{$row['household_id']} - {$row['name']}</option>";
-                                }
-                                ?>
-                            </select>
+                            <div class="search-select-wrapper">
+                                <input type="text" class="form-control" id="householdSearch"
+                                    placeholder="Search household..." disabled>
+                                <input type="hidden" id="household_id" name="household_id">
+                                <button type="button" class="search-clear" id="householdSearchClear">
+                                    <i class="bi bi-x-circle-fill"></i>
+                                </button>
+                                <div class="search-select-dropdown" id="householdDropdown"></div>
+                            </div>
+                            <small class="text-muted mt-2">Select the household to bill</small>
                         </div>
                         <!-- Billing Month (Only for Monthly Dues) -->
                         <div class="col-md-6 field-hidden" id="billingMonthContainer">
@@ -505,7 +627,8 @@ if (!empty($admin['profile_picture'])) {
                             <label for="due_date" class="form-label mb-2 fw-semibold">Due Date <span
                                     class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="due_date" name="due_date" required>
-                            <small class="text-muted mt-2" id="dueDateHint">Will be set automatically for monthly dues (28th
+                            <small class="text-muted mt-2" id="dueDateHint">Will be set automatically for monthly dues
+                                (28th
                                 of billing month)</small>
                         </div>
                     </div>
@@ -598,15 +721,23 @@ if (!empty($admin['profile_picture'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="../javascripts/mobileSidebar.js"></script><script>
+    <script src="../javascripts/mobileSidebar.js"></script>
+    <script>
         document.addEventListener("DOMContentLoaded", function () {
             const form = document.getElementById('invoiceForm');
             const categorySelect = document.getElementById('category');
             const bulkCheckbox = document.getElementById('bulkInvoice');
-            const householdSelect = document.getElementById('household_id');
+            const householdHiddenInput = document.getElementById('household_id');
             const billingMonthInput = document.getElementById('billing_month');
             const descriptionInput = document.getElementById('description');
             const dueDateInput = document.getElementById('due_date');
+
+            // Searchable household elements
+            const householdSearch = document.getElementById('householdSearch');
+            const householdDropdown = document.getElementById('householdDropdown');
+            const householdSearchClear = document.getElementById('householdSearchClear');
+            let householdOptions = [];
+            let selectedHouseholdId = null;
 
             // Containers
             const bulkOptionContainer = document.getElementById('bulkOptionContainer');
@@ -624,22 +755,140 @@ if (!empty($admin['profile_picture'])) {
             const confirmMessage = document.getElementById('confirmMessage');
             const dueDateHint = document.getElementById('dueDateHint');
 
-            // Initialize Select2 for household dropdown with search
-            $(householdSelect).select2({
-                theme: 'bootstrap-5',
-                placeholder: 'Search for a household...',
-                allowClear: true,
-                width: '100%',
-                dropdownParent: householdContainer
-            });
+            // ============================================
+            // LOAD HOUSEHOLDS FOR SEARCHABLE DROPDOWN
+            // ============================================
+            function loadHouseholds() {
+                householdOptions = [];
+                <?php
+                $households = $conn->query("SELECT household_id, CONCAT(first_name, ' ', last_name) AS name FROM household_accounts ORDER BY household_id");
+                echo "householdOptions = [";
+                $first = true;
+                while ($row = $households->fetch_assoc()) {
+                    if (!$first)
+                        echo ",";
+                    echo "{id: '{$row['household_id']}', name: '" . addslashes($row['name']) . "'}";
+                    $first = false;
+                }
+                echo "];";
+                ?>
 
-            // Category change handler
+                if (householdOptions.length > 0) {
+                    householdSearch.disabled = false;
+                    householdSearch.placeholder = 'Search household...';
+                }
+            }
+
+            // ============================================
+            // SEARCHABLE HOUSEHOLD DROPDOWN FUNCTIONALITY
+            // ============================================
+            function initSearchableHousehold() {
+                householdSearch.addEventListener('focus', function () {
+                    if (householdOptions.length > 0) {
+                        renderHouseholdOptions();
+                        householdDropdown.classList.add('show');
+                    }
+                });
+
+                householdSearch.addEventListener('input', function () {
+                    const searchTerm = this.value;
+                    if (searchTerm) {
+                        householdSearchClear.classList.add('show');
+                    } else {
+                        householdSearchClear.classList.remove('show');
+                    }
+                    renderHouseholdOptions(searchTerm);
+                    householdDropdown.classList.add('show');
+                });
+
+                householdSearchClear.addEventListener('click', function () {
+                    householdSearch.value = '';
+                    householdHiddenInput.value = '';
+                    selectedHouseholdId = null;
+                    householdSearchClear.classList.remove('show');
+                    householdSearch.classList.remove('border-danger', 'is-invalid');
+                    householdSearch.style.borderColor = '';
+                    householdSearch.style.boxShadow = '';
+                    renderHouseholdOptions();
+                    householdSearch.focus();
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!householdSearch.contains(e.target) && !householdDropdown.contains(e.target)) {
+                        householdDropdown.classList.remove('show');
+                    }
+                });
+            }
+
+            function renderHouseholdOptions(searchTerm = '') {
+                householdDropdown.innerHTML = '';
+
+                const filteredOptions = householdOptions.filter(option => {
+                    const searchText = `${option.id} ${option.name}`.toLowerCase();
+                    return searchText.includes(searchTerm.toLowerCase());
+                });
+
+                if (filteredOptions.length === 0) {
+                    const noResults = document.createElement('div');
+                    noResults.className = 'search-select-option no-results';
+                    noResults.innerHTML = '<i class="bi bi-search"></i> No households found';
+                    householdDropdown.appendChild(noResults);
+                    return;
+                }
+
+                filteredOptions.forEach(option => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'search-select-option';
+                    optionDiv.textContent = `${option.id} - ${option.name}`;
+                    optionDiv.dataset.value = option.id;
+
+                    if (option.id === selectedHouseholdId) {
+                        optionDiv.classList.add('selected');
+                    }
+
+                    optionDiv.addEventListener('click', () => selectHousehold(option));
+                    householdDropdown.appendChild(optionDiv);
+                });
+            }
+
+            function selectHousehold(option) {
+                selectedHouseholdId = option.id;
+                householdSearch.value = `${option.id} - ${option.name}`;
+                householdHiddenInput.value = option.id;
+                householdSearchClear.classList.add('show');
+                householdDropdown.classList.remove('show');
+
+                // Remove error styling
+                householdSearch.classList.remove('border-danger', 'is-invalid');
+                householdSearch.style.borderColor = '#198754';
+                householdSearch.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+            }
+
+            function resetHouseholdSearch() {
+                householdSearch.value = '';
+                householdHiddenInput.value = '';
+                selectedHouseholdId = null;
+                householdSearchClear.classList.remove('show');
+                householdSearch.classList.remove('border-danger', 'is-invalid');
+                householdSearch.style.borderColor = '';
+                householdSearch.style.boxShadow = '';
+                householdDropdown.innerHTML = '';
+            }
+
+            // Initialize on page load
+            loadHouseholds();
+            initSearchableHousehold();
+
+            // ============================================
+            // CATEGORY CHANGE HANDLER
+            // ============================================
             categorySelect.addEventListener('change', function () {
                 const category = this.value;
 
                 // Reset all fields
                 bulkCheckbox.checked = false;
-                $(householdSelect).val(null).trigger('change'); // Reset Select2
+                resetHouseholdSearch();
                 billingMonthInput.value = '';
                 descriptionInput.value = '';
                 dueDateInput.value = '';
@@ -650,17 +899,12 @@ if (!empty($admin['profile_picture'])) {
                 descriptionContainer.classList.add('field-hidden');
                 householdContainer.classList.remove('field-hidden');
 
-                // Remove all required attributes first
-                householdSelect.removeAttribute('required');
-                billingMonthInput.removeAttribute('required');
-                descriptionInput.removeAttribute('required');
+                // Enable household search
+                householdSearch.disabled = false;
 
                 if (category === 'monthly_dues') {
-                    // Show bulk option and billing month
                     bulkOptionContainer.classList.remove('field-hidden');
                     billingMonthContainer.classList.remove('field-hidden');
-                    householdSelect.setAttribute('required', 'required');
-                    billingMonthInput.setAttribute('required', 'required');
                     dueDateInput.setAttribute('readonly', 'readonly');
                     dueDateInput.style.backgroundColor = '#e9ecef';
                     dueDateInput.style.cursor = 'not-allowed';
@@ -669,10 +913,7 @@ if (!empty($admin['profile_picture'])) {
                     submitBtnText.textContent = 'Save Invoice';
 
                 } else if (category === 'penalty_fees' || category === 'other_fees') {
-                    // Show description, hide billing month
                     descriptionContainer.classList.remove('field-hidden');
-                    householdSelect.setAttribute('required', 'required');
-                    descriptionInput.setAttribute('required', 'required');
                     dueDateInput.removeAttribute('readonly');
                     dueDateInput.style.backgroundColor = '';
                     dueDateInput.style.cursor = '';
@@ -681,21 +922,25 @@ if (!empty($admin['profile_picture'])) {
                 }
             });
 
-            // Bulk checkbox handler
+            // ============================================
+            // BULK CHECKBOX HANDLER
+            // ============================================
             bulkCheckbox.addEventListener('change', function () {
                 if (this.checked) {
                     householdContainer.classList.add('field-hidden');
-                    householdSelect.removeAttribute('required');
-                    $(householdSelect).val(null).trigger('change'); // Clear Select2
+                    resetHouseholdSearch();
+                    householdSearch.disabled = true;
                     submitBtnText.textContent = 'Create Bulk Invoices';
                 } else {
                     householdContainer.classList.remove('field-hidden');
-                    householdSelect.setAttribute('required', 'required');
+                    householdSearch.disabled = false;
                     submitBtnText.textContent = 'Save Invoice';
                 }
             });
 
-            // Form submission handler
+            // ============================================
+            // FORM SUBMISSION HANDLER
+            // ============================================
             form.addEventListener("submit", function (e) {
                 e.preventDefault();
 
@@ -710,8 +955,9 @@ if (!empty($admin['profile_picture'])) {
                     errorMsg = 'Please select a billing category.';
                     valid = false;
                 } else if (category === 'monthly_dues') {
-                    if (!isBulk && !householdSelect.value) {
+                    if (!isBulk && !householdHiddenInput.value) {
                         errorMsg = 'Please select a household.';
+                        householdSearch.classList.add('border-danger', 'is-invalid');
                         valid = false;
                     }
                     if (!billingMonthInput.value) {
@@ -719,8 +965,9 @@ if (!empty($admin['profile_picture'])) {
                         valid = false;
                     }
                 } else {
-                    if (!householdSelect.value) {
+                    if (!householdHiddenInput.value) {
                         errorMsg = 'Please select a household.';
+                        householdSearch.classList.add('border-danger', 'is-invalid');
                         valid = false;
                     }
                     if (!descriptionInput.value.trim()) {
@@ -746,38 +993,33 @@ if (!empty($admin['profile_picture'])) {
                     confirmMessage.textContent = 'Do you really want to create this invoice?';
                 }
 
-                // Show confirmation modal
                 confirmModal.show();
             });
 
-            // Handle confirmation - submit via AJAX
+            // ============================================
+            // HANDLE CONFIRMATION - SUBMIT VIA AJAX
+            // ============================================
             confirmPublishBtn.addEventListener("click", function () {
                 confirmModal.hide();
 
-                // Show loading state
                 submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Creating...';
                 submitBtn.disabled = true;
 
-                // Prepare form data
                 const formData = new FormData(form);
 
-                // Submit via AJAX
                 fetch('process_add_billing.php', {
                     method: 'POST',
                     body: formData
                 })
                     .then(response => response.json())
                     .then(data => {
-                        // Reset button
                         submitBtn.innerHTML = '<i class="bi bi-save me-1"></i> <span id="submitBtnText">Save Invoice</span>';
                         submitBtn.disabled = false;
 
                         if (data.success) {
-                            // Show success message
                             document.getElementById('successMessage').innerHTML = data.message || 'Invoice created successfully!';
                             successModal.show();
                         } else {
-                            // Show error
                             if (data.error_type === 'validation') {
                                 document.getElementById('invoiceErrorMessage').textContent = data.error;
                                 errorInvoiceModal.show();
@@ -788,7 +1030,6 @@ if (!empty($admin['profile_picture'])) {
                         }
                     })
                     .catch(error => {
-                        // Reset button
                         submitBtn.innerHTML = '<i class="bi bi-save me-1"></i> <span id="submitBtnText">Save Invoice</span>';
                         submitBtn.disabled = false;
 
@@ -803,7 +1044,9 @@ if (!empty($admin['profile_picture'])) {
                 window.location.href = '../billing.php';
             });
 
-            // Billing month and due date logic
+            // ============================================
+            // BILLING MONTH AND DUE DATE LOGIC
+            // ============================================
             function updatePaymentDate() {
                 if (billingMonthInput.value && categorySelect.value === 'monthly_dues') {
                     const [year, month] = billingMonthInput.value.split('-');
@@ -825,21 +1068,11 @@ if (!empty($admin['profile_picture'])) {
             const minMonth = `${currentYear}-${currentMonth}`;
             billingMonthInput.setAttribute('min', minMonth);
 
-            // Update payment_date whenever billing_month changes
             billingMonthInput.addEventListener('change', updatePaymentDate);
 
-            // Set minimum due date to today (allow same day)
+            // Set minimum due date to today
             const todayStr = today.toISOString().split('T')[0];
             dueDateInput.setAttribute('min', todayStr);
-
-            // Note: The min attribute allows selecting the min date itself
-            // No additional changes needed - the issue is in backend validation
-
-            // Remove red border when user types or selects
-            [categorySelect, householdSelect, billingMonthInput, descriptionInput, dueDateInput].forEach(field => {
-                field.addEventListener("input", () => field.classList.remove("border", "border-danger"));
-                field.addEventListener("change", () => field.classList.remove("border", "border-danger"));
-            });
         });
     </script>
 
