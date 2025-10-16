@@ -976,7 +976,8 @@ if (isset($_GET['action'])) {
 
             .form-label,
             .form-control,
-            .form-select {
+            .form-select,
+            .subtotals {
                 font-size: 0.85rem;
             }
 
@@ -1090,6 +1091,7 @@ if (isset($_GET['action'])) {
             .form-label,
             .form-control,
             .form-select,
+            .subtotals,
             .btn {
                 font-size: 0.8rem;
             }
@@ -1330,7 +1332,7 @@ if (isset($_GET['action'])) {
                                     </table>
                                 </div>
                                 <div class="d-flex justify-content-end mb-3">
-                                    <div>
+                                    <div class="subtotals">
                                         <p class="mb-1"><strong>Subtotal:</strong> <span id="subtotal">₱0.00</span></p>
                                         <p class="mb-1"><strong>Previously Paid:</strong> <span
                                                 id="previouslyPaid">₱0.00</span></p>
