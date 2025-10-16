@@ -1,10 +1,16 @@
-// Payment Management System JavaScript - Updated for All Categories
+// Payment Management System JavaScript - With Searchable Dropdowns
 
 class PaymentManager {
     constructor() {
+        this.userOptions = [];
+        this.selectedUserId = null;
+        this.invoiceOptions = [];
+        this.selectedInvoiceNumber = null;
+
         this.initializeElements();
         this.attachEventListeners();
         this.initializeModals();
+        this.initSearchableDropdowns();
     }
 
     initializeElements() {
@@ -12,43 +18,56 @@ class PaymentManager {
         this.bankTransfer = document.getElementById('bankTransfer');
         this.inOffice = document.getElementById('inOffice');
         this.selectedMethod = document.getElementById('selectedMethod');
-        
+
         // Form elements
         this.userTypeSelect = document.getElementById('userTypeSelect');
-        this.userIdSelect = document.getElementById('userIdSelect');
+
+        // Searchable User ID elements
+        this.userIdSearch = document.getElementById('userIdSearch');
+        this.userId = document.getElementById('userId');
+        this.userSearchClear = document.getElementById('userSearchClear');
+        this.userIdDropdown = document.getElementById('userIdDropdown');
+
         this.idLabel = document.getElementById('idLabel');
         this.loadingIndicator = document.getElementById('loadingIndicator');
         this.categorySelect = document.getElementById('categorySelect');
+
+        // Searchable Invoice elements
+        this.invoiceSearch = document.getElementById('invoiceSearch');
         this.invoiceInput = document.getElementById('invoiceInput');
+        this.invoiceSearchClear = document.getElementById('invoiceSearchClear');
+        this.invoiceDropdown = document.getElementById('invoiceDropdown');
+        this.invoiceLoadingIndicator = document.getElementById('invoiceLoadingIndicator');
+
         this.amountPaid = document.getElementById('amountPaid');
         this.referenceNumber = document.getElementById('referenceNumber');
         this.referenceNumberGroup = document.getElementById('referenceNumberGroup');
-        
+
         // Display elements
         this.refNo = document.getElementById('refNo');
         this.residentName = document.getElementById('residentName');
         this.issueDate = document.getElementById('issueDate');
-        
+
         // Table and summary elements
         this.invoiceTableBody = document.getElementById('invoiceTableBody');
         this.subtotal = document.getElementById('subtotal');
         this.previouslyPaid = document.getElementById('previouslyPaid');
         this.balanceDue = document.getElementById('balanceDue');
-        
+
         // File upload elements
         this.fileDropArea = document.getElementById('fileDropArea');
         this.fileInput = document.getElementById('fileInput');
         this.browseLink = document.getElementById('browseLink');
         this.filePreview = document.getElementById('filePreview');
-        
+
         // Get category options
         this.monthlyDuesOption = [...this.categorySelect.options].find(opt => opt.value === "Monthly Dues");
         this.penaltyFeesOption = [...this.categorySelect.options].find(opt => opt.value === "Penalty Fees");
         this.otherFeesOption = [...this.categorySelect.options].find(opt => opt.value === "Other Fees");
-        
+
         // Store current invoice data
         this.currentInvoiceData = null;
-        
+
         // Modal confirmation elements
         this.confirmName = document.getElementById('confirmName');
         this.confirmCategory = document.getElementById('confirmCategory');
@@ -58,13 +77,199 @@ class PaymentManager {
         this.confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
     }
 
+    initSearchableDropdowns() {
+        // User ID Searchable Dropdown
+        this.userIdSearch.addEventListener('focus', () => {
+            if (this.userOptions.length > 0) {
+                this.renderUserOptions();
+                this.userIdDropdown.classList.add('show');
+            }
+        });
+
+        this.userIdSearch.addEventListener('input', () => {
+            const searchTerm = this.userIdSearch.value;
+            if (searchTerm) {
+                this.userSearchClear.classList.add('show');
+            } else {
+                this.userSearchClear.classList.remove('show');
+            }
+            this.renderUserOptions(searchTerm);
+            this.userIdDropdown.classList.add('show');
+        });
+
+        this.userSearchClear.addEventListener('click', () => {
+            this.userIdSearch.value = '';
+            this.userId.value = '';
+            this.selectedUserId = null;
+            this.userSearchClear.classList.remove('show');
+            this.renderUserOptions();
+            this.userIdSearch.focus();
+
+            // Clear dependent fields
+            this.resetInvoiceSearch();
+        });
+
+        // Invoice Searchable Dropdown
+        this.invoiceSearch.addEventListener('focus', () => {
+            if (this.invoiceOptions.length > 0) {
+                this.renderInvoiceOptions();
+                this.invoiceDropdown.classList.add('show');
+            }
+        });
+
+        this.invoiceSearch.addEventListener('input', () => {
+            const searchTerm = this.invoiceSearch.value;
+            if (searchTerm) {
+                this.invoiceSearchClear.classList.add('show');
+            } else {
+                this.invoiceSearchClear.classList.remove('show');
+            }
+            this.renderInvoiceOptions(searchTerm);
+            this.invoiceDropdown.classList.add('show');
+        });
+
+        this.invoiceSearchClear.addEventListener('click', () => {
+            this.invoiceSearch.value = '';
+            this.invoiceInput.value = '';
+            this.selectedInvoiceNumber = null;
+            this.invoiceSearchClear.classList.remove('show');
+            this.clearInvoiceTable();
+            this.renderInvoiceOptions();
+            this.invoiceSearch.focus();
+        });
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!this.userIdSearch.contains(e.target) && !this.userIdDropdown.contains(e.target)) {
+                this.userIdDropdown.classList.remove('show');
+            }
+            if (!this.invoiceSearch.contains(e.target) && !this.invoiceDropdown.contains(e.target)) {
+                this.invoiceDropdown.classList.remove('show');
+            }
+        });
+    }
+
+    renderUserOptions(searchTerm = '') {
+        this.userIdDropdown.innerHTML = '';
+
+        const filteredOptions = this.userOptions.filter(option => {
+            const searchText = `${option.id} ${option.name}`.toLowerCase();
+            return searchText.includes(searchTerm.toLowerCase());
+        });
+
+        if (filteredOptions.length === 0) {
+            const noResults = document.createElement('div');
+            noResults.className = 'search-select-option no-results';
+            noResults.innerHTML = '<i class="bi bi-search"></i> No results found';
+            this.userIdDropdown.appendChild(noResults);
+            return;
+        }
+
+        filteredOptions.forEach(option => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'search-select-option';
+            optionDiv.textContent = `${option.id} - ${option.name}`;
+            optionDiv.dataset.value = option.id;
+
+            if (option.id === this.selectedUserId) {
+                optionDiv.classList.add('selected');
+            }
+
+            optionDiv.addEventListener('click', () => {
+                this.selectUser(option);
+            });
+
+            this.userIdDropdown.appendChild(optionDiv);
+        });
+    }
+
+    selectUser(option) {
+        this.selectedUserId = option.id;
+        this.userIdSearch.value = `${option.id} - ${option.name}`;
+        this.userId.value = option.id;
+        this.userSearchClear.classList.add('show');
+        this.userIdDropdown.classList.remove('show');
+
+        // Remove error styling
+        this.userIdSearch.classList.remove('border-danger', 'is-invalid');
+        this.userIdSearch.style.borderColor = '#198754';
+        this.userIdSearch.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+
+        // Load invoices if category is already selected
+        if (this.categorySelect.value) {
+            this.loadInvoiceNumbers();
+        }
+    }
+
+    renderInvoiceOptions(searchTerm = '') {
+        this.invoiceDropdown.innerHTML = '';
+
+        const filteredOptions = this.invoiceOptions.filter(option => {
+            const searchText = option.invoice_number.toLowerCase();
+            return searchText.includes(searchTerm.toLowerCase());
+        });
+
+        if (filteredOptions.length === 0) {
+            const noResults = document.createElement('div');
+            noResults.className = 'search-select-option no-results';
+            noResults.innerHTML = '<i class="bi bi-search"></i> No billing numbers found';
+            this.invoiceDropdown.appendChild(noResults);
+            return;
+        }
+
+        filteredOptions.forEach(option => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'search-select-option';
+            optionDiv.textContent = option.invoice_number;
+            optionDiv.dataset.value = option.invoice_number;
+
+            if (option.invoice_number === this.selectedInvoiceNumber) {
+                optionDiv.classList.add('selected');
+            }
+
+            optionDiv.addEventListener('click', () => {
+                this.selectInvoice(option);
+            });
+
+            this.invoiceDropdown.appendChild(optionDiv);
+        });
+    }
+
+    selectInvoice(option) {
+        this.selectedInvoiceNumber = option.invoice_number;
+        this.invoiceSearch.value = option.invoice_number;
+        this.invoiceInput.value = option.invoice_number;
+        this.invoiceSearchClear.classList.add('show');
+        this.invoiceDropdown.classList.remove('show');
+
+        // Remove error styling
+        this.invoiceSearch.classList.remove('border-danger', 'is-invalid');
+        this.invoiceSearch.style.borderColor = '#198754';
+        this.invoiceSearch.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+
+        // Fetch invoice details
+        this.fetchInvoiceDetails();
+    }
+
+    resetInvoiceSearch() {
+        this.invoiceSearch.value = '';
+        this.invoiceSearch.placeholder = 'First select category and user ID';
+        this.invoiceSearch.disabled = true;
+        this.invoiceInput.value = '';
+        this.invoiceDropdown.innerHTML = '';
+        this.invoiceSearchClear.classList.remove('show');
+        this.invoiceOptions = [];
+        this.selectedInvoiceNumber = null;
+        this.clearInvoiceTable();
+    }
+
     initializeModals() {
         this.confirmModal = new bootstrap.Modal(document.getElementById('confirmPaymentModal'));
         this.successModal = new bootstrap.Modal(document.getElementById('successPaymentModal'));
-        
+
         const errorModalElement = document.getElementById('errorPaymentModal');
         const errorMessageElement = document.getElementById('errorMessage');
-        
+
         if (errorModalElement && errorMessageElement) {
             this.errorModal = new bootstrap.Modal(errorModalElement);
             this.errorMessage = errorMessageElement;
@@ -78,46 +283,93 @@ class PaymentManager {
     attachEventListeners() {
         this.bankTransfer.addEventListener('click', () => this.selectPaymentMethod('bank'));
         this.inOffice.addEventListener('click', () => this.selectPaymentMethod('office'));
-        
+
         this.userTypeSelect.addEventListener('change', () => this.handleUserTypeChange());
-        this.userIdSelect.addEventListener('change', () => this.handleIdSelection());
         this.categorySelect.addEventListener('change', () => this.handleCategoryChange());
-        this.invoiceInput.addEventListener('blur', () => this.fetchInvoiceDetails());
-        this.invoiceInput.addEventListener('input', () => this.resetInvoiceValidation());
-        
+
         this.browseLink.addEventListener('click', (e) => {
             e.preventDefault();
             this.fileInput.click();
         });
         this.fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
-        
+
         this.setupDragAndDrop();
-        
+
         document.getElementById('paymentForm').addEventListener('submit', (e) => this.handleSubmit(e));
-        
+
         this.confirmPaymentBtn.addEventListener('click', () => this.processPayment());
     }
-    
-    handleCategoryChange() {
+
+    async handleCategoryChange() {
         const selectedCategory = this.categorySelect.value;
-        
-        // Categories that need invoice details from backend
-        const fetchCategories = ['Amenity Fee', 'Monthly Dues', 'Penalty Fees', 'Other Fees'];
-        
-        if (!fetchCategories.includes(selectedCategory)) {
-            this.clearInvoiceTable();
-            this.refNo.textContent = "";
-            this.residentName.textContent = "";
-            this.issueDate.textContent = "";
-        } else if (this.invoiceInput.value) {
-            this.fetchInvoiceDetails();
+
+        // Reset invoice search when category changes
+        this.resetInvoiceSearch();
+
+        if (!selectedCategory) {
+            return;
         }
-        
+
         // Validate user type restrictions
-        if ((selectedCategory === 'Monthly Dues' || selectedCategory === 'Penalty Fees' || selectedCategory === 'Other Fees') 
+        if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory)
             && this.userTypeSelect.value === 'Visitor') {
             this.refNo.textContent = selectedCategory + " only apply to homeowners/residents";
             this.clearInvoiceTable();
+            return;
+        }
+
+        // Load invoice numbers if user is already selected
+        if (this.userId.value) {
+            await this.loadInvoiceNumbers();
+        }
+    }
+
+    async loadInvoiceNumbers() {
+        const category = this.categorySelect.value;
+        const userId = this.userId.value;
+        const userType = this.userTypeSelect.value;
+
+        if (!category || !userId || !userType) {
+            return;
+        }
+
+        this.invoiceLoadingIndicator.classList.remove('d-none');
+        this.invoiceSearch.placeholder = 'Loading...';
+
+        try {
+            let action;
+            if (category === 'Amenity Fee') {
+                action = 'get_amenity_invoices';
+            } else {
+                action = 'get_billing_invoices';
+            }
+
+            const params = new URLSearchParams({
+                action: action,
+                user_id: userId,
+                user_type: userType,
+                category: category
+            });
+
+            const response = await fetch(`?${params.toString()}`);
+            const result = await response.json();
+
+            if (result.success && result.data.length > 0) {
+                this.invoiceOptions = result.data;
+                this.invoiceSearch.disabled = false;
+                this.invoiceSearch.placeholder = 'Search billing number...';
+            } else {
+                this.invoiceOptions = [];
+                this.invoiceSearch.disabled = true;
+                this.invoiceSearch.placeholder = 'No billing numbers available';
+            }
+        } catch (error) {
+            console.error('Error loading invoice numbers:', error);
+            this.invoiceOptions = [];
+            this.invoiceSearch.disabled = true;
+            this.invoiceSearch.placeholder = 'Error loading billing numbers';
+        } finally {
+            this.invoiceLoadingIndicator.classList.add('d-none');
         }
     }
 
@@ -134,20 +386,20 @@ class PaymentManager {
             this.selectedMethod.textContent = "In-Office Payment";
             this.referenceNumberGroup.style.display = 'none';
             this.referenceNumber.removeAttribute('required');
-            this.referenceNumber.value = ''; // Clear the value
+            this.referenceNumber.value = '';
         }
         this.clearFormFields();
     }
 
     async handleUserTypeChange() {
         const selectedType = this.userTypeSelect.value;
-        
+
         // Show/hide categories based on user type
         if (selectedType === 'Visitor') {
             this.monthlyDuesOption.style.display = "none";
             this.penaltyFeesOption.style.display = "none";
             this.otherFeesOption.style.display = "none";
-            
+
             if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(this.categorySelect.value)) {
                 this.categorySelect.value = "";
             }
@@ -156,190 +408,163 @@ class PaymentManager {
             this.penaltyFeesOption.style.display = "block";
             this.otherFeesOption.style.display = "block";
         }
-        
-        this.userIdSelect.innerHTML = '<option value="">Loading...</option>';
-        this.userIdSelect.disabled = true;
+
+        // Reset user search
+        this.userIdSearch.value = '';
+        this.userIdSearch.placeholder = 'Loading...';
+        this.userIdSearch.disabled = true;
+        this.userId.value = '';
+        this.userSearchClear.classList.remove('show');
         this.loadingIndicator.classList.remove('d-none');
-        
+        this.userOptions = [];
+        this.selectedUserId = null;
+
+        // Reset invoice search
+        this.resetInvoiceSearch();
+
         if (selectedType) {
             await this.loadUserIds(selectedType);
         }
-        
+
         this.loadingIndicator.classList.add('d-none');
-        this.userIdSelect.disabled = false;
-        this.userIdSelect.classList.add('fade-in');
-        setTimeout(() => this.userIdSelect.classList.remove('fade-in'), 300);
+        this.userIdSearch.disabled = false;
+        this.userIdSearch.classList.add('fade-in');
+        setTimeout(() => this.userIdSearch.classList.remove('fade-in'), 300);
     }
 
     async loadUserIds(userType) {
         try {
             const endpoint = userType === 'Homeowner/Resident' ? 'get_households' : 'get_visitors';
             const labelText = userType === 'Homeowner/Resident' ? 'Resident ID' : 'Visitor ID';
-            
+
             this.idLabel.innerHTML = `${labelText}<small class="fw-bold text-danger">*</small>`;
-            
+
             const response = await fetch(`?action=${endpoint}`);
             const result = await response.json();
-            
+
             if (result.success) {
-                this.userIdSelect.innerHTML = `<option value="">Select ${labelText}</option>`;
-                result.data.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item[userType === 'Homeowner/Resident' ? 'household_id' : 'visitor_id'];
-                    option.textContent = `${option.value} - ${item.name}`;
-                    this.userIdSelect.appendChild(option);
-                });
+                this.userOptions = result.data.map(item => ({
+                    id: item[userType === 'Homeowner/Resident' ? 'household_id' : 'visitor_id'],
+                    name: item.name
+                }));
+                this.userIdSearch.placeholder = `Search ${labelText}...`;
             } else {
-                this.userIdSelect.innerHTML = '<option value="">Error loading data</option>';
+                this.userOptions = [];
+                this.userIdSearch.placeholder = 'Error loading data';
                 console.error('Error:', result.error);
             }
         } catch (error) {
             console.error('Error fetching data:', error);
-            this.userIdSelect.innerHTML = '<option value="">Error loading data</option>';
-        }
-    }
-
-    handleIdSelection() {
-        if (this.userIdSelect.value) {
-            this.userIdSelect.style.borderColor = '#198754';
-            this.userIdSelect.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
-        } else {
-            this.userIdSelect.style.borderColor = '#dee2e6';
-            this.userIdSelect.style.boxShadow = 'none';
+            this.userOptions = [];
+            this.userIdSearch.placeholder = 'Error loading data';
         }
     }
 
     async fetchInvoiceDetails() {
-    const invoiceNumber = this.invoiceInput.value.trim();
-    const selectedCategory = this.categorySelect.value;
-    const userId = this.userIdSelect.value;
-    const userType = this.userTypeSelect.value;
-    
-    console.log('Fetching invoice details:', {
-        invoiceNumber,
-        selectedCategory,
-        userId,
-        userType
-    });
-    
-    this.refNo.textContent = "";
-    this.residentName.textContent = "";
-    this.issueDate.textContent = "";
-    this.clearInvoiceTable();
-    
-    const lookupCategories = ["Amenity Fee", "Monthly Dues", "Penalty Fees", "Other Fees"];
-    
-    if (lookupCategories.includes(selectedCategory) && invoiceNumber && userId && userType) {
-        
-        if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory) && userType !== "Homeowner/Resident") {
-            this.refNo.textContent = selectedCategory + " only apply to homeowners/residents";
-            this.invoiceInput.style.borderColor = '#dc3545';
-            this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
-            this.clearInvoiceTable();
-            return;
-        }
-        
-        try {
-            let action;
-            if (selectedCategory === "Amenity Fee") {
-                action = 'get_amenity_booking_by_invoice';
-            } else {
-                action = 'get_billing_by_invoice';
+        const invoiceNumber = this.invoiceInput.value.trim();
+        const selectedCategory = this.categorySelect.value;
+        const userId = this.userId.value;
+        const userType = this.userTypeSelect.value;
+
+        this.refNo.textContent = "";
+        this.residentName.textContent = "";
+        this.issueDate.textContent = "";
+        this.clearInvoiceTable();
+
+        const lookupCategories = ["Amenity Fee", "Monthly Dues", "Penalty Fees", "Other Fees"];
+
+        if (lookupCategories.includes(selectedCategory) && invoiceNumber && userId && userType) {
+
+            if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory) && userType !== "Homeowner/Resident") {
+                this.refNo.textContent = selectedCategory + " only apply to homeowners/residents";
+                this.invoiceSearch.style.borderColor = '#dc3545';
+                this.invoiceSearch.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+                this.clearInvoiceTable();
+                return;
             }
-                
-            const params = new URLSearchParams({
-                action: action,
-                invoice_number: invoiceNumber,
-                user_id: userId,
-                user_type: userType,
-                category: selectedCategory
-            });
-            
-            const url = `?${params.toString()}`;
-            console.log('Fetch URL:', url);
-            
-            const response = await fetch(url);
-            const text = await response.text();
-            console.log('Raw response:', text);
-            
-            // Try to parse as JSON
-            let result;
+
             try {
-                result = JSON.parse(text);
-                console.log('Parsed result:', result);
-            } catch (parseError) {
-                console.error('JSON parse error:', parseError);
-                console.error('Response was not valid JSON');
-                throw new Error('Invalid response from server');
-            }
-            
-            if (result.success) {
-                const data = result.data;
-                this.currentInvoiceData = data;
-                
-                this.refNo.textContent = data.reference_number;
-                this.residentName.textContent = `${data.first_name} ${data.middle_name} ${data.last_name}`;
-                this.issueDate.textContent = new Date(data.created_at).toLocaleDateString();
-                
-                if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory)) {
-                    if (data.billing_month) {
-                        const billingMonth = new Date(data.billing_month).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'long' 
-                        });
-                        this.issueDate.textContent += ` (${billingMonth})`;
-                    }
-                    if (data.description) {
-                        this.refNo.textContent += ` - ${data.description}`;
-                    }
-                }
-                
-                this.populateInvoiceTable(data.items);
-                
-                this.subtotal.textContent = `₱${data.subtotal}`;
-                this.previouslyPaid.textContent = `₱${data.amount_paid}`;
-                this.balanceDue.textContent = `₱${data.balance_due}`;
-                
-                if (data.status === 'Partial') {
-                    this.balanceDue.parentElement.classList.add('text-warning');
-                    this.balanceDue.parentElement.classList.remove('text-success');
-                } else if (data.status === 'Paid' || data.status === 'Completed') {
-                    this.balanceDue.parentElement.classList.add('text-success');
-                    this.balanceDue.parentElement.classList.remove('text-warning');
+                let action;
+                if (selectedCategory === "Amenity Fee") {
+                    action = 'get_amenity_booking_by_invoice';
                 } else {
-                    this.balanceDue.parentElement.classList.remove('text-success', 'text-warning');
+                    action = 'get_billing_by_invoice';
                 }
-                
-                this.invoiceInput.style.borderColor = '#198754';
-                this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
-            } else {
-                console.error('Server returned error:', result.error);
-                this.refNo.textContent = result.error || "Invoice not found";
-                this.invoiceInput.style.borderColor = '#dc3545';
-                this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+
+                const params = new URLSearchParams({
+                    action: action,
+                    invoice_number: invoiceNumber,
+                    user_id: userId,
+                    user_type: userType,
+                    category: selectedCategory
+                });
+
+                const response = await fetch(`?${params.toString()}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const data = result.data;
+                    this.currentInvoiceData = data;
+
+                    this.refNo.textContent = data.reference_number;
+                    this.residentName.textContent = `${data.first_name} ${data.middle_name} ${data.last_name}`;
+                    this.issueDate.textContent = new Date(data.created_at).toLocaleDateString();
+
+                    if (['Monthly Dues', 'Penalty Fees', 'Other Fees'].includes(selectedCategory)) {
+                        if (data.billing_month) {
+                            const billingMonth = new Date(data.billing_month).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long'
+                            });
+                            this.issueDate.textContent += ` (${billingMonth})`;
+                        }
+                        if (data.description) {
+                            this.refNo.textContent += ` - ${data.description}`;
+                        }
+                    }
+
+                    this.populateInvoiceTable(data.items);
+
+                    this.subtotal.textContent = `₱${data.subtotal}`;
+                    this.previouslyPaid.textContent = `₱${data.amount_paid}`;
+                    this.balanceDue.textContent = `₱${data.balance_due}`;
+
+                    if (data.status === 'Partial') {
+                        this.balanceDue.parentElement.classList.add('text-warning');
+                        this.balanceDue.parentElement.classList.remove('text-success');
+                    } else if (data.status === 'Paid' || data.status === 'Completed') {
+                        this.balanceDue.parentElement.classList.add('text-success');
+                        this.balanceDue.parentElement.classList.remove('text-warning');
+                    } else {
+                        this.balanceDue.parentElement.classList.remove('text-success', 'text-warning');
+                    }
+
+                    this.invoiceSearch.style.borderColor = '#198754';
+                    this.invoiceSearch.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+                } else {
+                    this.refNo.textContent = result.error || "Invoice not found";
+                    this.invoiceSearch.style.borderColor = '#dc3545';
+                    this.invoiceSearch.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+                    this.clearInvoiceTable();
+                }
+            } catch (error) {
+                console.error('Error fetching invoice details:', error);
+                this.refNo.textContent = "Error loading: " + error.message;
+                this.invoiceSearch.style.borderColor = '#dc3545';
+                this.invoiceSearch.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
                 this.clearInvoiceTable();
             }
-        } catch (error) {
-            console.error('Error fetching invoice details:', error);
-            this.refNo.textContent = "Error loading: " + error.message;
-            this.invoiceInput.style.borderColor = '#dc3545';
-            this.invoiceInput.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
-            this.clearInvoiceTable();
         }
-    } else {
-        console.log('Missing required fields for fetch');
-        this.clearInvoiceTable();
     }
-}
-    
+
     populateInvoiceTable(items) {
         if (!items || items.length === 0) {
             this.clearInvoiceTable();
             return;
         }
-        
+
         this.invoiceTableBody.innerHTML = '';
-        
+
         items.forEach(item => {
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -351,7 +576,7 @@ class PaymentManager {
             `;
             this.invoiceTableBody.appendChild(row);
         });
-        
+
         const currentRows = items.length;
         const minRows = 3;
         if (currentRows < minRows) {
@@ -362,7 +587,7 @@ class PaymentManager {
             }
         }
     }
-    
+
     clearInvoiceTable() {
         this.invoiceTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No invoice data loaded</td></tr>';
         this.subtotal.textContent = '₱0.00';
@@ -371,24 +596,19 @@ class PaymentManager {
         this.currentInvoiceData = null;
     }
 
-    resetInvoiceValidation() {
-        this.invoiceInput.style.borderColor = '#dee2e6';
-        this.invoiceInput.style.boxShadow = 'none';
-    }
-
     setupDragAndDrop() {
         this.fileDropArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.stopPropagation();
             this.fileDropArea.classList.add('dragover');
         });
-        
+
         this.fileDropArea.addEventListener('dragleave', (e) => {
             e.preventDefault();
             e.stopPropagation();
             this.fileDropArea.classList.remove('dragover');
         });
-        
+
         this.fileDropArea.addEventListener('drop', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -399,48 +619,48 @@ class PaymentManager {
 
     handleFiles(files) {
         if (files.length === 0) return;
-        
+
         const file = files[0];
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
         const maxSize = 10 * 1024 * 1024;
-        
+
         if (!allowedTypes.includes(file.type)) {
             alert('Please select a valid file type for proof of payment (JPEG, PNG, GIF, PDF)');
             return;
         }
-        
+
         if (file.size > maxSize) {
             alert('File size must be less than 10MB');
             return;
         }
-        
+
         const dt = new DataTransfer();
         dt.items.add(file);
         this.fileInput.files = dt.files;
-        
+
         this.displayFilePreview(file);
     }
 
     displayFilePreview(file) {
         this.filePreview.innerHTML = '';
-        
+
         const previewContainer = document.createElement('div');
         previewContainer.className = 'alert alert-success d-flex align-items-center justify-content-between';
-        
+
         const fileInfo = document.createElement('div');
         fileInfo.className = 'd-flex align-items-center';
-        
+
         const fileIcon = document.createElement('i');
-        fileIcon.className = file.type.startsWith('image/') 
-            ? 'bi bi-file-earmark-image me-2' 
+        fileIcon.className = file.type.startsWith('image/')
+            ? 'bi bi-file-earmark-image me-2'
             : 'bi bi-file-earmark-pdf me-2';
-        
+
         const fileName = document.createElement('span');
         fileName.textContent = `${file.name} (${this.formatFileSize(file.size)})`;
-        
+
         fileInfo.appendChild(fileIcon);
         fileInfo.appendChild(fileName);
-        
+
         const removeButton = document.createElement('button');
         removeButton.type = 'button';
         removeButton.className = 'btn-close';
@@ -448,7 +668,7 @@ class PaymentManager {
             this.fileInput.value = '';
             this.filePreview.innerHTML = '';
         };
-        
+
         previewContainer.appendChild(fileInfo);
         previewContainer.appendChild(removeButton);
         this.filePreview.appendChild(previewContainer);
@@ -464,36 +684,47 @@ class PaymentManager {
 
     clearFormFields() {
         this.userTypeSelect.value = "";
-        this.userIdSelect.innerHTML = '<option value="">First select user type</option>';
-        this.userIdSelect.disabled = true;
+
+        // Reset user search
+        this.userIdSearch.value = '';
+        this.userIdSearch.placeholder = 'First select user type';
+        this.userIdSearch.disabled = true;
+        this.userId.value = '';
+        this.userSearchClear.classList.remove('show');
+        this.userOptions = [];
+        this.selectedUserId = null;
+
         this.categorySelect.value = "";
-        this.invoiceInput.value = "";
+
+        // Reset invoice search
+        this.resetInvoiceSearch();
+
         this.amountPaid.value = "";
         this.referenceNumber.value = "";
-        
+
         this.refNo.textContent = "";
         this.residentName.textContent = "";
         this.issueDate.textContent = "";
-        
+
         this.clearInvoiceTable();
-        
+
         const fieldsToReset = [
             this.userTypeSelect,
-            this.userIdSelect,
+            this.userIdSearch,
             this.categorySelect,
-            this.invoiceInput,
+            this.invoiceSearch,
             this.amountPaid
         ];
-        
+
         fieldsToReset.forEach(field => {
             field.classList.remove('is-invalid');
             field.style.borderColor = '#dee2e6';
             field.style.boxShadow = 'none';
         });
-        
+
         this.fileDropArea.style.borderColor = '#d1d5db';
         this.fileDropArea.style.backgroundColor = '#f9fafb';
-        
+
         this.fileInput.value = '';
         this.filePreview.innerHTML = '';
     }
@@ -501,41 +732,43 @@ class PaymentManager {
     handleSubmit(e) {
         e.preventDefault();
         e.stopPropagation();
-        
-        // Base required fields
+
+        // Base required fields - using hidden inputs
         const requiredFields = [
             { field: this.userTypeSelect, name: 'User Type' },
-            { field: this.userIdSelect, name: 'User ID' },
+            { field: this.userId, display: this.userIdSearch, name: 'User ID' },
             { field: this.categorySelect, name: 'Category' },
-            { field: this.invoiceInput, name: 'Invoice Number' },
+            { field: this.invoiceInput, display: this.invoiceSearch, name: 'Invoice Number' },
             { field: this.amountPaid, name: 'Amount Paid' }
         ];
-        
+
         // Add reference number validation for bank transfer only
         if (this.selectedMethod.textContent === "Bank Transfer") {
             requiredFields.push({ field: this.referenceNumber, name: 'Reference Number' });
         }
-        
+
         let isValid = true;
         let firstInvalidField = null;
-        
+
         requiredFields.forEach(item => {
             const field = item.field;
+            const displayField = item.display || field;
+
             if (!field.value || field.value.trim() === '') {
-                field.classList.add('is-invalid');
-                field.style.borderColor = '#dc3545';
-                field.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
+                displayField.classList.add('is-invalid');
+                displayField.style.borderColor = '#dc3545';
+                displayField.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.15)';
                 isValid = false;
                 if (!firstInvalidField) {
-                    firstInvalidField = field;
+                    firstInvalidField = displayField;
                 }
             } else {
-                field.classList.remove('is-invalid');
-                field.style.borderColor = '#dee2e6';
-                field.style.boxShadow = 'none';
+                displayField.classList.remove('is-invalid');
+                displayField.style.borderColor = '#dee2e6';
+                displayField.style.boxShadow = 'none';
             }
         });
-        
+
         // Validate amount is positive
         if (!this.amountPaid.value || parseFloat(this.amountPaid.value) <= 0) {
             this.amountPaid.classList.add('is-invalid');
@@ -546,35 +779,32 @@ class PaymentManager {
                 firstInvalidField = this.amountPaid;
             }
         }
-        
+
         // Validate proof of payment for BOTH payment methods
         if (!this.fileInput.files.length) {
             this.fileDropArea.style.borderColor = '#dc3545';
             this.fileDropArea.style.backgroundColor = '#f8d7da';
             isValid = false;
             if (!firstInvalidField) {
-                // Scroll to file upload area
                 this.fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-            
-            // Different message based on payment method
-            const paymentType = this.selectedMethod.textContent === "Bank Transfer" 
-                ? "bank transfer" 
+
+            const paymentType = this.selectedMethod.textContent === "Bank Transfer"
+                ? "bank transfer"
                 : "in-office payment";
             this.showErrorModal(`Please upload proof of payment for ${paymentType}.`);
         } else {
             this.fileDropArea.style.borderColor = '#d1d5db';
             this.fileDropArea.style.backgroundColor = '#f9fafb';
         }
-        
+
         if (!isValid) {
-            // Focus on first invalid field
             if (firstInvalidField) {
                 firstInvalidField.focus();
             }
             return;
         }
-        
+
         // Additional validation for invoice-based payments
         const invoiceCategories = ['Amenity Fee', 'Monthly Dues', 'Penalty Fees', 'Other Fees'];
         if (invoiceCategories.includes(this.categorySelect.value)) {
@@ -582,18 +812,19 @@ class PaymentManager {
                 this.showErrorModal(`Please enter a valid invoice number for ${this.categorySelect.value} payments.`);
                 return;
             }
-            
+
             const amountPaid = parseFloat(this.amountPaid.value);
             const balanceDue = parseFloat(this.currentInvoiceData.balance_due.replace(/,/g, ''));
-            
+
             if (amountPaid > balanceDue) {
                 this.showErrorModal(`The amount entered (₱${amountPaid.toFixed(2)}) exceeds the balance due (₱${balanceDue.toFixed(2)}). Please enter a valid amount.`);
                 return;
             }
         }
-        
+
         this.showConfirmationModal();
     }
+
     showErrorModal(message) {
         if (this.errorModal && this.errorMessage) {
             this.errorMessage.textContent = message;
@@ -604,64 +835,56 @@ class PaymentManager {
     }
 
     showConfirmationModal() {
-        const selectedUserOption = this.userIdSelect.options[this.userIdSelect.selectedIndex];
-        const userName = selectedUserOption.textContent.split(' - ')[1] || 'Unknown';
-        
+        const userName = this.userIdSearch.value.split(' - ')[1] || 'Unknown';
+
         this.confirmName.textContent = userName;
         this.confirmCategory.textContent = this.categorySelect.value;
         this.confirmInvoice.textContent = this.invoiceInput.value;
         this.confirmAmount.textContent = `₱${parseFloat(this.amountPaid.value).toFixed(2)}`;
         this.confirmMethod.textContent = this.selectedMethod.textContent;
-        
+
         this.confirmModal.show();
     }
+
     async processPayment() {
         try {
             this.confirmPaymentBtn.disabled = true;
             this.confirmPaymentBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Processing...';
-            
+
             const formData = new FormData();
-            formData.append('action', 'process_payment');  // Add this line
+            formData.append('action', 'process_payment');
             formData.append('category', this.categorySelect.value);
             formData.append('user_type', this.userTypeSelect.value);
-            formData.append('user_id', this.userIdSelect.value);
+            formData.append('user_id', this.userId.value);
             formData.append('invoice_number', this.invoiceInput.value);
             formData.append('amount', this.amountPaid.value);
             formData.append('payment_method', this.selectedMethod.textContent);
             formData.append('reference_number', this.referenceNumber.value || '');
-            
+
             if (this.fileInput.files.length > 0) {
                 formData.append('proof_of_payment', this.fileInput.files[0]);
             }
-            
-            // CHANGE THIS: Point to the new payment processing file
-            const response = await fetch('payment/process_payment.php', {
+
+            const response = await fetch('?action=process_payment', {
                 method: 'POST',
                 body: formData
             });
-            
+
             const result = await response.json();
-            
+
             if (result.success) {
                 this.confirmModal.hide();
                 this.successModal.show();
-                
-                // Show email status if available
-                if (result.email_sent) {
-                    console.log('✅ Payment receipt sent to user email');
-                } else {
-                    console.log('⚠️ Payment processed but email not sent');
-                }
-                
+
                 setTimeout(() => {
                     this.clearFormFields();
                     this.selectPaymentMethod('bank');
                 }, 1000);
-                
+
             } else {
                 throw new Error(result.error || 'Payment processing failed');
             }
-            
+
         } catch (error) {
             console.error('Payment processing error:', error);
             this.showErrorModal('Error processing payment: ' + error.message);
