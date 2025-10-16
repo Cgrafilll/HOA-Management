@@ -1438,7 +1438,7 @@ if (isset($_GET['action'])) {
                             <!-- Upload Section -->
                             <div class="border rounded p-3 text-center">
                                 <h6 class="fw-bold">Upload Proof of Payment</h6>
-                                <div class="file-drop-area" id="fileDropArea" style="height: 250px;">
+                                <div class="file-drop-area" id="fileDropArea">
                                     <div class="cloud-icon">
                                         <i class="bi bi-cloud-upload"></i>
                                     </div>
