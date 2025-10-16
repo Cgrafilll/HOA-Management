@@ -1060,42 +1060,6 @@ if (isset($_GET['action'])) {
                 margin-bottom: 0.75rem;
             }
         }
-
-        /* Extra small devices */
-        @media (max-width: 375px) {
-            header h1 {
-                font-size: 0.85rem !important;
-            }
-
-            .file-drop-area {
-                padding: 15px 8px;
-                min-height: 120px;
-            }
-
-            .cloud-icon {
-                font-size: 28px;
-            }
-
-            .method-card i {
-                font-size: 1.1rem !important;
-            }
-
-            .method-card h6 {
-                font-size: 0.75rem;
-            }
-
-            .table-responsive {
-                font-size: 0.7rem;
-            }
-
-            .form-label,
-            .form-control,
-            .form-select,
-            .subtotals,
-            .btn {
-                font-size: 0.8rem;
-            }
-        }
     </style>
 </head>
 
@@ -1366,7 +1330,7 @@ if (isset($_GET['action'])) {
                             <!-- Upload Section -->
                             <div class="border rounded p-3 text-center">
                                 <h6 class="fw-bold">Upload Proof of Payment</h6>
-                                <div class="file-drop-area" id="fileDropArea" style="height: 250px;">
+                                <div class="file-drop-area" id="fileDropArea">
                                     <div class="cloud-icon">
                                         <i class="bi bi-cloud-upload"></i>
                                     </div>
