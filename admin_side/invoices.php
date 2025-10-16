@@ -47,7 +47,7 @@ try {
     } else {
         $error_message = "Failed to fetch user details.";
     }
-    
+
     // Get filter parameters - REMOVED STATUS FILTER
     $categoryFilter = $_GET['category'] ?? 'all';
     $searchQuery = $_GET['search'] ?? '';
@@ -58,17 +58,17 @@ try {
         $whereConditions = [];
         $params = [];
         $paramTypes = '';
-        
+
         // Always show only paid/completed invoices (no status filter dropdown)
         $whereConditions[] = "LOWER(md.status) IN ('paid', 'completed')";
-        
+
         // Category filter
         if ($categoryFilter !== 'all') {
             $whereConditions[] = "md.category = ?";
             $params[] = $categoryFilter;
             $paramTypes .= 's';
         }
-        
+
         // Search filter
         if (!empty($searchQuery)) {
             $whereConditions[] = "(md.invoice_number LIKE ? OR md.household_id LIKE ? OR CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) LIKE ?)";
@@ -78,9 +78,9 @@ try {
             $params[] = $searchParam;
             $paramTypes .= 'sss';
         }
-        
+
         $whereClause = implode(' AND ', $whereConditions);
-        
+
         // Fetch monthly dues invoices with all categories
         $sql = "
             SELECT md.id, md.invoice_number, md.household_id, md.billing_month, md.amount_paid,
@@ -93,7 +93,7 @@ try {
             WHERE $whereClause
             ORDER BY md.created_at DESC
         ";
-        
+
         $stmt = $conn->prepare($sql);
         if (!empty($params)) {
             $stmt->bind_param($paramTypes, ...$params);
@@ -107,10 +107,10 @@ try {
             $amenityWhereConditions = [];
             $amenityParams = [];
             $amenityParamTypes = '';
-            
+
             // Always show only paid amenity bookings
             $amenityWhereConditions[] = "LOWER(ab.status) IN ('paid', 'completed')";
-            
+
             // Search filter for amenity
             if (!empty($searchQuery)) {
                 $amenityWhereConditions[] = "(ab.invoice_number LIKE ? OR ab.reservation_code LIKE ? OR 
@@ -124,9 +124,9 @@ try {
                 $amenityParams[] = $searchParam;
                 $amenityParamTypes .= 'sss';
             }
-            
+
             $amenityWhereClause = implode(' AND ', $amenityWhereConditions);
-            
+
             $amenityStmt = $conn->prepare("
                 SELECT ab.invoice_number, ab.reservation_code, ab.reservation_date, ab.created_at,
                        ab.total_amount, ab.amount_paid, (ab.total_amount - ab.amount_paid) AS balance_remaining,
@@ -146,7 +146,7 @@ try {
                 WHERE $amenityWhereClause
                 ORDER BY ab.created_at DESC
             ");
-            
+
             if (!empty($amenityParams)) {
                 $amenityStmt->bind_param($amenityParamTypes, ...$amenityParams);
             }
@@ -187,21 +187,31 @@ try {
 }
 
 $amenityRates = [
-    "Swimming Pool" => ["homeowner" => ["day" => "₱100.00 / per person", "night" => "₱200.00 / per person"],
-                        "visitor" => ["day" => "₱200.00 / per person", "night" => "₱300.00 / per person"]],
-    "Clubhouse" => ["homeowner" => ["day" => "₱12,000.00", "night" => "₱12,000.00"],
-                    "visitor" => ["day" => "₱15,000.00", "night" => "₱15,000.00"]],
-    "Basketball Court" => ["homeowner" => ["day" => "₱200.00 / per person", "night" => "₱300.00 / per person"],
-                           "visitor" => ["day" => "₱300.00 / per person", "night" => "₱400.00 / per person"]],
-    "Gazebo" => ["homeowner" => ["day" => "₱1,000.00", "night" => "₱2,000.00"],
-                 "visitor" => ["day" => "₱2,000.00", "night" => "₱3,000.00"]]
+    "Swimming Pool" => [
+        "homeowner" => ["day" => "₱100.00 / per person", "night" => "₱200.00 / per person"],
+        "visitor" => ["day" => "₱200.00 / per person", "night" => "₱300.00 / per person"]
+    ],
+    "Clubhouse" => [
+        "homeowner" => ["day" => "₱12,000.00", "night" => "₱12,000.00"],
+        "visitor" => ["day" => "₱15,000.00", "night" => "₱15,000.00"]
+    ],
+    "Basketball Court" => [
+        "homeowner" => ["day" => "₱200.00 / per person", "night" => "₱300.00 / per person"],
+        "visitor" => ["day" => "₱300.00 / per person", "night" => "₱400.00 / per person"]
+    ],
+    "Gazebo" => [
+        "homeowner" => ["day" => "₱1,000.00", "night" => "₱2,000.00"],
+        "visitor" => ["day" => "₱2,000.00", "night" => "₱3,000.00"]
+    ]
 ];
 
-function getNumericAmount($amountStr) {
+function getNumericAmount($amountStr)
+{
     return floatval(preg_replace('/[^\d.]/', '', $amountStr));
 }
 
-function getCategoryDisplayName($category) {
+function getCategoryDisplayName($category)
+{
     $names = [
         'monthly_dues' => 'Monthly Dues',
         'penalty_fees' => 'Penalty Fees',
@@ -211,7 +221,8 @@ function getCategoryDisplayName($category) {
     return $names[$category] ?? ucwords(str_replace('_', ' ', $category));
 }
 
-function getCategoryIcon($category) {
+function getCategoryIcon($category)
+{
     $icons = [
         'monthly_dues' => '🏠',
         'penalty_fees' => '⚠️',
@@ -223,6 +234,7 @@ function getCategoryIcon($category) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -232,65 +244,529 @@ function getCategoryIcon($category) {
     <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
-        * { font-family: "Montserrat", sans-serif; }
-        header { position: sticky; top: 0; z-index: 1030; }
-        .sidebar { width: 250px; height: 100vh; position: fixed; top: 20; left: 0; background-color: #1F2937; overflow-y: auto; }
-        main { margin-left: 250px; }
-        .sidebar a, .sidebar button { color: #ffffff; text-decoration: none; display: flex; align-items: center; justify-content: space-between; }
-        .sidebar a:hover, .sidebar button:hover, .collapse ul li a:hover, .collapse ul li a.actived { color: #80ed99; }
-        .sidebar .nav-link.active, .sidebar .btn-toggle:not(.collapsed), .sidebar .btn-toggle.active { background-color: #198754; border-radius: 0.375rem; }
-        .sidebar .btn-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; color: #ffffff; background: none; border: none; }
-        .sidebar .btn-toggle i { margin-right: 8px; }
-        .sidebar .btn-toggle::after { content: "▼"; font-size: 10px; transition: transform 0.3s; margin-left: auto; }
-        .sidebar .btn-toggle.collapsed::after { transform: rotate(0deg); }
-        .sidebar .btn-toggle:not(.collapsed)::after { transform: rotate(180deg); }
-        .invoice.active { border-color: #198754 !important; background-color: #d1e7dd !important; color: #0f5132 !important; border-left: 4px solid #198754 !important; box-shadow: 0 2px 4px rgba(25, 135, 84, 0.2) !important; transform: translateX(2px); transition: all 0.2s ease-in-out; }
-        .invoice:not(.active):hover { background-color: #f8f9fa; border-color: #dee2e6; transform: translateX(1px); transition: all 0.2s ease-in-out; }
-        .invoice.active h6 { color: #0f5132 !important; font-weight: 700 !important; }
-        .invoice.active small { font-weight: 600 !important; }
-        .invoice { transition: all 0.3s ease-in-out; }
-        .category-badge { font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-weight: 600; }
-        .badge-monthly-dues { background-color: #d1e7dd; color: #0f5132; }
-        .badge-penalty-fees { background-color: #f8d7da; color: #721c24; }
-        .badge-other-fees { background-color: #cff4fc; color: #055160; }
-        .badge-amenity { background-color: #fff3cd; color: #856404; }
+
+        * {
+            font-family: "Montserrat", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow-x: hidden;
+        }
+
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+            height: 76px;
+            background-color: white;
+        }
+
+        .sidebar {
+            width: 250px;
+            height: calc(100vh - 76px);
+            position: fixed;
+            top: 76px;
+            left: 0;
+            background-color: #1F2937;
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1020;
+            transition: transform 0.3s ease;
+        }
+
+        main {
+            margin-left: 250px;
+            margin-top: 76px;
+            min-height: calc(100vh - 76px);
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+
+        .sidebar a,
+        .sidebar button {
+            color: #ffffff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar a:hover,
+        .sidebar button:hover,
+        .collapse ul li a:hover,
+        .collapse ul li a.actived {
+            color: #80ed99;
+        }
+
+        .sidebar .nav-link.active,
+        .sidebar .btn-toggle:not(.collapsed),
+        .sidebar .btn-toggle.active {
+            background-color: #198754;
+            border-radius: 0.375rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar .logout {
+            flex-shrink: 0;
+            border-top: 1px solid #374151;
+            padding-top: 12px;
+        }
+
+        .sidebar .btn-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            color: #ffffff;
+            background: none;
+            border: none;
+        }
+
+        .sidebar .btn-toggle i {
+            margin-right: 8px;
+        }
+
+        .sidebar .btn-toggle::after {
+            content: "▼";
+            font-size: 10px;
+            transition: transform 0.3s;
+            margin-left: auto;
+        }
+
+        .sidebar .btn-toggle.collapsed::after {
+            transform: rotate(0deg);
+        }
+
+        .sidebar .btn-toggle:not(.collapsed)::after {
+            transform: rotate(180deg);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        .invoice {
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
+        }
+
+        .invoice.active {
+            border-color: #198754 !important;
+            background-color: #d1e7dd !important;
+            color: #0f5132 !important;
+            border-left: 4px solid #198754 !important;
+            box-shadow: 0 2px 4px rgba(25, 135, 84, 0.2) !important;
+            transform: translateX(2px);
+        }
+
+        .invoice:not(.active):hover {
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
+            transform: translateX(1px);
+        }
+
+        .invoice.active h6 {
+            color: #0f5132 !important;
+            font-weight: 700 !important;
+        }
+
+        .invoice.active small {
+            font-weight: 600 !important;
+        }
+
+        /* Category Badges */
+        .category-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-monthly-dues {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .badge-penalty-fees {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-other-fees {
+            background-color: #cff4fc;
+            color: #055160;
+        }
+
+        .badge-amenity {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        /* Print Styles */
+        @media print {
+
+            .sidebar,
+            header,
+            .btn,
+            .invoice-list-container,
+            form {
+                display: none !important;
+            }
+
+            main {
+                margin-left: 0 !important;
+                margin-top: 0 !important;
+            }
+
+            .col-md-4 {
+                display: none !important;
+            }
+
+            .col-md-8 {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+
+        /* Tablet Styles */
+        @media (max-width: 992px) {
+            .invoice-list-container {
+                max-height: 400px;
+            }
+
+            .table-responsive {
+                font-size: 0.9rem;
+            }
+
+            .category-badge {
+                font-size: 0.65rem;
+            }
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                top: 76px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            header .logo-container {
+                width: auto !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            /* Stack columns on mobile */
+            .col-md-4,
+            .col-md-8 {
+                margin-bottom: 1rem;
+            }
+
+            .invoice-list-container {
+                max-height: 300px;
+            }
+
+            .invoice h6 {
+                font-size: 0.9rem;
+            }
+
+            .invoice .small {
+                font-size: 0.75rem;
+            }
+
+            .category-badge {
+                font-size: 0.6rem;
+                padding: 0.15rem 0.35rem;
+            }
+
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+
+            .table-responsive th,
+            .table-responsive td {
+                padding: 0.5rem;
+            }
+
+            /* Form controls on mobile */
+            .form-control,
+            .form-select {
+                font-size: 0.875rem;
+            }
+
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            /* Invoice details section */
+            .fw-bold.mb-1 {
+                font-size: 0.9rem;
+            }
+
+            .text-muted.mb-3 {
+                font-size: 0.75rem;
+            }
+
+            /* Make invoice detail sections stack */
+            .row.mb-3 .col-8,
+            .row.mb-3 .col-4 {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .row.mb-3 .col-4 {
+                margin-top: 1rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                font-size: 0.9rem !important;
+            }
+
+            main {
+                margin-top: 76px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .bg-white.shadow.rounded {
+                padding: 0.5rem !important;
+            }
+
+            .bg-success.text-white.rounded-top {
+                padding: 0.75rem !important;
+            }
+
+            .bg-success.text-white.rounded-top h5 {
+                font-size: 1rem;
+            }
+
+            /* Even smaller invoice cards */
+            .invoice-list-container {
+                max-height: 250px;
+            }
+
+            .invoice {
+                padding: 0.5rem !important;
+            }
+
+            .invoice h6 {
+                font-size: 0.85rem;
+            }
+
+            .invoice .small {
+                font-size: 0.7rem;
+            }
+
+            .category-badge {
+                font-size: 0.55rem;
+                padding: 0.1rem 0.3rem;
+            }
+
+            /* Table adjustments */
+            .table-responsive {
+                font-size: 0.75rem;
+            }
+
+            .table-responsive th,
+            .table-responsive td {
+                padding: 0.35rem;
+            }
+
+            /* Filter section */
+            .row.g-2 {
+                gap: 0.5rem !important;
+            }
+
+            .col-md-6,
+            .col-md-4,
+            .col-md-2 {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin-bottom: 0.5rem;
+            }
+
+            /* Invoice header company info */
+            .fw-bold.mb-1 {
+                font-size: 0.85rem;
+            }
+
+            .text-muted.mb-3,
+            .small {
+                font-size: 0.7rem;
+                line-height: 1.3;
+            }
+
+            /* Summary section */
+            .d-flex.justify-content-end>div {
+                min-width: 100% !important;
+            }
+
+            /* Alert boxes */
+            .alert {
+                font-size: 0.8rem;
+                padding: 0.75rem;
+            }
+
+            .alert h6 {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Extra small devices */
+        @media (max-width: 375px) {
+            header h1 {
+                font-size: 0.85rem !important;
+            }
+
+            .invoice h6 {
+                font-size: 0.8rem;
+            }
+
+            .table-responsive {
+                font-size: 0.7rem;
+            }
+
+            .category-badge {
+                font-size: 0.5rem;
+            }
+        }
+
+        /* Landscape mobile adjustments */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .invoice-list-container {
+                max-height: 200px;
+            }
+
+            main {
+                padding: 0.5rem !important;
+            }
+        }
     </style>
 </head>
+
 <body class="bg-light">
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
-        <div class="me-4" style="width: 250px;">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="me-4 logo-container" style="width: 250px;">
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
             <h1 class="h5 mb-0 fw-bold">ACCOUNTING</h1>
             <div class="dropdown">
-                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
-                    <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5" style="height: 40px; width: 40px; color: #aaa;">
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
+                    aria-expanded="false" role="button" style="cursor: pointer;">
+                    <span class="d-none d-md-inline">Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
+                        style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
-                            <img src="<?php echo htmlspecialchars($photo); ?>" style="width: 40px; height: 40px; object-fit: cover;">
+                            <img src="<?php echo htmlspecialchars($photo); ?>"
+                                style="width: 40px; height: 40px; object-fit: cover;">
                         <?php else: ?>
                             <i class="bi bi-person-circle" style="font-size: 32px;"></i>
                         <?php endif; ?>
                     </div>
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="admin/view_admin.php?id=<?php echo $admin_id; ?>"><i class="bi bi-person me-2"></i>Profile</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="login/logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                    <li><a class="dropdown-item" href="admin/view_admin.php?id=<?php echo $admin_id; ?>"><i
+                                class="bi bi-person me-2"></i>Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="login/logout.php"><i
+                                class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                 </ul>
             </div>
         </div>
     </header>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
-        <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1">
-                <a href="admin_dashboard.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+        <aside class="sidebar">
+            <nav class="nav flex-column gap-1 sidebar-nav p-3">
+                <a href="admin_dashboard.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse" data-bs-target="#accountsCollapse" aria-expanded="false">
-                        <span class="d-flex align-items-center"><i class="bi bi-person-lines-fill me-2"></i> Accounts</span>
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#accountsCollapse" aria-expanded="false">
+                        <span class="d-flex align-items-center"><i class="bi bi-person-lines-fill me-2"></i>
+                            Accounts</span>
                     </button>
                     <div class="collapse" id="accountsCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
@@ -301,7 +777,8 @@ function getCategoryIcon($category) {
                     </div>
                 </div>
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse" data-bs-target="#recordCollapse" aria-expanded="false">
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#recordCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center"><i class="bi bi-book me-2"></i> Record Keeping</span>
                     </button>
                     <div class="collapse" id="recordCollapse">
@@ -313,8 +790,10 @@ function getCategoryIcon($category) {
                     </div>
                 </div>
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse" data-bs-target="#commCollapse" aria-expanded="true">
-                        <span class="d-flex align-items-center"><i class="bi bi-chat-left-text me-2"></i> Communication</span>
+                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
+                        data-bs-target="#commCollapse" aria-expanded="true">
+                        <span class="d-flex align-items-center"><i class="bi bi-chat-left-text me-2"></i>
+                            Communication</span>
                     </button>
                     <div class="collapse" id="commCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
@@ -325,7 +804,8 @@ function getCategoryIcon($category) {
                     </div>
                 </div>
                 <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="false">
+                    <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
+                        data-bs-target="#acctCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center"><i class="bi bi-cash-coin me-2"></i> Accounting</span>
                     </button>
                     <div class="collapse show" id="acctCollapse">
@@ -336,12 +816,13 @@ function getCategoryIcon($category) {
                         </ul>
                     </div>
                 </div>
-                <a href="login/logout.php" class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout" style="position: fixed; bottom: 0; width: 220px;">
+                <a href="login/logout.php"
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
-        <main class="flex-fill p-4">
+        <main class="flex-grow-1 p-4">
             <div class="bg-white shadow rounded p-3">
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Invoices</h5>
@@ -350,26 +831,28 @@ function getCategoryIcon($category) {
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div class="fw-semibold">List of Paid Invoices</div>
                     </div>
-                    
                     <!-- FILTERS: SEARCH BAR + CATEGORY ONLY -->
                     <form method="get" class="mb-3">
                         <div class="row g-2">
                             <div class="col-md-6">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                    <input type="text" name="search" class="form-control" 
-                                           placeholder="Search by invoice#, household, or name..." 
-                                           value="<?= htmlspecialchars($searchQuery) ?>">
+                                    <input type="text" name="search" class="form-control"
+                                        placeholder="Search by invoice#, household, or name..."
+                                        value="<?= htmlspecialchars($searchQuery) ?>">
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <select name="category" id="category" class="form-select form-select-sm"
                                     onchange="this.form.submit()">
-                                    <option value="all" <?= $categoryFilter == 'all' ? 'selected' : '' ?>>All Categories</option>
+                                    <option value="all" <?= $categoryFilter == 'all' ? 'selected' : '' ?>>All Categories
+                                    </option>
                                     <option value="monthly_dues" <?= $categoryFilter == 'monthly_dues' ? 'selected' : '' ?>>Monthly Dues</option>
                                     <option value="penalty_fees" <?= $categoryFilter == 'penalty_fees' ? 'selected' : '' ?>>Penalty Fees</option>
-                                    <option value="other_fees" <?= $categoryFilter == 'other_fees' ? 'selected' : '' ?>>Other Fees</option>
-                                    <option value="amenity" <?= $categoryFilter == 'amenity' ? 'selected' : '' ?>>Amenity Fees</option>
+                                    <option value="other_fees" <?= $categoryFilter == 'other_fees' ? 'selected' : '' ?>>
+                                        Other Fees</option>
+                                    <option value="amenity" <?= $categoryFilter == 'amenity' ? 'selected' : '' ?>>Amenity
+                                        Fees</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -379,10 +862,9 @@ function getCategoryIcon($category) {
                             </div>
                         </div>
                     </form>
-                    
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <div class="border rounded-3" style="max-height: 600px; overflow-y: auto;">
+                            <div class="border rounded-3" style="max-height: 600px;">
                                 <div class="list-group list-group-flush">
                                     <?php if (!empty($invoices)): ?>
                                         <?php foreach ($invoices as $inv): ?>
@@ -394,14 +876,16 @@ function getCategoryIcon($category) {
                                             ];
                                             $queryString = http_build_query($queryParams);
                                             ?>
-                                            <a href="?<?= $queryString ?>" class="list-group-item list-group-item-action invoice <?= ($inv['invoice_number'] === $activeInvoiceNumber) ? 'active' : '' ?>">
+                                            <a href="?<?= $queryString ?>"
+                                                class="list-group-item list-group-item-action invoice <?= ($inv['invoice_number'] === $activeInvoiceNumber) ? 'active' : '' ?>">
                                                 <div class="d-flex w-100 justify-content-between align-items-start">
                                                     <div class="flex-grow-1">
                                                         <h6 class="mb-1">
-                                                            <?= getCategoryIcon($inv['category']) ?> 
+                                                            <?= getCategoryIcon($inv['category']) ?>
                                                             #<?= htmlspecialchars($inv['invoice_number']); ?>
                                                         </h6>
-                                                        <p class="mb-1 small"><?= htmlspecialchars($inv['full_name'] ?? 'No Name'); ?></p>
+                                                        <p class="mb-1 small">
+                                                            <?= htmlspecialchars($inv['full_name'] ?? 'No Name'); ?></p>
                                                         <div class="d-flex gap-2 align-items-center">
                                                             <span class="category-badge badge-<?= $inv['category'] ?>">
                                                                 <?= getCategoryDisplayName($inv['category']) ?>
@@ -426,7 +910,7 @@ function getCategoryIcon($category) {
                                     <?php else: ?>
                                         <div class="p-5 text-muted medium">No paid invoices found.</div>
                                     <?php endif; ?>
-                                                </div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-8">
@@ -435,7 +919,8 @@ function getCategoryIcon($category) {
                                 <?php if ($selectedInvoice): ?>
                                     <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
                                         <div class="fw-bold text-uppercase small">
-                                            STATUS: <span class="text-success"><?= strtoupper($selectedInvoice['status']); ?></span>
+                                            STATUS: <span
+                                                class="text-success"><?= strtoupper($selectedInvoice['status']); ?></span>
                                         </div>
                                         <button class="btn btn-primary btn-sm" onclick="window.print()">
                                             <i class="bi bi-download me-1"></i>Export
@@ -444,7 +929,7 @@ function getCategoryIcon($category) {
                                     <div class="p-3">
                                         <?php
                                         $category = $selectedInvoice['category'];
-                                        
+
                                         // MONTHLY DUES
                                         if ($category === 'monthly_dues'): ?>
                                             <!-- Monthly Dues Template (same as before) -->
@@ -457,9 +942,11 @@ function getCategoryIcon($category) {
                                                         North Fairview III-B Quezon City NCR, Second District Philippines
                                                     </div>
                                                     <div class="small">
-                                                        <div class="mb-1"><span class="fw-semibold">Name:</span> <?= htmlspecialchars($selectedInvoice['full_name']); ?></div>
-                                                        <div class="mb-1"><span class="fw-semibold">Household ID:</span> <?= htmlspecialchars($selectedInvoice['household_id']); ?></div>
-                                                        <div><span class="fw-semibold">Billing Period:</span> 
+                                                        <div class="mb-1"><span class="fw-semibold">Name:</span>
+                                                            <?= htmlspecialchars($selectedInvoice['full_name']); ?></div>
+                                                        <div class="mb-1"><span class="fw-semibold">Household ID:</span>
+                                                            <?= htmlspecialchars($selectedInvoice['household_id']); ?></div>
+                                                        <div><span class="fw-semibold">Billing Period:</span>
                                                             <?php if (!empty($selectedInvoice['billing_month'])): ?>
                                                                 <?= date('F Y', strtotime($selectedInvoice['billing_month'])); ?>
                                                             <?php else: ?>
@@ -470,8 +957,11 @@ function getCategoryIcon($category) {
                                                 </div>
                                                 <div class="col-4">
                                                     <div class="text-end small">
-                                                        <div class="fw-bold mb-2 fs-6">Invoice No. <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
-                                                        <div class="mb-1"><span class="fw-semibold">Due Date:</span> <?= date('M d, Y', strtotime($selectedInvoice['due_date'])); ?></div>
+                                                        <div class="fw-bold mb-2 fs-6">Invoice No.
+                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
+                                                        <div class="mb-1"><span class="fw-semibold">Due Date:</span>
+                                                            <?= date('M d, Y', strtotime($selectedInvoice['due_date'])); ?>
+                                                        </div>
                                                         <div><span class="fw-semibold">Invoice Type:</span> Monthly Dues</div>
                                                     </div>
                                                 </div>
@@ -495,7 +985,8 @@ function getCategoryIcon($category) {
                                                                     N/A
                                                                 <?php endif; ?>
                                                             </td>
-                                                            <td class="text-end">₱ <?= number_format($selectedInvoice['total_amount'], 2); ?></td>
+                                                            <td class="text-end">₱
+                                                                <?= number_format($selectedInvoice['total_amount'], 2); ?></td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
@@ -504,20 +995,23 @@ function getCategoryIcon($category) {
                                                 <div class="text-end small" style="min-width: 200px;">
                                                     <div class="d-flex justify-content-between mb-1">
                                                         <span class="fw-semibold">Total Amount</span>
-                                                        <span>₱ <?= number_format($selectedInvoice['total_amount'], 2); ?></span>
+                                                        <span>₱
+                                                            <?= number_format($selectedInvoice['total_amount'], 2); ?></span>
                                                     </div>
                                                     <div class="d-flex justify-content-between mb-1">
                                                         <span class="fw-semibold">Amount Paid</span>
                                                         <span>₱ <?= number_format($selectedInvoice['amount_paid'], 2); ?></span>
-                                                    </div><div class="d-flex justify-content-between fw-bold border-top pt-1">
+                                                    </div>
+                                                    <div class="d-flex justify-content-between fw-bold border-top pt-1">
                                                         <span>Balance Due</span>
-                                                        <span>₱ <?= number_format($selectedInvoice['balance_remaining'], 2); ?></span>
+                                                        <span>₱
+                                                            <?= number_format($selectedInvoice['balance_remaining'], 2); ?></span>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                        <?php 
-                                        // PENALTY FEES OR OTHER FEES
+                                        <?php
+                                            // PENALTY FEES OR OTHER FEES
                                         elseif ($category === 'penalty_fees' || $category === 'other_fees'): ?>
                                             <div class="row mb-3">
                                                 <div class="col-8">
@@ -528,26 +1022,36 @@ function getCategoryIcon($category) {
                                                         North Fairview III-B Quezon City NCR, Second District Philippines
                                                     </div>
                                                     <div class="small">
-                                                        <div class="mb-1"><span class="fw-semibold">Name:</span> <?= htmlspecialchars($selectedInvoice['full_name']); ?></div>
-                                                        <div class="mb-1"><span class="fw-semibold">Household ID:</span> <?= htmlspecialchars($selectedInvoice['household_id']); ?></div>
-                                                        <div><span class="fw-semibold">Invoice Date:</span> <?= date('M d, Y', strtotime($selectedInvoice['created_at'])); ?></div>
+                                                        <div class="mb-1"><span class="fw-semibold">Name:</span>
+                                                            <?= htmlspecialchars($selectedInvoice['full_name']); ?></div>
+                                                        <div class="mb-1"><span class="fw-semibold">Household ID:</span>
+                                                            <?= htmlspecialchars($selectedInvoice['household_id']); ?></div>
+                                                        <div><span class="fw-semibold">Invoice Date:</span>
+                                                            <?= date('M d, Y', strtotime($selectedInvoice['created_at'])); ?>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="col-4">
                                                     <div class="text-end small">
-                                                        <div class="fw-bold mb-2 fs-6">Invoice No. <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
-                                                        <div class="mb-1"><span class="fw-semibold">Due Date:</span> <?= date('M d, Y', strtotime($selectedInvoice['due_date'])); ?></div>
-                                                        <div><span class="fw-semibold">Category:</span> <?= getCategoryDisplayName($category); ?></div>
+                                                        <div class="fw-bold mb-2 fs-6">Invoice No.
+                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
+                                                        <div class="mb-1"><span class="fw-semibold">Due Date:</span>
+                                                            <?= date('M d, Y', strtotime($selectedInvoice['due_date'])); ?>
+                                                        </div>
+                                                        <div><span class="fw-semibold">Category:</span>
+                                                            <?= getCategoryDisplayName($category); ?></div>
                                                     </div>
                                                 </div>
                                             </div>
-                                            
+
                                             <!-- Description Section -->
                                             <div class="alert alert-info mb-3">
                                                 <h6 class="alert-heading mb-2">
                                                     <i class="bi bi-info-circle me-2"></i>Fee Description
                                                 </h6>
-                                                <p class="mb-0 small"><?= nl2br(htmlspecialchars($selectedInvoice['description'] ?? 'No description available')); ?></p>
+                                                <p class="mb-0 small">
+                                                    <?= nl2br(htmlspecialchars($selectedInvoice['description'] ?? 'No description available')); ?>
+                                                </p>
                                             </div>
 
                                             <div class="table-responsive">
@@ -561,7 +1065,8 @@ function getCategoryIcon($category) {
                                                     <tbody class="small">
                                                         <tr>
                                                             <td><?= getCategoryDisplayName($category); ?></td>
-                                                            <td class="text-end">₱ <?= number_format($selectedInvoice['total_amount'], 2); ?></td>
+                                                            <td class="text-end">₱
+                                                                <?= number_format($selectedInvoice['total_amount'], 2); ?></td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
@@ -570,7 +1075,8 @@ function getCategoryIcon($category) {
                                                 <div class="text-end small" style="min-width: 200px;">
                                                     <div class="d-flex justify-content-between mb-1">
                                                         <span class="fw-semibold">Total Amount</span>
-                                                        <span>₱ <?= number_format($selectedInvoice['total_amount'], 2); ?></span>
+                                                        <span>₱
+                                                            <?= number_format($selectedInvoice['total_amount'], 2); ?></span>
                                                     </div>
                                                     <div class="d-flex justify-content-between mb-1">
                                                         <span class="fw-semibold">Amount Paid</span>
@@ -578,13 +1084,14 @@ function getCategoryIcon($category) {
                                                     </div>
                                                     <div class="d-flex justify-content-between fw-bold border-top pt-1">
                                                         <span>Balance Due</span>
-                                                        <span>₱ <?= number_format($selectedInvoice['balance_remaining'], 2); ?></span>
+                                                        <span>₱
+                                                            <?= number_format($selectedInvoice['balance_remaining'], 2); ?></span>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                        <?php 
-                                        // AMENITY BOOKING
+                                        <?php
+                                            // AMENITY BOOKING
                                         elseif ($category === 'amenity'): ?>
                                             <div class="row mb-3">
                                                 <div class="col-8">
@@ -595,17 +1102,24 @@ function getCategoryIcon($category) {
                                                         North Fairview III-B Quezon City NCR, Second District Philippines
                                                     </div>
                                                     <div class="small">
-                                                        <div class="mb-1"><span class="fw-semibold">Name:</span> <?= htmlspecialchars($selectedInvoice['full_name']); ?></div>
-                                                        <div class="mb-1"><span class="fw-semibold">Reservation Date:</span> <?= htmlspecialchars($selectedInvoice['reservation_date']); ?></div>
-                                                        <div><span class="fw-semibold">Reservation Code:</span> <?= htmlspecialchars($selectedInvoice['reservation_code']); ?></div>
+                                                        <div class="mb-1"><span class="fw-semibold">Name:</span>
+                                                            <?= htmlspecialchars($selectedInvoice['full_name']); ?></div>
+                                                        <div class="mb-1"><span class="fw-semibold">Reservation Date:</span>
+                                                            <?= htmlspecialchars($selectedInvoice['reservation_date']); ?></div>
+                                                        <div><span class="fw-semibold">Reservation Code:</span>
+                                                            <?= htmlspecialchars($selectedInvoice['reservation_code']); ?></div>
                                                     </div>
                                                 </div>
                                                 <div class="col-4">
                                                     <div class="text-end small">
-                                                        <div class="fw-bold mb-2 fs-6">Invoice No. <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
-                                                        <div class="mb-1"><span class="fw-semibold">Payment Method:</span> <?= htmlspecialchars(ucfirst($selectedInvoice['payment_method'])); ?></div>
+                                                        <div class="fw-bold mb-2 fs-6">Invoice No.
+                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
+                                                        <div class="mb-1"><span class="fw-semibold">Payment Method:</span>
+                                                            <?= htmlspecialchars(ucfirst($selectedInvoice['payment_method'])); ?>
+                                                        </div>
                                                         <?php if (strtolower($selectedInvoice['payment_method']) !== 'cash'): ?>
-                                                            <div><span class="fw-semibold">Reference Number:</span> <?= htmlspecialchars($selectedInvoice['reference_number']); ?></div>
+                                                            <div><span class="fw-semibold">Reference Number:</span>
+                                                                <?= htmlspecialchars($selectedInvoice['reference_number']); ?></div>
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
@@ -650,7 +1164,8 @@ function getCategoryIcon($category) {
                                                                 <td>Chairs</td>
                                                                 <td class="text-end">₱ 12.00</td>
                                                                 <td class="text-center"><?= $selectedInvoice['chairs']; ?></td>
-                                                                <td class="text-end">₱ <?= number_format($selectedInvoice['chairs'] * 12, 2); ?></td>
+                                                                <td class="text-end">₱
+                                                                    <?= number_format($selectedInvoice['chairs'] * 12, 2); ?></td>
                                                             </tr>
                                                         <?php endif; ?>
                                                         <?php if ($selectedInvoice['tables'] > 0): ?>
@@ -659,7 +1174,8 @@ function getCategoryIcon($category) {
                                                                 <td>Tables</td>
                                                                 <td class="text-end">₱ 20.00</td>
                                                                 <td class="text-center"><?= $selectedInvoice['tables']; ?></td>
-                                                                <td class="text-end">₱ <?= number_format($selectedInvoice['tables'] * 20, 2); ?></td>
+                                                                <td class="text-end">₱
+                                                                    <?= number_format($selectedInvoice['tables'] * 20, 2); ?></td>
                                                             </tr>
                                                         <?php endif; ?>
                                                     </tbody>
@@ -701,5 +1217,7 @@ function getCategoryIcon($category) {
         </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="javascripts/mobileSidebar.js"></script>
 </body>
+
 </html>
