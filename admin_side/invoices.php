@@ -806,13 +806,15 @@ function getCategoryIcon($category)
                 <div>
                     <button class="btn btn-toggle collapsed px-3 py-2 active" data-bs-toggle="collapse"
                         data-bs-target="#acctCollapse" aria-expanded="false">
-                        <span class="d-flex align-items-center"><i class="bi bi-cash-coin me-2"></i> Accounting</span>
+                        <span class="d-flex align-items-center">
+                            <i class="bi bi-cash-coin me-2"></i> Accounting
+                        </span>
                     </button>
                     <div class="collapse show" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="payment.php" class="nav-link px-2">Payment</a></li>
-                            <li><a href="billing.php" class="nav-link px-2">List of Billings</a></li>>
-                            <li><a href="invoices.php" class="nav-link px-2 actived">Invoices</a></li>
+                            <li><a href="../payment.php" class="nav-link px-2">Payment</a></li>
+                            <li><a href="../billing.php" class="nav-link px-2">List of Billings</a></li>
+                            <li><a href="../invoices.php" class="nav-link px-2 actived">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
@@ -885,7 +887,8 @@ function getCategoryIcon($category)
                                                             #<?= htmlspecialchars($inv['invoice_number']); ?>
                                                         </h6>
                                                         <p class="mb-1 small">
-                                                            <?= htmlspecialchars($inv['full_name'] ?? 'No Name'); ?></p>
+                                                            <?= htmlspecialchars($inv['full_name'] ?? 'No Name'); ?>
+                                                        </p>
                                                         <div class="d-flex gap-2 align-items-center">
                                                             <span class="category-badge badge-<?= $inv['category'] ?>">
                                                                 <?= getCategoryDisplayName($inv['category']) ?>
@@ -958,7 +961,8 @@ function getCategoryIcon($category)
                                                 <div class="col-4">
                                                     <div class="text-end small">
                                                         <div class="fw-bold mb-2 fs-6">Invoice No.
-                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
+                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?>
+                                                        </div>
                                                         <div class="mb-1"><span class="fw-semibold">Due Date:</span>
                                                             <?= date('M d, Y', strtotime($selectedInvoice['due_date'])); ?>
                                                         </div>
@@ -986,7 +990,8 @@ function getCategoryIcon($category)
                                                                 <?php endif; ?>
                                                             </td>
                                                             <td class="text-end">₱
-                                                                <?= number_format($selectedInvoice['total_amount'], 2); ?></td>
+                                                                <?= number_format($selectedInvoice['total_amount'], 2); ?>
+                                                            </td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
@@ -1010,7 +1015,7 @@ function getCategoryIcon($category)
                                                 </div>
                                             </div>
 
-                                        <?php
+                                            <?php
                                             // PENALTY FEES OR OTHER FEES
                                         elseif ($category === 'penalty_fees' || $category === 'other_fees'): ?>
                                             <div class="row mb-3">
@@ -1034,7 +1039,8 @@ function getCategoryIcon($category)
                                                 <div class="col-4">
                                                     <div class="text-end small">
                                                         <div class="fw-bold mb-2 fs-6">Invoice No.
-                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
+                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?>
+                                                        </div>
                                                         <div class="mb-1"><span class="fw-semibold">Due Date:</span>
                                                             <?= date('M d, Y', strtotime($selectedInvoice['due_date'])); ?>
                                                         </div>
@@ -1066,7 +1072,8 @@ function getCategoryIcon($category)
                                                         <tr>
                                                             <td><?= getCategoryDisplayName($category); ?></td>
                                                             <td class="text-end">₱
-                                                                <?= number_format($selectedInvoice['total_amount'], 2); ?></td>
+                                                                <?= number_format($selectedInvoice['total_amount'], 2); ?>
+                                                            </td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
@@ -1090,7 +1097,7 @@ function getCategoryIcon($category)
                                                 </div>
                                             </div>
 
-                                        <?php
+                                            <?php
                                             // AMENITY BOOKING
                                         elseif ($category === 'amenity'): ?>
                                             <div class="row mb-3">
@@ -1113,7 +1120,8 @@ function getCategoryIcon($category)
                                                 <div class="col-4">
                                                     <div class="text-end small">
                                                         <div class="fw-bold mb-2 fs-6">Invoice No.
-                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?></div>
+                                                            <?= htmlspecialchars($selectedInvoice['invoice_number']); ?>
+                                                        </div>
                                                         <div class="mb-1"><span class="fw-semibold">Payment Method:</span>
                                                             <?= htmlspecialchars(ucfirst($selectedInvoice['payment_method'])); ?>
                                                         </div>
@@ -1165,7 +1173,8 @@ function getCategoryIcon($category)
                                                                 <td class="text-end">₱ 12.00</td>
                                                                 <td class="text-center"><?= $selectedInvoice['chairs']; ?></td>
                                                                 <td class="text-end">₱
-                                                                    <?= number_format($selectedInvoice['chairs'] * 12, 2); ?></td>
+                                                                    <?= number_format($selectedInvoice['chairs'] * 12, 2); ?>
+                                                                </td>
                                                             </tr>
                                                         <?php endif; ?>
                                                         <?php if ($selectedInvoice['tables'] > 0): ?>
@@ -1175,7 +1184,8 @@ function getCategoryIcon($category)
                                                                 <td class="text-end">₱ 20.00</td>
                                                                 <td class="text-center"><?= $selectedInvoice['tables']; ?></td>
                                                                 <td class="text-end">₱
-                                                                    <?= number_format($selectedInvoice['tables'] * 20, 2); ?></td>
+                                                                    <?= number_format($selectedInvoice['tables'] * 20, 2); ?>
+                                                                </td>
                                                             </tr>
                                                         <?php endif; ?>
                                                     </tbody>
