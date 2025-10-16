@@ -25,7 +25,7 @@ if (!isset($_SESSION['household_id'])) {
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
     session_unset();
     session_destroy();
-    header("Location: login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    header("Location: login.php?error=" . urlencode("Your session has expired. Please log in again."));
     exit;
 }
 
