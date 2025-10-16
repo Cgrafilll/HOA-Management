@@ -251,10 +251,10 @@ if (isset($_GET['action'])) {
                         echo json_encode(['success' => false, 'error' => 'This invoice has already been paid in full']);
                         exit;
                     }
-                    
+
                     // Calculate balance
                     $balance_due = $booking['total_amount'] - $booking['amount_paid'];
-                    
+
                     // Additional check: if balance is 0 or negative
                     if ($balance_due <= 0) {
                         echo json_encode(['success' => false, 'error' => 'This invoice has no remaining balance']);
@@ -416,7 +416,7 @@ if (isset($_GET['action'])) {
                         echo json_encode(['success' => false, 'error' => 'This invoice has already been paid in full']);
                         exit;
                     }
-                    
+
                     // Additional check: if balance remaining is 0 or negative
                     if ($billing['balance_remaining'] <= 0) {
                         echo json_encode(['success' => false, 'error' => 'This invoice has no remaining balance']);
@@ -788,13 +788,108 @@ if (isset($_GET['action'])) {
                 transform: translateY(0);
             }
         }
+
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                top: 76px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            header .logo-container {
+                width: auto !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            main {
+                margin-top: 76px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .table-responsive {
+                font-size: 0.75rem;
+            }
+
+            .pagination {
+                font-size: 0.8rem;
+            }
+        }
     </style>
 </head>
 
 <body class="bg-light">
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
-        <div class="me-4" style="width: 250px;">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="me-4 logo-container" style="width: 250px;">
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;">
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
@@ -802,7 +897,7 @@ if (isset($_GET['action'])) {
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?= htmlspecialchars($username) ?></span>
+                    <span class="d-none d-md-inline">Hello, <?= htmlspecialchars($username) ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -825,11 +920,12 @@ if (isset($_GET['action'])) {
             </div>
         </div>
     </header>
-
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar p-3">
-            <nav class="nav d-flex flex-column gap-1">
+        <aside class="sidebar">
+            <nav class="nav d-flex flex-column gap-1 sidebar-nav p-3">
                 <a href="admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -850,7 +946,6 @@ if (isset($_GET['action'])) {
                         </ul>
                     </div>
                 </div>
-
                 <!-- Record Keeping -->
                 <div>
                     <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
@@ -867,7 +962,6 @@ if (isset($_GET['action'])) {
                         </ul>
                     </div>
                 </div>
-
                 <!-- Communication -->
                 <div>
                     <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
@@ -884,7 +978,6 @@ if (isset($_GET['action'])) {
                         </ul>
                     </div>
                 </div>
-
                 <!-- Accounting (Active) -->
                 <div>
                     <button class="btn btn-toggle px-3 py-2 active" data-bs-toggle="collapse"
@@ -901,27 +994,23 @@ if (isset($_GET['action'])) {
                         </ul>
                     </div>
                 </div>
-
-                <a href="login/logout.php" class="nav-link mb-3 px-3 py-2 rounded logout"
-                    style="position: fixed; bottom: 0; width: 220px;">
+                <a href="login/logout.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
-
         <!-- Main Content -->
-        <main class="flex-fill p-4">
+        <main class="flex-grow-1 p-4">
             <div class="bg-white shadow rounded p-4">
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Payment</h5>
                 </div>
-
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="small">Payment Management</span>
                     </div>
                     <hr class="mb-3 mt-0">
-
                     <div class="row">
                         <!-- Left Column -->
                         <div class="col-md-8">
@@ -936,7 +1025,6 @@ if (isset($_GET['action'])) {
                                     <h6 class="mt-2">In-Office Payment</h6>
                                 </div>
                             </div>
-
                             <!-- Payment Form -->
                             <form id="paymentForm">
                                 <div class="row mb-3">
@@ -960,12 +1048,10 @@ if (isset($_GET['action'])) {
                                         </div>
                                     </div>
                                 </div>
-
-                                
-
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Category<small class="fw-bold text-danger">*</small></label>
+                                        <label class="form-label">Category<small
+                                                class="fw-bold text-danger">*</small></label>
                                         <select class="form-select" id="categorySelect" required>
                                             <option value="">Select Category</option>
                                             <option value="Monthly Dues">Monthly Dues</option>
@@ -975,12 +1061,12 @@ if (isset($_GET['action'])) {
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Billing Number<small class="fw-bold text-danger">*</small></label>
+                                        <label class="form-label">Billing Number<small
+                                                class="fw-bold text-danger">*</small></label>
                                         <input type="text" class="form-control" id="invoiceInput"
                                             placeholder="Enter Billing Number" required>
                                     </div>
                                 </div>
-
                                 <div class="mb-3">
                                     <label class="form-label">Amount Paid<small
                                             class="fw-bold text-danger">*</small></label>
@@ -990,13 +1076,11 @@ if (isset($_GET['action'])) {
                                             min="0" step="0.01" required>
                                     </div>
                                 </div>
-
                                 <div class="mb-3" id="referenceNumberGroup" style="display: none;">
                                     <label class="form-label">Reference Number</label>
                                     <input type="text" class="form-control" id="referenceNumber"
                                         placeholder="Bank transfer reference number">
                                 </div>
-
                                 <!-- Summary Display -->
                                 <div class="bg-light rounded p-3 mb-3">
                                     <p class="mb-1"><strong>Billing No:</strong> <span id="refNo"></span></p>
@@ -1005,25 +1089,26 @@ if (isset($_GET['action'])) {
                                     <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank
                                             Transfer</span></p>
                                 </div>
-
                                 <!-- Invoice Details Table -->
-                                <table class="table table-bordered">
-                                    <thead class="table-success">
-                                        <tr>
-                                            <th>Category</th>
-                                            <th>Item</th>
-                                            <th>Rate</th>
-                                            <th>Qty</th>
-                                            <th>Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="invoiceTableBody">
-                                        <tr>
-                                            <td colspan="5" class="text-center text-muted">No invoice data loaded</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead class="table-success">
+                                            <tr>
+                                                <th>Category</th>
+                                                <th>Item</th>
+                                                <th>Rate</th>
+                                                <th>Qty</th>
+                                                <th>Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="invoiceTableBody">
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted">No invoice data loaded
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                                 <div class="d-flex justify-content-end mb-3">
                                     <div>
                                         <p class="mb-1"><strong>Subtotal:</strong> <span id="subtotal">₱0.00</span></p>
@@ -1033,11 +1118,9 @@ if (isset($_GET['action'])) {
                                         </p>
                                     </div>
                                 </div>
-
                                 <button type="submit" class="btn btn-primary w-100">Make Payment</button>
                             </form>
                         </div>
-
                         <!-- Right Column -->
                         <div class="col-md-4">
                             <!-- Payment Methods Info -->
@@ -1058,7 +1141,6 @@ if (isset($_GET['action'])) {
                                     </ul>
                                 </div>
                             </div>
-
                             <!-- Upload Section -->
                             <div class="border rounded p-3 text-center">
                                 <h6 class="fw-bold">Upload Proof of Payment</h6>
@@ -1083,7 +1165,6 @@ if (isset($_GET['action'])) {
             </div>
         </main>
     </div>
-
     <!-- Payment Confirmation Modal -->
     <div class="modal fade" id="confirmPaymentModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -1124,7 +1205,6 @@ if (isset($_GET['action'])) {
             </div>
         </div>
     </div>
-
     <!-- Payment Success Modal -->
     <div class="modal fade" id="successPaymentModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -1142,7 +1222,6 @@ if (isset($_GET['action'])) {
             </div>
         </div>
     </div>
-
     <!-- Payment Error Modal -->
     <div class="modal fade" id="errorPaymentModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -1160,7 +1239,6 @@ if (isset($_GET['action'])) {
             </div>
         </div>
     </div>
-
     <!-- Payment Error Modal -->
     <div class="modal fade" id="errorPaymentModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -1180,6 +1258,7 @@ if (isset($_GET['action'])) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="javascripts/mobileSidebar.js"></script>
     <script src="javascripts/payment.js"></script>
 </body>
 
