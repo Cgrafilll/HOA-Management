@@ -852,6 +852,26 @@ if (isset($_GET['action'])) {
             display: block;
         }
 
+        /* Tablet Styles */
+        @media (max-width: 992px) {
+            .file-drop-area {
+                padding: 30px 15px;
+                min-height: 180px;
+            }
+
+            .cloud-icon {
+                font-size: 40px;
+            }
+
+            .method-card h6 {
+                font-size: 0.9rem;
+            }
+
+            .method-card i {
+                font-size: 1.75rem !important;
+            }
+        }
+
         /* Mobile Styles */
         @media (max-width: 768px) {
             .sidebar {
@@ -883,6 +903,10 @@ if (isset($_GET['action'])) {
                 font-size: 0.85rem;
             }
 
+            .table-responsive table {
+                min-width: 500px;
+            }
+
             .btn-sm {
                 padding: 0.25rem 0.5rem;
                 font-size: 0.8rem;
@@ -890,6 +914,48 @@ if (isset($_GET['action'])) {
 
             .sidebar-overlay {
                 top: 0;
+            }
+
+            .file-drop-area {
+                padding: 25px 10px;
+                min-height: 150px;
+            }
+
+            .cloud-icon {
+                font-size: 36px;
+                margin-bottom: 12px;
+            }
+
+            .file-drop-area .small {
+                font-size: 0.75rem;
+            }
+
+            .method-card {
+                padding: 0.75rem !important;
+            }
+
+            .method-card h6 {
+                font-size: 0.85rem;
+                margin-top: 0.5rem !important;
+            }
+
+            .method-card i {
+                font-size: 1.5rem !important;
+            }
+
+            .card-body ul {
+                font-size: 0.85rem;
+                padding-left: 1.2rem;
+            }
+
+            .bg-light.rounded p {
+                font-size: 0.9rem;
+            }
+
+            /* Stack columns on mobile */
+            .col-md-8,
+            .col-md-4 {
+                margin-bottom: 1rem;
             }
         }
 
@@ -900,7 +966,7 @@ if (isset($_GET['action'])) {
             }
 
             header h1 {
-                font-size: 1rem !important;
+                font-size: 0.9rem !important;
             }
 
             main {
@@ -916,12 +982,156 @@ if (isset($_GET['action'])) {
                 top: 0;
             }
 
+            .bg-white.shadow.rounded {
+                padding: 0.5rem !important;
+            }
+
+            .bg-success.text-white.rounded-top {
+                padding: 0.75rem !important;
+            }
+
+            .bg-success.text-white.rounded-top h5 {
+                font-size: 1rem;
+            }
+
             .table-responsive {
                 font-size: 0.75rem;
             }
 
-            .pagination {
+            .form-label,
+            .form-control,
+            .form-select {
+                font-size: 0.85rem;
+            }
+
+            .btn {
+                font-size: 0.85rem;
+                padding: 0.5rem 0.75rem;
+            }
+
+            .file-drop-area {
+                padding: 20px 10px;
+                min-height: 130px;
+            }
+
+            .cloud-icon {
+                font-size: 32px;
+                margin-bottom: 8px;
+            }
+
+            .file-drop-area strong {
+                font-size: 0.85rem;
+            }
+
+            .file-drop-area .small {
+                font-size: 0.7rem;
+            }
+
+            .method-card {
+                padding: 0.5rem !important;
+            }
+
+            .method-card h6 {
                 font-size: 0.8rem;
+                margin-top: 0.5rem !important;
+            }
+
+            .method-card i {
+                font-size: 1.25rem !important;
+            }
+
+            .card-body h6 {
+                font-size: 0.9rem;
+            }
+
+            .card-body p,
+            .card-body ul {
+                font-size: 0.75rem;
+            }
+
+            .card-body ul {
+                padding-left: 1rem;
+            }
+
+            .bg-light.rounded {
+                padding: 0.75rem !important;
+            }
+
+            .bg-light.rounded p {
+                font-size: 0.8rem;
+                margin-bottom: 0.5rem !important;
+            }
+
+            .modal-body {
+                padding: 1rem;
+            }
+
+            .modal-body i {
+                font-size: 48px !important;
+            }
+
+            .modal-body p {
+                font-size: 0.9rem;
+            }
+
+            .modal-body .bg-light.rounded {
+                font-size: 0.8rem;
+            }
+
+            /* Adjust payment methods card */
+            .col-md-4 .card {
+                margin-bottom: 0.75rem;
+            }
+        }
+
+        /* Extra small devices */
+        @media (max-width: 375px) {
+            header h1 {
+                font-size: 0.85rem !important;
+            }
+
+            .file-drop-area {
+                padding: 15px 8px;
+                min-height: 120px;
+            }
+
+            .cloud-icon {
+                font-size: 28px;
+            }
+
+            .method-card i {
+                font-size: 1.1rem !important;
+            }
+
+            .method-card h6 {
+                font-size: 0.75rem;
+            }
+
+            .table-responsive {
+                font-size: 0.7rem;
+            }
+
+            .form-label,
+            .form-control,
+            .form-select,
+            .btn {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+
+            .sidebar,
+            header,
+            .btn,
+            .file-drop-area {
+                display: none !important;
+            }
+
+            main {
+                margin-left: 0 !important;
+                margin-top: 0 !important;
             }
         }
     </style>
