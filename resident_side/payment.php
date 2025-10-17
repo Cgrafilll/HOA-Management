@@ -1266,7 +1266,7 @@ if (isset($_GET['action'])) {
                 <!-- Accounting -->
                 <div>
                     <button
-                        class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start"
+                        class="btn btn-toggle collapsed px-3 rounded active py-2 d-flex align-items-center justify-content-start"
                         data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-cash-coin me-2 active"></i> Accounting

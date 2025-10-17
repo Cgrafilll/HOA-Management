@@ -1104,33 +1104,32 @@ if (isset($_GET['action'])) {
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <nav class="nav d-flex flex-column gap-1 sidebar-nav p-3">
+            <nav class="nav flex-column gap-1 sidebar-nav p-3">
                 <a href="dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
                 <a href="amenity_booking/amenity_booking.php"
-                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
                 </a>
                 <!-- Accounting -->
                 <div>
                     <button
-                        class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start active"
-                        data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="true">
+                        class="btn btn-toggle collapsed px-3 rounded active py-2 d-flex align-items-center justify-content-start"
+                        data-bs-toggle="collapse show" data-bs-target="#acctCollapse" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-cash-coin me-2"></i> Accounting
                         </span>
                     </button>
-                    <div class="collapse show" id="acctCollapse">
+                    <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="visitor_payment.php" class="nav-link px-2 actived">Payments</a></li>
                             <li><a href="visitor_invoices.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
-
                 </div>
-                <a href="logout.php"
+                <a href="../logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
@@ -1284,11 +1283,10 @@ if (isset($_GET['action'])) {
                                     </ul>
                                 </div>
                             </div>
-
                             <!-- Upload Section -->
                             <div class="border rounded p-3 text-center">
                                 <h6 class="fw-bold">Upload Proof of Payment</h6>
-                                <div class="file-drop-area" id="fileDropArea" style="height: 250px;">
+                                <div class="file-drop-area" id="fileDropArea">
                                     <div class="cloud-icon">
                                         <i class="bi bi-cloud-upload"></i>
                                     </div>
