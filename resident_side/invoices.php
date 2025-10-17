@@ -205,20 +205,20 @@ try {
 
 $amenityRates = [
     "Swimming Pool" => [
-        "homeowner" => ["day" => "₱100.00 / per person", "night" => "₱200.00 / per person"],
-        "visitor" => ["day" => "₱200.00 / per person", "night" => "₱300.00 / per person"]
+        "homeowner" => ["day" => "₱100.00 / per person", "night" => "₱200.00 / per person", "whole" => "₱300.00 / per person"],
+        "visitor" => ["day" => "₱200.00 / per person", "night" => "₱300.00 / per person", "whole" => "₱500.00 / per person"]
     ],
     "Clubhouse" => [
         "homeowner" => ["day" => "₱12,000.00", "night" => "₱12,000.00"],
         "visitor" => ["day" => "₱15,000.00", "night" => "₱15,000.00"]
     ],
     "Basketball Court" => [
-        "homeowner" => ["day" => "₱200.00 / per person", "night" => "₱300.00 / per person"],
-        "visitor" => ["day" => "₱300.00 / per person", "night" => "₱400.00 / per person"]
+        "homeowner" => ["day" => "₱200.00 / per person", "night" => "₱300.00 / per person", "whole" => "₱500.00 / per person"],
+        "visitor" => ["day" => "₱300.00 / per person", "night" => "₱400.00 / per person", "whole" => "₱700.00 / per person"]
     ],
     "Gazebo" => [
-        "homeowner" => ["day" => "₱1,000.00", "night" => "₱2,000.00"],
-        "visitor" => ["day" => "₱2,000.00", "night" => "₱3,000.00"]
+        "homeowner" => ["day" => "₱1,000.00", "night" => "₱2,000.00", "whole" => "3,000.00"],
+        "visitor" => ["day" => "₱2,000.00", "night" => "₱3,000.00", "whole" => "₱5,000.00"]
     ]
 ];
 
