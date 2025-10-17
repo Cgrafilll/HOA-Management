@@ -499,10 +499,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $invoice_number = generateInvoiceNumber($conn);
 
-    // ✅ For resident side: admin_id and visitor_id are NULL
+    // ✅ For resident side: admin_id and homeowner_id are NULL
     $admin_id = null;
-    $homeowner_id = $_SESSION['household_id'] ?? null;
-    $visitor_id = null;
+    $visitor_id = $_SESSION['visitor_id'] ?? null;
+    $homeowner_id = null;
 
     // Form data
     $userType = 'homeowner';  // Always homeowner for resident side

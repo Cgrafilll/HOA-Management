@@ -42,7 +42,7 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
 $_SESSION['last_activity'] = time();
 
 $visitor_id = $_SESSION['visitor_id'];
-$sql = "SELECT * FROM household_accounts WHERE visitor_id = ?";
+$sql = "SELECT * FROM visitor_details WHERE visitor_id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $visitor_id);
 $stmt->execute();
@@ -159,9 +159,9 @@ $amenityRates = [
     ]
 ];
 
-// Get default rates (homeowner)
+// Get default rates (visitor)
 $currentRates = ($amenity && isset($amenityRates[$amenity]))
-    ? $amenityRates[$amenity]['homeowner']
+    ? $amenityRates[$amenity]['visitor']
     : null;
 
 ?>
@@ -1045,7 +1045,7 @@ $currentRates = ($amenity && isset($amenityRates[$amenity]))
                                 <!-- User Type -->
                                 <div class="form-floating mb-3">
                                     <select class="form-select" id="userType" name="userType" required>
-                                        <option value="homeowner" selected>Homeowner/visitor</option>
+                                        <option value="visitor" selected>Visitor</option>
                                     </select>
                                     <label for="userType">User Type<small class="fw-bold text-danger">*</small></label>
                                 </div>
