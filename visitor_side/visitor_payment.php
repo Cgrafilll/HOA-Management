@@ -1110,14 +1110,14 @@ if (isset($_GET['action'])) {
                     <i class="bi bi-house me-2"></i> Home
                 </a>
                 <a href="amenity_booking/amenity_booking.php"
-                    class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
                 </a>
                 <!-- Accounting -->
                 <div>
                     <button
                         class="btn btn-toggle collapsed px-3 rounded active py-2 d-flex align-items-center justify-content-start"
-                        data-bs-toggle="collapse show" data-bs-target="#acctCollapse" aria-expanded="true">
+                        data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-cash-coin me-2"></i> Accounting
                         </span>
