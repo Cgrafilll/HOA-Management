@@ -777,11 +777,7 @@ function getCategoryIcon($category)
                                             </a>
                                         <?php endforeach; ?>
                                     <?php else: ?>
-                                        <div class="p-5 text-muted text-center">
-                                            <i class="bi bi-inbox" style="font-size: 48px;"></i>
-                                            <p class="mt-3">No invoices found.</p>
-                                            <small>Your amenity booking invoices will appear here.</small>
-                                        </div>
+                                        <div class="p-5 text-muted text-center">No invoices found.</div>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -926,11 +922,7 @@ function getCategoryIcon($category)
                                         </div>
                                     </div>
                                 <?php else: ?>
-                                    <div class="p-5 text-center text-muted">
-                                        <i class="bi bi-receipt" style="font-size: 64px;"></i>
-                                        <p class="mt-3 mb-1"><strong>No Invoice Selected</strong></p>
-                                        <small>Select an invoice from the list to view details.</small>
-                                    </div>
+                                    <div class="p-5 text-center text-muted">No paid invoices available to display.</div>
                                 <?php endif; ?>
                             </div>
                         </div>
