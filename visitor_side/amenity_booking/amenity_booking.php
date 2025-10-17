@@ -167,7 +167,7 @@ while ($row = $calendar_result->fetch_assoc()) {
         "amount" => "₱" . number_format($row['amount_paid'], 2) .
             ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : ""),
         "time" => $timeSlot,
-        "homeownerId" => $row['homeowner_id']
+        "visitorId" => $row['homeowner_id']
     ];
 }
 
@@ -1380,7 +1380,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
     <script src="../../admin_side/javascripts/mobileSidebar.js"></script>
     <script>
         const bookings = <?= json_encode($bookings) ?>;
-        const loggedInHouseholdId = <?= json_encode($visitor_id) ?>;
+        const loggedInVisitor = <?= json_encode($visitor_id) ?>;
         let currentDate = new Date();
         let currentView = 'month';
 
@@ -1495,7 +1495,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     bookingElement.style.fontSize = '0.75rem';
                     bookingElement.style.padding = '0.25rem 0.5rem';
 
-                    if (booking.homeownerId == loggedInHouseholdId) {
+                    if (booking.visitorId == loggedInVisitor) {
                         // User's own booking - show name with initials on mobile
                         bookingElement.style.cursor = 'pointer';
                         bookingElement.style.whiteSpace = 'nowrap';
