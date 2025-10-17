@@ -96,7 +96,7 @@ $booking_sql = "SELECT
         ELSE NULL
     END as last_name
 FROM amenity_bookings ab
-LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.visitor_id AND ab.user_type = 'homeowner'
+LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
 LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
 WHERE ab.visitor_id = ?
 ORDER BY ab.reservation_date DESC
@@ -136,7 +136,7 @@ $calendar_sql = "SELECT
         ELSE NULL
     END as last_name
 FROM amenity_bookings ab
-LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.visitor_id AND ab.user_type = 'homeowner'
+LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
 LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
 ORDER BY ab.reservation_date ASC";
 
