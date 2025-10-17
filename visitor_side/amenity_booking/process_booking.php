@@ -505,7 +505,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $homeowner_id = null;
 
     // Form data
-    $userType = 'homeowner';  // Always homeowner for resident side
+    $userType = 'visitor';  // Always visitor for visitor side
     $firstName = $_POST['firstName'] ?? '';
     $middleName = $_POST['middleName'] ?? '';
     $lastName = $_POST['lastName'] ?? '';
