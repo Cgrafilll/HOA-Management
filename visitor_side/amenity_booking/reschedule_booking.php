@@ -17,7 +17,7 @@ session_start();
 require '../../rfid-api/db.php';
 
 // Check if admin is logged in
-if (!isset($_SESSION['household_id'])) {
+if (!isset($_SESSION['visitor_id'])) {
     header("Location: ../login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
@@ -34,7 +34,7 @@ $amenity = $_POST['amenity'] ?? '';
 $new_date = $_POST['new_date'] ?? '';
 $new_rate = $_POST['new_rate'] ?? '';
 $reason = $_POST['reason'] ?? '';
-$household_id = $_SESSION['household_id'];
+$visitor_id = $_SESSION['visitor_id'];
 
 // Validate required fields
 if (empty($booking_id) || empty($amenity) || empty($new_date) || empty($new_rate) || empty($reason)) {
