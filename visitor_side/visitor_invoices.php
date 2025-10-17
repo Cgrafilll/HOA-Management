@@ -328,23 +328,6 @@ function getCategoryIcon($category)
             max-height: 600px;
         }
 
-        .invoice-list-container::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .invoice-list-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        .invoice-list-container::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-
-        .invoice-list-container::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-
         .invoice {
             transition: all 0.3s ease-in-out;
             cursor: pointer;
@@ -724,7 +707,7 @@ function getCategoryIcon($category)
 
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <div class="border rounded-3 invoice-list-container" style="overflow-y: auto;">
+                            <div class="border rounded-3 invoice-list-container">
                                 <div class="list-group list-group-flush">
                                     <?php if (!empty($invoices)): ?>
                                         <?php foreach ($invoices as $inv): ?>
