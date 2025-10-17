@@ -167,7 +167,7 @@ while ($row = $calendar_result->fetch_assoc()) {
         "amount" => "₱" . number_format($row['amount_paid'], 2) .
             ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : ""),
         "time" => $timeSlot,
-        "visitorId" => $row['homeowner_id']
+        "visitorId" => $row['visitor_id']
     ];
 }
 
