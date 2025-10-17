@@ -1230,25 +1230,26 @@ if (isset($_GET['action'])) {
                                     <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank
                                             Transfer</span></p>
                                 </div>
-
                                 <!-- Invoice Details Table -->
-                                <table class="table table-bordered">
-                                    <thead class="table-success">
-                                        <tr>
-                                            <th>Category</th>
-                                            <th>Item</th>
-                                            <th>Rate</th>
-                                            <th>Qty</th>
-                                            <th>Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="invoiceTableBody">
-                                        <tr>
-                                            <td colspan="5" class="text-center text-muted">No invoice data loaded</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead class="table-success">
+                                            <tr>
+                                                <th>Category</th>
+                                                <th>Item</th>
+                                                <th>Rate</th>
+                                                <th>Qty</th>
+                                                <th>Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="invoiceTableBody">
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted">No invoice data loaded
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                                 <div class="d-flex justify-content-end mb-3">
                                     <div>
                                         <p class="mb-1"><strong>Subtotal:</strong> <span id="subtotal">₱0.00</span></p>
