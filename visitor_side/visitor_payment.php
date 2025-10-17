@@ -1117,12 +1117,12 @@ if (isset($_GET['action'])) {
                 <div>
                     <button
                         class="btn btn-toggle collapsed px-3 rounded active py-2 d-flex align-items-center justify-content-start"
-                        data-bs-toggle="collapse show" data-bs-target="#acctCollapse" aria-expanded="false">
+                        data-bs-toggle="collapse show" data-bs-target="#acctCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
                             <i class="bi bi-cash-coin me-2"></i> Accounting
                         </span>
                     </button>
-                    <div class="collapse" id="acctCollapse">
+                    <div class="collapse show" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="visitor_payment.php" class="nav-link px-2 actived">Payments</a></li>
                             <li><a href="visitor_invoices.php" class="nav-link px-2">Invoices</a></li>
