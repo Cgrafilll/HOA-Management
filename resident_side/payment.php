@@ -1313,7 +1313,6 @@ if (isset($_GET['action'])) {
                                     <h6 class="mt-2">In-Office Payment</h6>
                                 </div>
                             </div>
-
                             <!-- Payment Form -->
                             <form id="paymentForm">
                                 <div class="row mb-2">
@@ -1360,18 +1359,22 @@ if (isset($_GET['action'])) {
                                     </div>
                                 </div>
                                 <div class="row mb-2">
-                                    <label class="form-label mb-2">Amount Paid<small
-                                            class="fw-bold text-danger">*</small></label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">₱</span>
-                                        <input type="number" class="form-control" id="amountPaid" placeholder="0.00"
-                                            min="0" step="0.01" required>
+                                    <div class="col-md-12">
+                                        <label class="form-label mb-2">Amount Paid<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">₱</span>
+                                            <input type="number" class="form-control" id="amountPaid" placeholder="0.00"
+                                                min="0" step="0.01" required>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="row mb-2" id="referenceNumberGroup" style="display: none;">
-                                    <label class="form-label mb-2">Reference Number</label>
-                                    <input type="text" class="form-control" id="referenceNumber"
-                                        placeholder="Bank transfer reference number" required>
+                                    <div class="col-md-12">
+                                        <label class="form-label mb-2">Reference Number</label>
+                                        <input type="text" class="form-control" id="referenceNumber"
+                                            placeholder="Bank transfer reference number" required>
+                                    </div>
                                 </div>
                                 <!-- Summary Display -->
                                 <div class="bg-light rounded p-3 mb-3">
