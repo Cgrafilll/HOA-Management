@@ -774,21 +774,10 @@ function getCategoryIcon($category)
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#recordCollapse">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-book me-2"></i> Record Keeping
-                        </span>
-                    </button>
-                    <div class="collapse" id="recordCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="amenity_booking/amenity_booking.php" class="nav-link px-2">Amenity Booking</a>
-                            </li>
-                            <li><a href="violations.php" class="nav-link px-2">Violations</a></li>
-                        </ul>
-                    </div>
-                </div>
+                <a href="amenity_booking/amenity_booking.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-book me-2"></i> Amenity Booking
+                </a>
                 <a href="report.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
