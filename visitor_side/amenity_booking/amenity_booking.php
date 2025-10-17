@@ -79,7 +79,7 @@ $booking_sql = "SELECT
     ab.amount_paid,
     ab.status,
     ab.created_at,
-    ab.homeowner_id,
+    ab.visitor_id,
     CASE 
         WHEN ab.user_type = 'homeowner' THEN ha.first_name
         WHEN ab.user_type = 'visitor' THEN vd.first_name
