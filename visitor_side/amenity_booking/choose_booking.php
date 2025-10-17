@@ -19,7 +19,7 @@ session_start();
 require '../../rfid-api/db.php';
 
 // Check if user is logged in
-if (!isset($_SESSION['household_id'])) {
+if (!isset($_SESSION['visitor_id'])) {
     header("Location: ../login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
@@ -36,25 +36,25 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
 // Update last activity time
 $_SESSION['last_activity'] = time();
 
-$household_id = $_SESSION['household_id'];
-$sql = "SELECT * FROM household_accounts WHERE household_id = ?";
+$visitor_id = $_SESSION['visitor_id'];
+$sql = "SELECT * FROM visitor_details WHERE visitor_id = ?";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $household_id);
+$stmt->bind_param("s", $visitor_id);
 $stmt->execute();
 $result = $stmt->get_result();
-$resident = $result->fetch_assoc();
+$visitor = $result->fetch_assoc();
 
-if (!$resident) {
-    echo "Resident not found.";
+if (!$visitor) {
+    echo "Visitor not found.";
     exit;
 }
 
 // Initialize user details
-$username = $resident['first_name']; // <- Set username directly from household query
+$username = $visitor['first_name']; // <- Set username directly from household query
 $photo = ''; // Initialize photo; your existing profile photo block will set this later
 // Only set $photo if profile_pic exists and is not null
-if (!empty($resident['profile_picture'])) {
-    $photo = 'data:image/jpeg;base64,' . base64_encode($resident['profile_picture']);
+if (!empty($visitor['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($visitor['profile_picture']);
 } else {
     $photo = ''; // Explicitly empty if no image is saved
 }
@@ -371,7 +371,7 @@ if (!empty($resident['profile_picture'])) {
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                     <li><a class="dropdown-item"
-                            href="../resident_details/view_resident.php?id=<?php echo $household_id; ?>"><i
+                            href="../visitor_details/view_visitor.php?id=<?php echo $visitor_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
@@ -387,7 +387,7 @@ if (!empty($resident['profile_picture'])) {
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <nav class="nav d-flex flex-column gap-1 sidebar-nav p-3">
+            <nav class="nav flex-column gap-1 sidebar-nav p-3">
                 <a href="../dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -395,10 +395,6 @@ if (!empty($resident['profile_picture'])) {
                 <a href="amenity_booking.php"
                     class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
-                </a>
-                <a href="../report.php"
-                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
-                    <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
                 <!-- Accounting -->
                 <div>
@@ -411,15 +407,14 @@ if (!empty($resident['profile_picture'])) {
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../payment.php" class="nav-link px-2">Payment</a></li>
-                            <li><a href="../billing.php" class="nav-link px-2">List of Billings</a></li>
-                            <li><a href="../invoices.php" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="../visitor_payment.php" class="nav-link px-2">Payments</a></li>
+                            <li><a href="../visitor_invoices.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
                 <a href="../logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
-                    <i class="bi bi-box-arrow-left me-2"></i> Logout
+                    <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
