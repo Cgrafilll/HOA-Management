@@ -58,7 +58,7 @@ try {
     } else {
         $error_message = "Failed to fetch user details.";
     }
-    
+
     // Get filter parameters
     $statusFilter = $_GET['status'] ?? 'all';
     $categoryFilter = $_GET['category'] ?? 'all';
@@ -66,12 +66,12 @@ try {
 
     try {
         $invoices = [];
-        
+
         // Build the WHERE clause based on filters
         $whereConditions = [];
         $params = [];
         $paramTypes = '';
-        
+
         // Status filter
         if ($statusFilter === 'all') {
             $whereConditions[] = "LOWER(md.status) IN ('pending', 'partial')";
@@ -80,14 +80,14 @@ try {
             $params[] = $statusFilter;
             $paramTypes .= 's';
         }
-        
+
         // Category filter
         if ($categoryFilter !== 'all') {
             $whereConditions[] = "md.category = ?";
             $params[] = $categoryFilter;
             $paramTypes .= 's';
         }
-        
+
         // Search filter
         if (!empty($searchQuery)) {
             $whereConditions[] = "(md.invoice_number LIKE ? OR md.household_id LIKE ? OR CONCAT(ha.first_name, ' ', ha.middle_name, ' ', ha.last_name) LIKE ?)";
@@ -97,9 +97,9 @@ try {
             $params[] = $searchParam;
             $paramTypes .= 'sss';
         }
-        
+
         $whereClause = implode(' AND ', $whereConditions);
-        
+
         // Fetch from monthly_dues table with all categories
         $sql = "
             SELECT 
@@ -121,7 +121,7 @@ try {
             WHERE $whereClause
             ORDER BY md.created_at DESC
         ";
-        
+
         $stmt = $conn->prepare($sql);
         if (!empty($params)) {
             $stmt->bind_param($paramTypes, ...$params);
@@ -129,13 +129,13 @@ try {
         $stmt->execute();
         $result = $stmt->get_result();
         $invoices = $result->fetch_all(MYSQLI_ASSOC);
-        
+
         // Fetch amenity bookings if category filter allows
         if ($categoryFilter === 'all' || $categoryFilter === 'amenity') {
             $amenityWhereConditions = [];
             $amenityParams = [];
             $amenityParamTypes = '';
-            
+
             // Status filter for amenity
             if ($statusFilter === 'all') {
                 $amenityWhereConditions[] = "LOWER(ab.status) IN ('pending', 'partial')";
@@ -144,7 +144,7 @@ try {
                 $amenityParams[] = $statusFilter;
                 $amenityParamTypes .= 's';
             }
-            
+
             // Search filter for amenity
             if (!empty($searchQuery)) {
                 $amenityWhereConditions[] = "(ab.invoice_number LIKE ? OR ab.reservation_code LIKE ? OR 
@@ -158,9 +158,9 @@ try {
                 $amenityParams[] = $searchParam;
                 $amenityParamTypes .= 'sss';
             }
-            
+
             $amenityWhereClause = implode(' AND ', $amenityWhereConditions);
-            
+
             $amenitySql = "
                 SELECT 
                     ab.invoice_number,
@@ -193,7 +193,7 @@ try {
                 WHERE $amenityWhereClause
                 ORDER BY ab.created_at DESC
             ";
-            
+
             $stmt = $conn->prepare($amenitySql);
             if (!empty($amenityParams)) {
                 $stmt->bind_param($amenityParamTypes, ...$amenityParams);
@@ -210,7 +210,7 @@ try {
             $dateB = $b['created_at'] ?? $b['due_date'] ?? '1970-01-01';
             return strtotime($dateB) - strtotime($dateA);
         });
-        
+
     } catch (Exception $e) {
         $invoices = [];
         $error_message = "Error fetching invoices: " . $e->getMessage();
@@ -291,7 +291,8 @@ function getNumericAmount($amountStr)
 }
 
 // Helper function to get category display name
-function getCategoryDisplayName($category) {
+function getCategoryDisplayName($category)
+{
     $names = [
         'monthly_dues' => 'Monthly Dues',
         'penalty_fees' => 'Penalty Fees',
@@ -302,7 +303,8 @@ function getCategoryDisplayName($category) {
 }
 
 // Helper function to get category icon
-function getCategoryIcon($category) {
+function getCategoryIcon($category)
+{
     $icons = [
         'monthly_dues' => '🏠',
         'penalty_fees' => '⚠️',
@@ -328,26 +330,44 @@ function getCategoryIcon($category) {
 
         * {
             font-family: "Montserrat", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow-x: hidden;
         }
 
         header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 1030;
+            height: 76px;
+            background-color: white;
         }
 
         .sidebar {
             width: 250px;
-            height: 100vh;
+            height: calc(100vh - 76px);
             position: fixed;
-            top: 20;
+            top: 76px;
             left: 0;
             background-color: #1F2937;
             overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1020;
+            transition: transform 0.3s ease;
         }
 
         main {
             margin-left: 250px;
+            margin-top: 76px;
+            min-height: calc(100vh - 76px);
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
         }
 
         .sidebar a,
@@ -371,6 +391,32 @@ function getCategoryIcon($category) {
         .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar .logout {
+            flex-shrink: 0;
+            border-top: 1px solid #374151;
+            padding-top: 12px;
         }
 
         .sidebar .btn-toggle {
@@ -400,6 +446,25 @@ function getCategoryIcon($category) {
 
         .sidebar .btn-toggle:not(.collapsed)::after {
             transform: rotate(180deg);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
         }
 
         .invoice.active {
@@ -458,13 +523,89 @@ function getCategoryIcon($category) {
             background-color: #fff3cd;
             color: #856404;
         }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                top: 76px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            header .logo-container {
+                width: auto !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            main {
+                margin-top: 76px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .table-responsive {
+                font-size: 0.75rem;
+            }
+
+            .pagination {
+                font-size: 0.8rem;
+            }
+        }
     </style>
 </head>
 
 <body class="bg-light">
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
-        <div class="me-4" style="width: 250px;">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="me-4 logo-container" style="width: 250px;">
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
@@ -472,7 +613,7 @@ function getCategoryIcon($category) {
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <span class="d-none d-md-inline">Hello, <?php echo htmlspecialchars($username); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -495,10 +636,12 @@ function getCategoryIcon($category) {
             </div>
         </div>
     </header>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1">
+        <aside class="sidebar">
+            <nav class="nav flex-column gap-1 sidebar-nav p-3">
                 <a href="admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -568,14 +711,13 @@ function getCategoryIcon($category) {
                     </div>
                 </div>
                 <a href="login/logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
-                    style="position: fixed; bottom: 0; width: 220px;">
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
         <!-- Main Content -->
-        <main class="flex-fill p-4">
+        <main class="flex-grow-1 p-4">
             <div class="bg-white shadow rounded p-3">
                 <!-- Top bar -->
                 <div class="bg-success text-white rounded-top p-3">
@@ -595,27 +737,32 @@ function getCategoryIcon($category) {
                             <div class="col-md-4">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                    <input type="text" name="search" class="form-control" 
-                                           placeholder="Search by invoice#, household, or name..." 
-                                           value="<?= htmlspecialchars($searchQuery) ?>">
+                                    <input type="text" name="search" class="form-control"
+                                        placeholder="Search by invoice#, household, or name..."
+                                        value="<?= htmlspecialchars($searchQuery) ?>">
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <select name="status" id="status" class="form-select form-select-sm"
                                     onchange="this.form.submit()">
                                     <option value="all" <?= $statusFilter == 'all' ? 'selected' : '' ?>>All Status</option>
-                                    <option value="pending" <?= $statusFilter == 'pending' ? 'selected' : '' ?>>Pending</option>
-                                    <option value="partial" <?= $statusFilter == 'partial' ? 'selected' : '' ?>>Partial</option>
+                                    <option value="pending" <?= $statusFilter == 'pending' ? 'selected' : '' ?>>Pending
+                                    </option>
+                                    <option value="partial" <?= $statusFilter == 'partial' ? 'selected' : '' ?>>Partial
+                                    </option>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <select name="category" id="category" class="form-select form-select-sm"
                                     onchange="this.form.submit()">
-                                    <option value="all" <?= $categoryFilter == 'all' ? 'selected' : '' ?>>All Categories</option>
+                                    <option value="all" <?= $categoryFilter == 'all' ? 'selected' : '' ?>>All Categories
+                                    </option>
                                     <option value="monthly_dues" <?= $categoryFilter == 'monthly_dues' ? 'selected' : '' ?>>Monthly Dues</option>
                                     <option value="penalty_fees" <?= $categoryFilter == 'penalty_fees' ? 'selected' : '' ?>>Penalty Fees</option>
-                                    <option value="other_fees" <?= $categoryFilter == 'other_fees' ? 'selected' : '' ?>>Other Fees</option>
-                                    <option value="amenity" <?= $categoryFilter == 'amenity' ? 'selected' : '' ?>>Amenity Fees</option>
+                                    <option value="other_fees" <?= $categoryFilter == 'other_fees' ? 'selected' : '' ?>>
+                                        Other Fees</option>
+                                    <option value="amenity" <?= $categoryFilter == 'amenity' ? 'selected' : '' ?>>Amenity
+                                        Fees</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -628,7 +775,7 @@ function getCategoryIcon($category) {
                     <div class="row g-3">
                         <!-- LEFT: List of invoices -->
                         <div class="col-md-4">
-                            <div class="border rounded-3" style="max-height: 600px; overflow-y: auto;">
+                            <div class="border rounded-3" style="max-height: 600px;">
                                 <div class="list-group list-group-flush">
                                     <?php if (!empty($invoices)): ?>
                                         <?php foreach ($invoices as $index => $inv): ?>
@@ -646,7 +793,7 @@ function getCategoryIcon($category) {
                                                 <div class="d-flex w-100 justify-content-between align-items-start">
                                                     <div class="flex-grow-1">
                                                         <h6 class="mb-1">
-                                                            <?= getCategoryIcon($inv['category']) ?> 
+                                                            <?= getCategoryIcon($inv['category']) ?>
                                                             #<?= htmlspecialchars($inv['invoice_number']); ?>
                                                         </h6>
                                                         <p class="mb-1 small">
@@ -713,7 +860,7 @@ function getCategoryIcon($category) {
                                     <div class="p-3">
                                         <?php
                                         $category = $selectedInvoice['category'];
-                                        
+
                                         if ($category === 'monthly_dues'): ?>
                                             <!-- MONTHLY DUES INVOICE -->
                                             <div class="row mb-3">
@@ -828,7 +975,9 @@ function getCategoryIcon($category) {
                                                 <h6 class="alert-heading mb-2">
                                                     <i class="bi bi-info-circle me-2"></i>Fee Description
                                                 </h6>
-                                                <p class="mb-0 small"><?= nl2br(htmlspecialchars($selectedInvoice['description'])); ?></p>
+                                                <p class="mb-0 small">
+                                                    <?= nl2br(htmlspecialchars($selectedInvoice['description'])); ?>
+                                                </p>
                                             </div>
 
                                             <div class="table-responsive">
@@ -921,7 +1070,7 @@ function getCategoryIcon($category) {
                                                         $userType = $selectedInvoice['user_type'];
                                                         $dayOrNight = $selectedInvoice['rate'];
                                                         $numGuests = $selectedInvoice['guests'] ?? 1;
-                                                
+
                                                         $rateStr = $amenityRates[$amenity][$userType][$dayOrNight] ?? "₱0.00";
                                                         $numericRate = getNumericAmount($rateStr);
 
@@ -991,7 +1140,8 @@ function getCategoryIcon($category) {
                                         <?php endif; ?>
                                     </div>
                                 <?php else: ?>
-                                    <div class="p-5 text-center text-muted">No billing statements available to display.</div>
+                                    <div class="p-5 text-center text-muted">No billing statements available to display.
+                                    </div>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -1001,6 +1151,7 @@ function getCategoryIcon($category) {
         </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="javascripts/mobileSidebar.js"></script>
 </body>
 
 </html>

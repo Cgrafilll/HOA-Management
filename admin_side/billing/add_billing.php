@@ -71,33 +71,52 @@ if (!empty($admin['profile_picture'])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
+        rel="stylesheet">
     <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
         * {
             font-family: "Montserrat", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow-x: hidden;
         }
 
         header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 1030;
+            height: 76px;
+            background-color: white;
         }
 
         .sidebar {
             width: 250px;
-            height: 100vh;
+            height: calc(100vh - 76px);
             position: fixed;
-            top: 20;
+            top: 76px;
             left: 0;
             background-color: #1F2937;
             overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1020;
+            transition: transform 0.3s ease;
         }
 
         main {
             margin-left: 250px;
+            margin-top: 76px;
+            min-height: calc(100vh - 76px);
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
         }
 
         .sidebar a,
@@ -121,6 +140,32 @@ if (!empty($admin['profile_picture'])) {
         .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar .logout {
+            flex-shrink: 0;
+            border-top: 1px solid #374151;
+            padding-top: 12px;
         }
 
         .sidebar .btn-toggle {
@@ -152,10 +197,23 @@ if (!empty($admin['profile_picture'])) {
             transform: rotate(180deg);
         }
 
-        #preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
         }
 
         .field-hidden {
@@ -178,13 +236,199 @@ if (!empty($admin['profile_picture'])) {
         .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
             line-height: 38px;
         }
+
+        /* Searchable Dropdown Styles */
+        .search-select-wrapper {
+            position: relative;
+        }
+
+        .search-select-wrapper input[type="text"] {
+            padding-right: 35px;
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6c757d;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            display: none;
+            z-index: 3;
+        }
+
+        .search-clear.show {
+            display: block;
+        }
+
+        .search-clear:hover {
+            color: #dc3545;
+        }
+
+        .search-select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ced4da;
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-select-dropdown.show {
+            display: block;
+        }
+
+        .search-select-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .search-select-option:last-child {
+            border-bottom: none;
+        }
+
+        .search-select-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .search-select-option.selected {
+            background-color: #e9f2ff;
+            font-weight: 500;
+        }
+
+        .search-select-option.no-results {
+            color: #6c757d;
+            text-align: center;
+            cursor: default;
+        }
+
+        .search-select-option.no-results:hover {
+            background-color: white;
+        }
+
+        .search-select-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .search-select-dropdown::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .search-select-dropdown::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .search-select-dropdown::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                top: 76px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            header .logo-container {
+                width: auto !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .search-select-dropdown {
+                max-height: 200px;
+                font-size: 0.85rem;
+            }
+
+            .search-select-option {
+                padding: 8px 12px;
+            }
+
+            .search-clear {
+                font-size: 14px;
+                right: 8px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            main {
+                margin-top: 76px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .search-select-dropdown {
+                max-height: 180px;
+                font-size: 0.8rem;
+            }
+
+            .search-select-option {
+                padding: 7px 10px;
+            }
+        }
     </style>
 </head>
 
 <body class="bg-light">
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
-        <div class="me-4" style="width: 250px;">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="me-4 logo-container" style="width: 250px;">
             <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
@@ -192,7 +436,7 @@ if (!empty($admin['profile_picture'])) {
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <span class="d-none d-md-inline">Hello, <?php echo htmlspecialchars($username); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -215,10 +459,12 @@ if (!empty($admin['profile_picture'])) {
             </div>
         </div>
     </header>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar p-3">
-            <nav class="nav flex-column gap-1">
+        <aside class="sidebar">
+            <nav class="nav flex-column gap-1 sidebar-nav p-3">
                 <a href="../admin_dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
@@ -282,26 +528,24 @@ if (!empty($admin['profile_picture'])) {
                     <div class="collapse show" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
                             <li><a href="../payment.php" class="nav-link px-2">Payment</a></li>
-                            <li><a href="../billing.php" class="nav-link px-2">List of Billings</a></li>
+                            <li><a href="../billing.php" class="nav-link px-2 actived">List of Billings</a></li>
                             <li><a href="../invoices.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
                 <a href="../login/logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
-                    style="position: fixed; bottom: 0; width: 220px;">
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
         <!-- Main Content -->
-        <main class="flex-fill p-4">
+        <main class="flex-grow-1 p-4">
             <div class="bg-white shadow rounded p-3">
                 <!-- Header -->
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">New Invoice</h5>
                 </div>
-
                 <!-- Back Button -->
                 <div class="p-3 d-flex justify-content-between align-items-center">
                     <span class="small mb-0">Fill out the form below to issue a new invoice</span>
@@ -310,84 +554,84 @@ if (!empty($admin['profile_picture'])) {
                     </a>
                 </div>
                 <hr class="my-0">
-
                 <!-- Form -->
                 <form id="invoiceForm" class="p-4">
                     <div class="row g-3">
-
                         <!-- Category Selection -->
                         <div class="col-md-6">
-                            <label for="category" class="form-label fw-semibold">Billing Category <span class="text-danger">*</span></label>
+                            <label for="category" class="form-label mb-2 fw-semibold">Billing Category <span
+                                    class="text-danger">*</span></label>
                             <select class="form-select" id="category" name="category" required>
                                 <option value="" selected disabled>Select Category</option>
                                 <option value="monthly_dues">Monthly Dues</option>
                                 <option value="penalty_fees">Penalty Fees</option>
                                 <option value="other_fees">Other Fees</option>
                             </select>
-                            <small class="text-muted">Choose the type of fee to bill</small>
+                            <small class="text-muted mt-2">Choose the type of fee to bill</small>
                         </div>
-
                         <!-- Bulk Selection Option (Only for Monthly Dues) -->
-                        <div class="col-12 field-hidden" id="bulkOptionContainer">
+                        <div class="col-md-6 field-hidden" id="bulkOptionContainer">
                             <div class="bulk-option">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="bulkInvoice" name="bulkInvoice">
                                     <label class="form-check-label fw-semibold" for="bulkInvoice">
                                         <i class="bi bi-people-fill me-2"></i>Create invoices for all households
                                     </label>
-                                    <div class="small text-muted mt-1">Check this to automatically generate monthly dues invoices for all registered households</div>
+                                    <div class="small text-muted mt-1">Check this to automatically generate monthly dues
+                                        invoices for all registered households</div>
                                 </div>
                             </div>
                         </div>
-
                         <!-- Household ID (Hidden when bulk is selected) -->
                         <div class="col-md-6" id="householdContainer">
-                            <label for="household_id" class="form-label fw-semibold">Household <span class="text-danger">*</span></label>
-                            <select class="form-select" id="household_id" name="household_id">
-                                <option value="" selected disabled>Select Household</option>
-                                <?php
-                                // Populate dropdown with household_accounts
-                                $households = $conn->query("SELECT household_id, CONCAT(first_name, ' ', last_name) AS name FROM household_accounts ORDER BY household_id");
-                                while ($row = $households->fetch_assoc()) {
-                                    echo "<option value='{$row['household_id']}'>{$row['household_id']} - {$row['name']}</option>";
-                                }
-                                ?>
-                            </select>
+                            <label for="household_id" class="form-label mb-2 fw-semibold">Household <span
+                                    class="text-danger">*</span></label>
+                            <div class="search-select-wrapper">
+                                <input type="text" class="form-control" id="householdSearch"
+                                    placeholder="Search household..." disabled>
+                                <input type="hidden" id="household_id" name="household_id">
+                                <button type="button" class="search-clear" id="householdSearchClear">
+                                    <i class="bi bi-x-circle-fill"></i>
+                                </button>
+                                <div class="search-select-dropdown" id="householdDropdown"></div>
+                            </div>
+                            <small class="text-muted mt-2">Select the household to bill</small>
                         </div>
-
                         <!-- Billing Month (Only for Monthly Dues) -->
                         <div class="col-md-6 field-hidden" id="billingMonthContainer">
-                            <label for="billing_month" class="form-label fw-semibold">Billing Month <span class="text-danger">*</span></label>
+                            <label for="billing_month" class="form-label mb-2 fw-semibold">Billing Month <span
+                                    class="text-danger">*</span></label>
                             <input type="month" class="form-control" id="billing_month" name="billing_month">
-                            <small class="text-muted">Month for which dues are being charged</small>
+                            <small class="text-muted mt-2">Month for which dues are being charged</small>
                         </div>
-
                         <!-- Description (Only for Penalty and Other Fees) -->
-                        <div class="col-12 field-hidden" id="descriptionContainer">
-                            <label for="description" class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="description" name="description" rows="3" 
+                        <div class="col-md-12 field-hidden" id="descriptionContainer">
+                            <label for="description" class="form-label mb-2 fw-semibold">Description <span
+                                    class="text-danger">*</span></label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
                                 placeholder="Enter details about the fee..."></textarea>
-                            <small class="text-muted">Provide specific details about this charge</small>
+                            <small class="text-muted mt-2">Provide specific details about this charge</small>
                         </div>
-
                         <!-- Balance Remaining -->
                         <div class="col-md-6">
-                            <label for="balance_remaining" class="form-label fw-semibold">Amount to be Paid <span class="text-danger">*</span></label>
+                            <label for="balance_remaining" class="form-label mb-2 fw-semibold">Amount to be Paid <span
+                                    class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">₱</span>
                                 <input type="number" step="0.01" class="form-control" id="balance_remaining"
                                     name="balance_remaining" min="0.01" placeholder="0.00" required>
                             </div>
                         </div>
-
                         <!-- Due Date -->
                         <div class="col-md-6">
-                            <label for="due_date" class="form-label fw-semibold">Due Date <span class="text-danger">*</span></label>
+                            <label for="due_date" class="form-label mb-2 fw-semibold">Due Date <span
+                                    class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="due_date" name="due_date" required>
-                            <small class="text-muted" id="dueDateHint">Will be set automatically for monthly dues (28th of billing month)</small>
+                            <small class="text-muted mt-2" id="dueDateHint">Will be set automatically for monthly dues
+                                (28th
+                                of billing month)</small>
                         </div>
                     </div>
-
                     <!-- Submit -->
                     <div class="mt-4 text-end">
                         <button type="submit" class="btn btn-success" id="submitBtn">
@@ -395,7 +639,6 @@ if (!empty($admin['profile_picture'])) {
                         </button>
                     </div>
                 </form>
-
                 <!-- Confirmation Modal -->
                 <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
@@ -416,7 +659,6 @@ if (!empty($admin['profile_picture'])) {
                         </div>
                     </div>
                 </div>
-
                 <!-- Success Modal -->
                 <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
@@ -436,7 +678,6 @@ if (!empty($admin['profile_picture'])) {
                         </div>
                     </div>
                 </div>
-
                 <!-- Invoice Error Modal -->
                 <div class="modal fade" id="errorInvoiceModal" tabindex="-1">
                     <div class="modal-dialog modal-dialog-centered">
@@ -456,7 +697,6 @@ if (!empty($admin['profile_picture'])) {
                         </div>
                     </div>
                 </div>
-
                 <!-- General Error Modal -->
                 <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
@@ -481,22 +721,30 @@ if (!empty($admin['profile_picture'])) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="../javascripts/mobileSidebar.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const form = document.getElementById('invoiceForm');
             const categorySelect = document.getElementById('category');
             const bulkCheckbox = document.getElementById('bulkInvoice');
-            const householdSelect = document.getElementById('household_id');
+            const householdHiddenInput = document.getElementById('household_id');
             const billingMonthInput = document.getElementById('billing_month');
             const descriptionInput = document.getElementById('description');
             const dueDateInput = document.getElementById('due_date');
-            
+
+            // Searchable household elements
+            const householdSearch = document.getElementById('householdSearch');
+            const householdDropdown = document.getElementById('householdDropdown');
+            const householdSearchClear = document.getElementById('householdSearchClear');
+            let householdOptions = [];
+            let selectedHouseholdId = null;
+
             // Containers
             const bulkOptionContainer = document.getElementById('bulkOptionContainer');
             const householdContainer = document.getElementById('householdContainer');
             const billingMonthContainer = document.getElementById('billingMonthContainer');
             const descriptionContainer = document.getElementById('descriptionContainer');
-            
+
             const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
             const successModal = new bootstrap.Modal(document.getElementById('successModal'));
             const errorInvoiceModal = new bootstrap.Modal(document.getElementById('errorInvoiceModal'));
@@ -507,55 +755,165 @@ if (!empty($admin['profile_picture'])) {
             const confirmMessage = document.getElementById('confirmMessage');
             const dueDateHint = document.getElementById('dueDateHint');
 
-            // Initialize Select2 for household dropdown with search
-            $(householdSelect).select2({
-                theme: 'bootstrap-5',
-                placeholder: 'Search for a household...',
-                allowClear: true,
-                width: '100%',
-                dropdownParent: householdContainer
-            });
+            // ============================================
+            // LOAD HOUSEHOLDS FOR SEARCHABLE DROPDOWN
+            // ============================================
+            function loadHouseholds() {
+                householdOptions = [];
+                <?php
+                $households = $conn->query("SELECT household_id, CONCAT(first_name, ' ', last_name) AS name FROM household_accounts ORDER BY household_id");
+                echo "householdOptions = [";
+                $first = true;
+                while ($row = $households->fetch_assoc()) {
+                    if (!$first)
+                        echo ",";
+                    echo "{id: '{$row['household_id']}', name: '" . addslashes($row['name']) . "'}";
+                    $first = false;
+                }
+                echo "];";
+                ?>
 
-            // Category change handler
-            categorySelect.addEventListener('change', function() {
+                if (householdOptions.length > 0) {
+                    householdSearch.disabled = false;
+                    householdSearch.placeholder = 'Search household...';
+                }
+            }
+
+            // ============================================
+            // SEARCHABLE HOUSEHOLD DROPDOWN FUNCTIONALITY
+            // ============================================
+            function initSearchableHousehold() {
+                householdSearch.addEventListener('focus', function () {
+                    if (householdOptions.length > 0) {
+                        renderHouseholdOptions();
+                        householdDropdown.classList.add('show');
+                    }
+                });
+
+                householdSearch.addEventListener('input', function () {
+                    const searchTerm = this.value;
+                    if (searchTerm) {
+                        householdSearchClear.classList.add('show');
+                    } else {
+                        householdSearchClear.classList.remove('show');
+                    }
+                    renderHouseholdOptions(searchTerm);
+                    householdDropdown.classList.add('show');
+                });
+
+                householdSearchClear.addEventListener('click', function () {
+                    householdSearch.value = '';
+                    householdHiddenInput.value = '';
+                    selectedHouseholdId = null;
+                    householdSearchClear.classList.remove('show');
+                    householdSearch.classList.remove('border-danger', 'is-invalid');
+                    householdSearch.style.borderColor = '';
+                    householdSearch.style.boxShadow = '';
+                    renderHouseholdOptions();
+                    householdSearch.focus();
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!householdSearch.contains(e.target) && !householdDropdown.contains(e.target)) {
+                        householdDropdown.classList.remove('show');
+                    }
+                });
+            }
+
+            function renderHouseholdOptions(searchTerm = '') {
+                householdDropdown.innerHTML = '';
+
+                const filteredOptions = householdOptions.filter(option => {
+                    const searchText = `${option.id} ${option.name}`.toLowerCase();
+                    return searchText.includes(searchTerm.toLowerCase());
+                });
+
+                if (filteredOptions.length === 0) {
+                    const noResults = document.createElement('div');
+                    noResults.className = 'search-select-option no-results';
+                    noResults.innerHTML = '<i class="bi bi-search"></i> No households found';
+                    householdDropdown.appendChild(noResults);
+                    return;
+                }
+
+                filteredOptions.forEach(option => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'search-select-option';
+                    optionDiv.textContent = `${option.id} - ${option.name}`;
+                    optionDiv.dataset.value = option.id;
+
+                    if (option.id === selectedHouseholdId) {
+                        optionDiv.classList.add('selected');
+                    }
+
+                    optionDiv.addEventListener('click', () => selectHousehold(option));
+                    householdDropdown.appendChild(optionDiv);
+                });
+            }
+
+            function selectHousehold(option) {
+                selectedHouseholdId = option.id;
+                householdSearch.value = `${option.id} - ${option.name}`;
+                householdHiddenInput.value = option.id;
+                householdSearchClear.classList.add('show');
+                householdDropdown.classList.remove('show');
+
+                // Remove error styling
+                householdSearch.classList.remove('border-danger', 'is-invalid');
+                householdSearch.style.borderColor = '#198754';
+                householdSearch.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.15)';
+            }
+
+            function resetHouseholdSearch() {
+                householdSearch.value = '';
+                householdHiddenInput.value = '';
+                selectedHouseholdId = null;
+                householdSearchClear.classList.remove('show');
+                householdSearch.classList.remove('border-danger', 'is-invalid');
+                householdSearch.style.borderColor = '';
+                householdSearch.style.boxShadow = '';
+                householdDropdown.innerHTML = '';
+            }
+
+            // Initialize on page load
+            loadHouseholds();
+            initSearchableHousehold();
+
+            // ============================================
+            // CATEGORY CHANGE HANDLER
+            // ============================================
+            categorySelect.addEventListener('change', function () {
                 const category = this.value;
-                
+
                 // Reset all fields
                 bulkCheckbox.checked = false;
-                $(householdSelect).val(null).trigger('change'); // Reset Select2
+                resetHouseholdSearch();
                 billingMonthInput.value = '';
                 descriptionInput.value = '';
                 dueDateInput.value = '';
-                
+
                 // Hide all conditional fields
                 bulkOptionContainer.classList.add('field-hidden');
                 billingMonthContainer.classList.add('field-hidden');
                 descriptionContainer.classList.add('field-hidden');
                 householdContainer.classList.remove('field-hidden');
-                
-                // Remove all required attributes first
-                householdSelect.removeAttribute('required');
-                billingMonthInput.removeAttribute('required');
-                descriptionInput.removeAttribute('required');
-                
+
+                // Enable household search
+                householdSearch.disabled = false;
+
                 if (category === 'monthly_dues') {
-                    // Show bulk option and billing month
                     bulkOptionContainer.classList.remove('field-hidden');
                     billingMonthContainer.classList.remove('field-hidden');
-                    householdSelect.setAttribute('required', 'required');
-                    billingMonthInput.setAttribute('required', 'required');
                     dueDateInput.setAttribute('readonly', 'readonly');
                     dueDateInput.style.backgroundColor = '#e9ecef';
                     dueDateInput.style.cursor = 'not-allowed';
                     dueDateHint.style.display = 'block';
                     updatePaymentDate();
                     submitBtnText.textContent = 'Save Invoice';
-                    
+
                 } else if (category === 'penalty_fees' || category === 'other_fees') {
-                    // Show description, hide billing month
                     descriptionContainer.classList.remove('field-hidden');
-                    householdSelect.setAttribute('required', 'required');
-                    descriptionInput.setAttribute('required', 'required');
                     dueDateInput.removeAttribute('readonly');
                     dueDateInput.style.backgroundColor = '';
                     dueDateInput.style.cursor = '';
@@ -564,27 +922,31 @@ if (!empty($admin['profile_picture'])) {
                 }
             });
 
-            // Bulk checkbox handler
-            bulkCheckbox.addEventListener('change', function() {
+            // ============================================
+            // BULK CHECKBOX HANDLER
+            // ============================================
+            bulkCheckbox.addEventListener('change', function () {
                 if (this.checked) {
                     householdContainer.classList.add('field-hidden');
-                    householdSelect.removeAttribute('required');
-                    $(householdSelect).val(null).trigger('change'); // Clear Select2
+                    resetHouseholdSearch();
+                    householdSearch.disabled = true;
                     submitBtnText.textContent = 'Create Bulk Invoices';
                 } else {
                     householdContainer.classList.remove('field-hidden');
-                    householdSelect.setAttribute('required', 'required');
+                    householdSearch.disabled = false;
                     submitBtnText.textContent = 'Save Invoice';
                 }
             });
 
-            // Form submission handler
+            // ============================================
+            // FORM SUBMISSION HANDLER
+            // ============================================
             form.addEventListener("submit", function (e) {
                 e.preventDefault();
 
                 const category = categorySelect.value;
                 const isBulk = bulkCheckbox.checked;
-                
+
                 // Validate based on category
                 let valid = true;
                 let errorMsg = '';
@@ -593,8 +955,9 @@ if (!empty($admin['profile_picture'])) {
                     errorMsg = 'Please select a billing category.';
                     valid = false;
                 } else if (category === 'monthly_dues') {
-                    if (!isBulk && !householdSelect.value) {
+                    if (!isBulk && !householdHiddenInput.value) {
                         errorMsg = 'Please select a household.';
+                        householdSearch.classList.add('border-danger', 'is-invalid');
                         valid = false;
                     }
                     if (!billingMonthInput.value) {
@@ -602,8 +965,9 @@ if (!empty($admin['profile_picture'])) {
                         valid = false;
                     }
                 } else {
-                    if (!householdSelect.value) {
+                    if (!householdHiddenInput.value) {
                         errorMsg = 'Please select a household.';
+                        householdSearch.classList.add('border-danger', 'is-invalid');
                         valid = false;
                     }
                     if (!descriptionInput.value.trim()) {
@@ -629,38 +993,33 @@ if (!empty($admin['profile_picture'])) {
                     confirmMessage.textContent = 'Do you really want to create this invoice?';
                 }
 
-                // Show confirmation modal
                 confirmModal.show();
             });
 
-            // Handle confirmation - submit via AJAX
+            // ============================================
+            // HANDLE CONFIRMATION - SUBMIT VIA AJAX
+            // ============================================
             confirmPublishBtn.addEventListener("click", function () {
                 confirmModal.hide();
 
-                // Show loading state
                 submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Creating...';
                 submitBtn.disabled = true;
 
-                // Prepare form data
                 const formData = new FormData(form);
 
-                // Submit via AJAX
                 fetch('process_add_billing.php', {
                     method: 'POST',
                     body: formData
                 })
                     .then(response => response.json())
                     .then(data => {
-                        // Reset button
                         submitBtn.innerHTML = '<i class="bi bi-save me-1"></i> <span id="submitBtnText">Save Invoice</span>';
                         submitBtn.disabled = false;
 
                         if (data.success) {
-                            // Show success message
                             document.getElementById('successMessage').innerHTML = data.message || 'Invoice created successfully!';
                             successModal.show();
                         } else {
-                            // Show error
                             if (data.error_type === 'validation') {
                                 document.getElementById('invoiceErrorMessage').textContent = data.error;
                                 errorInvoiceModal.show();
@@ -671,7 +1030,6 @@ if (!empty($admin['profile_picture'])) {
                         }
                     })
                     .catch(error => {
-                        // Reset button
                         submitBtn.innerHTML = '<i class="bi bi-save me-1"></i> <span id="submitBtnText">Save Invoice</span>';
                         submitBtn.disabled = false;
 
@@ -686,7 +1044,9 @@ if (!empty($admin['profile_picture'])) {
                 window.location.href = '../billing.php';
             });
 
-            // Billing month and due date logic
+            // ============================================
+            // BILLING MONTH AND DUE DATE LOGIC
+            // ============================================
             function updatePaymentDate() {
                 if (billingMonthInput.value && categorySelect.value === 'monthly_dues') {
                     const [year, month] = billingMonthInput.value.split('-');
@@ -696,7 +1056,7 @@ if (!empty($admin['profile_picture'])) {
                     const month_str = String(dueDate.getMonth() + 1).padStart(2, '0');
                     const day_str = String(dueDate.getDate()).padStart(2, '0');
                     const dueDateStr = `${year_str}-${month_str}-${day_str}`;
-                    
+
                     dueDateInput.value = dueDateStr;
                 }
             }
@@ -708,21 +1068,11 @@ if (!empty($admin['profile_picture'])) {
             const minMonth = `${currentYear}-${currentMonth}`;
             billingMonthInput.setAttribute('min', minMonth);
 
-            // Update payment_date whenever billing_month changes
             billingMonthInput.addEventListener('change', updatePaymentDate);
 
-            // Set minimum due date to today (allow same day)
+            // Set minimum due date to today
             const todayStr = today.toISOString().split('T')[0];
             dueDateInput.setAttribute('min', todayStr);
-            
-            // Note: The min attribute allows selecting the min date itself
-            // No additional changes needed - the issue is in backend validation
-
-            // Remove red border when user types or selects
-            [categorySelect, householdSelect, billingMonthInput, descriptionInput, dueDateInput].forEach(field => {
-                field.addEventListener("input", () => field.classList.remove("border", "border-danger"));
-                field.addEventListener("change", () => field.classList.remove("border", "border-danger"));
-            });
         });
     </script>
 

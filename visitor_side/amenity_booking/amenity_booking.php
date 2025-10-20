@@ -18,7 +18,7 @@ session_start();
 require '../../rfid-api/db.php';
 
 // Check if user is logged in
-if (!isset($_SESSION['household_id'])) {
+if (!isset($_SESSION['visitor_id'])) {
     header("Location: ../login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
@@ -33,23 +33,23 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
 
 $_SESSION['last_activity'] = time();
 
-$household_id = $_SESSION['household_id'];
-$sql = "SELECT * FROM household_accounts WHERE household_id = ?";
+$visitor_id = $_SESSION['visitor_id'];
+$sql = "SELECT * FROM visitor_details WHERE visitor_id = ?";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $household_id);
+$stmt->bind_param("s", $visitor_id);
 $stmt->execute();
 $result = $stmt->get_result();
-$resident = $result->fetch_assoc();
+$visitor = $result->fetch_assoc();
 
-if (!$resident) {
-    echo "Resident not found.";
+if (!$visitor) {
+    echo "Visitor not found.";
     exit;
 }
 
-$username = $resident['first_name'];
+$username = $visitor['first_name'];
 $photo = '';
-if (!empty($resident['profile_picture'])) {
-    $photo = 'data:image/jpeg;base64,' . base64_encode($resident['profile_picture']);
+if (!empty($visitor['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($visitor['profile_picture']);
 }
 
 // Pagination
@@ -57,10 +57,10 @@ $limit = 10;
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 
-// Get total records for this homeowner
-$totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE homeowner_id = ?";
+// Get total records for this visitor
+$totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE visitor_id = ?";
 $totalStmt = $conn->prepare($totalQuery);
-$totalStmt->bind_param("s", $household_id);
+$totalStmt->bind_param("s", $visitor_id);
 $totalStmt->execute();
 $totalResult = $totalStmt->get_result();
 $totalRow = $totalResult->fetch_assoc();
@@ -79,7 +79,7 @@ $booking_sql = "SELECT
     ab.amount_paid,
     ab.status,
     ab.created_at,
-    ab.homeowner_id,
+    ab.visitor_id,
     CASE 
         WHEN ab.user_type = 'homeowner' THEN ha.first_name
         WHEN ab.user_type = 'visitor' THEN vd.first_name
@@ -98,12 +98,12 @@ $booking_sql = "SELECT
 FROM amenity_bookings ab
 LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
 LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
-WHERE ab.homeowner_id = ?
+WHERE ab.visitor_id = ?
 ORDER BY ab.reservation_date DESC
 LIMIT ? OFFSET ?";
 
 $bookings_stmt = $conn->prepare($booking_sql);
-$bookings_stmt->bind_param("sii", $household_id, $limit, $offset);
+$bookings_stmt->bind_param("sii", $visitor_id, $limit, $offset);
 $bookings_stmt->execute();
 $bookings_result = $bookings_stmt->get_result();
 
@@ -119,7 +119,7 @@ $calendar_sql = "SELECT
     ab.amount_paid,
     ab.status,
     ab.created_at,
-    ab.homeowner_id,
+    ab.visitor_id,
     CASE 
         WHEN ab.user_type = 'homeowner' THEN ha.first_name
         WHEN ab.user_type = 'visitor' THEN vd.first_name
@@ -167,7 +167,7 @@ while ($row = $calendar_result->fetch_assoc()) {
         "amount" => "₱" . number_format($row['amount_paid'], 2) .
             ($row['status'] === 'partial' ? " / ₱" . number_format($row['total_amount'], 2) : ""),
         "time" => $timeSlot,
-        "homeownerId" => $row['homeowner_id']
+        "visitorId" => $row['visitor_id']
     ];
 }
 
@@ -201,13 +201,13 @@ $reschedule_sql = "SELECT
         ELSE NULL
     END as last_name
 FROM amenity_bookings ab
-LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
+LEFT JOIN visitor_details ha ON ab.homeowner_id = ha.visitor_id AND ab.user_type = 'homeowner'
 LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
-WHERE ab.homeowner_id = ? AND ab.reschedule_status IN ('pending', 'approved', 'rejected')
+WHERE ab.visitor_id = ? AND ab.reschedule_status IN ('pending', 'approved', 'rejected')
 ORDER BY ab.reschedule_requested_at DESC";
 
 $reschedule_stmt = $conn->prepare($reschedule_sql);
-$reschedule_stmt->bind_param("s", $household_id);
+$reschedule_stmt->bind_param("s", $visitor_id);
 $reschedule_stmt->execute();
 $reschedule_result = $reschedule_stmt->get_result();
 
@@ -945,7 +945,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                     <li><a class="dropdown-item"
-                            href="../resident_details/view_resident.php?id=<?php echo $household_id; ?>"><i
+                            href="../visitor_details/view_visitor.php?id=<?php echo $visitor_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
@@ -970,10 +970,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
                 </a>
-                <a href="../report.php"
-                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
-                    <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
-                </a>
+                <!-- Accounting -->
                 <div>
                     <button
                         class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start"
@@ -984,15 +981,14 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../payment.php" class="nav-link px-2">Payment</a></li>
-                            <li><a href="../billing.php" class="nav-link px-2">List of Billings</a></li>
-                            <li><a href="../invoices.php" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="../visitor_payment.php" class="nav-link px-2">Payments</a></li>
+                            <li><a href="../visitor_invoices.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
                 <a href="../logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
-                    <i class="bi bi-box-arrow-left me-2"></i> Logout
+                    <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
@@ -1384,7 +1380,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
     <script src="../../admin_side/javascripts/mobileSidebar.js"></script>
     <script>
         const bookings = <?= json_encode($bookings) ?>;
-        const loggedInHouseholdId = <?= json_encode($household_id) ?>;
+        const loggedInVisitor = <?= json_encode($visitor_id) ?>;
         let currentDate = new Date();
         let currentView = 'month';
 
@@ -1499,7 +1495,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_booked_dates') {
                     bookingElement.style.fontSize = '0.75rem';
                     bookingElement.style.padding = '0.25rem 0.5rem';
 
-                    if (booking.homeownerId == loggedInHouseholdId) {
+                    if (booking.visitorId == loggedInVisitor) {
                         // User's own booking - show name with initials on mobile
                         bookingElement.style.cursor = 'pointer';
                         bookingElement.style.whiteSpace = 'nowrap';

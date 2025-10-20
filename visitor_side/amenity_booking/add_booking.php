@@ -16,11 +16,11 @@ session_set_cookie_params([
 // NOW start the session
 session_start();
 
-require '../rfid-api/db.php';
+require '../../rfid-api/db.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['visitor_id'])) {
-    header("Location: login.php?error=" . urlencode("Please log in to access this page."));
+    header("Location: ../login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
 
@@ -29,7 +29,7 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
     // Session expired
     session_unset();
     session_destroy();
-    header("Location: login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    header("Location: ../login.php?error=" . urlencode("Your session has expired. Please log in again."));
     exit;
 }
 
@@ -59,69 +59,39 @@ if (!empty($visitor['profile_picture'])) {
     $photo = ''; // Explicitly empty if no image is saved
 }
 
-// ✅ SIMPLIFIED BOOKING PAGINATION - Only for this household
-$limit = 10;
-$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
-$offset = ($page - 1) * $limit;
+// Initialize amenity details
+$amenity = isset($_GET['amenity']) ? urldecode($_GET['amenity']) : null;
 
-// Get total records count for this homeowner
-$totalQuery = "SELECT COUNT(*) AS total FROM amenity_bookings WHERE visitor_id = ?";
-$totalStmt = $conn->prepare($totalQuery);
-$totalStmt->bind_param("s", $visitor_id);
-$totalStmt->execute();
-$totalResult = $totalStmt->get_result();
-$totalRow = $totalResult->fetch_assoc();
-$totalRecords = $totalRow['total'];
-$totalPages = ceil($totalRecords / $limit);
-
-// ✅ SIMPLIFIED BOOKING QUERY - Only fetch what we need for this homeowner
-$booking_sql = "SELECT 
-    ab.id,
-    ab.reservation_code,
-    ab.amenity,
-    ab.user_type,
-    ab.reservation_date,
-    ab.status,
-    ab.created_at,
-    CASE 
-        WHEN ab.user_type = 'homeowner' THEN ha.first_name
-        WHEN ab.user_type = 'visitor' THEN vd.first_name
-        ELSE NULL
-    END as first_name,
-    CASE 
-        WHEN ab.user_type = 'homeowner' THEN ha.middle_name
-        WHEN ab.user_type = 'visitor' THEN vd.middle_name
-        ELSE NULL
-    END as middle_name,
-    CASE 
-        WHEN ab.user_type = 'homeowner' THEN ha.last_name
-        WHEN ab.user_type = 'visitor' THEN vd.last_name
-        ELSE NULL
-    END as last_name
-FROM amenity_bookings ab
-LEFT JOIN household_accounts ha ON ab.homeowner_id = ha.household_id AND ab.user_type = 'homeowner'
-LEFT JOIN visitor_details vd ON ab.visitor_id = vd.visitor_id AND ab.user_type = 'visitor'
-WHERE ab.homeowner_id = ? 
-ORDER BY ab.reservation_date DESC 
-LIMIT ? OFFSET ?";
-
-$bookings_stmt = $conn->prepare($booking_sql);
-$bookings_stmt->bind_param("sii", $visitor_id, $limit, $offset);
-$bookings_stmt->execute();
-$bookings_result = $bookings_stmt->get_result();
-
+$amenities = [
+    "Clubhouse" => [
+        "image" => "../../images/clubhouse.png",
+        "file" => "details/clubhouse.php"
+    ],
+    "Gazebo" => [
+        "image" => "../../images/gazebo.png",
+        "file" => "details/gazebo.php"
+    ],
+    "Swimming Pool" => [
+        "image" => "../../images/pool.png",
+        "file" => "details/swimming_pool.php"
+    ],
+    "Basketball Court" => [
+        "image" => "../../images/basketball.png",
+        "file" => "details/basketball_court.php"
+    ]
+];
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NSSHAI HOA Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="icon" href="../images/SitioSeville_Logo.png" type="image/x-icon">
+    <link rel="icon" href="../../images/SitioSeville_Logo.png" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
@@ -327,6 +297,14 @@ $bookings_result = $bookings_stmt->get_result();
             .sidebar-overlay {
                 top: 0;
             }
+
+            .table-responsive {
+                font-size: 0.75rem;
+            }
+
+            .pagination {
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -338,10 +316,10 @@ $bookings_result = $bookings_stmt->get_result();
             <i class="bi bi-list"></i>
         </button>
         <div class="me-4 logo-container" style="width: 250px;">
-            <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
+            <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
-            <h1 class="h5 mb-0 fw-bold">VISITOR DASHBOARD</h1>
+            <h1 class="h5 mb-0 fw-bold">AMENITY BOOKING</h1>
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
@@ -358,13 +336,13 @@ $bookings_result = $bookings_stmt->get_result();
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                     <li><a class="dropdown-item"
-                            href="visitor_details/view_visitor.php?id=<?php echo $visitor_id; ?>"><i
+                            href="../visitor_details/view_visitor.php?id=<?php echo $visitor_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    <li><a class="dropdown-item" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a>
-                    </li>
+                    <li><a class="dropdown-item" href="../logout.php"><i
+                                class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                 </ul>
             </div>
         </div>
@@ -374,13 +352,13 @@ $bookings_result = $bookings_stmt->get_result();
     <div class="d-flex">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <nav class="nav d-flex flex-column gap-1 sidebar-nav p-3">
-                <a href="dashboard.php"
-                    class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
+            <nav class="nav flex-column gap-1 sidebar-nav p-3">
+                <a href="../dashboard.php"
+                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                <a href="amenity_booking/amenity_booking.php"
-                    class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                <a href="amenity_booking.php"
+                    class="nav-link px-3 py-2 rounded active d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
                 </a>
                 <!-- Accounting -->
@@ -394,121 +372,48 @@ $bookings_result = $bookings_stmt->get_result();
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="visitor_payment.php" class="nav-link px-2">Payments</a></li>
-                            <li><a href="#" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="../visitor_payment.php" class="nav-link px-2">Payments</a></li>
+                            <li><a href="../visitor_invoices.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
-                <a href="logout.php"
+                <a href="../logout.php"
                     class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
-        <!--Main Content-->
-        <main class="flex-fill p-4">
-            <!-- Amenity Schedule -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white fw-semibold">Amenity Schedule</div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="small">List of Amenity Bookings</span>
-                        <a href="amenity_booking/choose_booking.php" class="btn btn-primary btn-sm">+ Create New
-                            Booking</a>
-                    </div>
-                    <hr>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="bg-success text-white small">
-                                <tr>
-                                    <th>Booking Date</th>
-                                    <th>Full Name</th>
-                                    <th>Amenity</th>
-                                    <th>Reservation Code</th>
-                                    <th>Payment Status</th>
-                                </tr>
-                            </thead>
-                            <tbody class="small align-middle">
-                                <?php
-                                if ($bookings_result && $bookings_result->num_rows > 0) {
-                                    while ($row = $bookings_result->fetch_assoc()) {
-                                        $fullName = trim(ucwords($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']));
-                                        $amenity = htmlspecialchars($row['amenity']);
-                                        $bookingDate = date('F d, Y', strtotime($row['reservation_date']));
-                                        $resCode = htmlspecialchars($row['reservation_code']);
-                                        // Status styling
-                                        $status = ucfirst($row['status']);
-                                        $statusClass = '';
-                                        switch (strtolower($row['status'])) {
-                                            case 'paid':
-                                                $statusClass = 'text-success';
-                                                break;
-                                            case 'partial':
-                                                $statusClass = 'text-warning';
-                                                break;
-                                            case 'pending':
-                                                $statusClass = 'text-secondary';
-                                                break;
-                                            default:
-                                                $statusClass = 'text-muted';
-                                        }
-                                        echo "<tr>
-                                    <td>{$bookingDate}</td>
-                                    <td>{$fullName}</td>
-                                    <td>{$amenity}</td>
-                                    <td>{$resCode}</td>
-                                    <td class='{$statusClass} fw-bold'>{$status}</td>
-                                  </tr>";
-                                    }
-                                } else {
-                                    echo "<tr><td colspan='5' class='text-center text-muted'>No bookings found.</td></tr>";
-                                }
-                                ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    <?php if ($totalRecords > 0): ?>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span class="small">
-                                Showing <?php echo ($offset + 1); ?> to <?php echo min($offset + $limit, $totalRecords); ?>
-                                of <?php echo $totalRecords; ?> entries
-                            </span>
-                            <?php if ($totalPages > 1): ?>
-                                <nav>
-                                    <ul class="pagination pagination-sm justify-content-center mb-0">
-                                        <!-- Previous button -->
-                                        <li class="page-item <?php if ($page <= 1)
-                                            echo 'disabled'; ?>">
-                                            <a class="page-link" href="?page=<?php echo max(1, $page - 1); ?>">Previous</a>
-                                        </li>
-                                        <!-- Page numbers -->
-                                        <?php
-                                        $start_page = max(1, $page - 2);
-                                        $end_page = min($totalPages, $page + 2);
-
-                                        for ($i = $start_page; $i <= $end_page; $i++): ?>
-                                            <li class="page-item <?php if ($page == $i)
-                                                echo 'active'; ?>">
-                                                <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                                            </li>
-                                        <?php endfor; ?>
-                                        <!-- Next button -->
-                                        <li class="page-item <?php if ($page >= $totalPages)
-                                            echo 'disabled'; ?>">
-                                            <a class="page-link"
-                                                href="?page=<?php echo min($totalPages, $page + 1); ?>">Next</a>
-                                        </li>
-                                    </ul>
-                                </nav>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
+        <!-- Main Content -->
+        <main class="flex-grow-1 p-4">
+            <div class="bg-white shadow rounded p-3">
+                <div class="bg-success text-white rounded-top p-3">
+                    <h5 class="mb-0 fw-bold w-100">Amenity Booking Management</h5>
                 </div>
+                <?php if ($amenity && isset($amenities[$amenity])): ?>
+                    <div class="d-flex justify-content-between align-items-center p-3">
+                        <span class="small"><?php echo htmlspecialchars($amenity); ?></span>
+                        <div class="gap-1">
+                            <a href="choose_booking.php" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-arrow-left-short me-1"></i>Back
+                            </a>
+                            <a href="reserve_booking.php?reserve=<?php echo htmlspecialchars($amenity); ?>"
+                                class="btn btn-primary btn-sm">Book Now</a>
+                        </div>
+                    </div>
+                    <hr class="my-2" style="border-top: 2px solid #7a7a7aff;">
+                    <!-- Amenity-Specific Content -->
+                    <div class="mt-4">
+                        <?php include __DIR__ . '/' . $amenities[$amenity]['file']; ?>
+                    </div>
+                <?php else: ?>
+                    <p class="text-danger">Invalid or missing amenity selection.</p>
+                <?php endif; ?>
             </div>
         </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../admin_side/javascripts/mobileSidebar.js"></script>
 </body>
 
 </html>

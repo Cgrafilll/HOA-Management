@@ -323,26 +323,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         * {
             font-family: "Montserrat", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow-x: hidden;
         }
 
         header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 1030;
+            height: 76px;
+            background-color: white;
         }
 
         .sidebar {
             width: 250px;
-            height: 100vh;
+            height: calc(100vh - 76px);
             position: fixed;
-            top: 20;
+            top: 76px;
             left: 0;
             background-color: #1F2937;
             overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1020;
+            transition: transform 0.3s ease;
         }
 
         main {
             margin-left: 250px;
+            margin-top: 76px;
+            min-height: calc(100vh - 76px);
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
         }
 
         .sidebar a,
@@ -366,6 +384,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar .logout {
+            flex-shrink: 0;
+            border-top: 1px solid #374151;
+            padding-top: 12px;
         }
 
         .sidebar .btn-toggle {
@@ -397,6 +441,110 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transform: rotate(180deg);
         }
 
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                top: 76px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            header .logo-container {
+                width: auto !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .form-check-label,
+            .form-check-input,
+            .toggle,
+            .invalid-feedback,
+            main span {
+                font-size: 0.85rem;
+            }
+
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            main {
+                margin-top: 76px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .form-control,
+            .form-label,
+            .form-select,
+            .form-select option,
+            .form-check-label,
+            .form-check-input,
+            .toggle,
+            .invalid-feedback,
+            main span {
+                font-size: 0.75rem;
+            }
+        }
+
         #preview img {
             width: 100%;
             height: 100%;
@@ -408,7 +556,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body class="bg-light">
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
-        <div class="me-4" style="width: 250px;">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="me-4 logo-container" style="width: 250px;">
             <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
@@ -416,7 +567,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <span class="d-none d-md-inline">Hello, <?php echo htmlspecialchars($username); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -439,15 +590,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </header>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar p-3">
-            <nav class="nav d-flex flex-column gap-1">
+        <aside class="sidebar">
+            <nav class="nav d-flex flex-column gap-1 sidebar-nav p-3">
                 <a href="../dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                <a href="../amenity_booking.php"
+                <a href="../amenity_booking/amenity_booking.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
                 </a>
@@ -462,14 +615,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="../#" class="nav-link px-2">Payments</a></li>
-                            <li><a href="../#" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="../visitor_payment.php" class="nav-link px-2">Payments</a></li>
+                            <li><a href="../visitor_invoices.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
                 <a href="../logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
-                    style="position: fixed; bottom: 0; width: 220px;">
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
@@ -488,61 +640,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <hr class="my-0">
                 <div class="p-3">
-                    <form action="edit_visitor.php?id=<?= $visitor_id ?>" id="visitorForm" method="POST"
-                        enctype="multipart/form-data">
+                   <form action="edit_visitor.php?id=<?= $edit_visitor ?>" method="POST" enctype="multipart/form-data">
+                        <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
                         <div class="row mb-3">
-                            <label for="profile_pic" class="form-label fw-bold">Profile Picture</label>
-                            <div class="row">
-                                <div class="col-4 mb-3">
-                                    <div id="preview"
-                                        class="d-flex align-items-center justify-content-center overflow-hidden rounded"
-                                        style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
-                                        <?php if (!empty($prof)): ?>
-                                            <img src="<?php echo htmlspecialchars($prof) ?>"
-                                                style="width: 100px; height: 100px; object-fit: cover;">
-                                        <?php else: ?>
-                                            <i class="bi bi-person-fill" style="font-size: 48px;"></i>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-4">
-                                    <input type="file" class="form-control" name="profile_pic" id="profile_pic"
-                                        accept="image/*" />
+                            <div class="col-md-4">
+                                <div id="preview"
+                                    class="d-flex align-items-center justify-content-center overflow-hidden rounded"
+                                    style="height: 120px; width: 120px; border: 2px dashed #ccc; color: #aaa;">
+                                    <?php if (!empty($prof)): ?>
+                                        <img src="<?php echo htmlspecialchars($prof) ?>"
+                                            style="width: 100px; height: 100px; object-fit: cover;">
+                                    <?php else: ?>
+                                        <i class="bi bi-person-fill" style="font-size: 48px;"></i>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <input type="file" class="form-control" name="profile_pic" id="profile_pic"
+                                    accept="image/*" />
+                            </div>
+                        </div>
                         <!-- Personal Info -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Personal Information</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-1">
+                            <span class="fw-bold mb-2">Personal Information</span>
+                            <div class="col-md-4">
                                 <input type="text" name="first_name" class="form-control"
                                     value="<?php echo htmlspecialchars($first_name) ?>" required />
                                 <label class="form-label mt-2">First Name</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="middle_name" class="form-control"
                                     value="<?php echo htmlspecialchars($middle_name) ?>" required />
                                 <label class="form-label mt-2">Middle Name</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="last_name" class="form-control"
                                     value="<?php echo htmlspecialchars($last_name) ?>" required />
                                 <label class="form-label mt-2">Last Name</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
                                 <input type="date" name="dob" class="form-control" id="dobInput"
                                     value="<?php echo htmlspecialchars($dob) ?>" required
                                     max="<?php echo date('Y-m-d'); ?>" />
                                 <label class="form-label mt-2">Date of Birth</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="number" name="age" class="form-control"
                                     value="<?php echo htmlspecialchars($age) ?>" readonly />
                                 <label class="form-label mt-2">Age</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <select name="sex" class="form-select" required>
                                     <option value="">Select</option>
                                     <option value="Male" <?= ($sex == 'Male') ? 'selected' : '' ?>>Male</option>
@@ -552,81 +703,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Contact -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Contact Information</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Contact Information</span>
+                            <div class="col-md-4">
                                 <input type="text" name="cellphone" class="form-control"
                                     value="<?php echo htmlspecialchars($cellphone) ?>" />
                                 <label class="form-label mt-2">Cellphone Number</label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="email" name="email" class="form-control"
                                     value="<?php echo htmlspecialchars($email) ?>" required />
                                 <label class="form-label mt-2">Email Address</label>
                             </div>
                         </div>
                         <!-- Reason for Visit -->
-                        <span class="fw-bold mb-3">Reason for Visit</span>
-                        <div class="my-3">
-                            <span>Are you employed by the subdivision?</span>
-                        </div>
-                        <!-- Radio Buttons -->
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <div class="form-check">
-                                    <label class="form-check-label me-2" for="noRadio1">No</label>
-                                    <input class="form-check-input" type="radio" name="employment_status" id="noRadio1"
-                                        value="No" <?= ($employement == 'No') ? 'checked' : '' ?> required>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="form-check">
-                                    <label class="form-check-label me-2" for="yesRadio2">Yes</label>
-                                    <input class="form-check-input" type="radio" name="employment_status" id="yesRadio2"
-                                        value="Yes" <?= ($employement == 'Yes') ? 'checked' : '' ?>>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Dropdowns for Reason -->
-                        <div class="row">
-                            <!-- No Dropdown -->
-                            <div class="col-md-4 mb-3" id="dropdownNo">
-                                <select id="reasonNo" name="reason" class="form-select">
-                                    <option disabled <?= ($employement == 'No' && $reason == '') || (empty($employement) || ($employement != 'No' && $employement != 'Yes')) ? 'selected' : '' ?> value="">
-                                        Select a reason</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Personal Visit / Family Gathering') ? 'selected' : '' ?>>Personal Visit / Family Gathering</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Delivery or Pickup') ? 'selected' : '' ?>>Delivery or Pickup</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Health or Emergency Services') ? 'selected' : '' ?>>Health or Emergency Services</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Religious or Community Outreach') ? 'selected' : '' ?>>Religious or Community Outreach</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Transport Services') ? 'selected' : '' ?>>Transport Services</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Guest Use of Amenities') ? 'selected' : '' ?>>Guest Use of Amenities</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Home Maintenance and Repairs') ? 'selected' : '' ?>>Home Maintenance and Repairs</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Construction or Renovation') ? 'selected' : '' ?>>Construction or Renovation</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Landscaping and Gardening') ? 'selected' : '' ?>>Landscaping and Gardening</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Household Help') ? 'selected' : '' ?>>
-                                        Household Help</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Pest Control / Cleaning Services') ? 'selected' : '' ?>>Pest Control / Cleaning Services</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Internet / Cable / Utility Installation') ? 'selected' : '' ?>>Internet / Cable / Utility Installation
-                                    </option>
-                                    <option <?= ($employement == 'No' && $reason == 'Furniture or Appliance Delivery') ? 'selected' : '' ?>>Furniture or Appliance Delivery</option>
-                                    <option <?= ($employement == 'No' && $reason == 'Server Contractors') ? 'selected' : '' ?>>Server Contractors</option>
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Reason for Visit</span>
+                            <div class="col-md-4">
+                                <select name="employment_status" id="employmentStatus" class="form-select" required>
+                                    <option selected disabled value="">Are you employed by the subdivision?</option>
+                                    <option value="No" <?= ($employement == 'No') ? 'selected' : '' ?>>No</option>
+                                    <option value="Yes" <?= ($employement == 'Yes') ? 'selected' : '' ?>>Yes</option>
                                 </select>
+                                <label class="form-label mt-2">Employment Status</label>
                             </div>
-                            <!-- Yes Dropdown -->
-                            <div class="col-md-4 mb-3" id="dropdownYes">
-                                <select id="reasonYes" name="reason" class="form-select">
-                                    <option disabled <?= ($employement == 'Yes' && $reason == '') || (empty($employement) || ($employement != 'No' && $employement != 'Yes')) ? 'selected' : '' ?> value="">
-                                        Select a reason</option>
-                                    <option <?= ($employement == 'Yes' && $reason == 'Administrative Work') ? 'selected' : '' ?>>Administrative Work</option>
-                                    <option <?= ($employement == 'Yes' && $reason == 'Facilities Management') ? 'selected' : '' ?>>Facilities Management</option>
-                                    <option <?= ($employement == 'Yes' && $reason == 'IT and System Maintenance') ? 'selected' : '' ?>>IT and System Maintenance</option>
-                                    <option <?= ($employement == 'Yes' && $reason == 'Security Oversight') ? 'selected' : '' ?>>Security Oversight</option>
+                            <div class="col-md-4">
+                                <select id="reasonSelect" name="reason" class="form-select" required>
+                                    <option selected disabled value="">Select a reason</option>
                                 </select>
+                                <label class="form-label mt-2">Reason for Visit</label>
                             </div>
                         </div>
                         <!-- Visitor RFID -->
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
                                 <label class="form-label mt-2 fw-bold">Visitor RFID</label>
                                 <input type="text" name="rfid" id="rfidInput" class="form-control"
                                     value="<?php echo htmlspecialchars($rfid) ?>" required />
@@ -634,13 +744,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                         <!-- Account Password -->
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold">New Password</label>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label mb-2 fw-bold">New Password</label>
                                 <div class="input-group">
                                     <input type="password" id="password" name="password" class="form-control"
                                         minlength="6" />
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword1"
+                                    <button type="button" class="btn btn-outline-secondary toggle" id="togglePassword1"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon1"></i>
                                     </button>
@@ -648,24 +758,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label mt-2">Set a password for this account (min. 6
                                     characters)</label>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label mt-2 fw-bold invisible">Confirm Password</label>
+                            <div class="col-md-4">
+                                <label class="form-label mb-2 fw-bold">Confirm Password</label>
                                 <div class="input-group">
                                     <input type="password" id="confirmPassword" name="confirmPassword"
                                         class="form-control" minlength="6" />
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword2"
+                                    <button type="button" class="btn btn-outline-secondary toggle" id="togglePassword2"
                                         tabindex="-1">
                                         <i class="bi bi-eye" id="toggleIcon2"></i>
                                     </button>
                                 </div>
-                                <label class="form-label mt-2">Confirm password</label>
                                 <div id="passwordError" class="invalid-feedback"></div>
                             </div>
                         </div>
                         <!-- Submit Buttons -->
                         <div class="d-flex justify-content-end gap-2">
                             <button type="submit" class="btn btn-primary">Save</button>
-                            <button onclick="history.back()" class="btn btn-danger">Cancel</button>
+                            <a href="../visitor_accounts.php" class="btn btn-danger">Cancel</a>
                         </div>
                     </form>
                     <!-- Success Modal -->
@@ -732,6 +841,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../admin_side/javascripts/mobileSidebar.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const form = document.querySelector('form');

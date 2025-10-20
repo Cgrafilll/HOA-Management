@@ -281,7 +281,8 @@ if ($household_id) {
                 font-size: 1rem !important;
             }
 
-            .table-responsive {
+            .label,
+            .value {
                 font-size: 0.85rem;
             }
 
@@ -318,12 +319,9 @@ if ($household_id) {
                 top: 0;
             }
 
-            .table-responsive {
+            .label,
+            .value {
                 font-size: 0.75rem;
-            }
-
-            .pagination {
-                font-size: 0.8rem;
             }
         }
 
@@ -447,7 +445,7 @@ if ($household_id) {
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <div class="mt-2 fw-semibold">Resident</div>
+                        <div class="mt-2 fw-semibold label">Resident</div>
                     </div>
                     <!-- Centered Grid for Labels + Values -->
                     <div class="d-flex justify-content-center">
@@ -469,8 +467,8 @@ if ($household_id) {
                             ];
                             foreach ($details as $label => $value): ?>
                                 <div class="row mb-2">
-                                    <div class="col-4 text-start fw-bold"><?php echo $label ?>:</div>
-                                    <div class="col-8 text-start"><?php echo $value ?></div>
+                                    <div class="col-md-4 text-start fw-bold label"><?php echo $label ?>:</div>
+                                    <div class="col-md-8 text-start value"><?php echo $value ?></div>
                                 </div>
                             <?php endforeach; ?>
                         </div>

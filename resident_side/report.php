@@ -240,22 +240,11 @@ if (!empty($resident['profile_picture'])) {
                 font-size: 1rem !important;
             }
 
-            .file-drop-area,
-            textarea {
-                height: 150px;
-            }
-
-            .cloud-icon {
-                font-size: 40px;
-            }
-
-            .form-label,
             .form-control,
+            .form-label,
             .form-select,
             .form-select option,
-            .form-check-label,
-            .file-drop-area .mb-2,
-            .file-drop-area .small,
+            .form-check,
             main span {
                 font-size: 0.85rem;
             }
@@ -293,24 +282,13 @@ if (!empty($resident['profile_picture'])) {
                 top: 0;
             }
 
-            .file-drop-area,
-            textarea {
-                height: 100px;
-            }
-
-            .cloud-icon {
-                font-size: 32px;
-            }
-
-            .form-label,
             .form-control,
+            .form-label,
             .form-select,
             .form-select option,
-            .form-check-label,
-            .file-drop-area .mb-2,
-            .file-drop-area .small,
+            .form-check,
             main span {
-                font-size: 0.75rem;
+                font-size: 0.85rem;
             }
         }
 
@@ -343,6 +321,15 @@ if (!empty($resident['profile_picture'])) {
         .file-drop-area.dragover {
             border-color: #3b82f6;
             background-color: #eff6ff;
+        }
+
+        .file-drop-area.required-highlight {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .file-drop-area.required-highlight .cloud-icon {
+            color: #dc3545;
         }
 
         .cloud-icon {
@@ -445,21 +432,21 @@ if (!empty($resident['profile_picture'])) {
                 <div class="p-3">
                     <form action="add_violation.php" id="violationForm" method="POST" enctype="multipart/form-data">
                         <!-- Personal Info -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Reporter Information</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Reporter Information</span>
+                            <div class="col-md-4">
                                 <input type="text" name="first_name" class="form-control"
                                     value="<?php echo htmlspecialchars($resident['first_name']); ?>" readonly />
                                 <label class=" form-label mt-2">First Name<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="middle_name" class="form-control"
                                     value="<?php echo htmlspecialchars($resident['middle_name']); ?>" readonly />
                                 <label class=" form-label mt-2">Middle Name<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="last_name" class="form-control"
                                     value="<?php echo htmlspecialchars($resident['last_name']); ?>" readonly />
                                 <label class=" form-label mt-2">Last Name<small
@@ -467,9 +454,9 @@ if (!empty($resident['profile_picture'])) {
                             </div>
                         </div>
                         <!-- Contact -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Contact Information</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Contact Information</span>
+                            <div class="col-md-4">
                                 <input type="tel" name="cellphone_number" class="form-control"
                                     value="<?php echo htmlspecialchars($resident['cellphone_number']); ?>"
                                     pattern="[0-9]+" maxlength="15"
@@ -479,26 +466,26 @@ if (!empty($resident['profile_picture'])) {
                             </div>
                         </div>
                         <!-- Incident Details -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Incident Details</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Incident Details</span>
+                            <div class="col-md-4">
                                 <input type="date" name="date_incident" class="form-control" id="dateIncident"
                                     max="<?php echo date('Y-m-d'); ?>" required />
                                 <label class="form-label mt-2">Date of Incident<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="time" name="time_incident" class="form-control" id="timeIncident"
                                     max="<?php echo date('H:i'); ?>" required />
                                 <label class="form-label mt-2">Time of Incident<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="location" class="form-control" required />
                                 <label class="form-label mt-2">Street<small
                                         class="fw-bold text-danger">*</small></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <select name="violation_type" class="form-select" required>
                                     <option value="" selected disabled>Select Violation Type</option>
                                     <option>Excessive Noise</option>
@@ -511,26 +498,26 @@ if (!empty($resident['profile_picture'])) {
                             </div>
                         </div>
                         <!-- Parties Involved Info -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Parties Involved</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Parties Involved</span>
+                            <div class="col-md-4">
                                 <input type="text" name="homeowner_involved" class="form-control" />
                                 <label class=" form-label mt-2">Name of Resident/Household Involved <i>(if
                                         known)</i></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="address_lot_number" class="form-control" />
                                 <label class=" form-label mt-2">Address/Lot Number <i>(if applicable)</i></label>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4">
                                 <input type="text" name="other_parties" class="form-control" />
                                 <label class=" form-label mt-2">Other Parties/Witnesses <i>(optional)</i></label>
                             </div>
                         </div>
                         <!-- Evidence -->
-                        <div class="row">
-                            <span class="fw-bold mb-3">Evidence</span>
-                            <div class="col-md-4 mb-3">
+                        <div class="row mb-3">
+                            <span class="fw-bold mb-2">Evidence</span>
+                            <div class="col-md-4">
                                 <!-- File Upload -->
                                 <div class="file-drop-area" id="fileDropArea" style="height: 250px;">
                                     <div class="cloud-icon">
@@ -543,7 +530,7 @@ if (!empty($resident['profile_picture'])) {
                                         Supported formats: JPEG, PNG, GIF
                                     </div>
                                     <input type="file" id="fileInput" name="evidence" class="d-none"
-                                        accept=".jpeg,.jpg,.png,.gif" required>
+                                        accept="image/jpeg,image/png,image/gif">
                                 </div>
                                 <label class="form-label mt-2">Upload your Evidence<small
                                         class="fw-bold text-danger">*</small></label>
@@ -558,17 +545,25 @@ if (!empty($resident['profile_picture'])) {
                             </div>
                         </div>
                         <hr class="mt-0">
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="anonymous" name="anonymous" value="1">
-                            <label class="form-check-label" for="anonymous">
-                                I want to remain anonymous to the reported party
-                            </label>
-                        </div>
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="accurate" name="accurate" required>
-                            <label class="form-check-label" for="accurate">
-                                I confirm that the information provided is accurate to the best of my knowledge
-                            </label>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="anonymous" name="anonymous"
+                                        value="1">
+                                    <label class="form-check-label" for="anonymous">
+                                        I want to remain anonymous to the reported party
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="accurate" name="accurate"
+                                        required>
+                                    <label class="form-check-label" for="accurate">
+                                        I confirm that the information provided is accurate to the best of my knowledge
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                         <!-- Submit Buttons -->
                         <div class="d-flex justify-content-end gap-2">
@@ -658,21 +653,161 @@ if (!empty($resident['profile_picture'])) {
             let confirmBtn = document.getElementById("confirmSaveBtn");
             let violationForm = document.getElementById("violationForm");
 
-            // Add form submission handler to add validation classes
+            // ============================================
+            // FILE UPLOAD FUNCTIONALITY
+            // ============================================
+            const fileDropArea = document.getElementById('fileDropArea');
+            const fileInput = document.getElementById('fileInput');
+            const browseLink = document.getElementById('browseLink');
+            const filePreview = document.getElementById('filePreview');
+
+            if (fileDropArea && fileInput && browseLink && filePreview) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    fileDropArea.addEventListener(eventName, preventDefaults, false);
+                    document.body.addEventListener(eventName, preventDefaults, false);
+                });
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    fileDropArea.addEventListener(eventName, highlight, false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    fileDropArea.addEventListener(eventName, unhighlight, false);
+                });
+
+                fileDropArea.addEventListener('drop', handleDrop, false);
+
+                browseLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    fileInput.click();
+                });
+
+                fileInput.addEventListener('change', (e) => {
+                    handleFiles(e.target.files);
+                });
+            }
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function highlight(e) {
+                fileDropArea.classList.add('dragover');
+            }
+
+            function unhighlight(e) {
+                fileDropArea.classList.remove('dragover');
+            }
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                fileInput.files = files;
+                handleFiles(files);
+            }
+
+            function handleFiles(files) {
+                if (files.length === 0) return;
+
+                const file = files[0]; // Take only the first file
+
+                // Validate file type
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+
+                if (!allowedTypes.includes(file.type)) {
+                    document.getElementById("errorMessage").innerText = "Please select a valid file type for evidence (JPEG, PNG, GIF)";
+                    new bootstrap.Modal(document.getElementById("errorModal")).show();
+                    return;
+                }
+
+                // Validate file size (max 10MB)
+                const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+                if (file.size > maxSize) {
+                    document.getElementById("errorMessage").innerText = "File size must be less than 10MB";
+                    new bootstrap.Modal(document.getElementById("errorModal")).show();
+                    return;
+                }
+
+                // Update the file input
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+
+                // Display file preview
+                filePreview.innerHTML = `
+                <div class="alert alert-success d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-file-earmark-image me-2"></i>
+                        <div>
+                            <strong>${file.name}</strong><br>
+                            <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" onclick="clearFile()"></button>
+                </div>
+            `;
+
+                // Remove required highlight if present
+                if (fileDropArea) {
+                    fileDropArea.classList.remove('required-highlight');
+                }
+            }
+
+            // Make clearFile global so it can be accessed from inline onclick
+            window.clearFile = function () {
+                if (fileInput) fileInput.value = '';
+                if (filePreview) filePreview.innerHTML = '';
+                // Don't add highlight when clearing - only when submitting without file
+                if (fileDropArea) fileDropArea.classList.remove('required-highlight');
+            }
+
+            function validateFileUpload() {
+                if (!fileInput || !fileDropArea) return true;
+
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    fileDropArea.classList.add('required-highlight');
+                    return false;
+                } else {
+                    fileDropArea.classList.remove('required-highlight');
+                    return true;
+                }
+            }
+
+            // ============================================
+            // FORM SUBMISSION
+            // ============================================
             violationForm.addEventListener("submit", function (event) {
                 event.preventDefault(); // Prevent default submission
 
-                // Add Bootstrap validation class
+                // Validate file upload FIRST (before other validations)
+                const fileValid = validateFileUpload();
+
+                // Add Bootstrap validation class to show validation errors
                 violationForm.classList.add("was-validated");
 
-                // Check if form is valid
-                if (violationForm.checkValidity()) {
-                    // Show confirmation modal if form is valid
-                    let confirmModal = new bootstrap.Modal(document.getElementById("confirmModal"));
-                    confirmModal.show();
+                // If file is not valid, stop here
+                if (!fileValid) {
+                    fileDropArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    document.getElementById("errorMessage").innerText = "Please upload evidence file before submitting.";
+                    new bootstrap.Modal(document.getElementById("errorModal")).show();
+                    return;
                 }
-                // If form is invalid, the was-validated class will show the validation errors
+
+                // Check if form is valid (HTML5 validation for other fields)
+                if (!violationForm.checkValidity()) {
+                    // Form has validation errors, don't proceed
+                    return;
+                }
+
+                // All validations passed, show confirmation modal
+                showConfirmationModal();
             });
+
+            function showConfirmationModal() {
+                let confirmModal = new bootstrap.Modal(document.getElementById("confirmModal"));
+                confirmModal.show();
+            }
 
             confirmBtn.addEventListener("click", function () {
                 let formData = new FormData(violationForm);
@@ -688,6 +823,8 @@ if (!empty($resident['profile_picture'])) {
                             violationForm.reset();
                             // Remove validation class after successful reset
                             violationForm.classList.remove("was-validated");
+                            // Clear file preview
+                            if (filePreview) filePreview.innerHTML = '';
                         } else {
                             document.getElementById("errorMessage").innerText = data;
                             new bootstrap.Modal(document.getElementById("errorModal")).show();
@@ -703,70 +840,34 @@ if (!empty($resident['profile_picture'])) {
                 confirmModal.hide();
             });
 
-            // File upload functionality
-            const fileDropArea = document.getElementById('fileDropArea');
-            const fileInput = document.getElementById('fileInput');
-            const browseLink = document.getElementById('browseLink');
-            const filePreview = document.getElementById('filePreview');
+            // ============================================
+            // DATE AND TIME VALIDATION
+            // ============================================
+            const dateIncident = document.getElementById('dateIncident');
+            const timeIncident = document.getElementById('timeIncident');
 
-            // Browse link click handler
-            browseLink.addEventListener('click', function (e) {
-                e.preventDefault();
-                fileInput.click();
-            });
+            if (dateIncident && timeIncident) {
+                dateIncident.max = new Date().toISOString().split('T')[0];
 
-            // Drag and drop handlers
-            fileDropArea.addEventListener('dragover', function (e) {
-                e.preventDefault();
-                fileDropArea.classList.add('dragover');
-            });
+                // Update time max attribute based on selected date
+                dateIncident.addEventListener('change', function () {
+                    const selectedDate = new Date(this.value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    selectedDate.setHours(0, 0, 0, 0);
 
-            fileDropArea.addEventListener('dragleave', function (e) {
-                e.preventDefault();
-                fileDropArea.classList.remove('dragover');
-            });
-
-            fileDropArea.addEventListener('drop', function (e) {
-                e.preventDefault();
-                fileDropArea.classList.remove('dragover');
-
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    fileInput.files = files;
-                    displayFilePreview(files[0]);
-                }
-            });
-
-            // File input change handler
-            fileInput.addEventListener('change', function () {
-                if (this.files.length > 0) {
-                    displayFilePreview(this.files[0]);
-                }
-            });
-
-            // Function to display file preview
-            function displayFilePreview(file) {
-                const fileName = file.name;
-                const fileSize = (file.size / 1024 / 1024).toFixed(2); // Convert to MB
-
-                filePreview.innerHTML = `
-            <div class="alert alert-success d-flex align-items-center" role="alert">
-                <i class="bi bi-file-earmark-check me-2"></i>
-                <div>
-                    <strong>${fileName}</strong> (${fileSize} MB)
-                    <button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="removeFile()">
-                        <i class="bi bi-x"></i>
-                    </button>
-                </div>
-            </div>
-        `;
+                    if (selectedDate.getTime() === today.getTime()) {
+                        // If today, set max time to current time
+                        const now = new Date();
+                        const hours = String(now.getHours()).padStart(2, '0');
+                        const minutes = String(now.getMinutes()).padStart(2, '0');
+                        timeIncident.max = `${hours}:${minutes}`;
+                    } else {
+                        // If past date, remove time restriction
+                        timeIncident.removeAttribute('max');
+                    }
+                });
             }
-
-            // Function to remove selected file
-            window.removeFile = function () {
-                fileInput.value = '';
-                filePreview.innerHTML = '';
-            };
         });
     </script>
 </body>

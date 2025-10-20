@@ -1,0 +1,638 @@
+<?php
+// ✅ FIX: Set session configuration BEFORE session_start()
+ini_set('session.gc_maxlifetime', 7200);
+ini_set('session.cookie_lifetime', 7200);
+
+session_set_cookie_params([
+    'lifetime' => 7200,
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']),
+    'httponly' => true,
+    'samesite' => 'Strict'
+]);
+
+session_start();
+
+require '../../rfid-api/db.php';
+
+// Include PHPMailer
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
+require_once __DIR__ . '/../../admin_side/amenity_booking/PHPMailer/src/Exception.php';
+require_once __DIR__ . '/../../admin_side/amenity_booking/PHPMailer/src/PHPMailer.php';
+require_once __DIR__ . '/../../admin_side/amenity_booking/PHPMailer/src/SMTP.php';
+
+// Email configuration
+class EmailConfig
+{
+    const SMTP_HOST = 'smtp.gmail.com';
+    const SMTP_PORT = 587;
+    const SMTP_USERNAME = 'lukemia19@gmail.com';
+    const SMTP_PASSWORD = 'uezbntejweozhniv';
+    const FROM_EMAIL = 'noreply@nsshai.com';
+    const FROM_NAME = 'NSSHAI HOA Management';
+    const REPLY_TO = 'admin@nsshai.com';
+}
+
+// Generate auto-incrementing invoice number in format: YYYYMMDD-000n
+function generateInvoiceNumber($conn)
+{
+    $today = date('Ymd');
+    $pattern = $today . '-%';
+
+    try {
+        $stmt = $conn->prepare("SELECT invoice_number FROM amenity_bookings WHERE invoice_number LIKE ? ORDER BY invoice_number DESC LIMIT 1");
+        $stmt->bind_param("s", $pattern);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($row = $result->fetch_assoc()) {
+            $lastInvoice = $row['invoice_number'];
+            $lastNumber = (int) substr($lastInvoice, -4);
+            $nextNumber = $lastNumber + 1;
+        } else {
+            $nextNumber = 1;
+        }
+
+        $invoiceNumber = $today . '-' . sprintf('%04d', $nextNumber);
+        $stmt->close();
+        return $invoiceNumber;
+    } catch (Exception $e) {
+        return $today . '-' . sprintf('%04d', rand(1, 9999));
+    }
+}
+
+// Robust email sending function using PHPMailer
+function sendBookingReceipt($recipientEmail, $recipientName, $bookingDetails)
+{
+    $mail = new PHPMailer(true);
+
+    try {
+        $mail->isSMTP();
+        $mail->Host = EmailConfig::SMTP_HOST;
+        $mail->SMTPAuth = true;
+        $mail->Username = EmailConfig::SMTP_USERNAME;
+        $mail->Password = EmailConfig::SMTP_PASSWORD;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = EmailConfig::SMTP_PORT;
+
+        $mail->setFrom(EmailConfig::FROM_EMAIL, EmailConfig::FROM_NAME);
+        $mail->addAddress($recipientEmail, $recipientName);
+        $mail->addReplyTo(EmailConfig::REPLY_TO, 'NSSHAI Admin');
+
+        $mail->isHTML(true);
+        $mail->Subject = 'Amenity Booking Confirmation - NSSHAI [' . $bookingDetails['reservation_code'] . ']';
+        $mail->Body = generateEmailTemplate($recipientName, $bookingDetails);
+        $mail->AltBody = generatePlainTextEmail($recipientName, $bookingDetails);
+
+        $result = $mail->send();
+        error_log("✅ PHPMailer: Email sent successfully to " . $recipientEmail);
+        return true;
+
+    } catch (Exception $e) {
+        error_log("❌ PHPMailer Error: {$mail->ErrorInfo}");
+        error_log("❌ Exception: {$e->getMessage()}");
+        return false;
+    }
+}
+
+// Generate HTML email template (with status-based messaging and vehicle info)
+function generateEmailTemplate($recipientName, $bookingDetails)
+{
+    $reservationCode = htmlspecialchars($bookingDetails['reservation_code']);
+    $amenity = htmlspecialchars($bookingDetails['amenity']);
+    $reservationDate = date('F j, Y', strtotime($bookingDetails['reservation_date']));
+
+    // Determine status badge and message based on payment status
+    $status = $bookingDetails['status'] ?? 'pending';
+    $statusBadge = '';
+    $statusMessage = '';
+
+    switch ($status) {
+        case 'paid':
+            $statusBadge = '<span class="status-badge" style="background-color: #28a745;">Fully Paid</span>';
+            $statusMessage = 'Your payment has been received in full. Thank you!';
+            break;
+        case 'partial':
+            $statusBadge = '<span class="status-badge" style="background-color: #ffc107;">Partial Payment</span>';
+            $statusMessage = 'You have made a partial payment. Please complete the remaining balance before your scheduled date.';
+            break;
+        case 'pending':
+        default:
+            $statusBadge = '<span class="status-badge" style="background-color: #dc3545;">Payment Pending</span>';
+            $statusMessage = 'Your payment is pending. Please complete the payment to confirm your booking.';
+            break;
+    }
+
+    // Determine time slot with actual hours
+    $timeSlot = '';
+    switch ($bookingDetails['rate']) {
+        case 'day':
+            $timeSlot = 'Day Session (9:00 AM - 5:00 PM)';
+            break;
+        case 'night':
+            $timeSlot = 'Night Session (5:00 PM - 10:00 PM)';
+            break;
+        case 'whole':
+            $timeSlot = 'Whole Day (9:00 AM - 10:00 PM)';
+            break;
+        default:
+            $timeSlot = ucfirst($bookingDetails['rate']) . ' Session';
+            break;
+    }
+
+    $html = '
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Booking Confirmation</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f9fc; margin: 0; padding: 0; }
+            .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+            
+            .header { background: linear-gradient(135deg, #198754 0%, #20c997 100%); color: white; padding: 40px 30px; text-align: center; }
+            .header h1 { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+            .header p { font-size: 16px; opacity: 0.9; margin: 0; }
+            
+            .content { padding: 40px 30px; }
+            .greeting { font-size: 18px; color: #2c3e50; margin-bottom: 20px; }
+            .intro-text { font-size: 16px; color: #34495e; line-height: 1.6; margin-bottom: 30px; }
+            
+            .reservation-banner { background: linear-gradient(135deg, #e3f2fd 0%, #f0f9ff 100%); border: 2px solid #2196f3; border-radius: 12px; padding: 25px; text-align: center; margin: 30px 0; position: relative; overflow: hidden; }
+            .reservation-banner::before { content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(33,150,243,0.1) 0%, transparent 70%); }
+            .reservation-banner .icon { font-size: 48px; margin-bottom: 15px; position: relative; z-index: 2; }
+            .reservation-banner h3 { font-size: 18px; color: #1976d2; margin-bottom: 10px; position: relative; z-index: 2; }
+            .reservation-banner .code { font-size: 32px; font-weight: bold; color: #0d47a1; letter-spacing: 3px; font-family: "Courier New", monospace; position: relative; z-index: 2; }
+            
+            .booking-details { background-color: #f8f9fa; border-radius: 12px; padding: 25px; margin: 30px 0; border-left: 5px solid #198754; }
+            .booking-details h3 { color: #198754; font-size: 20px; margin-bottom: 20px; display: flex; align-items: center; }
+            .booking-details h3::before { content: "📋"; margin-right: 10px; }
+            
+            .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e9ecef; }
+            .detail-row:last-child { border-bottom: none; }
+            .detail-label { font-weight: 600; color: #495057; font-size: 14px; flex: 0 0 auto; margin-right: 20px; }
+            .detail-value { color: #212529; font-size: 14px; text-align: right; flex: 0 0 auto; }
+            .detail-value.highlight { background-color: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-weight: 600; }
+
+            .important-section { background: linear-gradient(135deg, #fff3cd 0%, #fef9e7 100%); border: 1px solid #ffc107; border-radius: 12px; padding: 25px; margin: 30px 0; }
+            .important-section h4 { color: #856404; font-size: 18px; margin-bottom: 15px; display: flex; align-items: center; }
+            .important-section h4::before { content: "⚠️"; margin-right: 10px; }
+            .important-section ul { list-style: none; padding: 0; }
+            .important-section li { color: #856404; margin-bottom: 8px; padding-left: 20px; position: relative; font-size: 14px; line-height: 1.5; }
+            .important-section li::before { content: "•"; color: #ffc107; font-weight: bold; position: absolute; left: 0; }
+            
+            .contact-section { background-color: #e8f5e8; border-radius: 12px; padding: 20px; margin: 30px 0; text-align: center; }
+            .contact-section h4 { color: #198754; margin-bottom: 10px; }
+            .contact-section p { color: #2d5a2d; margin: 5px 0; font-size: 14px; }
+            .contact-section .phone { font-size: 18px; font-weight: bold; color: #198754; }
+            
+            .footer { background-color: #2c3e50; color: #ecf0f1; padding: 30px; text-align: center; }
+            .footer h4 { margin-bottom: 15px; color: #3498db; }
+            .footer p { margin: 5px 0; font-size: 13px; opacity: 0.8; }
+            
+            .status-badge { display: inline-block; color: #ffffff; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+            
+            @media only screen and (max-width: 600px) {
+                .email-container { width: 100% !important; }
+                .header, .content, .footer { padding: 20px !important; }
+                .reservation-banner .code { font-size: 24px; }
+                .detail-row { flex-direction: column; align-items: flex-start; }
+                .detail-value { text-align: left; margin-top: 5px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="email-container">
+            <div class="header">
+                <h1>Booking Confirmed!</h1>
+                <p>Neopolitan Sitio Seville Homeowners Association</p>
+            </div>
+            
+            <div class="content">
+                <div class="greeting">Hello ' . htmlspecialchars($recipientName) . '!</div>
+                
+                <div class="intro-text">
+                    Thank you for your amenity reservation! Your booking has been successfully submitted with status: ' . $statusBadge . '
+                    <br><br>' . $statusMessage . '
+                </div>
+                
+                <div class="reservation-banner">
+                    <div class="icon">🎫</div>
+                    <h3>Your Reservation Code</h3>
+                    <div class="code">' . $reservationCode . '</div>
+                </div>
+                
+                <div class="booking-details">
+                    <h3>Booking Summary</h3>';
+
+    $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">🏢 Amenity</span>
+                        <span class="detail-value highlight">' . $amenity . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">📅 Date</span>
+                        <span class="detail-value">' . $reservationDate . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">⏰ Time Slot</span>
+                        <span class="detail-value">' . $timeSlot . '</span>
+                    </div>';
+
+    if ($bookingDetails['guests'] > 0) {
+        $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">👥 Guests</span>
+                        <span class="detail-value">' . $bookingDetails['guests'] . ' person(s)</span>
+                    </div>';
+    }
+
+    $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">⭐ Exclusive Booking</span>
+                        <span class="detail-value">' . ucfirst($bookingDetails['exclusive_booking']) . '</span>
+                    </div>';
+
+    if ($bookingDetails['chairs'] > 0 || $bookingDetails['tables'] > 0) {
+        $addOns = [];
+        if ($bookingDetails['chairs'] > 0) {
+            $addOns[] = $bookingDetails['chairs'] . ' Chair(s) - ₱' . number_format($bookingDetails['chairs'] * 12, 2);
+        }
+        if ($bookingDetails['tables'] > 0) {
+            $addOns[] = $bookingDetails['tables'] . ' Table(s) - ₱' . number_format($bookingDetails['tables'] * 20, 2);
+        }
+        $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">🪑 Add-ons</span>
+                        <span class="detail-value">' . implode('<br>', $addOns) . '</span>
+                    </div>';
+    }
+
+    if ($bookingDetails['vehicles'] > 0) {
+        $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">🚗 Vehicles</span>
+                        <span class="detail-value">' . $bookingDetails['vehicles'] . ' vehicle(s)</span>
+                    </div>';
+
+        if (!empty($bookingDetails['plate_numbers'])) {
+            $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">🏷️ Plate Numbers</span>
+                        <span class="detail-value">' . htmlspecialchars($bookingDetails['plate_numbers']) . '</span>
+                    </div>';
+        }
+    }
+
+    $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">💳 Payment Method</span>
+                        <span class="detail-value">' . ucfirst($bookingDetails['payment_method']) . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">💰 Total Amount</span>
+                        <span class="detail-value highlight">₱' . number_format($bookingDetails['total_amount'], 2) . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">💵 Amount Paid</span>
+                        <span class="detail-value">₱' . number_format($bookingDetails['amount_paid'], 2) . '</span>
+                    </div>';
+
+    if (!empty($bookingDetails['reference_number'])) {
+        $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">🔢 Reference Number</span>
+                        <span class="detail-value">' . htmlspecialchars($bookingDetails['reference_number']) . '</span>
+                    </div>';
+    }
+
+    if (!empty($bookingDetails['invoice_number'])) {
+        $html .= '
+                    <div class="detail-row">
+                        <span class="detail-label">📋 Invoice Number</span>
+                        <span class="detail-value">' . htmlspecialchars($bookingDetails['invoice_number']) . '</span>
+                    </div>';
+    }
+
+    $html .= '
+                </div>
+                
+                <div class="important-section">
+                    <h4>Important Reminders</h4>
+                    <ul>';
+
+    if ($status === 'paid') {
+        $html .= '
+                        <li>Your booking is <strong>FULLY PAID</strong>. Thank you for your payment!</li>';
+    } elseif ($status === 'partial') {
+        $html .= '
+                        <li>Your booking has <strong>PARTIAL PAYMENT</strong>. Please complete the remaining balance before your scheduled date.</li>
+                        <li>Remaining balance: <strong>₱' . number_format($bookingDetails['total_amount'] - $bookingDetails['amount_paid'], 2) . '</strong></li>';
+    } else {
+        $html .= '
+                        <li>Your booking payment is <strong>PENDING</strong>. Please complete your payment to confirm your reservation.</li>
+                        <li>Minimum 50% down payment is required to proceed with your booking.</li>';
+    }
+
+    $html .= '
+                        <li>Please save your reservation code <strong>' . $reservationCode . '</strong> for future reference.</li>
+                        <li>Payment must be received before your scheduled date: <strong>' . $reservationDate . '</strong></li>
+                        <li>Rescheduling is allowed but must be requested at least 24 hours in advance.</li>';
+
+    if ($bookingDetails['vehicles'] > 0) {
+        $html .= '
+                        <li>Please ensure all registered vehicles (' . htmlspecialchars($bookingDetails['plate_numbers']) . ') are used during your visit.</li>';
+    }
+
+    $html .= '
+                    </ul>
+                </div>
+                
+                <div class="contact-section">
+                    <h4>Need Help?</h4>
+                    <p>For questions or concerns about your booking:</p>
+                    <p class="phone">📞 8-2457647</p>
+                    <p>📧 admin@nsshai.com</p>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px; color: #666;">
+                    <p>Thank you for choosing NSSHAI amenities!</p>
+                    <p style="margin-top: 15px;"><strong>Best regards,<br>NSSHAI Administration Team</strong></p>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <h4>Neopolitan Sitio Seville Homeowners Association, Inc.</h4>
+                <p>This is an automated confirmation email. Please do not reply directly to this message.</p>
+                <p>For support and inquiries, please contact our office at 8-2457647</p>
+                <p style="margin-top: 15px; font-size: 12px;">© 2025 NSSHAI. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>';
+
+    return $html;
+}
+
+// Generate plain text version
+function generatePlainTextEmail($recipientName, $bookingDetails)
+{
+    $status = $bookingDetails['status'] ?? 'pending';
+    $statusText = strtoupper($status);
+
+    $timeSlot = '';
+    switch ($bookingDetails['rate']) {
+        case 'day':
+            $timeSlot = 'Day Session (9:00 AM - 5:00 PM)';
+            break;
+        case 'night':
+            $timeSlot = 'Night Session (5:00 PM - 10:00 PM)';
+            break;
+        case 'whole':
+            $timeSlot = 'Whole Day (9:00 AM - 10:00 PM)';
+            break;
+        default:
+            $timeSlot = ucfirst($bookingDetails['rate']) . ' Session';
+            break;
+    }
+
+    $text = "AMENITY BOOKING CONFIRMATION - NSSHAI\n";
+    $text .= "=====================================\n\n";
+    $text .= "Hello " . $recipientName . "!\n\n";
+    $text .= "Thank you for your amenity reservation. Your booking has been successfully submitted.\n\n";
+    $text .= "PAYMENT STATUS: " . $statusText . "\n";
+    $text .= "RESERVATION CODE: " . $bookingDetails['reservation_code'] . "\n";
+
+    if (!empty($bookingDetails['invoice_number'])) {
+        $text .= "INVOICE NUMBER: " . $bookingDetails['invoice_number'] . "\n";
+    }
+
+    $text .= "\nBOOKING DETAILS:\n";
+    $text .= "- Amenity: " . $bookingDetails['amenity'] . "\n";
+    $text .= "- Date: " . date('F j, Y', strtotime($bookingDetails['reservation_date'])) . "\n";
+    $text .= "- Time Slot: " . $timeSlot . "\n";
+
+    if ($bookingDetails['guests'] > 0) {
+        $text .= "- Guests: " . $bookingDetails['guests'] . "\n";
+    }
+
+    $text .= "- Exclusive Booking: " . ucfirst($bookingDetails['exclusive_booking']) . "\n";
+
+    if ($bookingDetails['vehicles'] > 0) {
+        $text .= "- Vehicles: " . $bookingDetails['vehicles'] . "\n";
+        if (!empty($bookingDetails['plate_numbers'])) {
+            $text .= "- Plate Numbers: " . $bookingDetails['plate_numbers'] . "\n";
+        }
+    }
+
+    $text .= "- Payment Method: " . ucfirst($bookingDetails['payment_method']) . "\n";
+    $text .= "- Total Amount: ₱" . number_format($bookingDetails['total_amount'], 2) . "\n";
+    $text .= "- Amount Paid: ₱" . number_format($bookingDetails['amount_paid'], 2) . "\n";
+
+    if (!empty($bookingDetails['reference_number'])) {
+        $text .= "- Reference Number: " . $bookingDetails['reference_number'] . "\n";
+    }
+
+    $text .= "\nIMPORTANT REMINDERS:\n";
+
+    if ($status === 'paid') {
+        $text .= "- Your booking is FULLY PAID\n";
+    } elseif ($status === 'partial') {
+        $text .= "- Your booking has PARTIAL PAYMENT\n";
+        $text .= "- Remaining balance: ₱" . number_format($bookingDetails['total_amount'] - $bookingDetails['amount_paid'], 2) . "\n";
+    } else {
+        $text .= "- Your booking payment is PENDING\n";
+        $text .= "- Minimum 50% down payment required\n";
+    }
+
+    $text .= "- Keep your reservation code safe\n";
+    $text .= "- Payment due before: " . date('F j, Y', strtotime($bookingDetails['reservation_date'])) . "\n";
+    $text .= "- Contact us at 8-2457647 for questions\n";
+
+    if ($bookingDetails['vehicles'] > 0) {
+        $text .= "- Use registered vehicles: " . $bookingDetails['plate_numbers'] . "\n";
+    }
+
+    $text .= "\nBest regards,\nNSSHAI Administration Team";
+
+    return $text;
+}
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $amenity = $_GET['reserve'] ?? '';
+
+    $amenityPrefixes = [
+        'Gazebo' => 'GZB',
+        'Swimming Pool' => 'SWP',
+        'Basketball Court' => 'BBC',
+        'Clubhouse' => 'CLB'
+    ];
+
+    $prefix = $amenityPrefixes[$amenity] ?? 'RSV';
+
+    try {
+        $stmt = $conn->prepare("SELECT reservation_code FROM amenity_bookings WHERE amenity = ? AND reservation_code LIKE ? ORDER BY reservation_code DESC LIMIT 1");
+        $likePattern = $prefix . '%';
+        $stmt->bind_param("ss", $amenity, $likePattern);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($row = $result->fetch_assoc()) {
+            $lastCode = $row['reservation_code'];
+            $numericPart = (int) substr($lastCode, strlen($prefix));
+            $nextNumber = $numericPart + 1;
+        } else {
+            $nextNumber = 1;
+        }
+
+        $reservation_code = $prefix . sprintf('%05d', $nextNumber);
+        $stmt->close();
+    } catch (Exception $e) {
+        $reservation_code = $prefix . rand(10000, 99999);
+    }
+
+    $invoice_number = generateInvoiceNumber($conn);
+
+    // ✅ For resident side: admin_id and homeowner_id are NULL
+    $admin_id = null;
+    $visitor_id = $_SESSION['visitor_id'] ?? null;
+    $homeowner_id = null;
+
+    // Form data
+    $userType = 'visitor';  // Always visitor for visitor side
+    $firstName = $_POST['firstName'] ?? '';
+    $middleName = $_POST['middleName'] ?? '';
+    $lastName = $_POST['lastName'] ?? '';
+    $emailAddress = $_POST['emailAddress'] ?? '';
+    $reservationDate = $_POST['reservationDate'] ?? '';
+    $rate = $_POST['rate'] ?? '';
+    $payment = $_POST['payment'] ?? '';
+    $exclusiveBooking = $_POST['exclusiveBooking'] ?? 'no';
+    $referenceNumber = $_POST['referenceNumber'] ?? '';
+    $guests = isset($_POST['guests']) ? (int) $_POST['guests'] : 0;
+    $chairs = isset($_POST['chairs']) ? (int) $_POST['chairs'] : 0;
+    $tables = isset($_POST['tables']) ? (int) $_POST['tables'] : 0;
+    $vehicles = isset($_POST['cars']) ? (int) $_POST['cars'] : 0;
+    $plateNumbers = isset($_POST['plates']) ? trim($_POST['plates']) : '';
+
+    $total = 0.0;
+    if (isset($_POST['total']) && !empty($_POST['total'])) {
+        $totalStr = str_replace(',', '', $_POST['total']);
+        $total = (float) $totalStr;
+    }
+
+    $amountPaid = isset($_POST['amountPaid']) ? (float) $_POST['amountPaid'] : 0.0;
+
+    // Calculate status based on amount paid vs total amount
+    if ($amountPaid >= $total) {
+        $status = 'paid';
+    } elseif ($amountPaid >= ($total * 0.5)) {
+        $status = 'partial';
+    } else {
+        $status = 'pending';
+    }
+
+    // File upload
+    $proof_of_payment = null;
+    if (isset($_FILES['proofOfPayment']) && $_FILES['proofOfPayment']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = "../uploads/";
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        $filename = uniqid() . "_" . basename($_FILES['proofOfPayment']['name']);
+        $target_file = $upload_dir . $filename;
+        if (move_uploaded_file($_FILES['proofOfPayment']['tmp_name'], $target_file)) {
+            $proof_of_payment = $target_file;
+        }
+    }
+
+    $stmt = $conn->prepare("
+        INSERT INTO amenity_bookings 
+        (reservation_code, admin_id, homeowner_id, visitor_id, amenity, user_type, reservation_date, guests, rate, payment_method, exclusive_booking, chairs, tables, vehicles, plate_numbers, reference_number, total_amount, amount_paid, proof_of_payment, invoice_number, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+
+    if (!$stmt) {
+        error_log("❌ Database prepare failed: " . $conn->error);
+        header("Location: reserve_booking.php?reserve=" . urlencode($amenity) . "&error=1&message=" . urlencode("Database error"));
+        exit();
+    }
+
+    $stmt->bind_param(
+        "sssssssisssiiissddsss",
+        $reservation_code,
+        $admin_id,
+        $homeowner_id,
+        $visitor_id,
+        $amenity,
+        $userType,
+        $reservationDate,
+        $guests,
+        $rate,
+        $payment,
+        $exclusiveBooking,
+        $chairs,
+        $tables,
+        $vehicles,
+        $plateNumbers,
+        $referenceNumber,
+        $total,
+        $amountPaid,
+        $proof_of_payment,
+        $invoice_number,
+        $status
+    );
+
+    if ($stmt->execute()) {
+        error_log("✅ Database insertion successful: " . $reservation_code);
+
+        $recipientName = trim($firstName . ' ' . $lastName);
+
+        $bookingDetails = [
+            'reservation_code' => $reservation_code,
+            'invoice_number' => $invoice_number,
+            'amenity' => $amenity,
+            'reservation_date' => $reservationDate,
+            'rate' => $rate,
+            'guests' => $guests,
+            'exclusive_booking' => $exclusiveBooking,
+            'chairs' => $chairs,
+            'tables' => $tables,
+            'vehicles' => $vehicles,
+            'plate_numbers' => $plateNumbers,
+            'payment_method' => $payment,
+            'total_amount' => $total,
+            'amount_paid' => $amountPaid,
+            'reference_number' => $referenceNumber,
+            'status' => $status
+        ];
+
+        // Send the email receipt with PHPMailer
+        $emailSent = sendBookingReceipt($emailAddress, $recipientName, $bookingDetails);
+
+        if ($emailSent) {
+            error_log("✅ PHPMailer: Email receipt sent successfully to: " . $emailAddress . " [Code: " . $reservation_code . ", Invoice: " . $invoice_number . "]");
+        } else {
+            error_log("❌ PHPMailer: Failed to send email receipt to: " . $emailAddress . " [Code: " . $reservation_code . ", Invoice: " . $invoice_number . "]");
+        }
+
+        // Success - redirect regardless of email status
+        header("Location: reserve_booking.php?reserve=" . urlencode($amenity) . "&success=1&code=" . urlencode($reservation_code) . "&invoice=" . urlencode($invoice_number));
+        $stmt->close();
+        $conn->close();
+        exit();
+    } else {
+        error_log("❌ Database execution failed: " . $stmt->error);
+        header("Location: reserve_booking.php?reserve=" . urlencode($amenity) . "&error=1&message=" . urlencode($stmt->error));
+        $stmt->close();
+        $conn->close();
+        exit();
+    }
+}
+?>

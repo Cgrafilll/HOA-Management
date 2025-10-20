@@ -25,7 +25,7 @@ if (!isset($_SESSION['household_id'])) {
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 7200)) {
     session_unset();
     session_destroy();
-    header("Location: login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    header("Location: login.php?error=" . urlencode("Your session has expired. Please log in again."));
     exit;
 }
 
@@ -256,10 +256,10 @@ if (isset($_GET['action'])) {
                         echo json_encode(['success' => false, 'error' => 'This invoice has already been paid in full']);
                         exit;
                     }
-                    
+
                     // Calculate balance
                     $balance_due = $booking['total_amount'] - $booking['amount_paid'];
-                    
+
                     // Additional check: if balance is 0 or negative
                     if ($balance_due <= 0) {
                         echo json_encode(['success' => false, 'error' => 'This invoice has no remaining balance']);
@@ -500,7 +500,7 @@ if (isset($_GET['action'])) {
                         echo json_encode(['success' => false, 'error' => 'This invoice has already been paid in full']);
                         exit;
                     }
-                    
+
                     // Additional check: if balance remaining is 0 or negative
                     if ($billing['balance_remaining'] <= 0) {
                         echo json_encode(['success' => false, 'error' => 'This invoice has no remaining balance']);
@@ -629,10 +629,10 @@ if (isset($_GET['action'])) {
                         $stmt->bind_param("dsi", $new_amount_paid, $new_status, $reference_id);
                         $stmt->execute();
 
-                   } elseif (in_array($category, ['Monthly Dues', 'Penalty Fees', 'Other Fees'])) {
-                    if ($user_type !== 'Homeowner/Resident') {
-                        throw new Exception($category . ' only apply to homeowners/residents');
-                    }
+                    } elseif (in_array($category, ['Monthly Dues', 'Penalty Fees', 'Other Fees'])) {
+                        if ($user_type !== 'Homeowner/Resident') {
+                            throw new Exception($category . ' only apply to homeowners/residents');
+                        }
                         // Map category to database value
                         $db_billing_category = '';
                         if ($category === 'Monthly Dues') {
@@ -730,26 +730,44 @@ if (isset($_GET['action'])) {
 
         * {
             font-family: "Montserrat", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow-x: hidden;
         }
 
         header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 1030;
+            height: 76px;
+            background-color: white;
         }
 
         .sidebar {
             width: 250px;
-            height: 100vh;
+            height: calc(100vh - 76px);
             position: fixed;
-            top: 20;
+            top: 76px;
             left: 0;
             background-color: #1F2937;
             overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1020;
+            transition: transform 0.3s ease;
         }
 
         main {
             margin-left: 250px;
+            margin-top: 76px;
+            min-height: calc(100vh - 76px);
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
         }
 
         .sidebar a,
@@ -773,6 +791,32 @@ if (isset($_GET['action'])) {
         .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar .logout {
+            flex-shrink: 0;
+            border-top: 1px solid #374151;
+            padding-top: 12px;
         }
 
         .sidebar .btn-toggle {
@@ -804,16 +848,33 @@ if (isset($_GET['action'])) {
             transform: rotate(180deg);
         }
 
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
         /* Make Cancel button slightly darker on hover */
         #confirmModal .btn-cancel:hover {
             background-color: #d6d8db;
-            /* slightly darker gray */
             color: #000;
         }
 
         .form-control.border-danger {
             border: 2px solid #dc3545 !important;
-            /* force red */
         }
 
         .file-drop-area {
@@ -840,6 +901,7 @@ if (isset($_GET['action'])) {
             color: #9ca3af;
             margin-bottom: 16px;
         }
+
         /* Force disable in-office payment for residents */
         #inOffice.disabled {
             opacity: 0.5 !important;
@@ -853,13 +915,306 @@ if (isset($_GET['action'])) {
             opacity: 0.5 !important;
             background-color: #e9ecef !important;
         }
+
+        .method-card {
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .method-card.active {
+            border: 2px solid #007bff;
+            background-color: #e9f2ff;
+        }
+
+        .method-card:hover {
+            border-color: #007bff;
+        }
+
+        .loading {
+            color: #6c757d;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .form-select:disabled {
+            background-color: #f8f9fa;
+            opacity: 0.8;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                top: 76px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            header .logo-container {
+                width: auto !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            /* Stack columns on mobile */
+            .col-md-8,
+            .col-md-4 {
+                margin-bottom: 1rem;
+            }
+
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+
+            .table-responsive th,
+            .table-responsive td {
+                padding: 0.5rem;
+            }
+
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .file-drop-area {
+                padding: 25px 10px;
+                min-height: 150px;
+            }
+
+            .cloud-icon {
+                font-size: 36px;
+                margin-bottom: 12px;
+            }
+
+            .file-drop-area .small {
+                font-size: 0.75rem;
+            }
+
+            .method-card {
+                padding: 0.75rem !important;
+            }
+
+            .method-card h6 {
+                font-size: 0.85rem;
+                margin-top: 0.5rem !important;
+            }
+
+            .method-card i {
+                font-size: 1.5rem !important;
+            }
+
+            .card-body ul {
+                font-size: 0.85rem;
+                padding-left: 1.2rem;
+            }
+
+            .bg-light.rounded p {
+                font-size: 0.9rem;
+            }
+
+            /* Payment method cards layout */
+            .d-flex.gap-3 {
+                flex-direction: column !important;
+                gap: 0.75rem !important;
+            }
+
+            .method-card.flex-fill {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                font-size: 0.9rem !important;
+            }
+
+            main {
+                margin-top: 76px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .bg-white.shadow.rounded {
+                padding: 0.5rem !important;
+            }
+
+            .bg-success.text-white.rounded-top {
+                padding: 0.75rem !important;
+            }
+
+            .bg-success.text-white.rounded-top h5 {
+                font-size: 1rem;
+            }
+
+            .table-responsive {
+                font-size: 0.75rem;
+            }
+
+            .table-responsive th,
+            .table-responsive td {
+                padding: 0.35rem;
+            }
+
+            .form-label,
+            .form-control,
+            .form-select,
+            .subtotals {
+                font-size: 0.85rem;
+            }
+
+            .btn {
+                font-size: 0.85rem;
+                padding: 0.5rem 0.75rem;
+            }
+
+            .file-drop-area {
+                padding: 20px 10px;
+                min-height: 130px;
+            }
+
+            .cloud-icon {
+                font-size: 32px;
+                margin-bottom: 8px;
+            }
+
+            .file-drop-area strong {
+                font-size: 0.85rem;
+            }
+
+            .file-drop-area .small {
+                font-size: 0.7rem;
+            }
+
+            .method-card {
+                padding: 0.5rem !important;
+            }
+
+            .method-card h6 {
+                font-size: 0.8rem;
+                margin-top: 0.5rem !important;
+            }
+
+            .method-card i {
+                font-size: 1.25rem !important;
+            }
+
+            .card-body h6 {
+                font-size: 0.9rem;
+            }
+
+            .card-body p,
+            .card-body ul {
+                font-size: 0.75rem;
+            }
+
+            .card-body ul {
+                padding-left: 1rem;
+            }
+
+            .bg-light.rounded {
+                padding: 0.75rem !important;
+            }
+
+            .bg-light.rounded p {
+                font-size: 0.8rem;
+                margin-bottom: 0.5rem !important;
+            }
+
+            .modal-body {
+                padding: 1rem;
+            }
+
+            .modal-body i {
+                font-size: 48px !important;
+            }
+
+            .modal-body p {
+                font-size: 0.9rem;
+            }
+
+            .modal-body .bg-light.rounded {
+                font-size: 0.8rem;
+            }
+
+            /* Adjust payment methods card */
+            .col-md-4 .card {
+                margin-bottom: 0.75rem;
+            }
+
+            /* Row spacing adjustments */
+            .row.mb-3 {
+                margin-bottom: 1rem !important;
+            }
+
+            .col-md-6 {
+                margin-bottom: 0.5rem;
+            }
+
+            /* Form controls */
+            .input-group-text {
+                font-size: 0.85rem;
+                padding: 0.375rem 0.5rem;
+            }
+
+            /* Summary section */
+            .d-flex.justify-content-end>div {
+                font-size: 0.85rem;
+            }
+        }
     </style>
 </head>
 
 <body class="bg-light">
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
-        <div class="me-4" style="width: 250px;">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="me-4 logo-container" style="width: 250px;">
             <img src="../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
@@ -867,7 +1222,7 @@ if (isset($_GET['action'])) {
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="residentDropdown"
                     data-bs-toggle="dropdown" aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($residentname); ?></span>
+                    <span class="d-none d-md-inline">Hello, <?php echo htmlspecialchars($residentname); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -891,40 +1246,29 @@ if (isset($_GET['action'])) {
             </div>
         </div>
     </header>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar p-3">
-            <nav class="nav d-flex flex-column gap-1">
+        <aside class="sidebar">
+            <nav class="nav d-flex flex-column gap-1 sidebar-nav p-3">
                 <a href="dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                <!-- Record Keeping -->
-                <div>
-                    <button class="btn btn-toggle collapsed px-3 py-2" data-bs-toggle="collapse"
-                        data-bs-target="#recordCollapse">
-                        <span class="d-flex align-items-center">
-                            <i class="bi bi-book me-2"></i> Record Keeping
-                        </span>
-                    </button>
-                    <div class="collapse" id="recordCollapse">
-                        <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="amenity_booking/amenity_booking.php" class="nav-link px-2">Amenity Booking</a></li>
-                            <li><a href="violations.php" class="nav-link px-2">Violations</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <a href="report.php"
+                <a href="amenity_booking/amenity_booking.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
+                    <i class="bi bi-book me-2"></i> Amenity Booking
+                </a>
+                <a href="report.php" class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-exclamation-triangle me-2"></i> Report Violation
                 </a>
-                <!-- Accounting -->
                 <div>
                     <button
                         class="btn btn-toggle collapsed px-3 rounded py-2 d-flex align-items-center justify-content-start active"
                         data-bs-toggle="collapse" data-bs-target="#acctCollapse" aria-expanded="true">
                         <span class="d-flex align-items-center">
-                            <i class="bi bi-cash-coin me-2 active"></i> Accounting
+                            <i class="bi bi-cash-coin me-2"></i> Accounting
                         </span>
                     </button>
                     <div class="collapse show" id="acctCollapse">
@@ -936,14 +1280,13 @@ if (isset($_GET['action'])) {
                     </div>
                 </div>
                 <a href="logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
-                    style="position: fixed; bottom: 0; width: 220px;">
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
         <!-- Main Content -->
-        <main class="flex-fill p-4">
+        <main class="flex-grow-1 p-4">
             <div class="bg-white shadow rounded p-4">
                 <div class="bg-success text-white rounded-top p-3">
                     <h5 class="mb-0 fw-bold">Payment</h5>
@@ -969,30 +1312,25 @@ if (isset($_GET['action'])) {
                                     <h6 class="mt-2">In-Office Payment</h6>
                                 </div>
                             </div>
-
                             <!-- Payment Form -->
                             <form id="paymentForm">
-                                <div class="row mb-3">
+                                <div class="row mb-2">
                                     <div class="col-md-6">
-                                        <label class="form-label">User Type<small class="fw-bold text-danger">*</small></label>
-                                        <select 
-                                            class="form-select" 
-                                            id="userTypeSelect" 
-                                            data-user-type="<?php echo htmlspecialchars($userType); ?>" 
-                                            required>
+                                        <label class="form-label mb-2">User Type<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <select class="form-select" id="userTypeSelect"
+                                            data-user-type="<?php echo htmlspecialchars($userType); ?>" required>
                                             <option value="">Select User Type</option>
                                             <option value="Homeowner/Resident">Homeowner/Resident</option>
                                             <option value="Visitor">Visitor</option>
                                         </select>
                                     </div>
-                                   <div class="col-md-6">
-                                        <label class="form-label" id="idLabel">Select ID<small class="fw-bold text-danger">*</small></label>
-                                        <select 
-                                            class="form-select" 
-                                            id="userIdSelect" 
+                                    <div class="col-md-6">
+                                        <label class="form-label mb-2" id="idLabel">Select ID<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <select class="form-select" id="userIdSelect"
                                             data-user-id="<?php echo htmlspecialchars($userId); ?>"
-                                            data-user-name="<?php echo htmlspecialchars($userName); ?>"
-                                            required>
+                                            data-user-name="<?php echo htmlspecialchars($userName); ?>" required>
                                             <option value="">Loading...</option>
                                         </select>
                                         <div class="loading d-none" id="loadingIndicator">
@@ -1000,10 +1338,9 @@ if (isset($_GET['action'])) {
                                         </div>
                                     </div>
                                 </div>
-
-                                <div class="row mb-3">
+                                <div class="row mb-2">
                                     <div class="col-md-6">
-                                        <label class="form-label">Category<small
+                                        <label class="form-label mb-2">Category<small
                                                 class="fw-bold text-danger">*</small></label>
                                         <select class="form-select" id="categorySelect" required>
                                             <option value="">Select Category</option>
@@ -1014,29 +1351,30 @@ if (isset($_GET['action'])) {
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Invoice Number<small
+                                        <label class="form-label mb-2">Invoice Number<small
                                                 class="fw-bold text-danger">*</small></label>
                                         <input type="text" class="form-control" id="invoiceInput"
                                             placeholder="Enter Invoice Number" required>
                                     </div>
                                 </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Amount Paid<small
-                                            class="fw-bold text-danger">*</small></label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">₱</span>
-                                        <input type="number" class="form-control" id="amountPaid" placeholder="0.00"
-                                            min="0" step="0.01" required>
+                                <div class="row mb-2">
+                                    <div class="col-md-12">
+                                        <label class="form-label mb-2">Amount Paid<small
+                                                class="fw-bold text-danger">*</small></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">₱</span>
+                                            <input type="number" class="form-control" id="amountPaid" placeholder="0.00"
+                                                min="0" step="0.01" required>
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div class="mb-3" id="referenceNumberGroup" style="display: none;">
-                                    <label class="form-label">Reference Number</label>
-                                    <input type="text" class="form-control" id="referenceNumber"
-                                        placeholder="Bank transfer reference number" required>
+                                <div class="row mb-2" id="referenceNumberGroup" style="display: none;">
+                                    <div class="col-md-12">
+                                        <label class="form-label mb-2">Reference Number</label>
+                                        <input type="text" class="form-control" id="referenceNumber"
+                                            placeholder="Bank transfer reference number" required>
+                                    </div>
                                 </div>
-
                                 <!-- Summary Display -->
                                 <div class="bg-light rounded p-3 mb-3">
                                     <p class="mb-1"><strong>Reference No.:</strong> <span id="refNo"></span></p>
@@ -1045,25 +1383,26 @@ if (isset($_GET['action'])) {
                                     <p class="mb-1"><strong>Payment Method:</strong> <span id="selectedMethod">Bank
                                             Transfer</span></p>
                                 </div>
-
                                 <!-- Invoice Details Table -->
-                                <table class="table table-bordered">
-                                    <thead class="table-success">
-                                        <tr>
-                                            <th>Category</th>
-                                            <th>Item</th>
-                                            <th>Rate</th>
-                                            <th>Qty</th>
-                                            <th>Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="invoiceTableBody">
-                                        <tr>
-                                            <td colspan="5" class="text-center text-muted">No invoice data loaded</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead class="table-success">
+                                            <tr>
+                                                <th>Category</th>
+                                                <th>Item</th>
+                                                <th>Rate</th>
+                                                <th>Qty</th>
+                                                <th>Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="invoiceTableBody">
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted">No invoice data loaded
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                                 <div class="d-flex justify-content-end mb-3">
                                     <div>
                                         <p class="mb-1"><strong>Subtotal:</strong> <span id="subtotal">₱0.00</span></p>
@@ -1098,11 +1437,10 @@ if (isset($_GET['action'])) {
                                     </ul>
                                 </div>
                             </div>
-
                             <!-- Upload Section -->
                             <div class="border rounded p-3 text-center">
                                 <h6 class="fw-bold">Upload Proof of Payment</h6>
-                                <div class="file-drop-area" id="fileDropArea" style="height: 250px;">
+                                <div class="file-drop-area" id="fileDropArea">
                                     <div class="cloud-icon">
                                         <i class="bi bi-cloud-upload"></i>
                                     </div>
@@ -1123,7 +1461,6 @@ if (isset($_GET['action'])) {
             </div>
         </main>
     </div>
-
     <!-- Payment Confirmation Modal -->
     <div class="modal fade" id="confirmPaymentModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -1164,7 +1501,6 @@ if (isset($_GET['action'])) {
             </div>
         </div>
     </div>
-
     <!-- Payment Success Modal -->
     <div class="modal fade" id="successPaymentModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -1182,7 +1518,6 @@ if (isset($_GET['action'])) {
             </div>
         </div>
     </div>
-
     <!-- Payment Error Modal -->
     <div class="modal fade" id="errorPaymentModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -1200,9 +1535,8 @@ if (isset($_GET['action'])) {
             </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-                        <!--updated check js-->
+    <script src="../admin_side/javascripts/mobileSidebar.js"></script>
     <script src="resident_payment.js"></script>
 </body>
 

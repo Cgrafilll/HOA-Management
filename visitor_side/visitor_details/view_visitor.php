@@ -18,9 +18,9 @@ session_start();
 
 require '../../rfid-api/db.php'; // Adjust path as needed
 
-// Check if admin is logged in
-if (!isset($_SESSION['admin_id'])) {
-    header("Location: ../login/login.php?error=" . urlencode("Please log in to access this page."));
+// Check if visitor is logged in
+if (!isset($_SESSION['visitor_id'])) {
+    header("Location: ../login.php?error=" . urlencode("Please log in to access this page."));
     exit;
 }
 
@@ -29,37 +29,37 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
     // Session expired
     session_unset();
     session_destroy();
-    header("Location: ../login/login.php?error=" . urlencode("Your session has expired. Please log in again."));
+    header("Location: ../login.php?error=" . urlencode("Your session has expired. Please log in again."));
     exit;
 }
 
 // Update last activity time
 $_SESSION['last_activity'] = time();
 
-$admin_id = $_SESSION['admin_id'];
-$sql = "SELECT * FROM admin_accounts WHERE admin_id = ?";
+$visitor_id = $_SESSION['visitor_id'];
+$sql = "SELECT * FROM visitor_details WHERE visitor_id = ?";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $admin_id);
+$stmt->bind_param("s", $visitor_id);
 $stmt->execute();
 $result = $stmt->get_result();
-$admin = $result->fetch_assoc();
+$visitor = $result->fetch_assoc();
 
-if (!$admin) {
-    echo "Admin not found.";
+if (!$visitor) {
+    echo "Visitor not found.";
     exit;
 }
 
 // Initialize user details
-$username = $admin['first_name']; // <- Set username directly from household query
+$username = $visitor['first_name']; // <- Set username directly from household query
 $photo = ''; // Initialize photo; your existing profile photo block will set this later
 // Only set $photo if profile_pic exists and is not null
-if (!empty($admin['profile_picture'])) {
-    $photo = 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']);
+if (!empty($visitor['profile_picture'])) {
+    $photo = 'data:image/jpeg;base64,' . base64_encode($visitor['profile_picture']);
 } else {
     $photo = ''; // Explicitly empty if no image is saved
 }
 
-// Initialize admin details
+// Initialize visitor details
 $view_visitor = $_GET['id'] ?? null;
 $prof = $first_name = $middle_name = $last_name = $dob = $sex = $age = $cellphone = $employed = $reason = '';
 
@@ -69,25 +69,25 @@ if ($view_visitor) {
         $stmt->bind_param("s", $view_visitor);
         $stmt->execute();
         $result = $stmt->get_result();
-        $admin = $result->fetch_assoc();
+        $visitor = $result->fetch_assoc();
 
-        if ($admin) {
-            $prof = !empty($admin['profile_picture']) ? 'data:image/jpeg;base64,' . base64_encode($admin['profile_picture']) : '';
-            $first_name = $admin['first_name'];
-            $middle_name = $admin['middle_name'];
-            $last_name = $admin['last_name'];
-            $dob = $admin['date_of_birth'];
-            $sex = $admin['sex'];
-            $age = $admin['age'];
-            $cellphone = $admin['cellphone_number'];
-            $email = $admin['email_address'];
-            $employed = $admin['employed_in_subdivision'];
-            $reason = $admin['reason_for_visit'];
+        if ($visitor) {
+            $prof = !empty($visitor['profile_picture']) ? 'data:image/jpeg;base64,' . base64_encode($visitor['profile_picture']) : '';
+            $first_name = $visitor['first_name'];
+            $middle_name = $visitor['middle_name'];
+            $last_name = $visitor['last_name'];
+            $dob = $visitor['date_of_birth'];
+            $sex = $visitor['sex'];
+            $age = $visitor['age'];
+            $cellphone = $visitor['cellphone_number'];
+            $email = $visitor['email_address'];
+            $employed = $visitor['employed_in_subdivision'];
+            $reason = $visitor['reason_for_visit'];
         } else {
             $error_message = "Visitor not found!";
         }
     } catch (Exception $e) {
-        $error_message = "Error fetching admin: " . $e->getMessage();
+        $error_message = "Error fetching visitor: " . $e->getMessage();
     }
 } else {
     $error_message = "Invalid visitor ID.";
@@ -110,26 +110,44 @@ if ($view_visitor) {
 
         * {
             font-family: "Montserrat", sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow-x: hidden;
         }
 
         header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 1030;
+            height: 76px;
+            background-color: white;
         }
 
         .sidebar {
             width: 250px;
-            height: 100vh;
+            height: calc(100vh - 76px);
             position: fixed;
-            top: 20;
+            top: 76px;
             left: 0;
             background-color: #1F2937;
             overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1020;
+            transition: transform 0.3s ease;
         }
 
         main {
             margin-left: 250px;
+            margin-top: 76px;
+            min-height: calc(100vh - 76px);
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
         }
 
         .sidebar a,
@@ -153,6 +171,32 @@ if ($view_visitor) {
         .sidebar .btn-toggle.active {
             background-color: #198754;
             border-radius: 0.375rem;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 3px;
+        }
+
+        .sidebar .logout {
+            flex-shrink: 0;
+            border-top: 1px solid #374151;
+            padding-top: 12px;
         }
 
         .sidebar .btn-toggle {
@@ -184,6 +228,96 @@ if ($view_visitor) {
             transform: rotate(180deg);
         }
 
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1019;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                top: 76px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            main {
+                margin-left: 0;
+            }
+
+            header .logo-container {
+                width: auto !important;
+            }
+
+            .mobile-menu-btn {
+                display: inline-block;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            .label,
+            .value {
+                font-size: 0.85rem;
+            }
+
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+        }
+
+        @media (max-width: 576px) {
+            header {
+                height: auto;
+                padding: 0.75rem !important;
+            }
+
+            header h1 {
+                font-size: 1rem !important;
+            }
+
+            main {
+                margin-top: 76px;
+                padding: 0.75rem !important;
+            }
+
+            .sidebar {
+                top: 76px;
+            }
+
+            .sidebar-overlay {
+                top: 0;
+            }
+
+            .label,
+            .value {
+                font-size: 0.75rem;
+            }
+        }
+
         #preview img {
             width: 100%;
             height: 100%;
@@ -195,7 +329,10 @@ if ($view_visitor) {
 <body class="bg-light">
     <!-- Header -->
     <header class="bg-white shadow-sm py-3 px-4 d-flex align-items-center">
-        <div class="me-4" style="width: 250px;">
+        <button class="btn btn-success mobile-menu-btn me-2" id="mobileMenuBtn" type="button">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="me-4 logo-container" style="width: 250px;">
             <img src="../../images/NSSHAI_crop.png" alt="NSSHAI" class="img-fluid" style="height: 56px;" />
         </div>
         <div class="d-flex justify-content-between align-items-center flex-grow-1">
@@ -203,7 +340,7 @@ if ($view_visitor) {
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false" role="button" style="cursor: pointer;">
-                    <span>Hello, <?php echo htmlspecialchars($username); ?></span>
+                    <span class="d-none d-md-inline">Hello, <?php echo htmlspecialchars($username); ?></span>
                     <div class="d-flex align-items-center justify-content-center overflow-hidden rounded-5"
                         style="height: 40px; width: 40px; color: #aaa;">
                         <?php if (!empty($photo)): ?>
@@ -215,7 +352,7 @@ if ($view_visitor) {
                     </div>
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                    <li><a class="dropdown-item" href="../admin/view_admin.php?id=<?php echo $admin_id; ?>"><i
+                    <li><a class="dropdown-item" href="../visitor/view_visitor.php?id=<?php echo $visitor_id; ?>"><i
                                 class="bi bi-person me-2"></i>Profile</a></li>
                     <li>
                         <hr class="dropdown-divider">
@@ -226,15 +363,17 @@ if ($view_visitor) {
             </div>
         </div>
     </header>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar p-3">
-            <nav class="nav d-flex flex-column gap-1">
+        <aside class="sidebar">
+            <nav class="nav d-flex flex-column gap-1 sidebar-nav p-3">
                 <a href="../dashboard.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-house me-2"></i> Home
                 </a>
-                <a href="../amenity_booking.php"
+                <a href="../amenity_booking/amenity_booking.php"
                     class="nav-link px-3 py-2 rounded d-flex align-items-center justify-content-start">
                     <i class="bi bi-book me-2"></i> Amenity Booking
                 </a>
@@ -249,20 +388,19 @@ if ($view_visitor) {
                     </button>
                     <div class="collapse" id="acctCollapse">
                         <ul class="nav flex-column ms-3 mt-1">
-                            <li><a href="#" class="nav-link px-2">Payments</a></li>
-                            <li><a href="#" class="nav-link px-2">Invoices</a></li>
+                            <li><a href="../visitor_payment.php" class="nav-link px-2">Payments</a></li>
+                            <li><a href="../visitor_invoices.php" class="nav-link px-2">Invoices</a></li>
                         </ul>
                     </div>
                 </div>
                 <a href="../logout.php"
-                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout"
-                    style="position: fixed; bottom: 0; width: 220px;">
+                    class="nav-link mb-3 px-3 py-2 rounded d-flex align-items-center justify-content-start logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Logout
                 </a>
             </nav>
         </aside>
         <!-- Main Content -->
-        <main class="flex-fill p-4">
+        <main class="flex-grow-1 p-4">
             <div class="bg-white shadow rounded p-3">
                 <!-- Header -->
                 <div class="bg-success text-white rounded-top p-3">
@@ -295,7 +433,7 @@ if ($view_visitor) {
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <div class="mt-2 fw-semibold">Visitor</div>
+                        <div class="mt-2 fw-semibold label">Visitor</div>
                     </div>
                     <!-- Centered Grid for Labels + Values -->
                     <div class="d-flex justify-content-center">
@@ -312,8 +450,8 @@ if ($view_visitor) {
                             ];
                             foreach ($details as $label => $value): ?>
                                 <div class="row mb-2">
-                                    <div class="col-4 text-start fw-bold"><?php echo $label ?>:</div>
-                                    <div class="col-8 text-start"><?php echo $value ?></div>
+                                    <div class="col-md-4 text-start fw-bold label"><?php echo $label ?>:</div>
+                                    <div class="col-md-8 text-start value"><?php echo $value ?></div>
                                 </div>
                             <?php endforeach; ?>
                         </div>
@@ -324,6 +462,7 @@ if ($view_visitor) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../admin_side/javascripts/mobileSidebar.js"></script>
     <script>
         // Auto-calculate age from DOB
         document.querySelector('input[name="dob"]').addEventListener('change', function () {
