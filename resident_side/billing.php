@@ -398,7 +398,7 @@ function getCategoryIcon($category) {
                     <div class="row g-3">
                         <!-- LEFT: List of billing statements -->
                         <div class="col-md-4">
-                            <div class="border rounded-3" style="max-height: 600px; overflow-y: auto;">
+                            <div class="border rounded-3" style="max-height: 600px; overflow-y: auto; scroll-behavior: smooth;">
                                 <div class="list-group list-group-flush">
                                     <?php if (!empty($invoices)): ?>
                                         <?php foreach ($invoices as $inv): ?>
